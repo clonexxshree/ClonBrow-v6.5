@@ -1,0 +1,566 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Melanin Photoprotection & UV Damage Lab</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;700&family=Inter:wght@300;400;600;700&display=swap');
+
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: #020617; /* Slate 950 */
+            color: #f8fafc;
+            overflow-x: hidden;
+            user-select: none;
+        }
+
+        .font-mono { font-family: 'JetBrains Mono', monospace; }
+
+        .glass-card {
+            background: rgba(15, 23, 42, 0.85);
+            backdrop-filter: blur(20px);
+            border: 1px solid rgba(255, 255, 255, 0.08);
+            box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.5);
+        }
+
+        .digital-readout {
+            background: #061021;
+            color: #a855f7; /* Purple base */
+            text-shadow: 0 0 12px rgba(168, 85, 247, 0.5);
+            border: 1px solid #1e293b;
+            transition: all 0.3s ease;
+        }
+
+        .readout-danger {
+            color: #f43f5e !important;
+            text-shadow: 0 0 15px rgba(244, 63, 94, 0.8) !important;
+            border-color: rgba(244, 63, 94, 0.5) !important;
+            background: rgba(244, 63, 94, 0.05) !important;
+        }
+
+        /* SVG Anatomy Styling */
+        .skin-surface {
+            fill: #fdf4ff;
+            transition: fill 0.3s ease;
+        }
+        
+        .stratum-corneum {
+            fill: rgba(255,255,255,0.1);
+            stroke: rgba(0,0,0,0.2);
+            stroke-width: 2;
+        }
+
+        .dermis-layer {
+            fill: #fce7f3;
+            transition: fill 0.3s ease;
+        }
+
+        .collagen-fiber {
+            fill: none;
+            stroke: rgba(0,0,0,0.1);
+            stroke-width: 3;
+            stroke-linecap: round;
+        }
+
+        .melanocyte {
+            fill: #451a03; /* Deep brown/amber */
+            filter: drop-shadow(0 4px 6px rgba(0,0,0,0.4));
+        }
+
+        .keratinocyte {
+            fill: rgba(255,255,255,0.1);
+            stroke: rgba(0,0,0,0.3);
+            stroke-width: 2;
+        }
+
+        .cell-nucleus {
+            fill: #312e81;
+            stroke: #4f46e5;
+            stroke-width: 2;
+        }
+
+        .dna-helix {
+            fill: none;
+            stroke: #22d3ee;
+            stroke-width: 2;
+            transition: stroke 0.1s;
+        }
+
+        /* Dynamic Melanin Shield */
+        #supranuclear-cap {
+            fill: #290f02;
+            transition: opacity 0.3s ease;
+            mix-blend-mode: multiply;
+        }
+
+        /* Damage Animation */
+        @keyframes damage-flash {
+            0% { filter: drop-shadow(0 0 15px #f43f5e); stroke: #f43f5e; stroke-width: 4;}
+            100% { filter: drop-shadow(0 0 0px transparent); stroke: #22d3ee; stroke-width: 2;}
+        }
+        .dna-damaged { animation: damage-flash 0.4s ease-out; }
+
+        /* Grid Background */
+        .lab-grid {
+            background-size: 50px 50px;
+            background-image: 
+                linear-gradient(to right, rgba(168, 85, 247, 0.03) 1px, transparent 1px),
+                linear-gradient(to bottom, rgba(168, 85, 247, 0.03) 1px, transparent 1px);
+        }
+
+        /* Custom Slider */
+        input[type=range] {
+            -webkit-appearance: none;
+            background: transparent;
+            cursor: pointer;
+        }
+        input[type=range]::-webkit-slider-runnable-track {
+            background: linear-gradient(to right, #fdf4ff, #fcd34d, #b45309, #451a03, #171717);
+            height: 12px;
+            border-radius: 6px;
+            border: 1px solid rgba(255,255,255,0.2);
+        }
+        input[type=range]::-webkit-slider-thumb {
+            -webkit-appearance: none;
+            height: 28px;
+            width: 28px;
+            border-radius: 50%;
+            background: #f8fafc;
+            border: 3px solid #334155;
+            margin-top: -9px;
+            box-shadow: 0 0 15px rgba(0,0,0,0.6);
+            transition: transform 0.1s;
+        }
+        input[type=range]::-webkit-slider-thumb:active { transform: scale(1.1); }
+    </style>
+</head>
+<body class="min-h-screen p-4 md:p-8 flex items-center justify-center">
+
+    <div class="max-w-7xl w-full grid grid-cols-1 lg:grid-cols-12 gap-8 items-stretch">
+        
+        <!-- Simulation Viewport -->
+        <div class="lg:col-span-8 flex flex-col gap-6">
+            <div class="glass-card rounded-3xl p-0 relative flex-grow min-h-[600px] flex flex-col overflow-hidden border border-slate-800 lab-grid">
+                
+                <!-- HUD Header -->
+                <div class="absolute top-6 left-8 flex items-center gap-3 z-30">
+                    <div id="status-dot" class="w-2.5 h-2.5 rounded-full bg-purple-500 shadow-[0_0_10px_#a855f7]"></div>
+                    <span class="text-[10px] font-bold text-slate-400 uppercase tracking-widest font-mono">Irradiance: <span class="text-purple-400">Extreme UV Index (11+)</span></span>
+                </div>
+
+                <!-- Main Simulation Area -->
+                <div class="relative w-full h-full flex-grow flex items-center justify-center">
+                    
+                    <!-- Highly Detailed Skin Anatomy SVG -->
+                    <svg id="skin-svg" viewBox="0 0 800 600" class="w-full h-full absolute inset-0 z-10 overflow-visible">
+                        <!-- Dermis (Bottom Layer) -->
+                        <path id="dermis" class="dermis-layer" d="M 0,350 Q 100,320 200,370 T 400,340 T 600,380 T 800,330 L 800,600 L 0,600 Z" />
+                        
+                        <!-- Collagen Fibers in Dermis -->
+                        <path class="collagen-fiber" d="M 50,450 Q 100,430 150,460 T 250,440" />
+                        <path class="collagen-fiber" d="M 300,500 Q 350,480 400,520 T 500,490" />
+                        <path class="collagen-fiber" d="M 600,420 Q 650,400 700,430 T 780,410" />
+
+                        <!-- Epidermis (Top Layer) -->
+                        <path id="epidermis" class="skin-surface" d="M 0,0 L 800,0 L 800,330 Q 700,380 600,380 T 400,340 T 200,370 T 0,350 Z" />
+                        
+                        <!-- Stratum Corneum (Dead, flaky top layer) -->
+                        <path class="stratum-corneum" d="M 0,40 L 150,50 L 300,30 L 450,60 L 600,40 L 800,50 L 800,0 L 0,0 Z" />
+                        <path class="stratum-corneum" d="M 50,30 L 120,40 M 350,40 L 420,30 M 650,30 L 750,45" />
+
+                        <!-- Target Keratinocyte Cell -->
+                        <g id="target-cell" transform="translate(400, 240)">
+                            <!-- Cell Membrane -->
+                            <path class="keratinocyte" d="M -80,-50 C -40,-80 40,-80 80,-50 C 100,0 90,60 50,80 C 0,100 -50,90 -80,50 C -100,0 -100,-20 -80,-50 Z" />
+                            
+                            <!-- Nucleus -->
+                            <ellipse cx="0" cy="10" rx="40" ry="30" class="cell-nucleus" />
+                            
+                            <!-- DNA Double Helix -->
+                            <g id="dna-strands">
+                                <path class="dna-helix" d="M -20,20 Q -10,-10 0,0 T 20,-20" />
+                                <path class="dna-helix" d="M -20,-20 Q -10,10 0,0 T 20,20" />
+                                <!-- Base pairs -->
+                                <line x1="-15" y1="-7" x2="-15" y2="7" stroke="#22d3ee" stroke-width="1.5" />
+                                <line x1="-5" y1="-4" x2="-5" y2="4" stroke="#22d3ee" stroke-width="1.5" />
+                                <line x1="5" y1="-4" x2="5" y2="4" stroke="#22d3ee" stroke-width="1.5" />
+                                <line x1="15" y1="-7" x2="15" y2="7" stroke="#22d3ee" stroke-width="1.5" />
+                            </g>
+
+                            <!-- The Melanin Supranuclear Cap (Shield) -->
+                            <!-- This groups hundreds of tiny melanosomes positioned strictly ABOVE the nucleus -->
+                            <g id="supranuclear-cap">
+                                <path d="M -50,-10 C -40,-40 40,-40 50,-10 C 30,-30 -30,-30 -50,-10 Z" fill="#290f02" />
+                                <!-- Generated dense stippling via JS -->
+                            </g>
+                        </g>
+
+                        <!-- Melanocyte (Produces Melanin at the basal layer) -->
+                        <g id="melanocyte-cell" transform="translate(400, 360)">
+                            <circle cx="0" cy="0" r="18" class="melanocyte" />
+                            <circle cx="0" cy="0" r="8" fill="#171717" />
+                            <!-- Dendrites extending upward to deliver melanin -->
+                            <path d="M 0,-15 Q -30,-60 -50,-80 T -80,-120" fill="none" stroke="#451a03" stroke-width="6" stroke-linecap="round" />
+                            <path d="M 5,-15 Q 40,-50 60,-90 T 100,-110" fill="none" stroke="#451a03" stroke-width="6" stroke-linecap="round" />
+                            <path d="M -10,-10 Q -80,-20 -120,-40" fill="none" stroke="#451a03" stroke-width="5" stroke-linecap="round" />
+                            <path d="M 10,-10 Q 90,-10 140,-30" fill="none" stroke="#451a03" stroke-width="5" stroke-linecap="round" />
+                        </g>
+
+                        <!-- Adjacent Keratinocytes (Background context) -->
+                        <g opacity="0.4">
+                            <circle cx="200" cy="270" r="35" class="keratinocyte" />
+                            <circle cx="200" cy="270" r="12" class="cell-nucleus" />
+                            
+                            <circle cx="600" cy="290" r="40" class="keratinocyte" />
+                            <circle cx="600" cy="290" r="15" class="cell-nucleus" />
+                        </g>
+
+                    </svg>
+
+                    <!-- Canvas for High-Speed UV Particles -->
+                    <canvas id="uv-canvas" class="absolute inset-0 w-full h-full z-20 pointer-events-none"></canvas>
+
+                </div>
+
+                <!-- Footer Labels -->
+                <div class="absolute bottom-6 left-8 flex flex-col gap-1 z-30">
+                    <span class="text-[9px] font-mono text-slate-500 uppercase">Tissue: Epidermal Stratum Basale</span>
+                    <span class="text-[9px] font-mono text-slate-500 uppercase">Protection: Eumelanin Parasol Effect</span>
+                </div>
+            </div>
+
+            <!-- Environmental Controls -->
+            <div class="glass-card p-6 rounded-3xl flex flex-col gap-4">
+                <div class="flex justify-between items-end mb-2">
+                    <div>
+                        <div class="text-xs font-bold text-slate-200 uppercase tracking-widest flex items-center gap-2">
+                            <svg class="w-4 h-4 text-amber-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 3v1m0 16v1m9-9h-1M4 12H3m15.364 6.364l-.707-.707M6.343 6.343l-.707-.707m12.728 0l-.707.707M6.343 17.657l-.707.707M16 12a4 4 0 11-8 0 4 4 0 018 0z"></path></svg>
+                            Melanogenesis Level (Melanin Concentration)
+                        </div>
+                        <div id="skin-type-desc" class="text-[10px] text-slate-400 font-mono mt-1">Fitzpatrick Type I: Pale white skin, burns easily, never tans.</div>
+                    </div>
+                </div>
+                
+                <input type="range" id="melanin-slider" min="0" max="100" value="10" class="w-full mt-2">
+                <div class="flex justify-between text-[9px] font-mono font-bold uppercase mt-1 text-slate-500">
+                    <span>Type I</span>
+                    <span>Type III</span>
+                    <span>Type VI</span>
+                </div>
+            </div>
+        </div>
+
+        <!-- Sidebar: Analytics & Data -->
+        <div class="lg:col-span-4 flex flex-col gap-6">
+            
+            <!-- Digital Readout -->
+            <div id="telemetry-panel" class="digital-readout rounded-3xl p-6 space-y-6 flex-grow">
+                <div class="flex justify-between items-center border-b border-current pb-3 opacity-60">
+                    <span class="text-[10px] font-bold tracking-tighter uppercase">Genomic Telemetry</span>
+                    <span class="text-xs font-mono animate-pulse">MONITORING</span>
+                </div>
+
+                <div class="space-y-6">
+                    <!-- Damage Count -->
+                    <div class="space-y-1">
+                        <label class="text-[10px] uppercase font-bold opacity-60">Cumulative DNA Mutations</label>
+                        <div class="flex items-baseline gap-2">
+                            <div id="data-mutations" class="text-6xl font-bold font-mono">0</div>
+                            <span class="text-xl font-mono font-bold opacity-60">bp</span>
+                        </div>
+                    </div>
+
+                    <div class="grid grid-cols-2 gap-4 pt-4 border-t border-current opacity-80">
+                        <div class="space-y-1">
+                            <label class="text-[9px] uppercase font-bold text-current">UV Transmittance</label>
+                            <div id="data-transmittance" class="text-xl font-bold font-mono">85%</div>
+                        </div>
+                        <div class="space-y-1 text-right">
+                            <label class="text-[9px] uppercase font-bold text-current">Melanin Density</label>
+                            <div id="data-density" class="text-xl font-bold font-mono">LOW</div>
+                        </div>
+                    </div>
+
+                    <!-- Shield Progress Bar -->
+                    <div class="p-4 bg-black/30 rounded-xl border border-current space-y-2">
+                        <div class="flex justify-between items-center">
+                            <label class="text-[9px] uppercase font-bold text-current">Photoprotection Efficiency</label>
+                            <span id="data-protection-pct" class="text-[10px] font-mono">15%</span>
+                        </div>
+                        <div class="h-2 w-full bg-slate-900 rounded-full overflow-hidden border border-current">
+                            <div id="protection-bar" class="h-full bg-amber-500 transition-all duration-300" style="width: 15%"></div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Pathophysiology Card -->
+            <div class="glass-card p-6 rounded-3xl space-y-4 flex-grow flex flex-col">
+                <h3 class="text-xs font-bold text-slate-400 uppercase tracking-widest flex items-center gap-2">
+                    <svg class="w-4 h-4 text-purple-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19.428 15.428a2 2 0 00-1.022-.547l-2.387-.477a6 6 0 00-3.86.517l-.318.158a6 6 0 01-3.86.517L6.05 15.21a2 2 0 00-1.806.547M8 4h8l-1 1v5.172a2 2 0 00.586 1.414l5 5c1.26 1.26.367 3.414-1.415 3.414H4.828c-1.782 0-2.674-2.154-1.414-3.414l5-5A2 2 0 009 10.172V5L8 4z"></path></svg>
+                    The Molecular Parasol
+                </h3>
+                
+                <div class="space-y-3 text-[11px] text-slate-300 leading-relaxed overflow-y-auto">
+                    <p>Melanin acts as a physical shield, absorbing high-energy UV photons and safely dissipating them as heat.</p>
+                    
+                    <div class="p-3 bg-amber-900/20 rounded-xl border border-amber-500/20">
+                        <strong class="text-amber-400 block mb-1">Supranuclear Cap</strong>
+                        Melanosomes are transported via dendrites to keratinocytes, where they cluster directly <em>above</em> the nucleus, creating a microscopic parasol to shadow the DNA.
+                    </div>
+
+                    <div class="p-3 bg-rose-900/20 rounded-xl border border-rose-500/20">
+                        <strong class="text-rose-400 block mb-1">Pyrimidine Dimers</strong>
+                        When UV radiation bypasses the melanin shield, it strikes the DNA, causing adjacent Thymine bases to fuse together. This mutation can lead to melanoma.
+                    </div>
+                </div>
+
+                <button id="btn-reset" class="mt-auto w-full py-3 bg-slate-800 hover:bg-slate-700 text-slate-400 rounded-xl text-[10px] font-bold uppercase tracking-widest border border-slate-700 transition-all shadow-inner">
+                    Deploy DNA Repair Enzymes
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', () => {
+            const canvas = document.getElementById('uv-canvas');
+            const ctx = canvas.getContext('2d');
+            
+            const melaninSlider = document.getElementById('melanin-slider');
+            const skinTypeDesc = document.getElementById('skin-type-desc');
+            const btnReset = document.getElementById('btn-reset');
+            
+            const dataMutations = document.getElementById('data-mutations');
+            const dataTransmittance = document.getElementById('data-transmittance');
+            const dataDensity = document.getElementById('data-density');
+            const dataProtectionPct = document.getElementById('data-protection-pct');
+            const protectionBar = document.getElementById('protection-bar');
+            const telemetryPanel = document.getElementById('telemetry-panel');
+            
+            const epidermis = document.getElementById('epidermis');
+            const dermis = document.getElementById('dermis');
+            const supranuclearCap = document.getElementById('supranuclear-cap');
+            const dnaHelix = document.getElementById('dna-strands');
+
+            // --- State ---
+            let melaninLevel = 10; // 0 to 100
+            let mutations = 0;
+            let uvParticles = [];
+            
+            // Defines the target zone (the nucleus of the main cell)
+            // Bounding box in SVG coordinates
+            const TARGET_ZONE = {
+                xMin: 360, xMax: 440,
+                yMin: 220, yMax: 280,
+                shieldY: 200 // The y-level where the melanin cap sits
+            };
+
+            function resize() {
+                canvas.width = canvas.parentElement.clientWidth;
+                canvas.height = canvas.parentElement.clientHeight;
+            }
+            window.addEventListener('resize', resize);
+            resize();
+
+            // Setup the stippled melanosomes in the SVG cap
+            function initMelaninShield() {
+                for (let i = 0; i < 150; i++) {
+                    const circle = document.createElementNS('http://www.w3.org/2000/svg', 'circle');
+                    // Random distribution within the cap area
+                    const angle = Math.random() * Math.PI;
+                    const r = Math.random() * 40;
+                    circle.setAttribute('cx', Math.cos(angle) * r);
+                    circle.setAttribute('cy', -20 + -Math.sin(angle) * 20); // arch upwards
+                    circle.setAttribute('r', Math.random() * 2 + 1);
+                    circle.setAttribute('fill', '#171717');
+                    supranuclearCap.appendChild(circle);
+                }
+            }
+            initMelaninShield();
+
+            // Coordinate mapping
+            function getScale() {
+                return {
+                    x: canvas.width / 800,
+                    y: canvas.height / 600
+                };
+            }
+
+            // --- Particle Engine ---
+            class UVPhoton {
+                constructor() {
+                    this.reset();
+                    this.y = Math.random() * canvas.height; // Initial scatter
+                }
+                reset() {
+                    this.x = Math.random() * canvas.width;
+                    this.y = -10;
+                    this.vy = 8 + Math.random() * 6; // High speed
+                    // Wavelength visual (UVA/UVB)
+                    this.isUVB = Math.random() > 0.5; 
+                    this.length = this.isUVB ? 15 : 25;
+                    this.color = this.isUVB ? '#a855f7' : '#38bdf8'; // Purple or Blue
+                    this.active = true;
+                }
+                update() {
+                    if (!this.active) return;
+                    this.y += this.vy;
+
+                    // Scale coordinates
+                    const scale = getScale();
+                    const svgX = this.x / scale.x;
+                    const svgY = this.y / scale.y;
+
+                    // Probability of absorption depends on depth and melanin level
+                    // Melanin shields are dense around the cells, and scattered in epidermis
+                    
+                    // General epidermal absorption
+                    if (svgY > 40 && svgY < 350) {
+                        // Base chance + melanin chance
+                        const absorptionChance = 0.001 + (melaninLevel / 100) * 0.04;
+                        if (Math.random() < absorptionChance) {
+                            this.absorb();
+                            return;
+                        }
+                    }
+
+                    // Specific Supranuclear Cap shield check
+                    if (svgX > TARGET_ZONE.xMin && svgX < TARGET_ZONE.xMax && svgY > TARGET_ZONE.shieldY && svgY < TARGET_ZONE.yMax) {
+                        // The cap is highly concentrated melanin
+                        const shieldChance = 0.1 + (melaninLevel / 100) * 0.85; // Up to 95% protection
+                        if (Math.random() < shieldChance) {
+                            this.absorb();
+                            return;
+                        } else if (svgY > TARGET_ZONE.yMin) {
+                            // Bypassed shield, hit DNA!
+                            triggerMutation();
+                            this.absorb();
+                            return;
+                        }
+                    }
+
+                    // Pass out of bottom
+                    if (this.y > canvas.height + 50) {
+                        this.reset();
+                    }
+                }
+                absorb() {
+                    this.active = false;
+                    // Visual absorption spark
+                    ctx.beginPath();
+                    ctx.arc(this.x, this.y, 4, 0, Math.PI * 2);
+                    ctx.fillStyle = '#fcd34d'; // Heat dissipation
+                    ctx.shadowBlur = 10;
+                    ctx.shadowColor = '#fbbf24';
+                    ctx.fill();
+                    ctx.shadowBlur = 0;
+                    
+                    setTimeout(() => this.reset(), 100);
+                }
+                draw() {
+                    if (!this.active) return;
+                    ctx.beginPath();
+                    ctx.moveTo(this.x, this.y);
+                    ctx.lineTo(this.x, this.y - this.length);
+                    ctx.strokeStyle = this.color;
+                    ctx.lineWidth = 2;
+                    ctx.shadowBlur = 8;
+                    ctx.shadowColor = this.color;
+                    ctx.stroke();
+                    ctx.shadowBlur = 0;
+                }
+            }
+
+            // Init particles
+            for(let i=0; i<150; i++) uvParticles.push(new UVPhoton());
+
+            function triggerMutation() {
+                mutations++;
+                dataMutations.textContent = mutations.toLocaleString();
+                
+                // Flash the DNA SVG red
+                dnaHelix.classList.remove('dna-damaged');
+                void dnaHelix.offsetWidth; // trigger reflow
+                dnaHelix.classList.add('dna-damaged');
+
+                if (mutations > 100) {
+                    telemetryPanel.classList.add('readout-danger');
+                }
+            }
+
+            function updateSkinTone() {
+                // Fitzpatrick Scale interpolation
+                // 0: Pale (#fdf4ff) -> 100: Deep Dark Brown (#1c1917)
+                const factor = melaninLevel / 100;
+                
+                // Epidermis Color
+                const rE = Math.round(253 - (253 - 28) * factor);
+                const gE = Math.round(244 - (244 - 25) * factor);
+                const bE = Math.round(255 - (255 - 23) * factor);
+                epidermis.style.fill = `rgb(${rE}, ${gE}, ${bE})`;
+
+                // Dermis Color (Changes slightly due to translucency)
+                const rD = Math.round(252 - (252 - 120) * factor);
+                const gD = Math.round(231 - (231 - 80) * factor);
+                const bD = Math.round(243 - (243 - 70) * factor);
+                dermis.style.fill = `rgb(${rD}, ${gD}, ${bD})`;
+
+                // Supranuclear Cap Density (Opacity)
+                supranuclearCap.style.opacity = 0.1 + (factor * 0.9);
+
+                // Telemetry
+                const protection = 10 + (factor * 85);
+                dataProtectionPct.textContent = `${Math.round(protection)}%`;
+                protectionBar.style.width = `${protection}%`;
+                
+                const transmittance = 100 - protection;
+                dataTransmittance.textContent = `${Math.round(transmittance)}%`;
+
+                if (factor > 0.8) dataDensity.textContent = "MAXIMUM";
+                else if (factor > 0.5) dataDensity.textContent = "HIGH";
+                else if (factor > 0.2) dataDensity.textContent = "MODERATE";
+                else dataDensity.textContent = "LOW";
+
+                // Text Descriptions
+                let desc;
+                if (melaninLevel < 15) desc = "Fitzpatrick Type I: Pale white skin, burns easily, never tans.";
+                else if (melaninLevel < 35) desc = "Fitzpatrick Type II/III: White to light brown, tans gradually.";
+                else if (melaninLevel < 65) desc = "Fitzpatrick Type IV: Moderate brown, tans well, rarely burns.";
+                else if (melaninLevel < 85) desc = "Fitzpatrick Type V: Dark brown, profuse melanin protection.";
+                else desc = "Fitzpatrick Type VI: Deeply pigmented dark brown to black, superior UV resistance.";
+                skinTypeDesc.textContent = desc;
+            }
+
+            function animate() {
+                ctx.clearRect(0, 0, canvas.width, canvas.height);
+                
+                uvParticles.forEach(p => {
+                    p.update();
+                    p.draw();
+                });
+
+                requestAnimationFrame(animate);
+            }
+
+            // --- Events ---
+            melaninSlider.addEventListener('input', (e) => {
+                melaninLevel = parseInt(e.target.value);
+                updateSkinTone();
+            });
+
+            btnReset.addEventListener('click', () => {
+                mutations = 0;
+                dataMutations.textContent = "0";
+                telemetryPanel.classList.remove('readout-danger');
+            });
+
+            // Initialize
+            updateSkinTone();
+            animate();
+        });
+    </script>
+</body>
+</html>

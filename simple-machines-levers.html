@@ -1,0 +1,638 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Physics Lab - Lever & Fulcrum</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        body, html {
+            margin: 0;
+            padding: 0;
+            width: 100%;
+            height: 100%;
+            overflow: hidden;
+            background-color: #09090b; 
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+            touch-action: none;
+            user-select: none;
+        }
+        
+        #sim-canvas {
+            display: block;
+            width: 100%;
+            height: 100%;
+            cursor: grab;
+        }
+        #sim-canvas:active {
+            cursor: grabbing;
+        }
+
+        input[type=range] {
+            -webkit-appearance: none;
+            width: 100%;
+            background: transparent;
+        }
+        input[type=range]::-webkit-slider-thumb {
+            -webkit-appearance: none;
+            height: 18px;
+            width: 18px;
+            border-radius: 50%;
+            background: #ffffff;
+            cursor: pointer;
+            margin-top: -7px;
+            box-shadow: 0 2px 6px rgba(0,0,0,0.5);
+            transition: transform 0.1s ease;
+        }
+        input[type=range]::-webkit-slider-thumb:hover {
+            transform: scale(1.2);
+        }
+        input[type=range]::-webkit-slider-runnable-track {
+            width: 100%;
+            height: 4px;
+            cursor: pointer;
+            background: rgba(255, 255, 255, 0.2);
+            border-radius: 2px;
+        }
+        
+        .glass-panel {
+            background: linear-gradient(135deg, rgba(30, 41, 59, 0.7) 0%, rgba(15, 23, 42, 0.8) 100%);
+            backdrop-filter: blur(40px);
+            -webkit-backdrop-filter: blur(40px);
+            border: 1px solid rgba(255, 255, 255, 0.08);
+            border-top: 1px solid rgba(255, 255, 255, 0.15); 
+            box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.6), inset 0 0 30px rgba(0, 0, 0, 0.2);
+        }
+
+        .scroll-area::-webkit-scrollbar { width: 3px; }
+        .scroll-area::-webkit-scrollbar-thumb { background: rgba(255, 255, 255, 0.2); border-radius: 4px; }
+        
+        .balance-glow {
+            box-shadow: 0 0 15px rgba(34, 197, 94, 0.4);
+            border-color: rgba(34, 197, 94, 0.8);
+        }
+    </style>
+</head>
+<body>
+
+    <!-- Main UI Overlay -->
+    <div class="absolute top-5 left-5 md:top-8 md:left-8 z-10 w-[340px] glass-panel p-6 rounded-2xl pointer-events-auto flex flex-col select-none max-h-[90vh]">
+        
+        <!-- Header -->
+        <div class="mb-6 border-b border-white/5 pb-5 shrink-0 flex items-center justify-between">
+            <div>
+                <h1 class="text-xl font-semibold tracking-tight text-gray-100 mb-1">Simple Machines</h1>
+                <p class="text-[11px] font-medium text-blue-400 uppercase tracking-widest">The Lever & Fulcrum</p>
+            </div>
+            <div class="w-8 h-8 rounded-full bg-blue-500/10 flex items-center justify-center text-blue-400">
+                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M3 6l3 1m0 0l-3 9a5.002 5.002 0 006.001 0M6 7l3 9M6 7l6-2m6 2l3-1m-3 1l-3 9a5.002 5.002 0 006.001 0M18 7l3 9m-3-9l-6-2m0-2v2m0 16V5m0 16H9m3 0h3"></path></svg>
+            </div>
+        </div>
+
+        <div class="space-y-7 scroll-area overflow-y-auto pr-2 pb-2">
+            
+            <div class="bg-black/20 p-3.5 rounded-xl border border-white/5">
+                <p class="text-[12px] text-gray-400 leading-relaxed">
+                    <strong class="text-gray-200">Law of the Lever:</strong> Drag the fulcrum or the weights. Set both weights to <span class="text-white font-bold">100 kg</span> to see them perfectly balance mid-air!
+                </p>
+            </div>
+
+            <!-- Masses -->
+            <div class="space-y-5">
+                <!-- Load Mass -->
+                <div class="space-y-3">
+                    <div class="flex justify-between items-end">
+                        <label class="text-[11px] font-bold uppercase tracking-wider text-red-400">Heavy Load Mass</label>
+                        <span id="load-display" class="text-[11px] font-mono bg-red-500/10 px-2 py-1 rounded text-red-300">100 kg</span>
+                    </div>
+                    <input type="range" id="load-slider" min="10" max="200" step="5" value="100" class="w-full" style="accent-color: #ef4444;">
+                </div>
+
+                <!-- Effort Mass -->
+                <div class="space-y-3">
+                    <div class="flex justify-between items-end">
+                        <label class="text-[11px] font-bold uppercase tracking-wider text-emerald-400">Effort Mass</label>
+                        <span id="effort-display" class="text-[11px] font-mono bg-emerald-500/10 px-2 py-1 rounded text-emerald-300">25 kg</span>
+                    </div>
+                    <input type="range" id="effort-slider" min="5" max="200" step="5" value="25" class="w-full" style="accent-color: #10b981;">
+                </div>
+            </div>
+
+            <!-- Fulcrum Position -->
+            <div class="space-y-3 pt-4 border-t border-white/5">
+                <div class="flex justify-between items-end">
+                    <label class="text-[11px] font-bold uppercase tracking-wider text-blue-400">Fulcrum Position</label>
+                    <span id="fulcrum-display" class="text-[11px] font-mono bg-blue-500/10 px-2 py-1 rounded text-blue-300">Center</span>
+                </div>
+                <input type="range" id="fulcrum-slider" min="-200" max="200" step="5" value="0" class="w-full" style="accent-color: #3b82f6;">
+            </div>
+
+            <!-- Visual Toggles -->
+            <div class="pt-5 border-t border-white/5 space-y-4">
+                <label class="flex items-center justify-between cursor-pointer group">
+                    <div>
+                        <div class="text-[13px] font-semibold text-gray-200 mb-1">Show Forces & Math</div>
+                        <div class="text-[11px] text-gray-500 font-medium">Display Torque calculations</div>
+                    </div>
+                    <div class="relative">
+                        <input type="checkbox" id="toggle-math" class="sr-only peer" checked>
+                        <div class="w-10 h-5 bg-gray-800 rounded-full shadow-inner transition-colors peer-checked:bg-blue-500"></div>
+                        <div class="dot absolute left-1 top-1 bg-gray-400 w-3 h-3 rounded-full transition-all peer-checked:translate-x-5 peer-checked:bg-white shadow-sm"></div>
+                    </div>
+                </label>
+            </div>
+
+        </div>
+    </div>
+
+    <!-- Balance Status HUD -->
+    <div class="absolute top-8 left-1/2 -translate-x-1/2 z-10 pointer-events-none flex flex-col items-center">
+        <div id="balance-status" class="glass-panel px-6 py-3 rounded-full border border-white/10 flex items-center gap-3 transition-all duration-300">
+            <div id="status-dot" class="w-2.5 h-2.5 rounded-full bg-gray-500"></div>
+            <span id="status-text" class="text-sm font-bold tracking-widest uppercase text-white">Tipping</span>
+        </div>
+    </div>
+
+    <!-- 2D Canvas Container -->
+    <canvas id="sim-canvas"></canvas>
+
+    <script>
+        const canvas = document.getElementById('sim-canvas');
+        const ctx = canvas.getContext('2d');
+
+        let floorY = 0;
+        let cx = 0; 
+
+        function resize() {
+            canvas.width = window.innerWidth;
+            canvas.height = window.innerHeight;
+            floorY = canvas.height - 120; 
+            cx = window.innerWidth >= 768 ? (window.innerWidth + 340) / 2 : window.innerWidth / 2;
+        }
+        window.addEventListener('resize', resize);
+        resize();
+
+        // --- PHYSICS SETTINGS & STATE ---
+        const g = 9.8; 
+        
+        const plank = {
+            length: 560, 
+            thickness: 16,
+            mass: 20, 
+            angle: 0,
+            omega: 0 
+        };
+
+        const fulcrum = {
+            x: 0, 
+            height: 80,
+            width: 60
+        };
+
+        const load = {
+            name: "Load",
+            x: -220, 
+            mass: 100,
+            width: 70, height: 70,
+            color: '#ef4444', 
+            isDragging: false
+        };
+
+        const effort = {
+            name: "Effort",
+            x: 220, 
+            mass: 25,
+            width: 50, height: 50,
+            color: '#10b981', 
+            isDragging: false
+        };
+
+        let isDraggingFulcrum = false;
+
+        const loadSlider = document.getElementById('load-slider');
+        const effortSlider = document.getElementById('effort-slider');
+        const fulcrumSlider = document.getElementById('fulcrum-slider');
+        const toggleMath = document.getElementById('toggle-math');
+        
+        const loadDisplay = document.getElementById('load-display');
+        const effortDisplay = document.getElementById('effort-display');
+        const fulcrumDisplay = document.getElementById('fulcrum-display');
+        
+        const statusBox = document.getElementById('balance-status');
+        const statusDot = document.getElementById('status-dot');
+        const statusText = document.getElementById('status-text');
+
+        loadSlider.addEventListener('input', (e) => {
+            load.mass = parseInt(e.target.value);
+            loadDisplay.innerText = load.mass + " kg";
+            load.width = 40 + Math.sqrt(load.mass) * 3;
+            load.height = load.width;
+        });
+
+        effortSlider.addEventListener('input', (e) => {
+            effort.mass = parseInt(e.target.value);
+            effortDisplay.innerText = effort.mass + " kg";
+            effort.width = 30 + Math.sqrt(effort.mass) * 3;
+            effort.height = effort.width;
+        });
+
+        fulcrumSlider.addEventListener('input', (e) => {
+            fulcrum.x = parseInt(e.target.value);
+            updateFulcrumLabel();
+        });
+
+        function updateFulcrumLabel() {
+            fulcrumSlider.value = fulcrum.x;
+            if (fulcrum.x === 0) fulcrumDisplay.innerText = "Center";
+            else if (fulcrum.x < 0) fulcrumDisplay.innerText = Math.abs(fulcrum.x) + "px Left";
+            else fulcrumDisplay.innerText = fulcrum.x + "px Right";
+        }
+
+        loadSlider.dispatchEvent(new Event('input'));
+        effortSlider.dispatchEvent(new Event('input'));
+
+        // --- REAL WORLD RIGID BODY PHYSICS ENGINE ---
+        let lastTime = 0;
+        let netTorqueDisplay = 0;
+
+        function updatePhysics(dt) {
+            if (dt > 0.05) dt = 0.05; 
+
+            // 1. Convert pixels to Meters for real physics calculations (100px = 1m)
+            const dLoad_m = (load.x - fulcrum.x) / 100; 
+            const dEffort_m = (effort.x - fulcrum.x) / 100;
+            const dPlankCenter_m = (0 - fulcrum.x) / 100; 
+
+            const forceLoad = load.mass * g;
+            const forceEffort = effort.mass * g;
+            const forcePlank = plank.mass * g;
+
+            // 2. Calculate Pure Torques (N·m)
+            const tLoad = forceLoad * dLoad_m * Math.cos(plank.angle);
+            const tEffort = forceEffort * dEffort_m * Math.cos(plank.angle);
+            const tPlank = forcePlank * dPlankCenter_m * Math.cos(plank.angle);
+
+            const rawTorque = tLoad + tEffort + tPlank;
+            netTorqueDisplay = rawTorque; 
+
+            // 3. Pendulum Restoring Force
+            // This is the missing piece! A real seesaw pivots slightly above its center of mass, 
+            // naturally pulling it back to flat 0 degrees when the weights are exactly equal.
+            const restoringTorque = -plank.angle * (load.mass + effort.mass + plank.mass) * g * 1.5; 
+            
+            const netTorque = rawTorque + restoringTorque;
+
+            // 4. Moment of Inertia (I = sum of m*r^2)
+            const iLoad = load.mass * (dLoad_m * dLoad_m);
+            const iEffort = effort.mass * (dEffort_m * dEffort_m);
+            const plankLength_m = plank.length / 100;
+            const iPlank = plank.mass * ((plankLength_m * plankLength_m)/12 + dPlankCenter_m * dPlankCenter_m);
+            
+            const totalI = iLoad + iEffort + iPlank;
+
+            // 5. Angular Acceleration
+            let alpha = netTorque / totalI;
+            
+            // Speed up simulation time slightly so it doesn't feel sluggish
+            alpha *= 15.0; 
+
+            plank.omega += alpha * dt;
+            plank.omega *= 0.94; // Air resistance & friction
+            
+            if (load.isDragging || effort.isDragging || isDraggingFulcrum) {
+                plank.omega *= 0.2; // Halt swing instantly when grabbed
+            }
+            
+            plank.angle += plank.omega * dt;
+
+            // 6. Ground Collisions
+            const leftEndX = -plank.length/2 - fulcrum.x;
+            const rightEndX = plank.length/2 - fulcrum.x;
+            
+            // Calculate exact angle when plank hits the floor
+            const h = fulcrum.height - plank.thickness / 2;
+            const maxAnglePos = Math.asin(h / Math.abs(rightEndX));
+            const maxAngleNeg = -Math.asin(h / Math.abs(leftEndX));
+
+            let hitGround = false;
+            if (plank.angle > maxAnglePos) {
+                plank.angle = maxAnglePos;
+                plank.omega = -plank.omega * 0.4; 
+                hitGround = true;
+            } else if (plank.angle < maxAngleNeg) {
+                plank.angle = maxAngleNeg;
+                plank.omega = -plank.omega * 0.4; 
+                hitGround = true;
+            }
+
+            // Update UI HUD Status
+            // Tolerance is 15 N·m (basically perfect)
+            if (Math.abs(rawTorque) < 15 && Math.abs(plank.angle) < 0.05 && Math.abs(plank.omega) < 0.05) {
+                statusText.innerText = "Balanced";
+                statusText.className = "text-sm font-bold tracking-widest uppercase text-green-400";
+                statusDot.className = "w-2.5 h-2.5 rounded-full bg-green-400 shadow-[0_0_8px_#4ade80]";
+                statusBox.classList.add('balance-glow');
+            } else {
+                statusText.className = "text-sm font-bold tracking-widest uppercase text-white";
+                statusDot.className = "w-2.5 h-2.5 rounded-full bg-gray-500";
+                statusBox.classList.remove('balance-glow');
+                if (plank.angle > 0.02) statusText.innerText = "Tipping Right";
+                else if (plank.angle < -0.02) statusText.innerText = "Tipping Left";
+                else statusText.innerText = "Unstable";
+            }
+        }
+
+        // --- RENDER LOOP ---
+        function render(timestamp) {
+            if (!lastTime) lastTime = timestamp;
+            const dt = (timestamp - lastTime) / 1000;
+            lastTime = timestamp;
+
+            updatePhysics(dt);
+
+            const bgGrad = ctx.createRadialGradient(canvas.width/2, canvas.height/3, 10, canvas.width/2, canvas.height/2, canvas.width);
+            bgGrad.addColorStop(0, '#1e293b'); 
+            bgGrad.addColorStop(1, '#020617'); 
+            ctx.fillStyle = bgGrad;
+            ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+            ctx.strokeStyle = 'rgba(255, 255, 255, 0.02)';
+            ctx.lineWidth = 1;
+            ctx.beginPath();
+            for(let y = 0; y < canvas.height; y += 80) { ctx.moveTo(0, y); ctx.lineTo(canvas.width, y); }
+            for(let x = 0; x < canvas.width; x += 80) { ctx.moveTo(x, 0); ctx.lineTo(x, canvas.height); }
+            ctx.stroke();
+
+            ctx.fillStyle = '#18181b'; 
+            ctx.fillRect(0, floorY, canvas.width, canvas.height - floorY);
+            ctx.strokeStyle = 'rgba(255,255,255, 0.15)'; 
+            ctx.lineWidth = 2;
+            ctx.beginPath();
+            ctx.moveTo(0, floorY);
+            ctx.lineTo(canvas.width, floorY);
+            ctx.stroke();
+
+            // --- DRAW FULCRUM ---
+            const fTipY = floorY - fulcrum.height;
+            ctx.save();
+            ctx.translate(cx, floorY);
+            
+            if (isDraggingFulcrum) {
+                ctx.shadowColor = 'rgba(14, 165, 233, 0.8)';
+                ctx.shadowBlur = 20;
+            }
+            
+            ctx.beginPath();
+            ctx.moveTo(0, -fulcrum.height); 
+            ctx.lineTo(-fulcrum.width/2, 0); 
+            ctx.lineTo(fulcrum.width/2, 0); 
+            ctx.closePath();
+            
+            const fGrad = ctx.createLinearGradient(0, -fulcrum.height, 0, 0);
+            fGrad.addColorStop(0, '#38bdf8'); 
+            fGrad.addColorStop(1, '#0284c7'); 
+            ctx.fillStyle = fGrad;
+            ctx.fill();
+            
+            ctx.lineWidth = 2;
+            ctx.strokeStyle = '#e0f2fe';
+            ctx.stroke();
+
+            ctx.beginPath();
+            ctx.arc(0, -fulcrum.height, 6, 0, Math.PI*2);
+            ctx.fillStyle = '#ffffff';
+            ctx.fill();
+
+            ctx.restore();
+
+            // --- DRAW PLANK & WEIGHTS ---
+            ctx.save();
+            ctx.translate(cx, fTipY);
+            ctx.rotate(plank.angle);
+
+            const pStartX = -plank.length/2 - fulcrum.x;
+            
+            ctx.shadowColor = 'rgba(0,0,0,0.5)';
+            ctx.shadowBlur = 15;
+            ctx.shadowOffsetY = 10;
+            
+            ctx.fillStyle = '#94a3b8'; 
+            ctx.beginPath();
+            ctx.roundRect(pStartX, -plank.thickness, plank.length, plank.thickness, 4);
+            ctx.fill();
+            
+            ctx.lineWidth = 2;
+            ctx.strokeStyle = '#cbd5e1';
+            ctx.stroke();
+            
+            ctx.beginPath();
+            ctx.moveTo(pStartX + 10, -plank.thickness/2);
+            ctx.lineTo(pStartX + plank.length - 10, -plank.thickness/2);
+            ctx.strokeStyle = 'rgba(0,0,0,0.2)';
+            ctx.stroke();
+
+            function drawWeight(obj) {
+                ctx.save();
+                const localX = obj.x - fulcrum.x;
+                
+                ctx.translate(localX, -plank.thickness);
+                
+                if (obj.isDragging) {
+                    ctx.shadowColor = obj.color;
+                    ctx.shadowBlur = 25;
+                    ctx.scale(1.05, 1.05); 
+                }
+
+                ctx.fillStyle = obj.color;
+                ctx.beginPath();
+                ctx.roundRect(-obj.width/2, -obj.height, obj.width, obj.height, 8);
+                ctx.fill();
+
+                const grad = ctx.createLinearGradient(0, -obj.height, 0, 0);
+                grad.addColorStop(0, 'rgba(255,255,255,0.2)');
+                grad.addColorStop(1, 'rgba(0,0,0,0.2)');
+                ctx.fillStyle = grad;
+                ctx.fill();
+
+                ctx.lineWidth = 2;
+                ctx.strokeStyle = 'rgba(255,255,255,0.4)';
+                ctx.stroke();
+
+                ctx.shadowBlur = 0;
+                ctx.fillStyle = '#ffffff';
+                ctx.textAlign = 'center';
+                ctx.textBaseline = 'middle';
+                ctx.font = 'bold 13px Inter';
+                ctx.fillText(`${obj.mass} kg`, 0, -obj.height/2);
+
+                ctx.restore();
+            }
+
+            drawWeight(load);
+            drawWeight(effort);
+
+            // --- DRAW FORCES & MATH HUD ---
+            if (toggleMath.checked) {
+                ctx.shadowBlur = 0;
+                
+                function drawForceData(obj, isLeft) {
+                    const localX = obj.x - fulcrum.x;
+                    const distance = Math.abs(localX) / 100; 
+                    const force = obj.mass * g;
+                    const torque = force * distance;
+
+                    ctx.strokeStyle = '#38bdf8';
+                    ctx.lineWidth = 1.5;
+                    ctx.beginPath();
+                    ctx.moveTo(0, 25);
+                    ctx.lineTo(0, 35);
+                    ctx.moveTo(localX, 25);
+                    ctx.lineTo(localX, 35);
+                    ctx.moveTo(0, 30);
+                    ctx.lineTo(localX, 30);
+                    ctx.stroke();
+
+                    const arrowY = 15;
+                    ctx.strokeStyle = obj.color;
+                    ctx.fillStyle = obj.color;
+                    ctx.lineWidth = 3;
+                    ctx.beginPath();
+                    ctx.moveTo(localX, arrowY);
+                    ctx.lineTo(localX, arrowY + 60);
+                    ctx.stroke();
+
+                    ctx.beginPath();
+                    ctx.moveTo(localX, arrowY + 65);
+                    ctx.lineTo(localX - 6, arrowY + 55);
+                    ctx.lineTo(localX + 6, arrowY + 55);
+                    ctx.fill();
+
+                    ctx.fillStyle = '#ffffff';
+                    ctx.font = '11px Inter';
+                    ctx.textAlign = isLeft ? 'right' : 'left';
+                    const textX = localX + (isLeft ? -15 : 15);
+                    
+                    ctx.save();
+                    ctx.translate(textX, arrowY + 30);
+                    ctx.rotate(-plank.angle);
+                    
+                    ctx.fillText(`Dist = ${distance.toFixed(2)} m`, 0, -15);
+                    ctx.fillText(`Force = ${Math.round(force)} N`, 0, 0);
+                    
+                    ctx.font = 'bold 12px Inter';
+                    ctx.fillStyle = '#fcd34d'; 
+                    ctx.fillText(`Torque = ${Math.round(torque)} N·m`, 0, 15);
+                    
+                    ctx.restore();
+                }
+
+                drawForceData(load, load.x < fulcrum.x);
+                drawForceData(effort, effort.x < fulcrum.x);
+            }
+
+            ctx.restore(); 
+            requestAnimationFrame(render);
+        }
+
+        requestAnimationFrame(render);
+
+        // --- INTERACTION LOGIC ---
+        let dragTarget = null;
+        let dragOffsetX = 0;
+
+        function getMousePos(e) {
+            const rect = canvas.getBoundingClientRect();
+            const clientX = e.touches ? e.touches[0].clientX : e.clientX;
+            const clientY = e.touches ? e.touches[0].clientY : e.clientY;
+            return { x: clientX - rect.left, y: clientY - rect.top };
+        }
+
+        function onPointerDown(e) {
+            if(e.target !== canvas) return; 
+            const pos = getMousePos(e);
+            
+            const fTipY = floorY - fulcrum.height;
+            if (pos.x > cx - fulcrum.width && pos.x < cx + fulcrum.width &&
+                pos.y > floorY - fulcrum.height && pos.y < floorY) {
+                isDraggingFulcrum = true;
+                dragTarget = 'fulcrum';
+                dragOffsetX = fulcrum.x - (pos.x - cx); 
+                canvas.style.cursor = 'ew-resize';
+                return;
+            }
+
+            const dx = pos.x - cx;
+            const dy = pos.y - fTipY;
+            
+            const localX = dx * Math.cos(-plank.angle) - dy * Math.sin(-plank.angle);
+            const localY = dx * Math.sin(-plank.angle) + dy * Math.cos(-plank.angle);
+
+            const checkWeight = (obj) => {
+                const objLocalX = obj.x - fulcrum.x;
+                if (localX > objLocalX - obj.width/2 && localX < objLocalX + obj.width/2 &&
+                    localY > -plank.thickness - obj.height && localY < -plank.thickness) {
+                    obj.isDragging = true;
+                    dragTarget = obj;
+                    dragOffsetX = obj.x - localX;
+                    return true;
+                }
+                return false;
+            };
+
+            if (checkWeight(load)) return;
+            if (checkWeight(effort)) return;
+        }
+
+        function onPointerMove(e) {
+            if(!dragTarget) return;
+            const pos = getMousePos(e);
+
+            if (dragTarget === 'fulcrum') {
+                let newX = (pos.x - cx) + dragOffsetX;
+                if (newX < -plank.length/2 + 50) newX = -plank.length/2 + 50;
+                if (newX > plank.length/2 - 50) newX = plank.length/2 - 50;
+                
+                fulcrum.x = newX;
+                updateFulcrumLabel();
+            } else {
+                const dx = pos.x - cx;
+                const dy = pos.y - (floorY - fulcrum.height);
+                const localX = dx * Math.cos(-plank.angle) - dy * Math.sin(-plank.angle);
+                
+                // Calculate absolute placement on the plank and safely clamp it
+                let absoluteX = localX + dragOffsetX + fulcrum.x;
+                
+                if (absoluteX - dragTarget.width/2 < -plank.length/2) {
+                    absoluteX = -plank.length/2 + dragTarget.width/2;
+                }
+                if (absoluteX + dragTarget.width/2 > plank.length/2) {
+                    absoluteX = plank.length/2 - dragTarget.width/2;
+                }
+
+                dragTarget.x = absoluteX;
+            }
+        }
+
+        function onPointerUp() {
+            if (dragTarget) {
+                if (dragTarget === 'fulcrum') {
+                    isDraggingFulcrum = false;
+                } else {
+                    dragTarget.isDragging = false;
+                }
+                dragTarget = null;
+                canvas.style.cursor = 'grab';
+            }
+        }
+
+        canvas.addEventListener('mousedown', onPointerDown);
+        canvas.addEventListener('mousemove', onPointerMove);
+        window.addEventListener('mouseup', onPointerUp);
+        canvas.addEventListener('touchstart', (e) => { e.preventDefault(); onPointerDown(e); }, {passive: false});
+        canvas.addEventListener('touchmove', (e) => { e.preventDefault(); onPointerMove(e); }, {passive: false});
+        window.addEventListener('touchend', onPointerUp);
+
+    </script>
+</body>
+</html>

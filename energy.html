@@ -1,0 +1,502 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Physics Lab - Energy & Momentum</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        body, html {
+            margin: 0;
+            padding: 0;
+            width: 100%;
+            height: 100%;
+            overflow: hidden;
+            background-color: #020617; /* Deep slate 950 */
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+            touch-action: none;
+            user-select: none;
+        }
+        
+        #sim-canvas {
+            display: block;
+            width: 100%;
+            height: 100%;
+        }
+
+        /* Glassmorphism Panel */
+        .glass-panel {
+            background: linear-gradient(145deg, rgba(15, 23, 42, 0.85) 0%, rgba(2, 6, 23, 0.95) 100%);
+            backdrop-filter: blur(30px);
+            -webkit-backdrop-filter: blur(30px);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            border-top: 1px solid rgba(255, 255, 255, 0.2);
+            box-shadow: 0 30px 60px -12px rgba(0, 0, 0, 0.8), inset 0 1px 10px rgba(255, 255, 255, 0.05);
+        }
+
+        .scroll-area::-webkit-scrollbar { width: 4px; }
+        .scroll-area::-webkit-scrollbar-thumb { background: rgba(59, 130, 246, 0.5); border-radius: 4px; }
+
+        .tab-btn {
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+        .tab-btn.active {
+            background-color: #ffffff;
+            color: #020617;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.4);
+        }
+        .tab-btn:not(.active):hover {
+            background-color: rgba(255,255,255,0.1);
+            color: #ffffff;
+        }
+
+        /* Energy Bar Styles */
+        .energy-bar-container {
+            height: 8px;
+            background: rgba(255,255,255,0.05);
+            border-radius: 4px;
+            overflow: hidden;
+            width: 100%;
+        }
+        .energy-bar-fill {
+            height: 100%;
+            transition: width 0.1s ease-out;
+        }
+
+        #loading-screen {
+            position: absolute;
+            inset: 0;
+            background: #020617;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: white;
+            z-index: 100;
+            transition: opacity 0.6s ease;
+        }
+    </style>
+</head>
+<body>
+
+    <!-- Loading Screen -->
+    <div id="loading-screen">
+        <div class="flex flex-col items-center gap-5">
+            <svg class="animate-spin h-8 w-8 text-cyan-500" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="3"></circle><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path></svg>
+            <span class="text-xs font-medium tracking-widest text-gray-400 uppercase">Calibrating Energy Assets...</span>
+        </div>
+    </div>
+
+    <!-- Main UI Overlay -->
+    <div class="absolute top-5 left-5 md:top-8 md:left-8 z-50 w-[380px] glass-panel p-6 rounded-[1.5rem] pointer-events-auto flex flex-col max-h-[92vh]">
+        
+        <div class="mb-5 border-b border-white/10 pb-5 shrink-0 flex items-center justify-between">
+            <div>
+                <h1 class="text-2xl font-bold tracking-tight text-white mb-1">Kinematics Lab</h1>
+                <p class="text-[11px] font-medium text-cyan-400 uppercase tracking-widest">Energy & Momentum</p>
+            </div>
+            <div class="w-10 h-10 rounded-full bg-cyan-500/20 flex items-center justify-center text-cyan-400 shadow-[0_0_15px_rgba(34,211,238,0.3)]">
+                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"></path></svg>
+            </div>
+        </div>
+
+        <div class="flex p-1 bg-black/40 rounded-xl shadow-inner gap-1 mb-6 shrink-0 border border-white/5">
+            <button data-tab="cradle" class="tab-btn active flex-1 py-2 text-[10px] font-bold uppercase tracking-wider rounded-lg text-gray-400">Newton's Cradle</button>
+            <button data-tab="coaster" class="tab-btn flex-1 py-2 text-[10px] font-bold uppercase tracking-wider rounded-lg text-gray-400">Roller Coaster</button>
+        </div>
+
+        <div class="scroll-area overflow-y-auto pr-2 pb-2 space-y-7 flex-1">
+            <div class="bg-black/30 p-4 rounded-xl border border-white/5 shadow-inner">
+                <h2 id="info-title" class="text-sm font-bold text-white mb-2">Conservation of Momentum</h2>
+                <p id="info-desc" class="text-xs text-gray-400 leading-relaxed">
+                    Momentum is neither created nor destroyed. Drag the outer ball to a high angle and release it to see the energy transfer through the center mass.
+                </p>
+            </div>
+
+            <!-- CRADLE CONTROLS -->
+            <div id="controls-cradle" class="space-y-6">
+                <div class="space-y-4">
+                    <label class="text-[10px] font-bold uppercase tracking-widest text-gray-500">System Dynamics</label>
+                    <div class="space-y-3">
+                        <div class="flex justify-between items-end">
+                            <label class="text-[11px] font-semibold text-cyan-400 uppercase tracking-widest">Energy Loss (Friction)</label>
+                            <span id="friction-display" class="text-[11px] font-mono bg-cyan-500/10 px-2 py-1 rounded text-cyan-300">0.5%</span>
+                        </div>
+                        <input type="range" id="cradle-damping" min="0" max="0.05" step="0.001" value="0.005" class="w-full" style="accent-color: #22d3ee;">
+                    </div>
+                </div>
+                <button id="btn-reset-cradle" class="w-full py-2.5 bg-white/5 hover:bg-white/10 text-gray-300 text-[10px] font-bold uppercase tracking-widest rounded-xl transition-all border border-white/5">Stabilize System</button>
+            </div>
+
+            <!-- COASTER CONTROLS -->
+            <div id="controls-coaster" class="space-y-6 hidden">
+                <div class="space-y-3">
+                    <div class="flex justify-between items-end">
+                        <label class="text-[11px] font-semibold text-emerald-400 uppercase tracking-widest">Vehicle Mass</label>
+                        <span id="mass-display" class="text-[11px] font-mono bg-emerald-500/10 px-2 py-1 rounded text-emerald-300">1200 kg</span>
+                    </div>
+                    <input type="range" id="coaster-mass" min="100" max="3000" step="100" value="1200" class="w-full" style="accent-color: #10b981;">
+                </div>
+                <div class="bg-white/5 p-4 rounded-xl border border-white/5 space-y-4">
+                    <label class="text-[10px] font-bold uppercase tracking-widest text-gray-500">Live Energy Metrics</label>
+                    <div class="space-y-3">
+                        <div>
+                            <div class="flex justify-between text-[9px] font-bold text-emerald-400 uppercase mb-1"><span>Potential (mgh)</span> <span id="val-pe">0J</span></div>
+                            <div class="energy-bar-container"><div id="bar-pe" class="energy-bar-fill bg-emerald-500" style="width: 0%"></div></div>
+                        </div>
+                        <div>
+                            <div class="flex justify-between text-[9px] font-bold text-orange-400 uppercase mb-1"><span>Kinetic (1/2mv²)</span> <span id="val-ke">0J</span></div>
+                            <div class="energy-bar-container"><div id="bar-ke" class="energy-bar-fill bg-orange-500" style="width: 0%"></div></div>
+                        </div>
+                    </div>
+                </div>
+                <button id="btn-reset-coaster" class="w-full py-3 bg-emerald-600 hover:bg-emerald-500 text-white text-[11px] font-bold uppercase tracking-widest rounded-xl transition-all shadow-lg shadow-emerald-900/20">Launch Car</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Canvas -->
+    <canvas id="sim-canvas"></canvas>
+
+    <script>
+        const canvas = document.getElementById('sim-canvas');
+        const ctx = canvas.getContext('2d');
+
+        // --- ASSETS ---
+        const imgCar = new Image();
+        let carLoaded = false;
+        imgCar.onload = () => {
+            carLoaded = true;
+            document.getElementById('loading-screen').style.opacity = '0';
+            setTimeout(() => document.getElementById('loading-screen').style.display = 'none', 600);
+        };
+        imgCar.src = 'https://res.cloudinary.com/ds93qby5a/image/upload/v1775902319/photo-1502877338535-766e1452684a-Photoroom_wpphzt.png';
+
+        // --- GLOBAL SETTINGS ---
+        let currentMode = 'cradle';
+        let cx, cy;
+        const g = 9.8;
+        const PX_PER_METER = 85;
+
+        function resize() {
+            canvas.width = window.innerWidth;
+            canvas.height = window.innerHeight;
+            const uiWidth = window.innerWidth >= 768 ? 380 : 0;
+            cx = uiWidth + (window.innerWidth - uiWidth) / 2;
+            cy = window.innerHeight / 2;
+            initPhysics();
+        }
+        window.addEventListener('resize', resize);
+
+        // --- MODULE 1: NEWTON'S CRADLE ---
+        let balls = [];
+        const numBalls = 5;
+        const ballRadius = 32;
+        const stringLength = 320;
+
+        class PendulumBall {
+            constructor(index) {
+                this.index = index;
+                this.angle = 0;
+                this.omega = 0;
+                this.isDragging = false;
+                this.x = 0; this.y = 0;
+                this.baseX = 0; this.baseY = 0;
+            }
+            update(dt, damping) {
+                if (this.isDragging) { this.omega = 0; return; }
+                const alpha = -(g * PX_PER_METER / stringLength) * Math.sin(this.angle);
+                this.omega += alpha * dt;
+                this.omega *= (1 - damping);
+                this.angle += this.omega * dt;
+                this.calculateXY();
+            }
+            calculateXY() {
+                this.x = this.baseX + Math.sin(this.angle) * stringLength;
+                this.y = this.baseY + Math.cos(this.angle) * stringLength;
+            }
+        }
+
+        function initCradle() {
+            balls = [];
+            const startX = cx - ((numBalls - 1) * ballRadius);
+            const anchorY = cy - 220;
+            for (let i = 0; i < numBalls; i++) {
+                const b = new PendulumBall(i);
+                b.baseX = startX + i * (ballRadius * 2);
+                b.baseY = anchorY;
+                b.calculateXY();
+                balls.push(b);
+            }
+        }
+
+        function resolveCradleCollisions() {
+            for (let i = 0; i < balls.length - 1; i++) {
+                const b1 = balls[i]; const b2 = balls[i + 1];
+                const dist = Math.hypot(b2.x - b1.x, b2.y - b1.y);
+                const minDist = ballRadius * 2;
+                if (dist < minDist) {
+                    const temp = b1.omega;
+                    b1.omega = b2.omega;
+                    b2.omega = temp;
+                    const overlap = minDist - dist;
+                    const angleCorrection = (overlap / stringLength) * 0.6;
+                    b1.angle -= angleCorrection;
+                    b2.angle += angleCorrection;
+                }
+            }
+        }
+
+        function drawCradle() {
+            ctx.lineWidth = 12;
+            ctx.strokeStyle = '#334155';
+            ctx.lineCap = 'round';
+            ctx.beginPath();
+            ctx.moveTo(balls[0].baseX - 40, balls[0].baseY);
+            ctx.lineTo(balls[numBalls-1].baseX + 40, balls[numBalls-1].baseY);
+            ctx.stroke();
+
+            balls.forEach(b => {
+                ctx.lineWidth = 1.5;
+                ctx.strokeStyle = 'rgba(255, 255, 255, 0.3)';
+                ctx.beginPath(); ctx.moveTo(b.baseX, b.baseY); ctx.lineTo(b.x, b.y); ctx.stroke();
+
+                ctx.save();
+                ctx.translate(b.x, b.y);
+                const grad = ctx.createRadialGradient(-ballRadius/3, -ballRadius/3, 5, 0, 0, ballRadius);
+                grad.addColorStop(0, '#cbd5e1');
+                grad.addColorStop(0.6, '#475569');
+                grad.addColorStop(1, '#1e293b');
+                ctx.fillStyle = grad;
+                ctx.shadowBlur = b.isDragging ? 30 : 15; ctx.shadowColor = 'rgba(0,0,0,0.6)';
+                ctx.beginPath(); ctx.arc(0, 0, ballRadius, 0, Math.PI*2); ctx.fill();
+                
+                ctx.shadowBlur = 0;
+                ctx.fillStyle = 'rgba(255,255,255,0.2)';
+                ctx.beginPath(); ctx.arc(-ballRadius/3, -ballRadius/3, ballRadius/4, 0, Math.PI*2); ctx.fill();
+                ctx.restore();
+            });
+        }
+
+        // --- MODULE 2: ROLLER COASTER ---
+        let coasterPath = [];
+        let coasterPos = 0; 
+        let coasterVel = 0;
+        let coasterMass = 1200;
+        let isCoasting = false;
+        let coasterHistory = [];
+
+        function initCoaster() {
+            coasterPath = [];
+            const sidebar = window.innerWidth >= 768 ? 380 : 0;
+            const startX = sidebar + 120;
+            const endX = window.innerWidth - 120;
+            const midY = cy + 100;
+            for (let i = 0; i <= 150; i++) {
+                const t = i / 150;
+                const x = startX + t * (endX - startX);
+                const y = midY - 260 * Math.exp(-t * 3) + 180 * Math.sin(t * Math.PI * 2.8) * (1 - t);
+                coasterPath.push({ x, y });
+            }
+            coasterPos = 0; coasterVel = 0; isCoasting = false; coasterHistory = [];
+        }
+
+        function updateCoaster(dt) {
+            if (!isCoasting) return;
+            const currentIdx = Math.floor(coasterPos * (coasterPath.length - 1));
+            const currentPoint = coasterPath[currentIdx];
+            const startY = coasterPath[0].y;
+            const deltaH = (currentPoint.y - startY) / PX_PER_METER;
+            
+            if (deltaH > 0) coasterVel = Math.sqrt(2 * g * deltaH);
+            else coasterVel = 0.2;
+
+            const pathStep = (coasterVel * PX_PER_METER * dt) / 1400; 
+            coasterPos += pathStep;
+            
+            if (coasterPos >= 1) { coasterPos = 1; isCoasting = false; }
+
+            // Energy Math for HUD
+            const pe = Math.max(0, coasterMass * g * ( (canvas.height - currentPoint.y) / PX_PER_METER ));
+            const ke = 0.5 * coasterMass * Math.pow(coasterVel, 2);
+            const total = pe + ke;
+
+            document.getElementById('val-pe').innerText = (pe/1000).toFixed(1) + " kJ";
+            document.getElementById('val-ke').innerText = (ke/1000).toFixed(1) + " kJ";
+            document.getElementById('bar-pe').style.width = (pe / total * 100) + "%";
+            document.getElementById('bar-ke').style.width = (ke / total * 100) + "%";
+
+            // Track history for motion blur
+            if (coasterVel > 1) {
+                coasterHistory.unshift({pos: coasterPos});
+                if (coasterHistory.length > 8) coasterHistory.pop();
+            } else {
+                if (coasterHistory.length > 0) coasterHistory.pop();
+            }
+        }
+
+        function drawCarBody(p, angle, alpha = 1.0) {
+            if (!carLoaded) return;
+            ctx.save();
+            ctx.translate(p.x, p.y);
+            ctx.rotate(angle);
+            ctx.globalAlpha = alpha;
+            const targetW = 120;
+            const ratio = imgCar.naturalHeight / imgCar.naturalWidth;
+            const targetH = targetW * ratio;
+            // Draw sitting just above track
+            ctx.drawImage(imgCar, -targetW/2, -targetH + 10, targetW, targetH);
+            ctx.restore();
+        }
+
+        function drawCoaster() {
+            // Track Structure
+            ctx.lineJoin = 'round';
+            ctx.lineWidth = 10;
+            ctx.strokeStyle = '#1e293b';
+            ctx.beginPath();
+            ctx.moveTo(coasterPath[0].x, coasterPath[0].y);
+            for (let pt of coasterPath) ctx.lineTo(pt.x, pt.y);
+            ctx.stroke();
+
+            // Rails
+            ctx.lineWidth = 2; ctx.strokeStyle = '#475569';
+            ctx.beginPath();
+            ctx.moveTo(coasterPath[0].x, coasterPath[0].y - 4);
+            for (let pt of coasterPath) ctx.lineTo(pt.x, pt.y - 4);
+            ctx.stroke();
+
+            // Supports
+            ctx.lineWidth = 1; ctx.strokeStyle = 'rgba(255,255,255,0.05)';
+            for (let i = 0; i < coasterPath.length; i += 15) {
+                ctx.beginPath(); ctx.moveTo(coasterPath[i].x, coasterPath[i].y); ctx.lineTo(coasterPath[i].x, canvas.height); ctx.stroke();
+            }
+
+            // Render Car
+            const idx = Math.floor(coasterPos * (coasterPath.length - 1));
+            const p = coasterPath[idx];
+            const pNext = coasterPath[Math.min(idx + 2, coasterPath.length - 1)];
+            const angle = Math.atan2(pNext.y - p.y, pNext.x - p.x);
+
+            // Motion Blur Replays
+            coasterHistory.forEach((h, i) => {
+                const hIdx = Math.floor(h.pos * (coasterPath.length - 1));
+                const hp = coasterPath[hIdx];
+                const hpNext = coasterPath[Math.min(hIdx + 2, coasterPath.length - 1)];
+                const hAngle = Math.atan2(hpNext.y - hp.y, hpNext.x - hp.x);
+                drawCarBody(hp, hAngle, 0.2 * (1 - i/coasterHistory.length));
+            });
+
+            drawCarBody(p, angle, 1.0);
+        }
+
+        // --- RENDER LOOP ---
+        function initPhysics() {
+            if (currentMode === 'cradle') initCradle();
+            else initCoaster();
+        }
+
+        let lastTime = 0;
+        function render(timestamp) {
+            const dt = (timestamp - lastTime) / 1000 || 0.016;
+            lastTime = timestamp;
+
+            ctx.fillStyle = '#020617';
+            ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+            // Tech Grid
+            ctx.strokeStyle = 'rgba(255, 255, 255, 0.02)';
+            ctx.lineWidth = 1; ctx.beginPath();
+            for(let i=0; i<canvas.width; i+=80) { ctx.moveTo(i,0); ctx.lineTo(i,canvas.height); }
+            for(let i=0; i<canvas.height; i+=80) { ctx.moveTo(0,i); ctx.lineTo(canvas.width,i); }
+            ctx.stroke();
+
+            if (currentMode === 'cradle') {
+                const damping = parseFloat(document.getElementById('cradle-damping').value);
+                for(let i=0; i<5; i++) {
+                    balls.forEach(b => b.update(dt/5, damping));
+                    resolveCradleCollisions();
+                }
+                drawCradle();
+            } else {
+                updateCoaster(dt);
+                drawCoaster();
+            }
+
+            requestAnimationFrame(render);
+        }
+
+        // --- INTERACTION ---
+        let dragTarget = null;
+        function getMousePos(e) {
+            const rect = canvas.getBoundingClientRect();
+            const clientX = e.touches ? e.touches[0].clientX : e.clientX;
+            const clientY = e.touches ? e.touches[0].clientY : e.clientY;
+            return { x: clientX - rect.left, y: clientY - rect.top };
+        }
+
+        window.addEventListener('mousedown', (e) => {
+            if (e.target.closest('.glass-panel')) return;
+            const pos = getMousePos(e);
+            if (currentMode === 'cradle') {
+                for (let b of balls) {
+                    if (Math.hypot(pos.x - b.x, pos.y - b.y) < ballRadius + 15) {
+                        b.isDragging = true; dragTarget = b;
+                        canvas.style.cursor = 'grabbing'; return;
+                    }
+                }
+            }
+        });
+
+        window.addEventListener('mousemove', (e) => {
+            if (!dragTarget) return;
+            const pos = getMousePos(e);
+            if (currentMode === 'cradle') {
+                const dx = pos.x - dragTarget.baseX; const dy = pos.y - dragTarget.baseY;
+                dragTarget.angle = Math.atan2(dx, dy);
+                dragTarget.angle = Math.max(-Math.PI/2.1, Math.min(Math.PI/2.1, dragTarget.angle));
+                dragTarget.calculateXY();
+            }
+        });
+
+        window.addEventListener('mouseup', () => {
+            if (dragTarget) { dragTarget.isDragging = false; dragTarget = null; canvas.style.cursor = 'default'; }
+        });
+
+        // Tab Switching
+        const tabs = document.querySelectorAll('.tab-btn');
+        tabs.forEach(btn => {
+            btn.addEventListener('click', (e) => {
+                tabs.forEach(t => t.classList.remove('active', 'bg-white', 'text-gray-900'));
+                tabs.forEach(t => t.classList.add('text-gray-400'));
+                btn.classList.add('active', 'bg-white', 'text-gray-900');
+                currentMode = btn.dataset.tab;
+                
+                const info = {
+                    cradle: { title: 'Conservation of Momentum', desc: 'Momentum is neither created nor destroyed. Drag the outer ball and release it to see the energy transfer through the center mass.' },
+                    coaster: { title: 'Energy Conversion', desc: 'Watch the high-res vehicle exchange Potential Energy (height) for Kinetic Energy (speed). The total energy in the system remains constant.' }
+                };
+                document.getElementById('info-title').innerText = info[currentMode].title;
+                document.getElementById('info-desc').innerText = info[currentMode].desc;
+                document.getElementById('controls-cradle').classList.toggle('hidden', currentMode !== 'cradle');
+                document.getElementById('controls-coaster').classList.toggle('hidden', currentMode !== 'coaster');
+                initPhysics();
+            });
+        });
+
+        document.getElementById('cradle-damping').oninput = (e) => {
+            document.getElementById('friction-display').innerText = (e.target.value * 100).toFixed(1) + "%";
+        };
+        document.getElementById('coaster-mass').oninput = (e) => {
+            coasterMass = parseInt(e.target.value);
+            document.getElementById('mass-display').innerText = coasterMass + " kg";
+        };
+        document.getElementById('btn-reset-cradle').onclick = initCradle;
+        document.getElementById('btn-reset-coaster').onclick = () => { coasterPos = 0; coasterVel = 0; isCoasting = true; };
+
+        resize();
+        render();
+
+    </script>
+</body>
+</html>

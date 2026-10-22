@@ -1,0 +1,437 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Immunological Memory Simulator</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;700&family=Inter:wght@300;400;600;700&display=swap');
+
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: #020617;
+            color: #f8fafc;
+            overflow-x: hidden;
+            user-select: none;
+        }
+
+        .font-mono { font-family: 'JetBrains Mono', monospace; }
+
+        .glass-card {
+            background: rgba(15, 23, 42, 0.75);
+            backdrop-filter: blur(16px);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.5);
+        }
+
+        .digital-readout {
+            background: #061021;
+            color: #38bdf8; /* Sky 500 */
+            text-shadow: 0 0 10px rgba(56, 189, 248, 0.4);
+            border: 1px solid #1e293b;
+            transition: all 0.3s ease;
+        }
+
+        /* Cell Visuals */
+        .cell-naive { fill: #1e293b; stroke: #38bdf8; stroke-width: 2; }
+        .cell-memory { fill: #422006; stroke: #fbbf24; stroke-width: 2; filter: drop-shadow(0 0 5px #f59e0b); }
+        .pathogen { fill: #4c0519; stroke: #f43f5e; stroke-width: 2; filter: drop-shadow(0 0 8px #e11d48); }
+        
+        .antibody-y {
+            stroke: #22d3ee;
+            stroke-width: 2;
+            fill: none;
+            opacity: 0.8;
+        }
+
+        /* Animations */
+        @keyframes pulse-gold {
+            0% { filter: drop-shadow(0 0 2px #f59e0b); }
+            100% { filter: drop-shadow(0 0 12px #fbbf24); }
+        }
+        .memory-active { animation: pulse-gold 0.5s infinite alternate; }
+
+        input[type=range] { accent-color: #38bdf8; }
+
+        .physics-grid {
+            background-size: 60px 60px;
+            background-image: 
+                linear-gradient(to right, rgba(56, 189, 248, 0.03) 1px, transparent 1px),
+                linear-gradient(to bottom, rgba(56, 189, 248, 0.03) 1px, transparent 1px);
+        }
+
+        .scanline {
+            width: 100%;
+            height: 2px;
+            background: rgba(56, 189, 248, 0.05);
+            position: absolute;
+            z-index: 10;
+            animation: scan 8s linear infinite;
+        }
+        @keyframes scan { 0% { top: 0%; } 100% { top: 100%; } }
+    </style>
+</head>
+<body class="min-h-screen p-4 md:p-8 flex items-center justify-center">
+
+    <div class="max-w-7xl w-full grid grid-cols-1 lg:grid-cols-12 gap-8 items-stretch">
+        
+        <!-- Main Simulation Viewport -->
+        <div class="lg:col-span-8 flex flex-col gap-6">
+            <div id="sim-viewport" class="glass-card rounded-3xl p-0 relative flex-grow min-h-[500px] flex flex-col overflow-hidden border border-slate-800 physics-grid">
+                <div class="scanline"></div>
+                
+                <!-- HUD Header -->
+                <div class="absolute top-6 left-8 flex items-center gap-3 z-30">
+                    <div id="status-dot" class="w-2.5 h-2.5 rounded-full bg-slate-500"></div>
+                    <span id="status-text" class="text-[10px] font-bold text-slate-400 uppercase tracking-widest font-mono">Immune Status: <span id="hud-mode" class="text-slate-300">Unexposed</span></span>
+                </div>
+
+                <!-- Simulation Rendering Area -->
+                <div class="relative w-full flex-grow">
+                    <canvas id="sim-canvas" class="w-full h-full absolute inset-0 z-10"></canvas>
+                    
+                    <!-- SVG Overlay for Key Cells (Naive/Memory) -->
+                    <svg id="cell-svg" class="w-full h-full absolute inset-0 z-20 pointer-events-none">
+                        <defs>
+                            <g id="y-antibody">
+                                <path d="M 0 0 L 0 5 M 0 0 L -4 -4 M 0 0 L 4 -4" class="antibody-y" />
+                            </g>
+                        </defs>
+                        <g id="cells-layer"></g>
+                    </svg>
+                </div>
+
+                <!-- Timeline Bar -->
+                <div class="absolute bottom-6 left-1/2 -translate-x-1/2 w-3/4 z-30 px-6 py-3 glass-card rounded-2xl flex flex-col gap-2">
+                    <div class="flex justify-between items-center text-[10px] font-bold text-slate-500 uppercase tracking-widest">
+                        <span>Timeline: Exposure Analysis</span>
+                        <span id="day-counter" class="text-sky-400 font-mono">Day 0</span>
+                    </div>
+                    <div class="h-1.5 w-full bg-slate-800 rounded-full overflow-hidden">
+                        <div id="time-progress" class="h-full bg-sky-500 transition-all duration-300" style="width: 0%"></div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Controls -->
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <button id="btn-primary" class="group relative overflow-hidden px-8 py-5 bg-slate-800 hover:bg-slate-700 text-white font-bold rounded-2xl transition-all border border-slate-600 flex items-center justify-center gap-3">
+                    <div class="absolute inset-0 bg-sky-500/10 opacity-0 group-hover:opacity-100 transition-opacity"></div>
+                    <svg class="w-6 h-6 text-sky-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19.428 15.428a2 2 0 00-1.022-.547l-2.387-.477a6 6 0 00-3.86.517l-.318.158a6 6 0 01-3.86.517L6.05 15.21a2 2 0 00-1.806.547M8 4h8l-1 1v5.172a2 2 0 00.586 1.414l5 5c1.26 1.26.367 3.414-1.415 3.414H4.828c-1.782 0-2.674-2.154-1.414-3.414l5-5A2 2 0 009 10.172V5L8 4z"></path></svg>
+                    <span>1st Exposure / Vaccine</span>
+                </button>
+                <button id="btn-secondary" disabled class="group relative overflow-hidden px-8 py-5 bg-slate-900 text-slate-500 font-bold rounded-2xl transition-all border border-slate-800 disabled:cursor-not-allowed flex items-center justify-center gap-3">
+                    <div id="btn-sec-glow" class="absolute inset-0 bg-amber-500/10 opacity-0 transition-opacity"></div>
+                    <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"></path></svg>
+                    <span>2nd Exposure (Re-infection)</span>
+                </button>
+            </div>
+        </div>
+
+        <!-- Sidebar: Analytics & Graphs -->
+        <div class="lg:col-span-4 flex flex-col gap-6">
+            
+            <!-- Antibody Titer Graph -->
+            <div class="glass-card p-6 rounded-3xl space-y-4 flex-grow flex flex-col">
+                <h3 class="text-xs font-bold text-slate-400 uppercase tracking-widest flex justify-between items-center">
+                    <span>Antibody Concentration (Serum)</span>
+                    <span class="text-[9px] font-mono opacity-50">Log Scale</span>
+                </h3>
+                <div class="flex-grow bg-slate-950 rounded-xl border border-slate-800 p-2 relative min-h-[220px]">
+                    <canvas id="graph-canvas" class="w-full h-full absolute inset-0 p-4"></canvas>
+                    <div class="absolute left-2 top-4 text-[8px] font-mono text-slate-600 vertical-text">CONC.</div>
+                    <div class="absolute bottom-2 right-4 text-[8px] font-mono text-slate-600">TIME (DAYS)</div>
+                </div>
+                <div class="p-3 bg-sky-500/5 rounded-xl border border-sky-500/20 text-[10px] text-slate-400 italic">
+                    Note the "Lag Phase" in primary vs. the "Explosive Growth" in secondary.
+                </div>
+            </div>
+
+            <!-- Digital Readout -->
+            <div id="telemetry-panel" class="digital-readout rounded-3xl p-6 space-y-6">
+                <div class="flex justify-between items-center border-b border-current pb-3 opacity-60">
+                    <span class="text-[10px] font-bold tracking-tighter uppercase">Immune Analytics</span>
+                    <span class="text-xs font-mono animate-pulse">MONITORING</span>
+                </div>
+
+                <div class="space-y-4">
+                    <div class="space-y-1">
+                        <label class="text-[9px] uppercase font-bold opacity-60">Memory B-Cell Density</label>
+                        <div id="data-memory" class="text-4xl font-bold font-mono">0.00%</div>
+                    </div>
+
+                    <div class="grid grid-cols-2 gap-4 pt-4 border-t border-current opacity-80">
+                        <div class="space-y-1">
+                            <label class="text-[9px] uppercase font-bold text-current">Pathogen Load</label>
+                            <div id="data-pathogen" class="text-xl font-bold font-mono text-rose-500">0</div>
+                        </div>
+                        <div class="space-y-1 text-right">
+                            <label class="text-[9px] uppercase font-bold text-current">Antigen Recognition</label>
+                            <div id="data-recog" class="text-xl font-bold font-mono">NONE</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', () => {
+            // UI
+            const btnPrimary = document.getElementById('btn-primary');
+            const btnSecondary = document.getElementById('btn-secondary');
+            const dayCounter = document.getElementById('day-counter');
+            const timeProgress = document.getElementById('time-progress');
+            const hudMode = document.getElementById('hud-mode');
+            const statusDot = document.getElementById('status-dot');
+            
+            const dataMemory = document.getElementById('data-memory');
+            const dataPathogen = document.getElementById('data-pathogen');
+            const dataRecog = document.getElementById('data-recog');
+            
+            const simCanvas = document.getElementById('sim-canvas');
+            const simCtx = simCanvas.getContext('2d');
+            const graphCanvas = document.getElementById('graph-canvas');
+            const graphCtx = graphCanvas.getContext('2d');
+            const cellLayer = document.getElementById('cells-layer');
+
+            // --- State ---
+            let phase = 'naive'; // naive, primary, latent, secondary
+            let time = 0; // Simulation "Days"
+            let pathogens = [];
+            let antibodies = [];
+            let memoryCells = [];
+            let antibodyTiter = 0;
+            let titerHistory = [];
+            let isRunning = false;
+
+            function resize() {
+                simCanvas.width = simCanvas.parentElement.clientWidth;
+                simCanvas.height = simCanvas.parentElement.clientHeight;
+                graphCanvas.width = graphCanvas.parentElement.clientWidth;
+                graphCanvas.height = graphCanvas.parentElement.clientHeight;
+            }
+            window.addEventListener('resize', resize);
+            resize();
+
+            // --- Entities ---
+            class Pathogen {
+                constructor() {
+                    this.x = Math.random() * simCanvas.width;
+                    this.y = Math.random() * simCanvas.height;
+                    this.vx = (Math.random() - 0.5) * 2;
+                    this.vy = (Math.random() - 0.5) * 2;
+                    this.active = true;
+                    this.captured = false;
+                }
+                update() {
+                    if (this.captured) return;
+                    this.x += this.vx;
+                    this.y += this.vy;
+                    if (this.x < 0 || this.x > simCanvas.width) this.vx *= -1;
+                    if (this.y < 0 || this.y > simCanvas.height) this.vy *= -1;
+                }
+                draw() {
+                    simCtx.fillStyle = '#9f1239';
+                    simCtx.strokeStyle = '#f43f5e';
+                    simCtx.lineWidth = 2;
+                    simCtx.beginPath();
+                    simCtx.moveTo(this.x, this.y - 6);
+                    simCtx.lineTo(this.x + 6, this.y + 6);
+                    simCtx.lineTo(this.x - 6, this.y + 6);
+                    simCtx.closePath();
+                    simCtx.fill();
+                    simCtx.stroke();
+                }
+            }
+
+            class Antibody {
+                constructor(x, y, target) {
+                    this.x = x;
+                    this.y = y;
+                    this.target = target;
+                    this.speed = 4;
+                    this.active = true;
+                }
+                update() {
+                    if (!this.target || !this.target.active) {
+                        this.active = false;
+                        return;
+                    }
+                    const dx = this.target.x - this.x;
+                    const dy = this.target.y - this.y;
+                    const dist = Math.sqrt(dx*dx + dy*dy);
+                    if (dist < 5) {
+                        this.target.active = false;
+                        this.active = false;
+                    } else {
+                        this.x += (dx/dist) * this.speed;
+                        this.y += (dy/dist) * this.speed;
+                    }
+                }
+                draw() {
+                    simCtx.strokeStyle = '#22d3ee';
+                    simCtx.lineWidth = 2;
+                    simCtx.beginPath();
+                    simCtx.moveTo(this.x, this.y);
+                    simCtx.lineTo(this.x, this.y + 4);
+                    simCtx.moveTo(this.x, this.y);
+                    simCtx.lineTo(this.x - 3, this.y - 3);
+                    simCtx.moveTo(this.x, this.y);
+                    simCtx.lineTo(this.x + 3, this.y - 3);
+                    simCtx.stroke();
+                }
+            }
+
+            // --- Logic ---
+            function spawnInfection(count) {
+                for (let i = 0; i < count; i++) pathogens.push(new Pathogen());
+            }
+
+            function runPrimary() {
+                if (isRunning) return;
+                isRunning = true;
+                phase = 'primary';
+                time = 0;
+                pathogens = [];
+                antibodies = [];
+                titerHistory = [];
+                spawnInfection(30);
+                
+                hudMode.textContent = "Primary Exposure";
+                hudMode.className = "text-amber-400";
+                statusDot.className = "w-2.5 h-2.5 rounded-full bg-amber-500 animate-pulse";
+                dataRecog.textContent = "SLOW (7D LAG)";
+                btnPrimary.disabled = true;
+            }
+
+            function runSecondary() {
+                if (phase !== 'latent' || isRunning) return;
+                isRunning = true;
+                phase = 'secondary';
+                time = 0;
+                spawnInfection(40);
+                
+                hudMode.textContent = "Rapid Secondary Response";
+                hudMode.className = "text-emerald-400";
+                statusDot.className = "w-2.5 h-2.5 rounded-full bg-emerald-500 shadow-[0_0_10px_#10b981] animate-ping";
+                dataRecog.textContent = "INSTANT (MEMORY)";
+                btnSecondary.disabled = true;
+            }
+
+            function update() {
+                simCtx.clearRect(0, 0, simCanvas.width, simCanvas.height);
+                
+                if (isRunning) {
+                    time += 0.05; // Days
+                    const day = Math.floor(time);
+                    dayCounter.textContent = `Day ${day}`;
+                    timeProgress.style.width = `${(time/14)*100}%`;
+
+                    // Primary Phase Physics
+                    if (phase === 'primary') {
+                        // Lag phase: No antibodies until Day 5-7
+                        if (time > 6) {
+                            antibodyTiter = Math.min(100, antibodyTiter + 1.5);
+                            if (Math.random() < 0.3) {
+                                const target = pathogens.find(p => p.active);
+                                if (target) antibodies.push(new Antibody(Math.random()*simCanvas.width, 0, target));
+                            }
+                        }
+                        if (pathogens.filter(p => p.active).length === 0 && time > 8) {
+                            finishPrimary();
+                        }
+                    } 
+                    // Secondary Phase Physics
+                    else if (phase === 'secondary') {
+                        // Instant Antibody surge
+                        antibodyTiter = Math.min(500, antibodyTiter + 15);
+                        for(let i=0; i<3; i++) {
+                            const target = pathogens.find(p => p.active);
+                            if (target) antibodies.push(new Antibody(Math.random()*simCanvas.width, simCanvas.height, target));
+                        }
+                        if (pathogens.filter(p => p.active).length === 0) {
+                            finishSecondary();
+                        }
+                    }
+                }
+
+                // Entity Updates
+                pathogens.forEach(p => { if (p.active) { p.update(); p.draw(); } });
+                antibodies.forEach(a => { if (a.active) { a.update(); a.draw(); } });
+                
+                titerHistory.push({ t: phase === 'secondary' ? time + 15 : time, v: antibodyTiter });
+                if (titerHistory.length > 500) titerHistory.shift();
+
+                updateHUD();
+                drawGraph();
+                requestAnimationFrame(update);
+            }
+
+            function finishPrimary() {
+                isRunning = false;
+                phase = 'latent';
+                antibodyTiter = 20; // Residual antibodies
+                dataMemory.textContent = "100%";
+                hudMode.textContent = "Immune Memory Established";
+                hudMode.className = "text-sky-400";
+                statusDot.className = "w-2.5 h-2.5 rounded-full bg-sky-500 shadow-[0_0_10px_#38bdf8]";
+                
+                btnSecondary.disabled = false;
+                btnSecondary.classList.replace('bg-slate-900', 'bg-amber-600');
+                btnSecondary.classList.replace('text-slate-500', 'text-white');
+                document.getElementById('btn-sec-glow').style.opacity = '1';
+            }
+
+            function finishSecondary() {
+                isRunning = false;
+                phase = 'protected';
+                hudMode.textContent = "Pathogen Eradicated";
+                hudMode.className = "text-emerald-400";
+                statusDot.className = "w-2.5 h-2.5 rounded-full bg-emerald-500";
+            }
+
+            function updateHUD() {
+                dataPathogen.textContent = pathogens.filter(p => p.active).length;
+            }
+
+            function drawGraph() {
+                graphCtx.clearRect(0, 0, graphCanvas.width, graphCanvas.height);
+                const w = graphCanvas.width;
+                const h = graphCanvas.height;
+
+                graphCtx.beginPath();
+                graphCtx.strokeStyle = 'rgba(255,255,255,0.1)';
+                graphCtx.moveTo(0, h * 0.8);
+                graphCtx.lineTo(w, h * 0.8); // Baseline
+                graphCtx.stroke();
+
+                if (titerHistory.length < 2) return;
+
+                graphCtx.beginPath();
+                graphCtx.strokeStyle = phase === 'secondary' || phase === 'protected' ? '#fbbf24' : '#38bdf8';
+                graphCtx.lineWidth = 3;
+                
+                const timeScale = w / 30; // 30 days total view
+                const valScale = h / 600;
+
+                titerHistory.forEach((pt, i) => {
+                    const x = pt.t * timeScale;
+                    const y = h - (pt.v * valScale) - 20;
+                    if (i === 0) graphCtx.moveTo(x, y);
+                    else graphCtx.lineTo(x, y);
+                });
+                graphCtx.stroke();
+            }
+
+            // Events
+            btnPrimary.addEventListener('click', runPrimary);
+            btnSecondary.addEventListener('click', runSecondary);
+
+            // Start loop
+            update();
+        });
+    </script>
+</body>
+</html>

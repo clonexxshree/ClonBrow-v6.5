@@ -1,0 +1,2046 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ClonBrow OS | Official Student Workspace</title>
+    
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Public+Sans:wght@400;500;600;700&display=swap');
+    </style>
+    
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    fontFamily: { 
+                        sans: ['"Public Sans"', 'Arial', 'sans-serif'],
+                        mono: ['Consolas', 'Monaco', 'monospace']
+                    },
+                    colors: {
+                        gov: {
+                            blue: '#1d70b8',
+                            darkBlue: '#003078',
+                            green: '#00703c',
+                            greenHover: '#005a30',
+                            black: '#0b0c0c',
+                            gray: '#f3f2f1',
+                            darkGray: '#505a5f',
+                            border: '#b1b4b6',
+                            focus: '#ffdd00',
+                            red: '#d4351c'
+                        }
+                    }
+                }
+            }
+        }
+    </script>
+    
+    <style>
+        body { 
+            font-family: 'Public Sans', Arial, sans-serif; 
+            color: #0b0c0c; 
+            background-color: #ffffff; 
+            line-height: 1.5;
+            -webkit-font-smoothing: antialiased;
+            touch-action: manipulation;
+        }
+        
+        *:focus {
+            outline: 3px solid #ffdd00;
+            outline-offset: 0;
+            box-shadow: inset 0 0 0 2px #0b0c0c;
+        }
+
+        .gov-card {
+            background-color: #ffffff;
+            border: 1px solid #b1b4b6;
+            border-top: 4px solid #1d70b8;
+            padding: 1rem;
+            transition: border-color 0.15s ease;
+        }
+        @media(min-width: 768px) {
+            .gov-card { padding: 1.25rem; }
+        }
+        
+        .gov-link-card {
+            background-color: #ffffff;
+            border: 1px solid #b1b4b6;
+            padding: 1rem;
+            display: block;
+            text-decoration: none;
+            transition: all 0.15s ease;
+        }
+        .gov-link-card:hover {
+            border-color: #0b0c0c;
+            background-color: #f3f2f1;
+        }
+        .gov-link-title {
+            color: #1d70b8;
+            text-decoration: underline;
+            font-weight: 700;
+        }
+
+        .gov-input {
+            background-color: #ffffff;
+            border: 2px solid #0b0c0c;
+            border-radius: 0;
+            color: #0b0c0c;
+            padding: 0.6rem 0.75rem;
+            font-size: 1rem;
+            width: 100%;
+        }
+        .gov-input:focus { 
+            outline: 3px solid #ffdd00;
+            border-color: #0b0c0c;
+        }
+
+        .gov-btn {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            background-color: #00703c;
+            color: #ffffff;
+            border: none;
+            font-weight: 600;
+            font-size: 0.95rem;
+            padding: 0.6rem 1.25rem;
+            cursor: pointer;
+            box-shadow: 0 2px 0 0 #002d18;
+            text-decoration: none;
+            transition: background-color 0.1s;
+        }
+        .gov-btn:hover { background-color: #005a30; }
+        .gov-btn:active { transform: translateY(2px); box-shadow: none; }
+        
+        .gov-btn-secondary { 
+            background-color: #f3f2f1; 
+            color: #0b0c0c; 
+            border: 1px solid #b1b4b6;
+            padding: 0.5rem 0.75rem;
+            cursor: pointer;
+            font-weight: 600;
+            font-size: 0.85rem;
+        }
+        .gov-btn-secondary:hover { background-color: #dbdad9; }
+
+        ::-webkit-scrollbar { width: 6px; height: 6px; }
+        ::-webkit-scrollbar-track { background: #f3f2f1; }
+        ::-webkit-scrollbar-thumb { background: #b1b4b6; }
+        
+        .gov-header {
+            background-color: #0b0c0c;
+            color: #ffffff;
+            border-bottom: 6px solid #1d70b8;
+        }
+
+        /* Responsive Mobile Drawer Styling */
+        #os-sidebar {
+            transition: transform 0.25s ease-in-out;
+            position: fixed;
+            top: 0;
+            left: 0;
+            height: 100%;
+            z-index: 99;
+            transform: translateX(-100%);
+            width: 280px;
+            background: #ffffff;
+            box-shadow: 4px 0 15px rgba(0,0,0,0.15);
+        }
+        #os-sidebar.mobile-open {
+            transform: translateX(0%);
+        }
+        @media (min-width: 768px) {
+            #os-sidebar {
+                position: relative;
+                transform: translateX(0%) !important;
+                width: 280px;
+                box-shadow: none;
+                height: 100%;
+            }
+        }
+
+        #sidebar-backdrop {
+            display: none;
+            position: fixed;
+            inset: 0;
+            background: rgba(0,0,0,0.4);
+            z-index: 98;
+        }
+        #sidebar-backdrop.active {
+            display: block;
+        }
+        @media (min-width: 768px) {
+            #sidebar-backdrop.active { display: none !important; }
+        }
+
+        /* Calc Styles */
+        .calc-btn { height: 50px; font-size: 1.1rem; font-weight: 600; border: 2px solid #0b0c0c; background: #ffffff; cursor: pointer; color: #0b0c0c; box-shadow: 2px 2px 0px #0b0c0c; }
+        .calc-btn:hover { background: #e5e5e5; }
+        .calc-btn:active { transform: translate(2px, 2px); box-shadow: 0px 0px 0px #0b0c0c; }
+        .calc-btn-op { background: #f8f8f8; }
+        .calc-btn-eq { background: #0b0c0c; color: #ffffff; }
+        .calc-btn-ac { color: #df3034; background: #ffffff;}
+    </style>
+<link rel="stylesheet" href="theme-mobile.css"></head>
+<body class="h-[100dvh] w-screen overflow-hidden relative flex flex-col bg-white">
+
+    <!-- Auth Boot Screen -->
+    <div id="os-boot-screen" class="absolute inset-0 z-[100] bg-white flex flex-col items-center justify-start pt-8 md:pt-16 transition-opacity duration-500 overflow-y-auto px-4">
+        <div class="max-w-md w-full">
+            <div class="border-b-2 border-gov-black pb-4 mb-6">
+                <h1 class="text-2xl md:text-3xl font-bold text-gov-black mb-2">ClonBrow Workspace</h1>
+                <p class="text-gov-darkGray text-sm">Sign in to initialize your secure session.</p>
+            </div>
+            
+            <div class="space-y-4">
+                <div>
+                    <label class="block font-bold text-gov-black text-xs mb-1.5" for="boot-username">Workspace Identifier</label>
+                    <input type="text" id="boot-username" placeholder="e.g. student_01" class="gov-input">
+                </div>
+                <div>
+                    <label class="block font-bold text-gov-black text-xs mb-1.5" for="boot-password">Cloud Sync Email (Optional)</label>
+                    <input type="email" id="boot-password" placeholder="user@university.ac.uk" class="gov-input">
+                </div>
+                
+                <div class="pt-2">
+                    <button type="button" onclick="handleOSLogin()" id="login-btn" class="gov-btn w-full">
+                        Sign In <i class="fas fa-arrow-right ml-2 text-xs"></i>
+                    </button>
+                </div>
+                
+                <div id="login-error" class="hidden border-l-4 border-gov-red bg-red-50 p-3 text-xs">
+                    <p class="font-bold text-gov-red m-0">Authentication Required</p>
+                    <p class="m-0 text-gov-black mt-0.5">Please provide a valid workspace ID.</p>
+                </div>
+                
+                <div id="db-status" class="bg-gov-gray border-l-4 border-gov-blue p-3 hidden text-xs">
+                    <p class="font-bold m-0">Offline Cache Active</p>
+                    <p class="m-0 mt-0.5">Using local device storage.</p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Main Shell -->
+    <div class="w-full h-full flex flex-col overflow-hidden relative">
+        <div id="loading-bar" class="absolute top-0 left-0 h-1 bg-gov-focus w-0 z-50"></div>
+
+        <!-- Header -->
+        <header class="gov-header px-3 py-2.5 flex items-center justify-between z-30 shrink-0">
+            <div class="flex items-center gap-2.5">
+                <button onclick="toggleSidebar()" class="text-white hover:text-gov-focus transition-colors p-1.5 text-base" aria-label="Toggle Menu">
+                    <i class="fas fa-bars"></i>
+                </button>
+                <div class="flex items-center gap-2">
+                    <i class="fas fa-book-bookmark text-base text-white"></i>
+                    <span class="text-sm md:text-base font-bold tracking-tight">CLONBROW OS</span>
+                </div>
+            </div>
+            <div class="text-[11px] font-mono bg-white/10 px-2 py-0.5 rounded text-slate-200 truncate max-w-[140px]" id="header-workspace-name">GUEST</div>
+        </header>
+
+        <!-- Navigation Bar / ClonSearch -->
+        <div class="bg-gov-gray border-b border-gov-border px-3 py-2 flex items-center justify-between z-20 shrink-0 gap-2">
+            <div class="flex items-center gap-1 shrink-0">
+                <button onclick="goBack()" class="gov-btn-secondary px-2.5 py-1.5 text-xs" title="Back"><i class="fas fa-arrow-left"></i></button>
+                <button onclick="goForward()" class="gov-btn-secondary px-2.5 py-1.5 text-xs" title="Forward"><i class="fas fa-arrow-right"></i></button>
+                <button onclick="reloadPage()" class="gov-btn-secondary px-2.5 py-1.5 text-xs" title="Reload"><i class="fas fa-rotate"></i></button>
+                <button onclick="goHome()" class="gov-btn-secondary px-2.5 py-1.5 text-xs" title="Home"><i class="fas fa-house"></i></button>
+            </div>
+
+            <div class="flex-1 min-w-[140px] max-w-2xl flex border-2 border-gov-black bg-white shadow-sm">
+                <input type="text" id="address-bar" 
+                    class="w-full px-2.5 py-1.5 text-xs md:text-sm border-none focus:outline-none font-mono" 
+                    placeholder="ClonSearch database..."
+                    onkeypress="if(event.key === 'Enter') processInput(this.value)">
+                <button onclick="processInput(document.getElementById('address-bar').value)" class="bg-gov-black text-white px-3 hover:bg-gray-800 transition-colors text-xs font-bold shrink-0">
+                    <i class="fas fa-search"></i>
+                </button>
+            </div>
+
+            <div class="flex items-center gap-1 shrink-0">
+                <button id="clonexxa-mic-btn" onclick="startClonexxaVoice()" class="gov-btn-secondary px-2.5 py-1.5 text-xs" title="Voice Search">
+                    <i class="fas fa-microphone"></i>
+                </button>
+            </div>
+        </div>
+
+        <main class="flex-1 relative flex flex-col md:flex-row overflow-hidden bg-white">
+            
+            <div id="sidebar-backdrop" onclick="toggleSidebar()"></div>
+            
+            <!-- Sidebar Navigation Drawer -->
+            <aside id="os-sidebar" class="flex flex-col z-40 shrink-0 overflow-y-auto border-r border-gov-border">
+                <div class="p-3 border-b border-gov-border bg-white flex justify-between items-center">
+                    <span class="font-bold text-xs uppercase tracking-wider">Directory Menu</span>
+                    <button onclick="toggleSidebar()" class="md:hidden text-gov-black p-1"><i class="fas fa-xmark"></i></button>
+                </div>
+                <div id="sidebar-nav-links" class="p-0"></div>
+            </aside>
+
+            <!-- Workspace Viewports Container -->
+            <div class="flex-1 relative overflow-y-auto w-full h-full bg-white">
+                
+                <!-- HOME SCREEN -->
+                <div id="home-screen" class="absolute inset-0 z-20 flex flex-col overflow-y-auto bg-white p-4 md:p-8">
+                    <div class="max-w-5xl w-full mx-auto space-y-6">
+                        
+                        <!-- Cover Banner -->
+                        <div class="w-full h-36 md:h-52 bg-gov-gray border border-gov-black overflow-hidden relative">
+                            <img src="https://images.unsplash.com/photo-1451187580459-43490279c0fa?q=80&w=2000&auto=format&fit=crop" class="w-full h-full object-cover opacity-85 contrast-110" alt="Cover">
+                            <div class="absolute inset-0 bg-gradient-to-t from-black/80 via-black/20 to-transparent flex flex-col justify-end p-4 md:p-6">
+                                <span class="text-[10px] font-mono font-bold text-gov-focus uppercase tracking-widest mb-0.5">> secure_active</span>
+                                <h1 class="text-xl md:text-3xl font-bold text-white tracking-tight">Student Command Center</h1>
+                            </div>
+                        </div>
+
+                        <!-- ClonSearch Engine Module -->
+                        <div class="gov-card">
+                            <label class="block font-bold text-sm mb-1.5 text-gov-black" for="home-search-bar"><i class="fas fa-magnifying-glass text-gov-blue mr-1.5"></i> ClonSearch Knowledge Repository</label>
+                            <p class="text-[11px] text-gov-darkGray mb-3">Search verified educational articles and academic indexes securely.</p>
+                            <div class="flex border-2 border-gov-black bg-white shadow-sm">
+                                <input type="text" id="home-search-bar"
+                                    class="w-full p-2.5 text-xs md:text-sm border-none focus:outline-none"
+                                    placeholder="Search academic database..."
+                                    onkeypress="if(event.key === 'Enter') { document.getElementById('address-bar').value = this.value; processInput(this.value); }">
+                                <button onclick="processInput(document.getElementById('home-search-bar').value)" class="bg-gov-black text-white px-4 font-bold text-xs hover:bg-gray-800 transition-colors">
+                                    Search
+                                </button>
+                            </div>
+                        </div>
+
+                        <!-- Grid Layout -->
+                        <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+                            <div class="lg:col-span-2 space-y-6">
+                                
+                                <div class="gov-card">
+                                    <h2 class="text-sm font-bold mb-3 text-gov-black flex items-center gap-2">
+                                        <i class="fas fa-graduation-cap text-gov-blue"></i> Academic Services
+                                    </h2>
+                                    <div class="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
+                                        <a href="#" class="gov-link-card" onclick="loadWebPage('clonmedic://docvault')">
+                                            <h3 class="text-xs gov-link-title mb-0.5"><i class="fas fa-file-pen mr-1.5"></i> Document Vault</h3>
+                                            <p class="text-[11px] text-gov-darkGray m-0">Rich text processor with local backup.</p>
+                                        </a>
+                                        <a href="#" class="gov-link-card" onclick="loadWebPage('clonmedic://citations')">
+                                            <h3 class="text-xs gov-link-title mb-0.5"><i class="fas fa-book-bookmark mr-1.5"></i> Reference Generator</h3>
+                                            <p class="text-[11px] text-gov-darkGray m-0">APA, MLA, and Chicago bibliography.</p>
+                                        </a>
+                                        <a href="#" class="gov-link-card" onclick="loadWebPage('clonmedic://timetable')">
+                                            <h3 class="text-xs gov-link-title mb-0.5"><i class="fas fa-calendar-week mr-1.5"></i> Schedule Manager</h3>
+                                            <p class="text-[11px] text-gov-darkGray m-0">Weekly class timetable allocation.</p>
+                                        </a>
+                                        <a href="#" class="gov-link-card" onclick="loadWebPage('clonmedic://quicklearn')">
+                                            <h3 class="text-xs gov-link-title mb-0.5"><i class="fas fa-bolt-lightning mr-1.5"></i> Quick Bites</h3>
+                                            <p class="text-[11px] text-gov-darkGray m-0">Modular micro-learning topics.</p>
+                                        </a>
+                                        <a href="#" class="gov-link-card" onclick="loadWebPage('clonmedic://mcq')">
+                                            <h3 class="text-xs gov-link-title mb-0.5"><i class="fas fa-circle-question mr-1.5"></i> Practice Quizzes</h3>
+                                            <p class="text-[11px] text-gov-darkGray m-0">Interactive multiple-choice testing.</p>
+                                        </a>
+                                        <a href="#" class="gov-link-card" onclick="loadWebPage('medicof all.html')">
+                                            <h3 class="text-xs gov-link-title mb-0.5"><i class="fas fa-microscope mr-1.5"></i> Science Simulations</h3>
+                                            <p class="text-[11px] text-gov-darkGray m-0">Interactive physics and science modules.</p>
+                                        </a>
+                                        <a href="#" class="gov-link-card" onclick="loadWebPage('SansKoder.html')">
+                                            <h3 class="text-xs gov-link-title mb-0.5"><i class="fas fa-code mr-1.5"></i> SansKoder</h3>
+                                            <p class="text-[11px] text-gov-darkGray m-0">Programming logic and syntax utility.</p>
+                                        </a>
+                                        <a href="#" class="gov-link-card" onclick="loadWebPage('clonmedic://periodic')">
+                                            <h3 class="text-xs gov-link-title mb-0.5"><i class="fas fa-atom mr-1.5"></i> Periodic Table</h3>
+                                            <p class="text-[11px] text-gov-darkGray m-0">Chemical element indexing and data.</p>
+                                        </a>
+                                        <a href="#" class="gov-link-card" onclick="loadWebPage('trecore.html')">
+                                            <h3 class="text-xs gov-link-title mb-0.5"><i class="fas fa-layer-group mr-1.5"></i> Trecore</h3>
+                                            <p class="text-[11px] text-gov-darkGray m-0">Advanced hierarchical data structures.</p>
+                                        </a>
+                                        <a href="#" class="gov-link-card" onclick="loadWebPage('clonmedic://english')">
+                                            <h3 class="text-xs gov-link-title mb-0.5"><i class="fas fa-book-open mr-1.5"></i> Literary Analysis</h3>
+                                            <p class="text-[11px] text-gov-darkGray m-0">Identify poetic and literary devices.</p>
+                                        </a>
+                                    </div>
+                                </div>
+
+                                <div class="gov-card">
+                                    <h2 class="text-sm font-bold mb-3 text-gov-black flex items-center gap-2">
+                                        <i class="fas fa-wrench text-gov-blue"></i> Tools & Utilities
+                                    </h2>
+                                    <div class="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
+                                        <a href="#" class="gov-link-card" onclick="loadWebPage('clonmedic://inbi')">
+                                            <h3 class="text-xs gov-link-title mb-0.5"><i class="fas fa-sliders mr-1.5"></i> Utility Hub</h3>
+                                            <p class="text-[11px] text-gov-darkGray m-0">Calculators and conversions.</p>
+                                        </a>
+                                        <a href="#" class="gov-link-card" onclick="loadWebPage('brainboard.html')">
+                                            <h3 class="text-xs gov-link-title mb-0.5"><i class="fas fa-brain mr-1.5"></i> Brainboard</h3>
+                                            <p class="text-[11px] text-gov-darkGray m-0">Ideation and whiteboard mapping.</p>
+                                        </a>
+                                    </div>
+                                </div>
+
+                                <div class="gov-card border-t-4 border-gov-green">
+                                    <h2 class="text-sm font-bold mb-3 text-gov-black flex items-center gap-2">
+                                        <i class="fas fa-gamepad text-gov-green"></i> Games & Arcade Labs
+                                    </h2>
+                                    <div class="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
+                                        <a href="#" class="gov-link-card" onclick="loadWebPage('arcade.html')">
+                                            <h3 class="text-xs gov-link-title mb-0.5 text-gov-green"><i class="fas fa-puzzle-piece mr-1.5"></i> Arcade Hub</h3>
+                                            <p class="text-[11px] text-gov-darkGray m-0">Interactive browser mini-games.</p>
+                                        </a>
+                                        <a href="#" class="gov-link-card" onclick="loadWebPage('clonmedic://physics')">
+                                            <h3 class="text-xs gov-link-title mb-0.5 text-gov-green"><i class="fas fa-rocket mr-1.5"></i> Kinematics Lab</h3>
+                                            <p class="text-[11px] text-gov-darkGray m-0">Gravity and motion simulation.</p>
+                                        </a>
+                                    </div>
+                                </div>
+                            </div>
+                            
+                            <div class="space-y-6">
+                                <div class="gov-card">
+                                    <h2 class="text-sm font-bold mb-2.5 text-gov-black flex items-center gap-2">
+                                        <i class="fas fa-clipboard-list text-gov-blue"></i> Active Tasks
+                                    </h2>
+                                    <div class="mb-2.5 bg-gov-gray p-2.5 border border-gov-border">
+                                        <label class="block font-bold text-[10px] mb-1 uppercase tracking-wider text-gov-darkGray" for="new-task-input">Quick Add Task</label>
+                                        <div class="flex gap-1.5">
+                                            <input type="text" id="new-task-input" class="gov-input py-1 px-2 text-xs" placeholder="Task name..." onkeypress="if(event.key === 'Enter') addTaskDB()">
+                                            <button onclick="addTaskDB()" class="bg-gov-black text-white px-2.5 py-1 font-bold text-xs hover:bg-gray-800 shrink-0">Add</button>
+                                        </div>
+                                    </div>
+                                    <div id="tasks-list" class="flex flex-col gap-1.5 max-h-[220px] overflow-y-auto no-scrollbar">
+                                        <div class="text-gov-darkGray text-xs font-mono">Loading queue...</div>
+                                    </div>
+                                    <div class="mt-3 pt-2.5 border-t border-gov-border">
+                                        <a href="#" onclick="loadWebPage('clonmedic://pomodoro')" class="text-gov-blue hover:underline font-bold text-xs flex items-center gap-1.5">
+                                            <i class="fas fa-stopwatch"></i> Open Focus Timer
+                                        </a>
+                                    </div>
+                                </div>
+
+                                <div class="gov-card border-t-4 border-gov-darkGray">
+                                    <h2 class="text-sm font-bold mb-3 text-gov-black flex items-center gap-2">
+                                        <i class="fas fa-building-columns text-gov-darkGray"></i> External Portals
+                                    </h2>
+                                    <div class="flex flex-col gap-2.5">
+                                        <a href="#" class="gov-link-card py-2" onclick="loadWebPage('heril.html')">
+                                            <h3 class="text-xs gov-link-title mb-0.5"><i class="fas fa-flask mr-1.5"></i> Research Centre</h3>
+                                        </a>
+                                        <a href="#" class="gov-link-card py-2" onclick="loadWebPage('Schooler.html')">
+                                            <h3 class="text-xs gov-link-title mb-0.5"><i class="fas fa-school mr-1.5"></i> School</h3>
+                                        </a>
+                                        <a href="#" class="gov-link-card py-2" onclick="loadWebPage('syllabus.html')">
+                                            <h3 class="text-xs gov-link-title mb-0.5"><i class="fas fa-book mr-1.5"></i> Syllable</h3>
+                                        </a>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- STREAMING_CHUNK:Building Internal Screens -->
+                
+                <!-- DOCVAULT SCREEN -->
+                <div id="word-screen" class="absolute inset-0 z-20 hidden flex-col bg-white overflow-hidden p-4 md:p-8">
+                    <div class="max-w-4xl mx-auto w-full flex flex-col h-full">
+                        <div class="mb-3">
+                            <h1 class="text-xl md:text-2xl font-bold mb-0.5"><i class="fas fa-file-pen text-gov-blue mr-1.5"></i> Document Vault</h1>
+                            <p class="text-gov-darkGray text-xs">Local text processing environment.</p>
+                        </div>
+                        
+                        <div class="bg-gov-gray border border-gov-border p-2 flex flex-wrap gap-2 items-center shrink-0 mb-3 text-xs">
+                            <select onchange="document.execCommand('formatBlock', false, this.value); this.selectedIndex = 0;" class="border border-gov-black py-1 px-2 bg-white font-bold">
+                                <option value="">Style</option>
+                                <option value="P">Paragraph</option>
+                                <option value="H1">Heading 1</option>
+                                <option value="H2">Heading 2</option>
+                            </select>
+                            <div class="flex border border-gov-black">
+                                <button onclick="document.execCommand('bold',false,null)" class="px-2 py-1 font-bold bg-white hover:bg-gov-gray border-r border-gov-black" title="Bold"><i class="fas fa-bold"></i></button>
+                                <button onclick="document.execCommand('italic',false,null)" class="px-2 py-1 bg-white hover:bg-gov-gray border-r border-gov-black" title="Italic"><i class="fas fa-italic"></i></button>
+                                <button onclick="document.execCommand('underline',false,null)" class="px-2 py-1 bg-white hover:bg-gov-gray" title="Underline"><i class="fas fa-underline"></i></button>
+                            </div>
+                            <button onclick="insertDocTable()" class="gov-btn-secondary"><i class="fas fa-table mr-1"></i> Table</button>
+                            <button onclick="insertDocChart()" class="gov-btn-secondary"><i class="fas fa-chart-simple mr-1"></i> Chart</button>
+                            <div class="flex-1"></div>
+                            <button onclick="saveDoc()" class="gov-btn py-1 px-3"><i class="fas fa-floppy-disk mr-1"></i> Save</button>
+                        </div>
+                        
+                        <div class="flex-1 overflow-y-auto border border-gov-black p-4 md:p-8 bg-white focus-within:ring-2 focus-within:ring-gov-focus outline-none cursor-text shadow-sm text-sm" onclick="document.getElementById('word-editor').focus()">
+                            <div id="word-editor" contenteditable="true" class="w-full min-h-full outline-none"></div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- INBUILT TOOLS HUB -->
+                <div id="inbi-screen" class="absolute inset-0 z-20 hidden flex-col p-4 md:p-8 overflow-y-auto bg-white">
+                    <div class="max-w-3xl mx-auto w-full">
+                        <h1 class="text-xl md:text-2xl font-bold mb-1"><i class="fas fa-sliders text-gov-blue mr-1.5"></i> Utility Hub</h1>
+                        <p class="text-gov-darkGray mb-4 text-xs">Access standard calculations and converters.</p>
+                        
+                        <div class="gov-card p-0 overflow-hidden">
+                            <ul class="m-0 p-0 list-none">
+                                <li class="border-b border-gov-border"><a href="#" class="gov-link-card py-3" onclick="loadWebPage('clonmedic://converter')"><h3 class="text-xs md:text-sm gov-link-title mb-0.5"><i class="fas fa-right-left mr-2 text-gov-blue"></i> Unit Converter</h3><p class="text-[11px] text-gov-darkGray m-0">Length, mass, and temperature transformations.</p></a></li>
+                                <li class="border-b border-gov-border"><a href="#" class="gov-link-card py-3" onclick="loadWebPage('clonmedic://gpa')"><h3 class="text-xs md:text-sm gov-link-title mb-0.5"><i class="fas fa-graduation-cap mr-2 text-gov-blue"></i> GPA Calculator</h3><p class="text-[11px] text-gov-darkGray m-0">Grade point average tracking and aggregation.</p></a></li>
+                                <li class="border-b border-gov-border"><a href="#" class="gov-link-card py-3" onclick="loadWebPage('clonmedic://formulas')"><h3 class="text-xs md:text-sm gov-link-title mb-0.5"><i class="fas fa-square-root-variable mr-2 text-gov-blue"></i> Formula Repository</h3><p class="text-[11px] text-gov-darkGray m-0">Mathematical and scientific equation storage.</p></a></li>
+                                <li class="border-b border-gov-border"><a href="#" class="gov-link-card py-3" onclick="loadWebPage('clonmedic://calc')"><h3 class="text-xs md:text-sm gov-link-title mb-0.5"><i class="fas fa-calculator mr-2 text-gov-blue"></i> Standard Calculator</h3><p class="text-[11px] text-gov-darkGray m-0">Basic arithmetic processor.</p></a></li>
+                                <li><a href="#" class="gov-link-card py-3" onclick="loadWebPage('brainboard.html')"><h3 class="text-xs md:text-sm gov-link-title mb-0.5"><i class="fas fa-brain mr-2 text-gov-blue"></i> Brainboard</h3><p class="text-[11px] text-gov-darkGray m-0">Ideation and whiteboard mapping.</p></a></li>
+                            </ul>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- CLONSEARCH RESULTS SCREEN -->
+                <div id="search-screen" class="absolute inset-0 z-20 hidden flex-col overflow-y-auto bg-white p-4 md:p-8">
+                    <div class="max-w-3xl w-full mx-auto">
+                        <div class="mb-4 border-b border-gov-border pb-2">
+                            <span class="text-[11px] font-bold text-gov-darkGray uppercase tracking-wider"><i class="fas fa-magnifying-glass mr-1"></i> ClonSearch Results</span>
+                            <h1 class="text-xl md:text-2xl font-bold text-gov-black mt-0.5" id="search-query-display">Query</h1>
+                        </div>
+                        
+                        <div id="safe-search-blocked" class="hidden border-l-4 border-gov-red bg-red-50 p-3 mb-4 text-xs">
+                            <p class="font-bold text-gov-red m-0"><i class="fas fa-triangle-exclamation mr-1"></i> Access Restricted</p>
+                            <p class="m-0 text-gov-black mt-0.5">This query violates academic safety protocols.</p>
+                            <button onclick="goHome()" class="mt-2 gov-btn-secondary text-[10px]">Return Home</button>
+                        </div>
+
+                        <div id="search-results-container" class="space-y-3"></div>
+                    </div>
+                </div>
+
+                <!-- ARTICLE READER SCREEN -->
+                <div id="article-screen" class="absolute inset-0 z-20 hidden flex-col overflow-y-auto bg-white p-4 md:p-10">
+                    <div class="max-w-3xl mx-auto w-full">
+                        <div class="mb-4 flex items-center justify-between border-b border-gov-border pb-2">
+                            <button onclick="goBack()" class="gov-btn-secondary text-xs py-1 px-2.5"><i class="fas fa-arrow-left mr-1"></i> Back</button>
+                            <span class="text-[10px] font-mono font-bold text-gov-darkGray uppercase tracking-wider">ClonSearch Verified Reader</span>
+                        </div>
+                        <div id="article-content-container" class="space-y-3 text-gov-black font-sans text-sm md:text-base leading-relaxed">
+                            <!-- Article rendered here -->
+                        </div>
+                    </div>
+                </div>
+
+                <!-- TASK SCREEN -->
+                <div id="tasks-screen" class="absolute inset-0 z-20 hidden flex-col p-4 md:p-8 overflow-y-auto bg-white">
+                    <div class="max-w-2xl mx-auto w-full">
+                        <h1 class="text-xl md:text-2xl font-bold mb-1"><i class="fas fa-list-check text-gov-blue mr-1.5"></i> Task Manager</h1>
+                        <p class="text-gov-darkGray mb-4 text-xs">Manage academic duties and checklists.</p>
+                        
+                        <div class="gov-card p-3.5 mb-4">
+                            <label class="block font-bold text-xs mb-1.5 uppercase tracking-wider" for="full-task-input">Create New Task</label>
+                            <div class="flex gap-2">
+                                <input type="text" id="full-task-input" class="gov-input py-1.5 text-xs" placeholder="Task name..." onkeypress="if(event.key === 'Enter') { document.getElementById('new-task-input').value = this.value; addTaskDB(); this.value = ''; }">
+                                <button onclick="document.getElementById('new-task-input').value = document.getElementById('full-task-input').value; addTaskDB(); document.getElementById('full-task-input').value = '';" class="gov-btn text-xs shrink-0 py-1.5 px-3">Save</button>
+                            </div>
+                        </div>
+                        
+                        <div class="gov-card">
+                            <h2 class="text-xs font-bold mb-2.5 uppercase tracking-wider text-gov-darkGray">Current Queue</h2>
+                            <div id="full-tasks-list" class="flex flex-col border-t border-gov-border"></div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- QUICKLEARN SCREEN -->
+                <div id="quicklearn-screen" class="absolute inset-0 z-20 hidden flex-col p-4 md:p-8 overflow-y-auto bg-white">
+                    <div class="max-w-3xl mx-auto w-full">
+                        <div class="mb-4">
+                            <h1 class="text-xl md:text-2xl font-bold mb-0.5"><i class="fas fa-bolt-lightning text-gov-blue mr-1.5"></i> Quick Bites</h1>
+                            <p class="text-gov-darkGray text-xs">Micro-learning modules.</p>
+                        </div>
+
+                        <div class="flex border-b border-gov-border mb-4 text-xs">
+                            <button onclick="toggleQuickLearnMode('learn')" id="btn-ql-learn" class="px-3 py-1.5 font-bold border-b-2 border-gov-blue text-gov-blue">View Content</button>
+                            <button onclick="toggleQuickLearnMode('create')" id="btn-ql-create" class="px-3 py-1.5 text-gov-darkGray hover:text-gov-black">Manage Modules</button>
+                        </div>
+
+                        <div id="ql-learn-view" class="flex flex-col w-full">
+                            <div class="mb-4 max-w-xs">
+                                <label class="block font-bold text-[11px] uppercase tracking-wider mb-1.5" for="ql-topic-select">Select Topic</label>
+                                <select id="ql-topic-select" onchange="loadSelectedQuickBite()" class="gov-input text-xs py-1.5"></select>
+                            </div>
+                            
+                            <div class="gov-card bg-gov-gray">
+                                <h2 class="font-bold text-base mb-2.5 border-b border-gov-border pb-1.5" id="ql-title">Content Viewer</h2>
+                                <ul class="list-disc pl-4 space-y-1 text-xs md:text-sm text-gov-black" id="ql-points"><li>Select a topic above.</li></ul>
+                            </div>
+                        </div>
+
+                        <div id="ql-create-view" class="hidden flex-col gap-4 w-full">
+                            <div class="gov-card max-w-md">
+                                <h2 class="font-bold text-sm mb-3">Module Creation</h2>
+                                <div class="mb-2.5">
+                                    <label class="block font-bold text-[10px] uppercase tracking-wider mb-1" for="new-ql-title">Topic Title</label>
+                                    <input type="text" id="new-ql-title" class="gov-input text-xs py-1">
+                                </div>
+                                <div class="mb-3">
+                                    <label class="block font-bold text-[10px] uppercase tracking-wider mb-1" for="new-ql-points">Information Points (One per line)</label>
+                                    <textarea id="new-ql-points" class="gov-input h-24 resize-y text-xs"></textarea>
+                                </div>
+                                <button onclick="addQuickBiteDB()" class="gov-btn text-xs py-1.5">Commit Module</button>
+                            </div>
+                            
+                            <div class="gov-card">
+                                <h2 class="font-bold text-xs mb-2 uppercase tracking-wider text-gov-darkGray">Saved Modules</h2>
+                                <div id="ql-list-admin" class="flex flex-col"></div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- MCQ SCREEN -->
+                <div id="mcq-screen" class="absolute inset-0 z-20 hidden flex-col p-4 md:p-8 overflow-y-auto bg-white">
+                    <div class="max-w-3xl mx-auto w-full">
+                        <div class="mb-4">
+                            <h1 class="text-xl md:text-2xl font-bold mb-0.5"><i class="fas fa-circle-question text-gov-blue mr-1.5"></i> Practice Quizzes</h1>
+                            <p class="text-gov-darkGray text-xs">Knowledge verification module.</p>
+                        </div>
+
+                        <div class="flex border-b border-gov-border mb-4 text-xs">
+                            <button onclick="toggleMcqMode('play')" id="btn-mcq-play" class="px-3 py-1.5 font-bold border-b-2 border-gov-blue text-gov-blue">Execute Quiz</button>
+                            <button onclick="toggleMcqMode('create')" id="btn-mcq-create" class="px-3 py-1.5 text-gov-darkGray hover:text-gov-black">Manage Database</button>
+                        </div>
+
+                        <div id="mcq-play-view" class="flex flex-col w-full max-w-xl mx-auto">
+                            <div class="mb-1.5 font-bold text-gov-darkGray text-[11px] uppercase tracking-wider" id="mcq-counter">SEQ 0/0</div>
+                            <h2 class="font-bold text-base md:text-lg mb-4 border-l-4 border-gov-blue pl-2.5 py-0.5 text-gov-black" id="mcq-question">Initializing...</h2>
+                            
+                            <div class="flex flex-col gap-2 w-full" id="mcq-options"></div>
+                            
+                            <div class="mt-4 flex items-center justify-between min-h-[35px]">
+                                <div id="mcq-feedback" class="font-bold text-sm"></div>
+                                <button onclick="nextMcqQuestion()" class="gov-btn text-xs hidden py-1.5 px-3" id="mcq-next-btn">Next Sequence</button>
+                            </div>
+                        </div>
+
+                        <div id="mcq-create-view" class="hidden flex-col gap-4 w-full">
+                            <div class="gov-card max-w-md">
+                                <h2 class="font-bold text-sm mb-3">Add Entry</h2>
+                                <div class="mb-2.5">
+                                    <label class="block font-bold text-[10px] uppercase tracking-wider mb-1" for="new-mcq-q">Question Text</label>
+                                    <input type="text" id="new-mcq-q" class="gov-input text-xs py-1">
+                                </div>
+                                <fieldset class="mb-3 border border-gov-border p-2.5 text-xs">
+                                    <legend class="font-bold text-[10px] uppercase tracking-wider px-1">Parameters (A-D)</legend>
+                                    <div class="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                                        <div><label class="block font-[10px] font-bold mb-0.5">A</label><input type="text" id="new-mcq-opt0" class="gov-input py-0.5 text-xs"></div>
+                                        <div><label class="block font-[10px] font-bold mb-0.5">B</label><input type="text" id="new-mcq-opt1" class="gov-input py-0.5 text-xs"></div>
+                                        <div><label class="block font-[10px] font-bold mb-0.5">C</label><input type="text" id="new-mcq-opt2" class="gov-input py-0.5 text-xs"></div>
+                                        <div><label class="block font-[10px] font-bold mb-0.5">D</label><input type="text" id="new-mcq-opt3" class="gov-input py-0.5 text-xs"></div>
+                                    </div>
+                                </fieldset>
+                                <div class="mb-3 max-w-xs">
+                                    <label class="block font-bold text-[10px] uppercase tracking-wider mb-1" for="new-mcq-ans">Valid Answer</label>
+                                    <select id="new-mcq-ans" class="gov-input cursor-pointer text-xs py-1">
+                                        <option value="0">A</option><option value="1">B</option><option value="2">C</option><option value="3">D</option>
+                                    </select>
+                                </div>
+                                <button onclick="addQuizDB()" class="gov-btn text-xs py-1.5">Commit Entry</button>
+                            </div>
+                            
+                            <div class="gov-card">
+                                <h2 class="font-bold text-xs mb-2 uppercase tracking-wider text-gov-darkGray">Database</h2>
+                                <div id="mcq-list-admin" class="flex flex-col border-t border-gov-border"></div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- POMODORO SCREEN -->
+                <div id="pomodoro-screen" class="absolute inset-0 z-20 hidden flex-col items-center justify-center p-4 overflow-y-auto bg-white">
+                    <div class="gov-card p-5 text-center max-w-xs w-full bg-white relative shadow-sm">
+                        <h2 class="font-bold text-xs mb-2 uppercase tracking-widest text-gov-darkGray" id="pomo-mode"><i class="fas fa-stopwatch mr-1"></i> Focus Session</h2>
+                        
+                        <div class="text-5xl font-mono font-bold mb-4 text-gov-black" id="pomo-display">25:00</div>
+                        
+                        <div class="flex justify-center gap-1.5 mb-4">
+                            <button onclick="startPomodoro()" class="gov-btn text-xs py-1.5 px-3">Start</button>
+                            <button onclick="pausePomodoro()" class="gov-btn-secondary text-xs py-1.5 px-2.5">Pause</button>
+                            <button onclick="resetPomodoro()" class="gov-btn-secondary text-xs py-1.5 px-2.5 text-gov-red">Reset</button>
+                        </div>
+
+                        <div class="flex justify-center gap-3 pt-3 border-t border-gov-border text-[11px]">
+                            <label class="flex items-center gap-1 cursor-pointer font-bold">
+                                <input type="radio" name="pomo-type" checked onchange="setPomodoroMode('focus')" class="accent-gov-black"> Focus (25m)
+                            </label>
+                            <label class="flex items-center gap-1 cursor-pointer font-bold">
+                                <input type="radio" name="pomo-type" onchange="setPomodoroMode('break')" class="accent-gov-black"> Break (5m)
+                            </label>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- FLASHCARD SCREEN -->
+                <div id="flashcard-screen" class="absolute inset-0 z-20 hidden flex-col p-4 md:p-8 overflow-y-auto bg-white">
+                    <div class="max-w-3xl mx-auto w-full">
+                        <div class="mb-4">
+                            <h1 class="text-xl md:text-2xl font-bold mb-0.5"><i class="fas fa-clone text-gov-blue mr-1.5"></i> Flashcards</h1>
+                            <p class="text-gov-darkGray text-xs">Memory retention tools.</p>
+                        </div>
+
+                        <div class="flex border-b border-gov-border mb-4 text-sm">
+                            <button onclick="toggleFlashcardMode('play')" id="btn-fc-play" class="px-4 py-1.5 font-bold border-b-2 border-gov-blue text-gov-blue text-xs">Review Deck</button>
+                            <button onclick="toggleFlashcardMode('create')" id="btn-fc-create" class="px-4 py-2 text-gov-darkGray hover:text-gov-black text-xs">Manage Deck</button>
+                        </div>
+
+                        <div id="fc-play-view" class="flex flex-col w-full max-w-sm mx-auto">
+                            <div class="mb-2 text-center font-bold text-[11px] text-gov-darkGray uppercase tracking-wider" id="fc-counter">Card 0/0</div>
+                            <div class="perspective-1000 w-full h-44 relative cursor-pointer mb-4" onclick="flipCard()">
+                                <div id="flashcard-inner" class="w-full h-full relative transition-transform duration-500 transform-style-3d border border-gov-border shadow-sm">
+                                    <div class="absolute inset-0 backface-hidden flex flex-col items-center justify-center p-4 text-center bg-white border-t-4 border-gov-blue">
+                                        <span class="absolute top-1.5 left-2 text-[9px] font-bold text-gov-darkGray">FRONT</span>
+                                        <h3 class="text-base font-bold" id="fc-question">Empty Deck</h3>
+                                    </div>
+                                    <div class="absolute inset-0 backface-hidden rotate-y-180 flex flex-col items-center justify-center p-4 text-center bg-gov-gray border-t-4 border-gov-green">
+                                        <span class="absolute top-1.5 left-2 text-[9px] font-bold text-gov-darkGray">BACK</span>
+                                        <h3 class="text-base font-bold" id="fc-answer">NULL</h3>
+                                    </div>
+                                </div>
+                            </div>
+                            
+                            <div class="flex items-center justify-center gap-2">
+                                <button onclick="prevCard()" class="gov-btn-secondary text-xs py-1.5 w-20"><i class="fas fa-arrow-left mr-1"></i> Prev</button>
+                                <button onclick="nextCard()" class="gov-btn-secondary text-xs py-1.5 w-20">Next <i class="fas fa-arrow-right ml-1"></i></button>
+                            </div>
+                        </div>
+
+                        <div id="fc-create-view" class="hidden flex-col gap-4 w-full">
+                            <div class="gov-card max-w-sm">
+                                <h2 class="font-bold text-sm mb-2.5">Create Card</h2>
+                                <div class="mb-2.5">
+                                    <label class="block font-bold text-[10px] uppercase tracking-wider mb-1" for="new-fc-q">Front (Term)</label>
+                                    <input type="text" id="new-fc-q" class="gov-input text-xs py-1">
+                                </div>
+                                <div class="mb-3">
+                                    <label class="block font-bold text-[10px] uppercase tracking-wider mb-1" for="new-fc-a">Back (Definition)</label>
+                                    <input type="text" id="new-fc-a" class="gov-input text-xs py-1" onkeypress="if(event.key === 'Enter') addFlashcardDB()">
+                                </div>
+                                <button onclick="addFlashcardDB()" class="gov-btn text-xs py-1.5">Commit Card</button>
+                            </div>
+                            
+                            <div class="gov-card">
+                                <h2 class="font-bold text-xs mb-2 uppercase tracking-wider text-gov-darkGray">Deck Contents</h2>
+                                <div id="fc-list" class="flex flex-col border-t border-gov-border max-h-[30vh] overflow-y-auto no-scrollbar"></div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- TIMETABLE SCREEN -->
+                <div id="timetable-screen" class="absolute inset-0 z-20 hidden flex-col p-4 md:p-8 overflow-y-auto bg-white">
+                    <div class="max-w-5xl mx-auto w-full">
+                        <div class="mb-3 no-print flex justify-between items-end">
+                            <div>
+                                <h1 class="text-xl md:text-2xl font-bold mb-0.5"><i class="fas fa-calendar-week text-gov-blue mr-1.5"></i> Schedule Manager</h1>
+                                <p class="text-gov-darkGray text-xs">Weekly allocation matrix.</p>
+                            </div>
+                            <button onclick="window.addTimetableRow()" class="gov-btn text-xs py-1.5">Add Slot</button>
+                        </div>
+
+                        <div id="timetable-content" class="w-full">
+                            <div class="w-full overflow-x-auto border border-gov-border bg-white shadow-sm">
+                                <table class="w-full text-left table-fixed min-w-[700px] border-collapse">
+                                    <thead class="bg-gov-gray">
+                                        <tr class="text-[11px] uppercase tracking-wider font-bold border-b border-gov-border">
+                                            <th class="py-2 px-2.5 w-20 border-r border-gov-border">Time</th>
+                                            <th class="py-2 px-2.5 border-r border-gov-border">Mon</th>
+                                            <th class="py-2 px-2.5 border-r border-gov-border">Tue</th>
+                                            <th class="py-2 px-2.5 border-r border-gov-border">Wed</th>
+                                            <th class="py-2 px-2.5 border-r border-gov-border">Thu</th>
+                                            <th class="py-2 px-2.5">Fri</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody id="timetable-body" class="text-xs align-top"></tbody>
+                                </table>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- RECEIPT SCREEN -->
+                <div id="receipt-screen" class="absolute inset-0 z-20 hidden flex-col p-4 md:p-8 overflow-y-auto bg-white">
+                    <div class="max-w-4xl mx-auto w-full">
+                        <div class="mb-3 no-print flex justify-between items-end">
+                            <div>
+                                <h1 class="text-xl md:text-2xl font-bold mb-0.5">Invoice Generator</h1>
+                                <p class="text-gov-darkGray text-xs">Itemized billing records.</p>
+                            </div>
+                            <button onclick="window.addReceiptItem()" class="gov-btn text-xs py-1.5">Add Item</button>
+                        </div>
+
+                        <div id="receipt-content" class="w-full border-t-2 border-gov-black pt-4 mt-2">
+                            <input type="text" value="INVOICE" class="text-xl font-bold font-mono outline-none bg-transparent mb-3 w-full p-0 uppercase tracking-widest">
+                            
+                            <div class="w-full overflow-x-auto mb-4 border border-gov-border">
+                                <table class="w-full border-collapse min-w-[500px] text-xs">
+                                    <thead class="bg-gov-gray uppercase font-bold tracking-wider">
+                                        <tr class="border-b border-gov-border">
+                                            <th class="py-2 px-2.5 w-1/2 border-r border-gov-border">Description</th>
+                                            <th class="py-2 px-2.5 text-center w-16 border-r border-gov-border">Qty</th>
+                                            <th class="py-2 px-2.5 text-right w-24 border-r border-gov-border">Unit (£)</th>
+                                            <th class="py-2 px-2.5 text-right w-24">Total (£)</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody id="receipt-items-body" class="divide-y divide-gov-border"></tbody>
+                                </table>
+                            </div>
+                            
+                            <div class="flex justify-end text-base">
+                                <div class="bg-gov-gray p-2.5 border border-gov-border min-w-[180px] flex justify-between font-bold">
+                                    <span>TOTAL</span>
+                                    <span id="receipt-grand-total">£0.00</span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- PHYSICS SCREEN -->
+                <div id="physics-screen" class="absolute inset-0 z-20 hidden flex-col bg-gov-gray overflow-hidden">
+                    <div class="absolute top-3 left-3 z-30 bg-white border border-gov-border p-2.5 max-w-xs pointer-events-none text-[11px] shadow-sm">
+                        <h2 class="font-bold text-xs mb-0.5"><i class="fas fa-atom mr-1 text-gov-blue"></i> Kinematics Lab</h2>
+                        <p class="text-gov-darkGray m-0">Click coordinates to initialize mass objects under simulated gravity.</p>
+                    </div>
+                    <canvas id="physics-canvas" class="w-full h-full block touch-none cursor-crosshair"></canvas>
+                </div>
+
+                <!-- ENGLISH SCREEN -->
+                <div id="english-screen" class="absolute inset-0 z-20 hidden flex-col p-4 md:p-8 overflow-y-auto bg-white">
+                    <div class="max-w-3xl mx-auto w-full pb-10">
+                        <h1 class="text-xl md:text-2xl font-bold mb-0.5"><i class="fas fa-book-open text-gov-blue mr-1.5"></i> Literary Analysis</h1>
+                        <p class="text-gov-darkGray mb-4 text-xs">Device identification protocol.</p>
+
+                        <div class="gov-card mb-4">
+                            <h2 class="text-xs font-bold mb-1.5 uppercase tracking-wider">Input Sequence</h2>
+                            <textarea id="poetry-input" class="w-full gov-input p-2.5 mb-2.5 h-24 font-serif text-xs" placeholder="Paste text here..."></textarea>
+                            
+                            <div class="flex flex-wrap gap-1.5">
+                                <button onclick="window.highlightPoetry('vowels')" class="gov-btn-secondary text-[11px] py-1 px-2.5">Assonance</button>
+                                <button onclick="window.highlightPoetry('consonants')" class="gov-btn-secondary text-[11px] py-1 px-2.5">Consonance</button>
+                                <button onclick="window.highlightPoetry('alliteration')" class="gov-btn-secondary text-[11px] py-1 px-2.5">Alliteration</button>
+                            </div>
+                        </div>
+
+                        <div>
+                            <h2 class="text-xs font-bold mb-1.5 uppercase tracking-wider text-gov-darkGray">Output Matrix</h2>
+                            <div class="border border-gov-border p-4 min-h-[100px] bg-gov-gray font-serif text-xs leading-relaxed">
+                                <p id="poetry-display" class="m-0 text-gov-darkGray italic">Results pending.</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- CONVERTER SCREEN -->
+                <div id="converter-screen" class="absolute inset-0 z-20 hidden flex-col p-4 md:p-8 overflow-y-auto bg-white">
+                    <div class="max-w-xl mx-auto w-full">
+                        <h1 class="text-xl md:text-2xl font-bold mb-0.5"><i class="fas fa-right-left text-gov-blue mr-1.5"></i> Unit Conversion</h1>
+                        <p class="text-gov-darkGray mb-4 text-xs">Standardize measurements.</p>
+
+                        <div class="flex border-b border-gov-border mb-4 text-xs">
+                            <button onclick="setConverterCategory('length')" id="btn-conv-length" class="px-3 py-1.5 font-bold border-b-2 border-gov-blue text-gov-blue">Length</button>
+                            <button onclick="setConverterCategory('mass')" id="btn-conv-mass" class="px-3 py-1.5 text-gov-darkGray hover:text-gov-black">Mass</button>
+                            <button onclick="setConverterCategory('temp')" id="btn-conv-temp" class="px-3 py-1.5 text-gov-darkGray hover:text-gov-black">Temp</button>
+                        </div>
+
+                        <div class="gov-card max-w-md mx-auto p-4">
+                            <div class="flex flex-col gap-3">
+                                <div>
+                                    <label class="block font-bold text-[10px] uppercase tracking-wider mb-1 text-gov-darkGray" for="conv-input">Input Value</label>
+                                    <div class="flex border border-gov-black bg-white">
+                                        <input type="number" id="conv-input" value="1" oninput="runConversion()" class="w-2/3 p-2 text-sm font-bold border-none focus:outline-none">
+                                        <select id="conv-from-unit" onchange="runConversion()" class="w-1/3 p-2 text-[11px] font-bold bg-gov-gray border-l border-gov-black cursor-pointer focus:outline-none"></select>
+                                    </div>
+                                </div>
+                                <div class="text-center text-gov-darkGray text-xs"><i class="fas fa-arrow-down"></i></div>
+                                <div>
+                                    <label class="block font-bold text-[10px] uppercase tracking-wider mb-1 text-gov-darkGray">Output Value</label>
+                                    <div class="flex border border-gov-black bg-white">
+                                        <div id="conv-output" class="w-2/3 p-2 text-sm font-bold truncate">0</div>
+                                        <select id="conv-to-unit" onchange="runConversion()" class="w-1/3 p-2 text-[11px] font-bold bg-gov-gray border-l border-gov-black cursor-pointer focus:outline-none"></select>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- GPA SCREEN -->
+                <div id="gpa-screen" class="absolute inset-0 z-20 hidden flex-col p-4 md:p-8 overflow-y-auto bg-white">
+                    <div class="max-w-4xl mx-auto w-full pb-10">
+                        <h1 class="text-xl md:text-2xl font-bold mb-0.5"><i class="fas fa-graduation-cap text-gov-blue mr-1.5"></i> GPA Calculator</h1>
+                        <p class="text-gov-darkGray mb-4 text-xs">Performance metric aggregation.</p>
+
+                        <div class="flex flex-col lg:flex-row gap-4 items-start">
+                            <div class="gov-card p-4 w-full lg:w-5/12 shrink-0">
+                                <h2 class="text-sm font-bold mb-2.5">Record Entry</h2>
+                                <div class="mb-2.5">
+                                    <label class="block font-bold text-[10px] mb-1 uppercase tracking-wider" for="gpa-course-name">Identifier</label>
+                                    <input type="text" id="gpa-course-name" class="gov-input py-1 text-xs">
+                                </div>
+                                <div class="flex gap-2.5 mb-3">
+                                    <div class="flex-1">
+                                        <label class="block font-bold text-[10px] mb-1" for="gpa-course-grade">Grade</label>
+                                        <select id="gpa-course-grade" class="gov-input py-1 text-xs cursor-pointer">
+                                            <option value="4">A (4.0)</option><option value="3.7">A- (3.7)</option><option value="3.3">B+ (3.3)</option><option value="3">B (3.0)</option><option value="2.7">B- (2.7)</option><option value="2.3">C+ (2.3)</option><option value="2">C (2.0)</option><option value="1">D (1.0)</option><option value="0">F (0.0)</option>
+                                        </select>
+                                    </div>
+                                    <div class="w-16">
+                                        <label class="block font-bold text-[10px] mb-1" for="gpa-course-credits">Credits</label>
+                                        <input type="number" id="gpa-course-credits" value="3" min="1" class="gov-input py-1 text-xs text-center">
+                                    </div>
+                                </div>
+                                <button onclick="addGpaCourse()" class="gov-btn text-xs py-1.5 w-full">Append Record</button>
+                            </div>
+                            
+                            <div class="w-full flex-1">
+                                <h2 class="text-xs font-bold mb-1.5 text-gov-darkGray uppercase tracking-wider">Transcript</h2>
+                                <div class="border-t border-gov-border">
+                                    <div id="gpa-course-list" class="flex flex-col max-h-[220px] overflow-y-auto no-scrollbar">
+                                        <div class="py-2.5 text-gov-darkGray text-xs">No records found.</div>
+                                    </div>
+                                </div>
+                                <div class="mt-3 pt-2.5 border-t-2 border-gov-black flex justify-between items-baseline bg-gov-gray p-2.5">
+                                    <span class="font-bold text-[10px] uppercase tracking-wider text-gov-darkGray">Cumulative GPA</span>
+                                    <span class="font-bold text-2xl text-gov-black font-mono" id="gpa-result">0.00</span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- FORMULAS SCREEN -->
+                <div id="formulas-screen" class="absolute inset-0 z-20 hidden flex-col p-4 md:p-8 overflow-y-auto bg-white">
+                    <div class="max-w-3xl mx-auto w-full">
+                        <h1 class="text-xl md:text-2xl font-bold mb-0.5"><i class="fas fa-square-root-variable text-gov-blue mr-1.5"></i> Formula Repository</h1>
+                        <p class="text-gov-darkGray mb-4 text-xs">Mathematical and scientific equation storage.</p>
+
+                        <div class="gov-card p-4 mb-5 border-l-8">
+                            <h2 class="font-bold text-sm mb-2.5">Store Equation</h2>
+                            <div class="flex flex-col md:flex-row gap-2.5 mb-2.5">
+                                <div class="w-full md:w-1/3">
+                                    <label class="block font-bold text-[10px] mb-1 uppercase tracking-wider" for="new-formula-name">Nomenclature</label>
+                                    <input type="text" id="new-formula-name" placeholder="e.g. Force" class="gov-input py-1 text-xs">
+                                </div>
+                                <div class="w-full md:w-2/3">
+                                    <label class="block font-bold text-[10px] mb-1 uppercase tracking-wider" for="new-formula-expr">Expression</label>
+                                    <input type="text" id="new-formula-expr" placeholder="e.g. F = ma" class="gov-input py-1 text-xs font-mono bg-gov-gray">
+                                </div>
+                            </div>
+                            <button onclick="addFormula()" class="gov-btn text-xs py-1.5">Commit to Database</button>
+                        </div>
+
+                        <div class="gov-card">
+                            <h2 class="text-xs font-bold mb-2.5 uppercase tracking-wider text-gov-darkGray">Database Contents</h2>
+                            <div id="formula-list" class="grid grid-cols-1 md:grid-cols-2 gap-2.5"></div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- CALCULATOR SCREEN -->
+                <div id="calc-screen" class="absolute inset-0 z-20 hidden flex-col items-center justify-center p-4 bg-white">
+                    <div class="max-w-xs w-full bg-gov-gray border border-gov-black p-3 shadow-sm">
+                        <div class="flex justify-between items-center mb-2 pb-1.5 border-b border-gov-border">
+                            <span class="font-bold text-xs uppercase tracking-wider">Standard Calculator</span>
+                        </div>
+                        <div class="bg-white border border-gov-black p-2.5 mb-3 text-right">
+                            <div id="calc-history" class="text-gov-darkGray text-[10px] font-bold h-3 mb-0.5"></div>
+                            <div id="calc-display" class="text-2xl font-bold font-mono truncate">0</div>
+                        </div>
+                        <div class="grid grid-cols-4 gap-1.5">
+                            <button onclick="calcClear()" class="calc-btn calc-btn-ac text-xs h-10">C</button>
+                            <button onclick="calcAppend('(')" class="calc-btn text-xs h-10">(</button>
+                            <button onclick="calcAppend(')')" class="calc-btn text-xs h-10">)</button>
+                            <button onclick="calcAppend('/')" class="calc-btn calc-btn-op text-xs h-10">&divide;</button>
+                            <button onclick="calcAppend('7')" class="calc-btn text-xs h-10">7</button>
+                            <button onclick="calcAppend('8')" class="calc-btn text-xs h-10">8</button>
+                            <button onclick="calcAppend('9')" class="calc-btn text-xs h-10">9</button>
+                            <button onclick="calcAppend('*')" class="calc-btn calc-btn-op text-xs h-10">&times;</button>
+                            <button onclick="calcAppend('4')" class="calc-btn text-xs h-10">4</button>
+                            <button onclick="calcAppend('5')" class="calc-btn text-xs h-10">5</button>
+                            <button onclick="calcAppend('6')" class="calc-btn text-xs h-10">6</button>
+                            <button onclick="calcAppend('-')" class="calc-btn calc-btn-op text-xs h-10">&minus;</button>
+                            <button onclick="calcAppend('1')" class="calc-btn text-xs h-10">1</button>
+                            <button onclick="calcAppend('2')" class="calc-btn text-xs h-10">2</button>
+                            <button onclick="calcAppend('3')" class="calc-btn text-xs h-10">3</button>
+                            <button onclick="calcAppend('+')" class="calc-btn calc-btn-op text-xs h-10">+</button>
+                            <button onclick="calcAppend('0')" class="calc-btn col-span-2 text-left pl-4 text-xs h-10">0</button>
+                            <button onclick="calcAppend('.')" class="calc-btn text-xs h-10">.</button>
+                            <button onclick="calcEquals()" class="calc-btn calc-btn-eq text-xs h-10">=</button>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- CITATIONS SCREEN -->
+                <div id="citations-screen" class="absolute inset-0 z-20 hidden flex-col p-4 md:p-8 overflow-y-auto bg-white">
+                    <div class="max-w-3xl mx-auto w-full">
+                        <h1 class="text-xl md:text-2xl font-bold mb-0.5"><i class="fas fa-quote-right text-gov-blue mr-1.5"></i> Reference Generator</h1>
+                        <p class="text-gov-darkGray mb-4 text-xs">Bibliography formatting protocol.</p>
+
+                        <div class="flex border-b border-gov-border mb-4 text-xs">
+                            <button onclick="setCitationFormat('apa')" id="btn-cite-apa" class="px-3 py-1.5 font-bold border-b-2 border-gov-blue text-gov-blue">APA</button>
+                            <button onclick="setCitationFormat('mla')" id="btn-cite-mla" class="px-3 py-1.5 text-gov-darkGray hover:text-gov-black">MLA</button>
+                            <button onclick="setCitationFormat('chicago')" id="btn-cite-chicago" class="px-3 py-1.5 text-gov-darkGray hover:text-gov-black">Chicago</button>
+                        </div>
+
+                        <div class="gov-card p-4 mb-4 max-w-lg">
+                            <div class="space-y-2.5 mb-3">
+                                <div>
+                                    <label class="block font-bold text-[10px] uppercase tracking-wider mb-0.5" for="cite-author">Author(s)</label>
+                                    <input type="text" id="cite-author" placeholder="Last, First" class="gov-input py-1 text-xs">
+                                </div>
+                                <div>
+                                    <label class="block font-bold text-[10px] uppercase tracking-wider mb-0.5" for="cite-title">Source Title</label>
+                                    <input type="text" id="cite-title" class="gov-input py-1 text-xs">
+                                </div>
+                                <div>
+                                    <label class="block font-bold text-[10px] uppercase tracking-wider mb-0.5" for="cite-publisher">Publisher</label>
+                                    <input type="text" id="cite-publisher" class="gov-input py-1 text-xs">
+                                </div>
+                                <div class="grid grid-cols-2 gap-2.5">
+                                    <div>
+                                        <label class="block font-bold text-[10px] uppercase tracking-wider mb-0.5" for="cite-year">Year</label>
+                                        <input type="text" id="cite-year" class="gov-input py-1 text-xs">
+                                    </div>
+                                    <div>
+                                        <label class="block font-bold text-[10px] uppercase tracking-wider mb-0.5" for="cite-url">URI</label>
+                                        <input type="text" id="cite-url" class="gov-input py-1 text-xs font-mono">
+                                    </div>
+                                </div>
+                            </div>
+                            <button onclick="generateCitation()" class="gov-btn text-xs py-1.5 w-full font-bold">Generate Reference</button>
+                        </div>
+
+                        <div class="gov-card">
+                            <h2 class="text-xs font-bold mb-1.5 uppercase tracking-wider text-gov-darkGray">Output</h2>
+                            <div class="bg-gov-gray border border-gov-border p-2.5 relative min-h-[40px]">
+                                <p id="cite-output" class="text-xs m-0 mb-5 font-serif leading-relaxed text-gov-black">Output pending execution.</p>
+                                <button onclick="copyCitation()" class="absolute bottom-1.5 right-1.5 gov-btn-secondary text-[10px] py-0.5 px-2" title="Copy">
+                                    <i class="fas fa-copy mr-1"></i> Copy
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- PERIODIC SCREEN -->
+                <div id="periodic-screen" class="absolute inset-0 z-20 hidden flex-col p-4 md:p-8 overflow-y-auto bg-white">
+                    <div class="max-w-5xl mx-auto w-full pb-10">
+                        <div class="mb-4">
+                            <h1 class="text-xl md:text-2xl font-bold mb-0.5"><i class="fas fa-atom text-gov-blue mr-1.5"></i> Periodic Table</h1>
+                            <p class="text-gov-darkGray text-xs m-0">Chemical element indexing.</p>
+                        </div>
+
+                        <div id="element-detail" class="hidden gov-card p-3 mb-4 max-w-xs">
+                            <div class="flex items-center gap-3">
+                                <div id="detail-symbol" class="w-16 h-16 bg-white border border-gov-black flex flex-col items-center justify-center relative">
+                                    <span id="detail-num" class="absolute top-1 left-1 text-[9px] font-bold"></span>
+                                    <span id="detail-mass" class="absolute top-1 right-1 text-[8px]"></span>
+                                    <span id="detail-symbol-text" class="text-2xl font-bold"></span>
+                                </div>
+                                <div>
+                                    <h2 id="detail-name" class="text-base font-bold mb-0 m-0"></h2>
+                                    <p id="detail-info" class="text-gov-darkGray text-[10px] m-0 font-bold uppercase tracking-wider"></p>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="overflow-x-auto pb-4">
+                            <div id="periodic-grid" class="grid grid-cols-10 sm:grid-cols-12 md:grid-cols-[repeat(18,minmax(0,1fr))] gap-[2px] min-w-[700px] max-w-[1000px]"></div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Universal Web Explorer / iframe Container -->
+                <div id="iframe-container" class="w-full h-full relative z-10 bg-white hidden"></div>
+
+            </div>
+        </main>
+    </div>
+
+    <!-- Script Application Logic -->
+    <script>
+        const PYTHON_API = 'https://clonexxshree.pythonanywhere.com/api';
+        // Compatibility adapter for the deployed PythonAnywhere key/value API.
+        const nativeFetch = window.fetch.bind(window);
+        const dataKeys = {tasks:'clonbrow_tasks',flashcards:'clonbrow_cards',quizzes:'clonbrow_quiz',bites:'clonbrow_bites',formulas:'clonbrow_customF'};
+        async function readRemoteList(kind,user){const r=await nativeFetch(`${PYTHON_API}/data/${encodeURIComponent(dataKeys[kind])}?username=${encodeURIComponent(user)}`);if(!r.ok)throw Error(`HTTP ${r.status}`);const j=await r.json();return Array.isArray(j.value)?j.value:[]}
+        async function writeRemoteList(kind,user,value){const r=await nativeFetch(`${PYTHON_API}/data/${encodeURIComponent(dataKeys[kind])}`,{method:'PUT',headers:{'Content-Type':'application/json'},body:JSON.stringify({username:user,value})});if(!r.ok)throw Error(`HTTP ${r.status}`);return r}
+        window.fetch = async function(input,init={}) {
+            const url=typeof input==='string'?input:input.url;
+            if(!url.startsWith(PYTHON_API+'/'))return nativeFetch(input,init);
+            const u=new URL(url),route=u.pathname.replace(/^\/api\//,'').split('/')[0],method=(init.method||'GET').toUpperCase();
+            if(route==='login'&&method==='POST'){const r=await nativeFetch(PYTHON_API+'/session',init);return r}
+            if(!dataKeys[route])return nativeFetch(input,init);
+            const user=u.searchParams.get('user')||currentUser||'Guest';
+            try {
+                let list=await readRemoteList(route,user);
+                if(method==='GET')return new Response(JSON.stringify(list),{status:200,headers:{'Content-Type':'application/json'}});
+                if(method==='POST'){const item=JSON.parse(init.body||'{}');item.id=item.id??Date.now();list.push(item);await writeRemoteList(route,user,list)}
+                else if(method==='PUT'){const item=JSON.parse(init.body||'{}');const found=list.find(x=>String(x.id)===String(item.id));if(found&&route==='tasks')found.done=item.done;await writeRemoteList(route,user,list)}
+                else if(method==='DELETE'){const id=u.searchParams.get('id');list=list.filter(x=>String(x.id)!==String(id));await writeRemoteList(route,user,list)}
+                return new Response(JSON.stringify({ok:true}),{status:200,headers:{'Content-Type':'application/json'}});
+            } catch(e){return new Response(JSON.stringify({error:String(e.message||e)}),{status:502,headers:{'Content-Type':'application/json'}})}
+        };
+        let currentUser = 'Guest';
+        let isServerOnline = false;
+
+        let dbFlashcards = [];
+        let dbQuizzes = [];
+        let dbBites = [];
+        let dbFormulas = [];
+        let currentCard = 0;
+        let isFlipped = false;
+        let currentMcqIndex = 0;
+
+        const appFolders = {
+            learn: {
+                title: 'Academic Services', icon: 'fa-graduation-cap',
+                apps: [
+                    { url: 'clonmedic://docvault', title: 'Document Vault' },
+                    { url: 'clonmedic://citations', title: 'Reference Generator' },
+                    { url: 'clonmedic://timetable', title: 'Schedule Manager' },
+                    { url: 'clonmedic://quicklearn', title: 'Quick Bites' },
+                    { url: 'clonmedic://mcq', title: 'Practice Quizzes' },
+                    { url: 'medicof all.html', title: 'Science Simulations' },
+                    { url: 'SansKoder.html', title: 'SansKoder' },
+                    { url: 'clonmedic://periodic', title: 'Periodic Table' },
+                    { url: 'trecore.html', title: 'Trecore' },
+                    { url: 'clonmedic://english', title: 'Literary Analysis' }
+                ]
+            },
+            tools: {
+                title: 'Tools & Utilities', icon: 'fa-wrench',
+                apps: [
+                    { url: 'clonmedic://inbi', title: 'Utility Hub' },
+                    { url: 'brainboard.html', title: 'Brainboard' },
+                    { url: 'clonmedic://receipt', title: 'Invoice Generator' },
+                    { url: 'clonmedic://converter', title: 'Unit Converter' },
+                    { url: 'clonmedic://gpa', title: 'GPA Calculator' },
+                    { url: 'clonmedic://formulas', title: 'Formula Repository' },
+                    { url: 'clonmedic://calc', title: 'Calculator' }
+                ]
+            },
+            productivity: {
+                title: 'Productivity', icon: 'fa-bolt',
+                apps: [
+                    { url: 'clonmedic://tasks', title: 'Task Manager' },
+                    { url: 'clonmedic://pomodoro', title: 'Focus Timer' }
+                ]
+            },
+            games: {
+                title: 'Games & Labs', icon: 'fa-gamepad',
+                apps: [
+                    { url: 'arcade.html', title: 'Arcade Hub' },
+                    { url: 'clonmedic://physics', title: 'Kinematics Lab' }
+                ]
+            },
+            research: {
+                title: 'Research Centre', icon: 'fa-flask', action: 'link', url: 'heril.html'
+            },
+            school: {
+                title: 'School', icon: 'fa-school', action: 'link', url: 'Schooler.html'
+            },
+            syllable: {
+                title: 'Syllable', icon: 'fa-book', action: 'link', url: 'syllabus.html'
+            }
+        };
+
+        window.toggleSidebar = function() {
+            const sidebar = document.getElementById('os-sidebar');
+            const backdrop = document.getElementById('sidebar-backdrop');
+            if(sidebar) {
+                sidebar.classList.toggle('mobile-open');
+                if(backdrop) backdrop.classList.toggle('active');
+            }
+        };
+
+        window.renderSidebar = function(activeFolder = null) {
+            const sidebar = document.getElementById('sidebar-nav-links');
+            if(!sidebar) return;
+            sidebar.innerHTML = '';
+            
+            let html = '<ul class="m-0 p-0 list-none">';
+            if (!activeFolder) {
+                Object.keys(appFolders).forEach(key => {
+                    const f = appFolders[key];
+                    if(f.action === 'link') {
+                        html += `
+                        <li class="border-b border-gov-border">
+                            <button onclick="loadWebPage('${f.url}'); if(window.innerWidth < 768) toggleSidebar();" class="w-full text-left px-4 py-3 text-gov-black hover:bg-gov-gray font-bold text-xs md:text-sm flex items-center transition-colors">
+                                <i class="fas ${f.icon} w-6 text-center mr-2 text-gov-darkGray"></i> <span>${f.title}</span>
+                            </button>
+                        </li>`;
+                    } else {
+                        html += `
+                        <li class="border-b border-gov-border">
+                            <button onclick="renderSidebar('${key}')" class="w-full text-left px-4 py-3 text-gov-blue hover:bg-gov-gray font-bold text-xs md:text-sm flex justify-between items-center transition-colors">
+                                <span><i class="fas ${f.icon} w-6 text-center mr-2 text-gov-blue"></i> ${f.title}</span> <i class="fas fa-chevron-right text-[10px]"></i>
+                            </button>
+                        </li>`;
+                    }
+                });
+            } else {
+                html += `
+                <li class="border-b border-gov-border bg-gov-gray">
+                    <button onclick="renderSidebar(null)" class="w-full text-left px-4 py-2.5 text-gov-black font-bold text-xs md:text-sm flex items-center gap-2 hover:bg-gray-200 transition-colors">
+                        <i class="fas fa-arrow-left text-xs"></i> Back to Menu
+                    </button>
+                </li>`;
+                appFolders[activeFolder].apps.forEach(app => {
+                    html += `
+                    <li class="border-b border-gov-border">
+                        <button onclick="loadWebPage('${app.url}'); if(window.innerWidth < 768) toggleSidebar();" class="w-full text-left px-4 py-3 text-gov-blue hover:underline hover:bg-gov-gray text-xs md:text-sm transition-colors pl-10">
+                            ${app.title}
+                        </button>
+                    </li>`;
+                });
+            }
+            html += '</ul>';
+            sidebar.innerHTML = html;
+        };
+
+        async function handleOSLogin() {
+            const username = document.getElementById('boot-username').value.trim();
+            if (!username) { 
+                document.getElementById('login-error').classList.remove('hidden');
+                return; 
+            }
+            currentUser = username;
+            document.getElementById('header-workspace-name').innerText = `ID: ${username.toUpperCase()}`;
+            
+            const btn = document.getElementById('login-btn');
+            btn.innerHTML = 'Connecting...';
+            
+            try {
+                const res = await fetch(`${PYTHON_API}/login`, {
+                    method: 'POST', headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ username: currentUser })
+                });
+                if(res.ok) {
+                    isServerOnline = true;
+                    await fetchAllData();
+                } else {
+                    throw new Error("Server response issue");
+                }
+            } catch(e) {
+                console.warn("DB Offline.");
+                document.getElementById('db-status').classList.remove('hidden');
+                isServerOnline = false;
+                
+                dbFlashcards = [{q: "Mitochondria function?", a: "Powerhouse of the cell."}];
+                dbQuizzes = [{id: 'demo1', q: "Identify the noble gas.", opts: ["Oxygen", "Neon", "Nitrogen", "Carbon"], ans: 1}];
+                dbBites = [{id: 'demo1', topic: "Photosynthesis Protocol", points: ["Requires light energy.", "Produces O2 byproduct."]}];
+                dbFormulas = [{id: 'demo1', name: 'Kinetic Energy', expr: 'KE = 1/2mv²'}];
+                
+                updateFlashcardUI(); renderFlashcardList(); renderQuickLearnDropdown(); renderMcqList(); renderFormulaList();
+                renderTasks([{id: 1, task: "Complete system diagnostic", done: 0}]);
+            }
+
+            const bootScreen = document.getElementById('os-boot-screen');
+            bootScreen.style.opacity = '0';
+            setTimeout(() => {
+                bootScreen.classList.add('hidden');
+                renderSidebar();
+                window.loadWebPage(HOME_URL);
+            }, 500);
+        }
+
+        async function fetchAllData() {
+            if(!isServerOnline) return;
+            try {
+                const [fRes, qRes, bRes, foRes, tRes] = await Promise.all([
+                    fetch(`${PYTHON_API}/flashcards?user=${currentUser}`),
+                    fetch(`${PYTHON_API}/quizzes?user=${currentUser}`),
+                    fetch(`${PYTHON_API}/bites?user=${currentUser}`),
+                    fetch(`${PYTHON_API}/formulas?user=${currentUser}`),
+                    fetch(`${PYTHON_API}/tasks?user=${currentUser}`)
+                ]);
+                dbFlashcards = await fRes.json(); dbQuizzes = await qRes.json();
+                dbBites = await bRes.json(); dbFormulas = await foRes.json();
+                const tasks = await tRes.json();
+                
+                updateFlashcardUI(); renderFlashcardList(); renderQuickLearnDropdown();
+                renderQuickLearnAdminList(); renderMcqList(); renderFormulaList(); renderTasks(tasks);
+            } catch (e) { console.error("Fetch failed", e); }
+        }
+
+        let localTasks = []; 
+        window.addTaskDB = async function() {
+            const input = document.getElementById('new-task-input').value ? document.getElementById('new-task-input') : document.getElementById('full-task-input');
+            if(!input) return;
+            const task = input.value.trim();
+            if(!task) return;
+            document.querySelectorAll('input[id*="task"]').forEach(el => el.value = '');
+            
+            if(isServerOnline) {
+                await fetch(`${PYTHON_API}/tasks`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ username: currentUser, task: task }) });
+                const tRes = await fetch(`${PYTHON_API}/tasks?user=${currentUser}`); window.renderTasks(await tRes.json());
+            } else {
+                localTasks.push({id: Date.now(), task: task, done: 0});
+                renderTasks(localTasks);
+            }
+        };
+        window.toggleTaskDB = async function(id, isDone) {
+            if(isServerOnline) {
+                await fetch(`${PYTHON_API}/tasks`, { method: 'PUT', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ id: id, done: isDone ? 1 : 0 }) });
+                const tRes = await fetch(`${PYTHON_API}/tasks?user=${currentUser}`); window.renderTasks(await tRes.json());
+            } else {
+                const t = localTasks.find(x => x.id == id);
+                if(t) t.done = isDone ? 1 : 0;
+                renderTasks(localTasks);
+            }
+        };
+        window.deleteTaskDB = async function(id) {
+            if(isServerOnline) {
+                await fetch(`${PYTHON_API}/tasks?id=${id}`, { method: 'DELETE' });
+                const tRes = await fetch(`${PYTHON_API}/tasks?user=${currentUser}`); window.renderTasks(await tRes.json());
+            } else {
+                localTasks = localTasks.filter(x => x.id != id);
+                renderTasks(localTasks);
+            }
+        };
+        window.renderTasks = function(tasks) {
+            const renderTo = (containerId) => {
+                const list = document.getElementById(containerId);
+                if(!list) return;
+                list.innerHTML = '';
+                if(tasks.length === 0) { list.innerHTML = `<div class="text-xs text-gov-darkGray py-2">Queue empty.</div>`; return; }
+                tasks.forEach(t => {
+                    const el = document.createElement('div');
+                    el.className = `flex justify-between items-start py-1.5 border-b border-gov-border hover:bg-gov-gray px-1`;
+                    el.innerHTML = `
+                        <div class="flex items-start gap-2 flex-1 overflow-hidden">
+                            <div class="pt-0.5">
+                                <input type="checkbox" ${t.done ? 'checked' : ''} onchange="toggleTaskDB(${t.id}, this.checked)" class="w-3.5 h-3.5 border border-gov-black cursor-pointer accent-gov-black">
+                            </div>
+                            <span class="text-xs ${t.done ? 'line-through text-gov-darkGray' : 'text-gov-black font-bold'}">${t.task}</span>
+                        </div>
+                        <button onclick="deleteTaskDB(${t.id})" class="text-gov-blue hover:underline text-[9px] font-bold uppercase tracking-wider ml-2">Del</button>
+                    `;
+                    list.appendChild(el);
+                });
+            }
+            renderTo('tasks-list'); 
+            renderTo('full-tasks-list'); 
+            if(!isServerOnline && localTasks.length === 0 && tasks.length > 0) localTasks = tasks; 
+        };
+
+        function saveDoc() {
+            const content = document.getElementById('word-editor').innerHTML;
+            localStorage.setItem('clonbrow-doc', content);
+            const btn = document.querySelector('button[onclick="saveDoc()"]');
+            const original = btn.innerHTML;
+            btn.innerHTML = '<i class="fas fa-check"></i>';
+            setTimeout(() => btn.innerHTML = original, 2000);
+        }
+        function loadDoc() {
+            const content = localStorage.getItem('clonbrow-doc');
+            if(content) { document.getElementById('word-editor').innerHTML = content; }
+        }
+        function insertDocTable() {
+            let html = `<table><tbody>`;
+            for(let r=0; r<3; r++) { html += `<tr>`; for(let c=0; c<3; c++) { html += `<td>Cell</td>`; } html += `</tr>`; }
+            html += `</tbody></table><p><br></p>`;
+            document.execCommand('insertHTML', false, html);
+        }
+        function insertDocChart() {
+            let data = prompt("Format: Label:Value, Label:Value", "A:10, B:20, C:15");
+            if(!data) return;
+            let html = `<div contenteditable="false" style="display:flex; align-items:flex-end; gap:20px; height:200px; padding:20px; border-left:2px solid #1d70b8; border-bottom:2px solid #1d70b8; margin:30px 0; background:#f3f2f1;">`;
+            let max = 0;
+            let items = data.split(',').map(s => {
+                let [label, val] = s.split(':');
+                val = parseFloat(val) || 0;
+                if(val > max) max = val;
+                return {label: label ? label.trim() : '', val};
+            });
+            items.forEach(item => {
+                let pct = max > 0 ? (item.val / max) * 100 : 0;
+                html += `<div style="display:flex; flex-direction:column; align-items:center; flex:1;">
+                            <div style="font-size:12px; font-weight:bold; margin-bottom:5px;">${item.val}</div>
+                            <div style="width:100%; height:${pct}%; background:#0b0c0c; min-height:5px;"></div>
+                            <div style="font-size:12px; font-weight:bold; margin-top:5px;">${item.label}</div>
+                         </div>`;
+            });
+            html += `</div><p><br></p>`;
+            document.execCommand('insertHTML', false, html);
+        }
+        window.addEventListener('load', loadDoc);
+
+        window.toggleQuickLearnMode = function(mode) {
+            const btnLearn = document.getElementById('btn-ql-learn'); const btnCreate = document.getElementById('btn-ql-create');
+            const viewLearn = document.getElementById('ql-learn-view'); const viewCreate = document.getElementById('ql-create-view');
+            
+            if(mode === 'learn') {
+                btnLearn.className = "px-3 py-1.5 font-bold border-b-2 border-gov-blue text-gov-blue";
+                btnCreate.className = "px-3 py-1.5 text-gov-darkGray hover:text-gov-black";
+                viewLearn.classList.remove('hidden'); viewLearn.classList.add('flex'); viewCreate.classList.remove('flex'); viewCreate.classList.add('hidden');
+                renderQuickLearnDropdown();
+            } else {
+                btnCreate.className = "px-3 py-1.5 font-bold border-b-2 border-gov-blue text-gov-blue";
+                btnLearn.className = "px-3 py-1.5 text-gov-darkGray hover:text-gov-black";
+                viewCreate.classList.remove('hidden'); viewCreate.classList.add('flex'); viewLearn.classList.remove('flex'); viewLearn.classList.add('hidden');
+                renderQuickLearnAdminList();
+            }
+        };
+        window.renderQuickLearnDropdown = function() {
+            const select = document.getElementById('ql-topic-select'); select.innerHTML = '<option value="">-- SELECT TOPIC --</option>';
+            dbBites.forEach((item, idx) => { const opt = document.createElement('option'); opt.value = idx; opt.innerText = item.topic; select.appendChild(opt); });
+            document.getElementById('ql-title').innerText = "Standby"; document.getElementById('ql-points').innerHTML = "<li>Awaiting selection.</li>";
+        };
+        window.loadSelectedQuickBite = function() {
+            const idx = document.getElementById('ql-topic-select').value; if(idx === '') return;
+            const data = dbBites[idx]; if(!data) return;
+            document.getElementById('ql-title').innerText = data.topic; const ul = document.getElementById('ql-points'); ul.innerHTML = '';
+            data.points.forEach(point => { if(point.trim() !== '') { const li = document.createElement('li'); li.innerText = point.trim(); ul.appendChild(li); } });
+        };
+        window.addQuickBiteDB = async function() {
+            const topic = document.getElementById('new-ql-title').value.trim(); const pointsRaw = document.getElementById('new-ql-points').value;
+            if(!topic || !pointsRaw) return; const points = pointsRaw.split('\n').filter(p => p.trim() !== '');
+            if(isServerOnline) {
+                await fetch(`${PYTHON_API}/bites`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ username: currentUser, topic: topic, points: points }) });
+                const bRes = await fetch(`${PYTHON_API}/bites?user=${currentUser}`); dbBites = await bRes.json();
+            } else { dbBites.push({ id: 'ql-' + Date.now(), topic, points }); }
+            document.getElementById('new-ql-title').value = ''; document.getElementById('new-ql-points').value = ''; renderQuickLearnAdminList();
+        };
+        window.deleteQuickBiteDB = async function(id) {
+            if(isServerOnline) { await fetch(`${PYTHON_API}/bites?id=${id}`, { method: 'DELETE' }); const bRes = await fetch(`${PYTHON_API}/bites?user=${currentUser}`); dbBites = await bRes.json(); }
+            else { dbBites = dbBites.filter(q => q.id !== id); }
+            renderQuickLearnAdminList();
+        };
+        window.renderQuickLearnAdminList = function() {
+            const list = document.getElementById('ql-list-admin'); list.innerHTML = '';
+            if(dbBites.length === 0) { list.innerHTML = '<div class="text-xs text-gov-darkGray py-2">No modules found.</div>'; return; }
+            dbBites.forEach(item => {
+                const el = document.createElement('div'); el.className = "py-2 flex justify-between items-center border-b border-gov-border text-xs";
+                el.innerHTML = `<div><div class="font-bold text-gov-black">${item.topic}</div><div class="text-gov-darkGray text-[10px]">${item.points.length} vectors</div></div><button onclick="deleteQuickBiteDB('${item.id}')" class="text-gov-blue hover:underline font-bold uppercase text-[10px]">Del</button>`;
+                list.appendChild(el);
+            });
+        };
+
+        window.toggleMcqMode = function(mode) {
+            const btnPlay = document.getElementById('btn-mcq-play'); const btnCreate = document.getElementById('btn-mcq-create');
+            const viewPlay = document.getElementById('mcq-play-view'); const viewCreate = document.getElementById('mcq-create-view');
+            
+            if(mode === 'play') {
+                btnPlay.className = "px-3 py-1.5 font-bold border-b-2 border-gov-blue text-gov-blue";
+                btnCreate.className = "px-3 py-1.5 text-gov-darkGray hover:text-gov-black";
+                viewPlay.classList.remove('hidden'); viewPlay.classList.add('flex'); viewCreate.classList.remove('flex'); viewCreate.classList.add('hidden');
+                currentMcqIndex = 0; loadMcqQuestion();
+            } else {
+                btnCreate.className = "px-3 py-1.5 font-bold border-b-2 border-gov-blue text-gov-blue";
+                btnPlay.className = "px-3 py-1.5 text-gov-darkGray hover:text-gov-black";
+                viewCreate.classList.remove('hidden'); viewCreate.classList.add('flex'); viewPlay.classList.remove('flex'); viewPlay.classList.add('hidden');
+                renderMcqList();
+            }
+        };
+        window.loadMcqQuestion = function() {
+            const btnNext = document.getElementById('mcq-next-btn'); const feedback = document.getElementById('mcq-feedback');
+            const optsContainer = document.getElementById('mcq-options'); const qEl = document.getElementById('mcq-question'); const counter = document.getElementById('mcq-counter');
+            feedback.innerText = ''; btnNext.classList.add('hidden');
+            if(dbQuizzes.length === 0) { qEl.innerText = "No questions available."; optsContainer.innerHTML = ''; counter.innerText = 'SEQ 0/0'; return; }
+            if(currentMcqIndex >= dbQuizzes.length) currentMcqIndex = 0;
+            const qData = dbQuizzes[currentMcqIndex]; qEl.innerText = qData.q; counter.innerText = `SEQ ${currentMcqIndex + 1}/${dbQuizzes.length}`; optsContainer.innerHTML = '';
+            qData.opts.forEach((opt, index) => {
+                const btn = document.createElement('button'); btn.className = "text-left border border-gov-black p-2 text-xs md:text-sm hover:bg-gov-gray flex gap-2.5 items-center font-bold bg-white";
+                btn.innerHTML = `<span class="bg-gov-black text-white rounded-full w-4 h-4 flex items-center justify-center text-[9px]">${['A','B','C','D'][index]}</span> <span>${opt}</span>`;
+                btn.onclick = () => window.checkMcqAnswer(index, btn); optsContainer.appendChild(btn);
+            });
+        };
+        window.checkMcqAnswer = function(selectedIndex, btnElement) {
+            const qData = dbQuizzes[currentMcqIndex]; const feedback = document.getElementById('mcq-feedback'); const btnNext = document.getElementById('mcq-next-btn');
+            const buttons = document.getElementById('mcq-options').querySelectorAll('button'); buttons.forEach(b => b.onclick = null);
+            if(selectedIndex === qData.ans) { 
+                btnElement.classList.add('bg-green-50', 'border-gov-green', 'text-gov-green'); 
+                feedback.innerText = "Valid"; 
+                feedback.className = 'font-bold text-sm text-gov-green uppercase tracking-wider';
+            } else { 
+                btnElement.classList.add('bg-red-50', 'border-gov-red', 'text-gov-red'); 
+                buttons[qData.ans].classList.add('border-2', 'border-gov-green'); 
+                feedback.innerText = "Invalid"; 
+                feedback.className = 'font-bold text-sm text-gov-red uppercase tracking-wider';
+            }
+            btnNext.classList.remove('hidden');
+        };
+        window.nextMcqQuestion = function() {
+            currentMcqIndex++;
+            if(currentMcqIndex >= dbQuizzes.length) { document.getElementById('mcq-question').innerText = "Sequence Complete."; document.getElementById('mcq-options').innerHTML = ''; document.getElementById('mcq-feedback').innerText = ''; document.getElementById('mcq-next-btn').classList.add('hidden'); setTimeout(() => { currentMcqIndex = 0; loadMcqQuestion(); }, 1500); }
+            else { loadMcqQuestion(); }
+        };
+        window.addQuizDB = async function() {
+            const q = document.getElementById('new-mcq-q').value.trim();
+            const opts = [ document.getElementById('new-mcq-opt0').value.trim(), document.getElementById('new-mcq-opt1').value.trim(), document.getElementById('new-mcq-opt2').value.trim(), document.getElementById('new-mcq-opt3').value.trim() ];
+            const ans = parseInt(document.getElementById('new-mcq-ans').value);
+            if(!q || opts.some(o => o === '')) return;
+            if(isServerOnline) { await fetch(`${PYTHON_API}/quizzes`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ username: currentUser, q: q, opts: opts, ans: ans }) }); const qRes = await fetch(`${PYTHON_API}/quizzes?user=${currentUser}`); dbQuizzes = await qRes.json(); }
+            else { dbQuizzes.push({ id: 'mcq-' + Date.now(), q, opts, ans }); }
+            document.getElementById('new-mcq-q').value = ''; document.getElementById('new-mcq-opt0').value = ''; document.getElementById('new-mcq-opt1').value = ''; document.getElementById('new-mcq-opt2').value = ''; document.getElementById('new-mcq-opt3').value = ''; document.getElementById('new-mcq-ans').value = '0';
+            renderMcqList();
+        };
+        window.deleteMcqQuestionDB = async function(id) {
+            if(isServerOnline) { await fetch(`${PYTHON_API}/quizzes?id=${id}`, { method: 'DELETE' }); const qRes = await fetch(`${PYTHON_API}/quizzes?user=${currentUser}`); dbQuizzes = await qRes.json(); }
+            else { dbQuizzes = dbQuizzes.filter(m => m.id !== id); }
+            renderMcqList();
+        };
+        window.renderMcqList = function() {
+            const list = document.getElementById('mcq-list-admin'); list.innerHTML = '';
+            if(dbQuizzes.length === 0) { list.innerHTML = '<div class="text-xs text-gov-darkGray py-2">Database empty.</div>'; return; }
+            dbQuizzes.forEach(item => {
+                const el = document.createElement('div'); el.className = "py-2 flex justify-between items-center border-b border-gov-border text-xs";
+                el.innerHTML = `<div class="flex-1 overflow-hidden"><div class="font-bold text-gov-black">${item.q}</div></div><button onclick="deleteMcqQuestionDB('${item.id}')" class="text-gov-blue hover:underline font-bold uppercase text-[10px] ml-2">Del</button>`;
+                list.appendChild(el);
+            });
+        };
+
+        window.toggleFlashcardMode = function(mode) {
+            const btnPlay = document.getElementById('btn-fc-play'); const btnCreate = document.getElementById('btn-fc-create');
+            const viewPlay = document.getElementById('fc-play-view'); const viewCreate = document.getElementById('fc-create-view');
+            if(mode === 'play') {
+                btnPlay.className = "px-3 py-1.5 font-bold border-b-2 border-gov-blue text-gov-blue";
+                btnCreate.className = "px-3 py-1.5 text-gov-darkGray hover:text-gov-black";
+                viewPlay.classList.remove('hidden'); viewPlay.classList.add('flex'); viewCreate.classList.remove('flex'); viewCreate.classList.add('hidden');
+                updateFlashcardUI();
+            } else {
+                btnCreate.className = "px-3 py-1.5 font-bold border-b-2 border-gov-blue text-gov-blue";
+                btnPlay.className = "px-3 py-1.5 text-gov-darkGray hover:text-gov-black";
+                viewCreate.classList.remove('hidden'); viewCreate.classList.add('flex'); viewPlay.classList.remove('flex'); viewPlay.classList.add('hidden');
+                renderFlashcardList();
+            }
+        };
+        window.updateFlashcardUI = function() {
+            const qEl = document.getElementById('fc-question'); const aEl = document.getElementById('fc-answer'); const counter = document.getElementById('fc-counter');
+            isFlipped = false; document.getElementById('flashcard-inner').classList.remove('rotate-y-180');
+            if(dbFlashcards.length === 0) { qEl.innerText = "Empty Deck"; aEl.innerText = ""; counter.innerText = "CARD 0/0"; return; }
+            if(currentCard >= dbFlashcards.length) currentCard = 0;
+            qEl.innerText = dbFlashcards[currentCard].q; aEl.innerText = dbFlashcards[currentCard].a; counter.innerText = `CARD ${currentCard + 1}/${dbFlashcards.length}`;
+        };
+        window.flipCard = function() {
+            if(dbFlashcards.length===0) return; const inner = document.getElementById('flashcard-inner'); isFlipped = !isFlipped;
+            if (isFlipped) inner.classList.add('rotate-y-180'); else inner.classList.remove('rotate-y-180');
+        };
+        window.nextCard = function() { if(dbFlashcards.length===0) return; currentCard = (currentCard + 1) % dbFlashcards.length; document.getElementById('flashcard-inner').classList.remove('rotate-y-180'); setTimeout(window.updateFlashcardUI, 250); };
+        window.prevCard = function() { if(dbFlashcards.length===0) return; currentCard = (currentCard - 1 + dbFlashcards.length) % dbFlashcards.length; document.getElementById('flashcard-inner').classList.remove('rotate-y-180'); setTimeout(window.updateFlashcardUI, 250); };
+        window.addFlashcardDB = async function() {
+            const q = document.getElementById('new-fc-q').value.trim(); const a = document.getElementById('new-fc-a').value.trim(); if(!q || !a) return;
+            if(isServerOnline) { await fetch(`${PYTHON_API}/flashcards`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ username: currentUser, q: q, a: a }) }); const res = await fetch(`${PYTHON_API}/flashcards?user=${currentUser}`); dbFlashcards = await res.json(); }
+            else { dbFlashcards.push({ id: 'fc-' + Date.now(), q, a }); }
+            document.getElementById('new-fc-q').value = ''; document.getElementById('new-fc-a').value = ''; renderFlashcardList(); updateFlashcardUI();
+        };
+        window.deleteFlashcardDB = async function(id) {
+            if(isServerOnline) { await fetch(`${PYTHON_API}/flashcards?id=${id}`, { method: 'DELETE' }); const res = await fetch(`${PYTHON_API}/flashcards?user=${currentUser}`); dbFlashcards = await res.json(); }
+            else { dbFlashcards = dbFlashcards.filter(f => f.id !== id); }
+            if(currentCard >= dbFlashcards.length) currentCard = Math.max(0, dbFlashcards.length-1); renderFlashcardList(); updateFlashcardUI();
+        };
+        window.renderFlashcardList = function() {
+            const list = document.getElementById('fc-list'); list.innerHTML = '';
+            if(dbFlashcards.length === 0) { list.innerHTML = `<div class="text-xs text-gov-darkGray py-2">Deck empty.</div>`; return; }
+            dbFlashcards.forEach((fc) => {
+                const el = document.createElement('div'); el.className = "py-2 flex justify-between items-center border-b border-gov-border text-xs";
+                el.innerHTML = `<div class="flex-1 overflow-hidden"><div class="font-bold text-gov-black truncate">${fc.q}</div></div><button onclick="deleteFlashcardDB('${fc.id}')" class="text-gov-blue hover:underline font-bold uppercase text-[10px] ml-2">Del</button>`;
+                list.appendChild(el);
+            });
+        };
+
+        window.addFormula = async function() {
+            const name = document.getElementById('new-formula-name').value.trim(); const expr = document.getElementById('new-formula-expr').value.trim();
+            if(!name || !expr) return;
+            if(isServerOnline) { await fetch(`${PYTHON_API}/formulas`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ username: currentUser, name, expr }) }); const res = await fetch(`${PYTHON_API}/formulas?user=${currentUser}`); dbFormulas = await res.json(); }
+            else { dbFormulas.push({ id: 'formula-' + Date.now(), name, expr }); }
+            document.getElementById('new-formula-name').value = ''; document.getElementById('new-formula-expr').value = ''; renderFormulaList();
+        };
+        window.deleteFormula = async function(id) {
+            if(isServerOnline) { await fetch(`${PYTHON_API}/formulas?id=${id}`, { method: 'DELETE' }); const res = await fetch(`${PYTHON_API}/formulas?user=${currentUser}`); dbFormulas = await res.json(); }
+            else { dbFormulas = dbFormulas.filter(f => f.id !== id); } renderFormulaList();
+        };
+        window.renderFormulaList = function() {
+            const list = document.getElementById('formula-list'); list.innerHTML = '';
+            if(dbFormulas.length === 0) { list.innerHTML = `<div class="text-xs text-gov-darkGray col-span-full">No formulas indexed.</div>`; return; }
+            dbFormulas.forEach((formula) => {
+                const el = document.createElement('div'); el.className = "p-2.5 bg-gov-gray border border-gov-border relative text-xs";
+                el.innerHTML = `
+                    <div class="font-bold mb-1">${formula.name}</div>
+                    <div class="font-mono text-gov-black bg-white p-1.5 border border-gov-border overflow-x-auto no-scrollbar whitespace-nowrap mb-1.5 text-[11px]">${formula.expr}</div>
+                    <div class="flex gap-2 font-bold uppercase tracking-wider text-[10px]">
+                        <button onclick="navigator.clipboard.writeText('${formula.expr.replace(/'/g, "\\'")}');" class="text-gov-blue hover:underline">Copy</button>
+                        <button onclick="deleteFormula('${formula.id}')" class="text-gov-red hover:underline">Del</button>
+                    </div>`;
+                list.appendChild(el);
+            });
+        };
+
+        let currentCiteFormat = 'apa';
+        window.setCitationFormat = function(fmt) {
+            currentCiteFormat = fmt;
+            ['apa','mla','chicago'].forEach(f => {
+                const btn = document.getElementById('btn-cite-' + f);
+                if(f === fmt) { btn.className = "px-3 py-1.5 font-bold border-b-2 border-gov-blue text-gov-blue text-xs"; } 
+                else { btn.className = "px-3 py-1.5 text-gov-darkGray hover:text-gov-black text-xs"; }
+            });
+        };
+        window.generateCitation = function() {
+            const author = document.getElementById('cite-author').value.trim(); const title = document.getElementById('cite-title').value.trim();
+            const publisher = document.getElementById('cite-publisher').value.trim(); const year = document.getElementById('cite-year').value.trim();
+            const url = document.getElementById('cite-url').value.trim(); let result = '';
+            if(!author || !title) { document.getElementById('cite-output').innerText = 'ERROR: Author and Title required.'; return; }
+            if(currentCiteFormat === 'apa') { result = `${author} (${year}). ${title}. ${publisher}. ${url ? url : ''}`; } 
+            else if(currentCiteFormat === 'mla') { result = `${author}. "${title}." ${publisher}, ${year}. ${url ? url : ''}`; } 
+            else { result = `${author}. ${title}. ${publisher}, ${year}. ${url ? url : ''}`; }
+            document.getElementById('cite-output').innerText = result.trim();
+        };
+        window.copyCitation = function() {
+            const text = document.getElementById('cite-output').innerText;
+            if(text.startsWith('ERROR') || text.startsWith('Output')) return;
+            navigator.clipboard.writeText(text).then(() => {
+                const btn = document.querySelector('#citations-screen button[title="Copy"]');
+                const original = btn.innerHTML; btn.innerHTML = '<i class="fas fa-check"></i>'; setTimeout(() => btn.innerHTML = original, 1500);
+            });
+        };
+
+        // Custom History & Navigation System
+        let historyStack = [];
+        let historyIndex = -1;
+        
+        const addressBar = document.getElementById('address-bar');
+        const iframeContainer = document.getElementById('iframe-container');
+        const loadingBar = document.getElementById('loading-bar');
+        
+        const screens = {
+            'home': document.getElementById('home-screen'),
+            'search': document.getElementById('search-screen'),
+            'article': document.getElementById('article-screen'),
+            'docvault': document.getElementById('word-screen'),
+            'inbi': document.getElementById('inbi-screen'),
+            'receipt': document.getElementById('receipt-screen'),
+            'timetable': document.getElementById('timetable-screen'),
+            'physics': document.getElementById('physics-screen'),
+            'pomodoro': document.getElementById('pomodoro-screen'),
+            'flashcards': document.getElementById('flashcard-screen'),
+            'english': document.getElementById('english-screen'),
+            'quicklearn': document.getElementById('quicklearn-screen'),
+            'mcq': document.getElementById('mcq-screen'),
+            'converter': document.getElementById('converter-screen'),
+            'gpa': document.getElementById('gpa-screen'),
+            'formulas': document.getElementById('formulas-screen'),
+            'tasks': document.getElementById('tasks-screen'),
+            'citations': document.getElementById('citations-screen'),
+            'periodic': document.getElementById('periodic-screen'),
+            'calc': document.getElementById('calc-screen')
+        };
+        const HOME_URL = 'clonmedic://home';
+        let currentActiveUrl = HOME_URL;
+
+        function triggerLoadAnimation() { 
+            const lb = document.getElementById('loading-bar');
+            if(!lb) return;
+            lb.classList.remove('loading-active'); 
+            void lb.offsetWidth; 
+            lb.classList.add('loading-active'); 
+        }
+
+        window.processInput = function(input) {
+            if(!input.trim()) return; 
+            triggerLoadAnimation(); 
+            window.loadWebPage(`clonmedic://search?q=${encodeURIComponent(input)}`);
+        };
+
+        window.loadWebPage = function(url, srcdocContent = null) {
+            let actualUrl = url;
+            if(url === 'doczi.html') actualUrl = 'clonmedic://docvault';
+            if(url === 'inbi.html') actualUrl = 'clonmedic://inbi';
+            if(url === 'research-centre.html') actualUrl = 'heril.html';
+            
+            // Clean up old forward history if navigating new
+            if (historyIndex === -1 || historyStack[historyIndex].url !== actualUrl) {
+                historyStack = historyStack.slice(0, historyIndex + 1);
+                historyStack.push({ url: actualUrl, srcdoc: srcdocContent });
+                historyIndex++;
+            }
+
+            renderView(actualUrl, srcdocContent);
+        };
+
+        function renderView(actualUrl, srcdocContent) {
+            currentActiveUrl = actualUrl;
+            addressBar.value = (actualUrl === HOME_URL || actualUrl.startsWith('clonmedic://search') || actualUrl.startsWith('clonmedic://article')) ? '' : actualUrl;
+            
+            Object.values(screens).forEach(s => { if(s) { s.classList.add('hidden'); s.classList.remove('flex'); } });
+            iframeContainer.classList.add('hidden');
+
+            if (actualUrl === HOME_URL) { 
+                screens.home.classList.remove('hidden'); screens.home.classList.add('flex'); 
+            } else if (actualUrl.startsWith('clonmedic://search')) { 
+                screens.search.classList.remove('hidden'); screens.search.classList.add('flex'); 
+                executeSafeSearch(new URLSearchParams(actualUrl.split('?')[1]).get('q')); 
+            } else if (actualUrl.startsWith('clonmedic://article')) {
+                screens.article.classList.remove('hidden'); screens.article.classList.add('flex');
+                document.getElementById('article-content-container').innerHTML = srcdocContent || "<h1>Record Content</h1>";
+            } else if (actualUrl.startsWith('clonmedic://')) {
+                const appName = actualUrl.split('://')[1].split('?')[0];
+                if(screens[appName]) {
+                    screens[appName].classList.remove('hidden'); screens[appName].classList.add('flex');
+                    if(appName === 'receipt' && typeof window.addReceiptItem === 'function' && document.querySelectorAll('#receipt-items-body tr').length===0) window.addReceiptItem();
+                    if(appName === 'timetable' && typeof window.addTimetableRow === 'function' && document.querySelectorAll('#timetable-body tr').length===0) { window.addTimetableRow(); window.addTimetableRow(); window.addTimetableRow(); }
+                    if(appName === 'periodic' && typeof window.initPeriodicTable === 'function') window.initPeriodicTable(); 
+                    if(appName === 'physics' && typeof window.initPhysics === 'function') window.initPhysics();
+                    if(appName === 'converter' && typeof window.initConverterUnits === 'function') window.initConverterUnits();
+                }
+            } else {
+                iframeContainer.classList.remove('hidden');
+                let iframe = iframeContainer.querySelector('iframe');
+                if (!iframe) {
+                    iframe = document.createElement('iframe');
+                    iframe.className = 'w-full h-full border-none absolute inset-0 bg-white';
+                    iframeContainer.appendChild(iframe);
+                }
+                iframe.src = actualUrl;
+            }
+        }
+
+        window.goBack = function() { 
+            if (historyIndex > 0) {
+                historyIndex--;
+                const entry = historyStack[historyIndex];
+                triggerLoadAnimation();
+                renderView(entry.url, entry.srcdoc);
+            }
+        };
+
+        window.goForward = function() { 
+            if (historyIndex < historyStack.length - 1) {
+                historyIndex++;
+                const entry = historyStack[historyIndex];
+                triggerLoadAnimation();
+                renderView(entry.url, entry.srcdoc);
+            }
+        };
+
+        window.reloadPage = function() { 
+            if (historyIndex >= 0) {
+                triggerLoadAnimation();
+                const entry = historyStack[historyIndex];
+                
+                if (entry.url.startsWith('clonmedic://search')) {
+                    executeSafeSearch(new URLSearchParams(entry.url.split('?')[1]).get('q'));
+                } else if (!entry.url.startsWith('clonmedic://')) {
+                    let iframe = iframeContainer.querySelector('iframe');
+                    if (iframe) {
+                        const currentSrc = iframe.src;
+                        iframe.src = 'about:blank';
+                        setTimeout(() => iframe.src = currentSrc, 50);
+                    }
+                } else {
+                    renderView(entry.url, entry.srcdoc); 
+                }
+            }
+        };
+        
+        window.goHome = () => { window.loadWebPage(HOME_URL); };
+
+        const BAD_WORDS = ['sex', 'porn', 'adult', 'nsfw', 'xxx', 'nude', 'fuck'];
+        async function executeSafeSearch(query) {
+            document.getElementById('search-query-display').innerText = query; 
+            document.getElementById('address-bar').value = query;
+            const container = document.getElementById('search-results-container'); 
+            const blockedUI = document.getElementById('safe-search-blocked');
+            container.innerHTML = '<div class="text-xs text-gov-darkGray py-3 font-bold uppercase tracking-wider"><i class="fas fa-spinner fa-spin mr-2"></i> Querying Database...</div>';
+            
+            if (BAD_WORDS.some(bw => query.toLowerCase().includes(bw))) { blockedUI.classList.remove('hidden'); container.classList.add('hidden'); return; }
+            blockedUI.classList.add('hidden'); container.classList.remove('hidden'); 
+            
+            try {
+                const resSearch = await fetch(`https://en.wikipedia.org/w/api.php?action=query&list=search&srsearch=${encodeURIComponent(query)}&utf8=&format=json&origin=*`);
+                const dataSearch = await resSearch.json();
+                
+                if(!dataSearch.query || dataSearch.query.search.length === 0) { 
+                    container.innerHTML = `<div class="sys-alert"><i class="fas fa-info-circle text-gov-blue text-lg mt-0.5"></i><div><h3 class="font-bold text-sm m-0">No records found</h3><p class="m-0 text-xs mt-0.5">Adjust search parameters.</p></div></div>`; 
+                    return; 
+                }
+
+                const topTitle = dataSearch.query.search[0].title;
+                let summaryHtml = "";
+                try {
+                    const resSummary = await fetch(`https://en.wikipedia.org/w/api.php?action=query&prop=extracts&exintro&explaintext&titles=${encodeURIComponent(topTitle)}&format=json&origin=*`);
+                    const dataSummary = await resSummary.json();
+                    const pageId = Object.keys(dataSummary.query.pages)[0];
+                    if(pageId != -1) {
+                        const extract = dataSummary.query.pages[pageId].extract;
+                        if(extract) {
+                            const firstSentence = extract.split(/(?<=\.)\s+/)[0];
+                            summaryHtml = `
+                            <div class="mb-5 bg-gov-gray p-4 border-l-4 border-gov-blue shadow-sm">
+                                <h3 class="font-bold text-sm mb-1">Executive Summary</h3>
+                                <p class="text-xs leading-relaxed m-0 text-gov-black">${firstSentence}</p>
+                            </div>
+                            <h2 class="text-base font-bold mb-2 border-b border-gov-border pb-1">Indexed Documents</h2>`;
+                        }
+                    }
+                } catch(e) { console.warn("Failed to get summary.", e); }
+
+                let resultsHtml = dataSearch.query.search.map(item => `
+                    <div class="py-2.5 border-b border-gov-border hover:bg-gov-gray px-2 -mx-2 transition-colors cursor-pointer" onclick="window.openNativeArticle('${item.title.replace(/'/g, "\\'")}')">
+                        <h3 class="text-sm font-bold text-gov-blue underline mb-0.5">${item.title}</h3>
+                        <p class="text-xs text-gov-black m-0">${item.snippet}...</p>
+                    </div>
+                `).join('');
+
+                container.innerHTML = summaryHtml + `<div>` + resultsHtml + `</div>`;
+
+            } catch(e) { 
+                container.innerHTML = `<div class="sys-alert"><i class="fas fa-exclamation-triangle text-gov-red text-lg mt-0.5"></i><div><h3 class="font-bold text-sm m-0">Connection Terminated</h3><p class="m-0 text-xs mt-0.5">Cannot reach repository.</p></div></div>`; 
+            }
+        }
+
+        window.openNativeArticle = async function(title, customHtml = null) {
+            triggerLoadAnimation();
+            if (customHtml) {
+                window.loadWebPage(`clonmedic://article?title=${encodeURIComponent(title)}`, customHtml);
+                return;
+            }
+            try {
+                const res = await fetch(`https://en.wikipedia.org/w/api.php?action=query&prop=extracts&titles=${encodeURIComponent(title)}&format=json&origin=*`);
+                const data = await res.json(); 
+                const pages = data.query.pages; 
+                const pageId = Object.keys(pages)[0]; 
+                const extract = pages[pageId].extract;
+                
+                const articleHtml = `<span class="text-[10px] font-bold text-gov-darkGray uppercase tracking-wider block mb-1">Verified Record</span><h1 class="text-2xl font-bold mb-3">${title}</h1><div class="space-y-3 text-sm text-gov-black leading-relaxed">${extract}</div>`;
+                window.loadWebPage(`clonmedic://article?title=${encodeURIComponent(title)}`, articleHtml);
+            } catch(e) { console.log("Failed to load article."); }
+        };
+
+        const CLONEXXA_API = 'https://clonexxshree.pythonanywhere.com/api/voice';
+        let isClonexxaListening = false;
+        window.startClonexxaVoice = function() {
+            const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+            if (!SpeechRecognition) { console.warn("Voice unsupported."); return; }
+            const recognition = new SpeechRecognition();
+            recognition.lang = 'en-US'; recognition.interimResults = false; recognition.maxAlternatives = 1;
+            const micBtn = document.getElementById('clonexxa-mic-btn');
+            recognition.onstart = function() { isClonexxaListening = true; if (micBtn) { micBtn.classList.add('text-system-red'); } };
+            recognition.onresult = async function(event) {
+                const transcript = event.results[0][0].transcript;
+                const synth = window.speechSynthesis; synth.cancel(); 
+                try {
+                    const res = await fetch(CLONEXXA_API, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ query: transcript }) });
+                    const data = await res.json();
+                    const replyUtterance = new SpeechSynthesisUtterance(data.reply);
+                    replyUtterance.rate = 1.05; synth.speak(replyUtterance);
+                } catch (err) { synth.speak(new SpeechSynthesisUtterance("Connection failed.")); }
+            };
+            recognition.onerror = function(event) { console.error("Speech error", event); };
+            recognition.onend = function() { isClonexxaListening = false; if (micBtn) { micBtn.classList.remove('text-system-red'); } };
+            if (isClonexxaListening) { recognition.stop(); } else { recognition.start(); }
+        };
+
+        let pomoInterval;
+        let pomoTimeLeft = 25 * 60;
+        let isPomoRunning = false;
+        let currentPomoMode = 'focus';
+        
+        window.setPomodoroMode = function(mode) {
+            currentPomoMode = mode;
+            pomoTimeLeft = mode === 'focus' ? 25 * 60 : 5 * 60;
+            document.getElementById('pomo-mode').innerHTML = `<i class="fas fa-stopwatch mr-1"></i> ${mode.toUpperCase()} SESSION`;
+            window.resetPomodoro();
+        };
+        window.startPomodoro = function() {
+            if (isPomoRunning) return;
+            isPomoRunning = true;
+            pomoInterval = setInterval(() => {
+                if (pomoTimeLeft > 0) {
+                    pomoTimeLeft--;
+                    updatePomoDisplay();
+                } else {
+                    window.pausePomodoro();
+                    alert("Time allocation complete.");
+                }
+            }, 1000);
+        };
+        window.pausePomodoro = function() {
+            isPomoRunning = false;
+            clearInterval(pomoInterval);
+        };
+        window.resetPomodoro = function() {
+            window.pausePomodoro();
+            pomoTimeLeft = currentPomoMode === 'focus' ? 25 * 60 : 5 * 60;
+            updatePomoDisplay();
+        };
+        function updatePomoDisplay() {
+            const m = Math.floor(pomoTimeLeft / 60).toString().padStart(2, '0');
+            const s = (pomoTimeLeft % 60).toString().padStart(2, '0');
+            document.getElementById('pomo-display').innerText = `${m}:${s}`;
+        }
+
+        let calcExpression = '';
+        window.calcAppend = function(val) { calcExpression += val; document.getElementById('calc-display').innerText = calcExpression || '0'; };
+        window.calcClear = function() { calcExpression = ''; document.getElementById('calc-display').innerText = '0'; document.getElementById('calc-history').innerText = ''; };
+        window.calcEquals = function() {
+            try { const result = eval(calcExpression); document.getElementById('calc-history').innerText = calcExpression + ' ='; calcExpression = String(result); document.getElementById('calc-display').innerText = calcExpression; } 
+            catch { document.getElementById('calc-display').innerText = 'Error'; calcExpression = ''; }
+        };
+
+        const CONVERTER_UNITS = {
+            length: { units: { m: 1, km: 1000, cm: 0.01, mm: 0.001, mi: 1609.34, yd: 0.9144, ft: 0.3048, in: 0.0254 }, labels: { m: 'Meters', km: 'Kilometers', cm: 'Centimeters', mm: 'Millimeters', mi: 'Miles', yd: 'Yards', ft: 'Feet', in: 'Inches' } },
+            mass: { units: { kg: 1, g: 0.001, mg: 0.000001, lb: 0.453592, oz: 0.0283495, ton: 1000 }, labels: { kg: 'Kilograms', g: 'Grams', mg: 'Milligrams', lb: 'Pounds', oz: 'Ounces', ton: 'Metric Tons' } },
+            temp: { units: { c: 'c', f: 'f', k: 'k' }, labels: { c: 'Celsius', f: 'Fahrenheit', k: 'Kelvin' } }
+        };
+        let converterCategory = 'length';
+        window.setConverterCategory = function(cat) {
+            converterCategory = cat;
+            ['length', 'mass', 'temp'].forEach(c => {
+                const btn = document.getElementById(`btn-conv-${c}`);
+                if(btn) { 
+                    if (c === cat) { btn.className = "px-3 py-1.5 font-bold border-b-2 border-gov-blue text-gov-blue"; } 
+                    else { btn.className = "px-3 py-1.5 text-gov-darkGray hover:text-gov-black"; } 
+                }
+            });
+            window.initConverterUnits();
+        };
+        window.initConverterUnits = function() {
+            const fromSel = document.getElementById('conv-from-unit'); const toSel = document.getElementById('conv-to-unit');
+            if(!fromSel || !toSel) return;
+            const { units, labels } = CONVERTER_UNITS[converterCategory];
+            fromSel.innerHTML = ''; toSel.innerHTML = '';
+            Object.keys(units).forEach((key, i) => {
+                fromSel.innerHTML += `<option value="${key}" ${i === 0 ? 'selected' : ''}>${labels[key]}</option>`;
+                toSel.innerHTML += `<option value="${key}" ${i === 1 ? 'selected' : ''}>${labels[key]}</option>`;
+            });
+            window.runConversion();
+        };
+        window.runConversion = function() {
+            const input = parseFloat(document.getElementById('conv-input').value) || 0;
+            const fromUnit = document.getElementById('conv-from-unit').value;
+            const toUnit = document.getElementById('conv-to-unit').value;
+            const output = document.getElementById('conv-output');
+            let result;
+            if (converterCategory === 'temp') {
+                let celsius; if (fromUnit === 'c') celsius = input; else if (fromUnit === 'f') celsius = (input - 32) * 5/9; else celsius = input - 273.15;
+                if (toUnit === 'c') result = celsius; else if (toUnit === 'f') result = celsius * 9/5 + 32; else result = celsius + 273.15;
+            } else { const { units } = CONVERTER_UNITS[converterCategory]; result = (input * units[fromUnit]) / units[toUnit]; }
+            if(output) output.innerText = Number.isFinite(result) ? (Math.round(result * 10000) / 10000).toString() : '0';
+        };
+
+        const periodicElements = [
+            {s:'H',n:'Hydrogen',num:1,m:1.008,cat:'other'},{s:'He',n:'Helium',num:2,m:4.003,cat:'noble'},
+            {s:'Li',n:'Lithium',num:3,m:6.941,cat:'alkali'},{s:'Be',n:'Beryllium',num:4,m:9.012,cat:'alkaline'},
+            {s:'B',n:'Boron',num:5,m:10.811,cat:'metalloid'},{s:'C',n:'Carbon',num:6,m:12.011,cat:'other'},
+            {s:'N',n:'Nitrogen',num:7,m:14.007,cat:'other'},{s:'O',n:'Oxygen',num:8,m:15.999,cat:'other'},
+            {s:'F',n:'Fluorine',num:9,m:18.998,cat:'halogen'},{s:'Ne',n:'Neon',num:10,m:20.180,cat:'noble'},
+            {s:'Na',n:'Sodium',num:11,m:22.990,cat:'alkali'},{s:'Mg',n:'Magnesium',num:12,m:24.305,cat:'alkaline'},
+            {s:'Al',n:'Aluminium',num:13,m:26.982,cat:'transition'},{s:'Si',n:'Silicon',num:14,m:28.086,cat:'metalloid'},
+            {s:'P',n:'Phosphorus',num:15,m:30.974,cat:'other'},{s:'S',n:'Sulfur',num:16,m:32.065,cat:'other'},
+            {s:'Cl',n:'Chlorine',num:17,m:35.453,cat:'halogen'},{s:'Ar',n:'Argon',num:18,m:39.948,cat:'noble'},
+            {s:'K',n:'Potassium',num:19,m:39.098,cat:'alkali'},{s:'Ca',n:'Calcium',num:20,m:40.078,cat:'alkaline'},
+            {s:'Sc',n:'Scandium',num:21,m:44.956,cat:'transition'},{s:'Ti',n:'Titanium',num:22,m:47.867,cat:'transition'},
+            {s:'V',n:'Vanadium',num:23,m:50.942,cat:'transition'},{s:'Cr',n:'Chromium',num:24,m:51.996,cat:'transition'},
+            {s:'Mn',n:'Manganese',num:25,m:54.938,cat:'transition'},{s:'Fe',n:'Iron',num:26,m:55.845,cat:'transition'},
+            {s:'Co',n:'Cobalt',num:27,m:58.933,cat:'transition'},{s:'Ni',n:'Nickel',num:28,m:58.693,cat:'transition'},
+            {s:'Cu',n:'Copper',num:29,m:63.546,cat:'transition'},{s:'Zn',n:'Zinc',num:30,m:65.380,cat:'transition'},
+            {s:'Ga',n:'Gallium',num:31,m:69.723,cat:'transition'},{s:'Ge',n:'Germanium',num:32,m:72.640,cat:'metalloid'},
+            {s:'As',n:'Arsenic',num:33,m:74.922,cat:'metalloid'},{s:'Se',n:'Selenium',num:34,m:78.960,cat:'other'},
+            {s:'Br',n:'Bromine',num:35,m:79.904,cat:'halogen'},{s:'Kr',n:'Krypton',num:36,m:83.798,cat:'noble'},
+            {s:'Rb',n:'Rubidium',num:37,m:85.468,cat:'alkali'},{s:'Sr',n:'Strontium',num:38,m:87.62,cat:'alkaline'},
+            {s:'Y',n:'Yttrium',num:39,m:88.906,cat:'transition'},{s:'Zr',n:'Zirconium',num:40,m:91.224,cat:'transition'},
+            {s:'Nb',n:'Niobium',num:41,m:92.906,cat:'transition'},{s:'Mo',n:'Molybdenum',num:42,m:95.95,cat:'transition'},
+            {s:'Tc',n:'Technetium',num:43,m:98,cat:'transition'},{s:'Ru',n:'Ruthenium',num:44,m:101.07,cat:'transition'},
+            {s:'Rh',n:'Rhodium',num:45,m:102.91,cat:'transition'},{s:'Pd',n:'Palladium',num:46,m:106.42,cat:'transition'},
+            {s:'Ag',n:'Silver',num:47,m:107.87,cat:'transition'},{s:'Cd',n:'Cadmium',num:48,m:112.41,cat:'transition'},
+            {s:'In',n:'Indium',num:49,m:114.82,cat:'transition'},{s:'Sn',n:'Tin',num:50,m:118.71,cat:'transition'},
+            {s:'Sb',n:'Antimony',num:51,m:121.76,cat:'metalloid'},{s:'Te',n:'Tellurium',num:52,m:127.60,cat:'metalloid'},
+            {s:'I',n:'Iodine',num:53,m:126.90,cat:'halogen'},{s:'Xe',n:'Xenon',num:54,m:131.29,cat:'noble'},
+            {s:'Cs',n:'Caesium',num:55,m:132.91,cat:'alkali'},{s:'Ba',n:'Barium',num:56,m:137.33,cat:'alkaline'},
+            {s:'La',n:'Lanthanum',num:57,m:138.91,cat:'lanthanide'},{s:'Ce',n:'Cerium',num:58,m:140.12,cat:'lanthanide'},
+            {s:'Pr',n:'Praseodymium',num:59,m:140.91,cat:'lanthanide'},{s:'Nd',n:'Neodymium',num:60,m:144.24,cat:'lanthanide'},
+            {s:'Pm',n:'Promethium',num:61,m:145,cat:'lanthanide'},{s:'Sm',n:'Samarium',num:62,m:150.36,cat:'lanthanide'},
+            {s:'Eu',n:'Europium',num:63,m:151.96,cat:'lanthanide'},{s:'Gd',n:'Gadolinium',num:64,m:157.25,cat:'lanthanide'},
+            {s:'Tb',n:'Terbium',num:65,m:158.93,cat:'lanthanide'},{s:'Dy',n:'Dysprosium',num:66,m:162.50,cat:'lanthanide'},
+            {s:'Ho',n:'Holmium',num:67,m:164.93,cat:'lanthanide'},{s:'Er',n:'Erbium',num:68,m:167.26,cat:'lanthanide'},
+            {s:'Tm',n:'Thulium',num:69,m:168.93,cat:'lanthanide'},{s:'Yb',n:'Ytterbium',num:70,m:173.04,cat:'lanthanide'},
+            {s:'Lu',n:'Lutetium',num:71,m:174.97,cat:'lanthanide'},{s:'Hf',n:'Hafnium',num:72,m:178.49,cat:'transition'},
+            {s:'Ta',n:'Tantalum',num:73,m:180.95,cat:'transition'},{s:'W',n:'Tungsten',num:74,m:183.84,cat:'transition'},
+            {s:'Re',n:'Rhenium',num:75,m:186.21,cat:'transition'},{s:'Os',n:'Osmium',num:76,m:190.23,cat:'transition'},
+            {s:'Ir',n:'Iridium',num:77,m:192.22,cat:'transition'},{s:'Pt',n:'Platinum',num:78,m:195.08,cat:'transition'},
+            {s:'Au',n:'Gold',num:79,m:196.97,cat:'transition'},{s:'Hg',n:'Mercury',num:80,m:200.59,cat:'transition'},
+            {s:'Tl',n:'Thallium',num:81,m:204.38,cat:'transition'},{s:'Pb',n:'Lead',num:82,m:207.2,cat:'transition'},
+            {s:'Bi',n:'Bismuth',num:83,m:208.98,cat:'transition'},{s:'Po',n:'Polonium',num:84,m:209,cat:'metalloid'},
+            {s:'At',n:'Astatine',num:85,m:210,cat:'halogen'},{s:'Rn',n:'Radon',num:86,m:222,cat:'noble'},
+            {s:'Fr',n:'Francium',num:87,m:223,cat:'alkali'},{s:'Ra',n:'Radium',num:88,m:226,cat:'alkaline'},
+            {s:'Ac',n:'Actinium',num:89,m:227,cat:'actinide'},{s:'Th',n:'Thorium',num:90,m:232.04,cat:'actinide'},
+            {s:'Pa',n:'Protactinium',num:91,m:231.04,cat:'actinide'},{s:'U',n:'Uranium',num:92,m:238.03,cat:'actinide'},
+            {s:'Np',n:'Neptunium',num:93,m:237,cat:'actinide'},{s:'Pu',n:'Plutonium',num:94,m:244,cat:'actinide'},
+            {s:'Am',n:'Americium',num:95,m:243,cat:'actinide'},{s:'Cm',n:'Curium',num:96,m:247,cat:'actinide'},
+            {s:'Bk',n:'Berkelium',num:97,m:247,cat:'actinide'},{s:'Cf',n:'Californium',num:98,m:251,cat:'actinide'},
+            {s:'Es',n:'Einsteinium',num:99,m:252,cat:'actinide'},{s:'Fm',n:'Fermium',num:100,m:257,cat:'actinide'},
+            {s:'Md',n:'Mendelevium',num:101,m:258,cat:'actinide'},{s:'No',n:'Nobelium',num:102,m:259,cat:'actinide'},
+            {s:'Lr',n:'Lawrencium',num:103,m:262,cat:'actinide'},{s:'Rf',n:'Rutherfordium',num:104,m:267,cat:'transition'},
+            {s:'Db',n:'Dubnium',num:105,m:268,cat:'transition'},{s:'Sg',n:'Seaborgium',num:106,m:269,cat:'transition'},
+            {s:'Bh',n:'Bohrium',num:107,m:270,cat:'transition'},{s:'Hs',n:'Hassium',num:108,m:277,cat:'transition'},
+            {s:'Mt',n:'Meitnerium',num:109,m:278,cat:'transition'},{s:'Ds',n:'Darmstadtium',num:110,m:281,cat:'transition'},
+            {s:'Rg',n:'Roentgenium',num:111,m:282,cat:'transition'},{s:'Cn',n:'Copernicium',num:112,m:285,cat:'transition'},
+            {s:'Nh',n:'Nihonium',num:113,m:286,cat:'transition'},{s:'Fl',n:'Flerovium',num:114,m:289,cat:'transition'},
+            {s:'Mc',n:'Moscovium',num:115,m:290,cat:'transition'},{s:'Lv',n:'Livermorium',num:116,m:293,cat:'transition'},
+            {s:'Ts',n:'Tennessine',num:117,m:294,cat:'halogen'},{s:'Og',n:'Oganesson',num:118,m:294,cat:'noble'}
+        ];
+
+        window.initPeriodicTable = function() {
+            const grid = document.getElementById('periodic-grid');
+            if(!grid || grid.children.length > 0) return;
+            for(let i=1; i<=118; i++) {
+                const el = periodicElements.find(e => e.num === i);
+                if(el) {
+                    const box = document.createElement('div');
+                    box.className = `element-box`;
+                    if(i===1) box.style.gridColumn = '1';
+                    if(i===2) box.style.gridColumn = '18';
+                    if(i===5) box.style.gridColumn = '13';
+                    if(i===13) box.style.gridColumn = '13';
+                    if(i>=57 && i<=71) { box.style.gridRow = '8'; box.style.gridColumn = (i-53).toString(); } 
+                    if(i>=89 && i<=103) { box.style.gridRow = '9'; box.style.gridColumn = (i-85).toString(); } 
+                    box.innerHTML = `<span class="text-[9px] absolute top-1 left-1.5 font-bold">${el.num}</span><span class="text-sm font-bold">${el.s}</span>`;
+                    box.onclick = () => showElementDetail(el);
+                    grid.appendChild(box);
+                }
+            }
+        };
+        window.showElementDetail = function(el) {
+            const detail = document.getElementById('element-detail');
+            detail.classList.remove('hidden');
+            document.getElementById('detail-num').innerText = el.num;
+            document.getElementById('detail-mass').innerText = el.m;
+            document.getElementById('detail-symbol-text').innerText = el.s;
+            document.getElementById('detail-name').innerText = el.n;
+            document.getElementById('detail-info').innerText = el.cat;
+        };
+
+        let physicsCanvas, pctx, physicsAnim, boxes = [];
+        window.initPhysics = function() {
+            physicsCanvas = document.getElementById('physics-canvas'); if(!physicsCanvas) return;
+            pctx = physicsCanvas.getContext('2d');
+            const resize = () => { physicsCanvas.width = physicsCanvas.parentElement.clientWidth; physicsCanvas.height = physicsCanvas.parentElement.clientHeight; };
+            window.addEventListener('resize', resize); resize();
+            if(!physicsCanvas.dataset.init) {
+                physicsCanvas.dataset.init = "true";
+                physicsCanvas.addEventListener('pointerdown', (e) => {
+                    const rect = physicsCanvas.getBoundingClientRect();
+                    boxes.push({ x: (e.touches ? e.touches[0].clientX : e.clientX) - rect.left, y: (e.touches ? e.touches[0].clientY : e.clientY) - rect.top, vx: (Math.random() - 0.5) * 20, vy: (Math.random() - 0.5) * 15, size: 20 + Math.random() * 30 });
+                });
+            }
+            if(physicsAnim) cancelAnimationFrame(physicsAnim);
+            function loop() {
+                pctx.fillStyle = '#f8f8f8'; pctx.fillRect(0,0,physicsCanvas.width, physicsCanvas.height);
+                for(let b of boxes) {
+                    b.vy += 0.8; b.x += b.vx; b.y += b.vy;
+                    if(b.y + b.size > physicsCanvas.height) { b.y = physicsCanvas.height - b.size; b.vy *= -0.75; b.vx *= 0.98; }
+                    if(b.x < 0 || b.x + b.size > physicsCanvas.width) { b.vx *= -0.8; b.x = b.x < 0 ? 0 : physicsCanvas.width - b.size; }
+                    pctx.fillStyle = '#0b0c0c'; pctx.fillRect(b.x, b.y, b.size, b.size);
+                }
+                physicsAnim = requestAnimationFrame(loop);
+            }
+            loop();
+        };
+    </script>
+</body>
+</html>

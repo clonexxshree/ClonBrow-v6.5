@@ -1,0 +1,300 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Joint Torque & Biomechanics Lab</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;700&family=Inter:wght@300;400;600;700&display=swap');
+
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: #020617;
+            color: #f1f5f9;
+            overflow-x: hidden;
+        }
+
+        .font-mono { font-family: 'JetBrains Mono', monospace; }
+
+        .glass-card {
+            background: rgba(15, 23, 42, 0.7);
+            backdrop-filter: blur(12px);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.5);
+        }
+
+        .digital-readout {
+            background: #061021;
+            color: #10b981;
+            text-shadow: 0 0 8px rgba(16, 185, 129, 0.4);
+            border: 1px solid #1e293b;
+        }
+
+        .vector-load { stroke: #f43f5e; fill: #f43f5e; }
+        .vector-muscle { stroke: #3b82f6; fill: #3b82f6; }
+        .moment-arm-line { stroke: #fbbf24; stroke-dasharray: 4 2; }
+
+        input[type=range] {
+            accent-color: #3b82f6;
+        }
+
+        .anatomy-label {
+            font-size: 10px;
+            font-weight: 700;
+            fill: #94a3b8;
+            text-transform: uppercase;
+        }
+    </style>
+</head>
+<body class="min-h-screen p-4 md:p-8 flex items-center justify-center">
+
+    <div class="max-w-7xl w-full grid grid-cols-1 lg:grid-cols-12 gap-8 items-stretch">
+        
+        <!-- Visualization Viewport -->
+        <div class="lg:col-span-8 flex flex-col gap-6">
+            <div id="sim-viewport" class="glass-card rounded-3xl p-8 relative flex-grow min-h-[500px] flex items-center justify-center overflow-hidden border border-slate-800">
+                
+                <!-- HUD Header -->
+                <div class="absolute top-6 left-8 flex items-center gap-3 z-20">
+                    <div class="w-2.5 h-2.5 rounded-full bg-blue-500 shadow-[0_0_10px_#3b82f6]"></div>
+                    <span class="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Biomechanic Vector Analysis Active</span>
+                </div>
+
+                <!-- SVG Layer: Arm & Vectors -->
+                <svg id="arm-svg" viewBox="0 0 600 500" class="w-full h-auto relative z-10">
+                    <defs>
+                        <marker id="arrowhead-load" markerWidth="10" markerHeight="7" refX="0" refY="3.5" orient="auto">
+                            <polygon points="0 0, 10 3.5, 0 7" fill="#f43f5e" />
+                        </marker>
+                        <marker id="arrowhead-muscle" markerWidth="10" markerHeight="7" refX="10" refY="3.5" orient="auto">
+                            <polygon points="10 0, 0 3.5, 10 7" fill="#3b82f6" />
+                        </marker>
+                    </defs>
+
+                    <!-- Upper Arm (Fixed) -->
+                    <g id="humerus">
+                        <rect x="290" y="50" width="20" height="200" rx="10" fill="#1e293b" />
+                        <text x="270" y="150" class="anatomy-label" text-anchor="end">Humerus</text>
+                    </g>
+
+                    <!-- Elbow Joint (Pivot) -->
+                    <circle cx="300" cy="250" r="12" fill="#334155" stroke="#475569" stroke-width="2" />
+                    
+                    <!-- Forearm & Hand (Dynamic Group) -->
+                    <g id="forearm-group" transform="rotate(0, 300, 250)">
+                        <!-- Ulna/Radius -->
+                        <rect x="290" y="250" width="20" height="200" rx="10" fill="#334155" />
+                        <text x="320" y="350" class="anatomy-label">Forearm</text>
+                        
+                        <!-- Hand & Weight -->
+                        <circle cx="300" cy="450" r="20" fill="#1e293b" />
+                        <!-- Weight Icon -->
+                        <g id="weight-icon">
+                            <rect x="270" y="440" width="60" height="30" rx="4" fill="#020617" stroke="#475569" />
+                            <text x="300" y="460" id="weight-label-svg" fill="#94a3b8" font-size="10" font-weight="bold" text-anchor="middle">10kg</text>
+                        </g>
+
+                        <!-- Load Vector Arrow (Gravity) -->
+                        <line id="vector-load-arrow" x1="300" y1="450" x2="300" y2="520" class="vector-load" stroke-width="4" marker-end="url(#arrowhead-load)" transform="rotate(0, 300, 450)"/>
+                    </g>
+
+                    <!-- Bicep Muscle Visualization -->
+                    <path id="bicep-muscle" d="M 290 80 Q 260 165 290 270" fill="none" stroke="#3b82f6" stroke-width="15" stroke-linecap="round" opacity="0.6" />
+                    
+                    <!-- Muscle Vector Arrow -->
+                    <line id="vector-muscle-arrow" x1="290" y1="270" x2="280" y2="100" class="vector-muscle" stroke-width="4" marker-end="url(#arrowhead-muscle)" />
+
+                    <!-- Moment Arm Visualization (Vertical Reference) -->
+                    <line id="moment-arm-vis" x1="300" y1="250" x2="300" y2="250" class="moment-arm-line" stroke-width="2" />
+                    <text id="moment-arm-label" x="300" y="240" fill="#fbbf24" font-size="10" font-weight="bold" text-anchor="middle" opacity="0"></text>
+                </svg>
+
+                <!-- Tags -->
+                <div class="absolute bottom-6 left-8 flex flex-col gap-1">
+                    <span class="text-[9px] font-mono text-slate-500 uppercase">Pivot: Ginglymus Joint (Elbow)</span>
+                    <span class="text-[9px] font-mono text-slate-500 uppercase">Equilibrium: Στ = 0</span>
+                </div>
+            </div>
+
+            <!-- Controls -->
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div class="glass-card p-6 rounded-2xl space-y-4">
+                    <div class="flex justify-between items-center">
+                        <label class="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Elbow Flexion Angle</label>
+                        <span id="angle-display" class="text-xs font-mono text-blue-400">90°</span>
+                    </div>
+                    <input type="range" id="angle-slider" min="0" max="145" step="1" value="90" class="w-full h-1.5 bg-slate-800 rounded-lg appearance-none cursor-pointer">
+                    <div class="flex justify-between text-[9px] text-slate-500 uppercase">
+                        <span>Extended</span>
+                        <span>Flexed</span>
+                    </div>
+                </div>
+                <div class="glass-card p-6 rounded-2xl space-y-4">
+                    <div class="flex justify-between items-center">
+                        <label class="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Dumbbell Mass</label>
+                        <span id="mass-display" class="text-xs font-mono text-rose-400">10.0 kg</span>
+                    </div>
+                    <input type="range" id="mass-slider" min="1" max="30" step="0.5" value="10" class="w-full h-1.5 bg-slate-800 rounded-lg appearance-none cursor-pointer">
+                    <div class="flex justify-between text-[9px] text-slate-500 uppercase">
+                        <span>Light</span>
+                        <span>Heavy</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Sidebar: Analytics -->
+        <div class="lg:col-span-4 flex flex-col gap-6">
+            
+            <!-- Digital Readout -->
+            <div class="digital-readout rounded-3xl p-6 space-y-6">
+                <div class="flex justify-between items-center border-b border-emerald-900/30 pb-3">
+                    <span class="text-[10px] font-bold tracking-tighter opacity-60 uppercase">Lever Mechanics Telemetry</span>
+                    <span class="text-xs font-mono">CALC_V2.0</span>
+                </div>
+
+                <div class="space-y-6">
+                    <div class="space-y-1">
+                        <label class="text-[9px] uppercase font-bold opacity-50">Resultant Elbow Torque (τ)</label>
+                        <div id="data-torque" class="text-4xl font-bold font-mono">34.3 Nm</div>
+                    </div>
+
+                    <div class="grid grid-cols-2 gap-4 pt-2 border-t border-emerald-900/20">
+                        <div class="space-y-1">
+                            <label class="text-[9px] uppercase font-bold opacity-50">Moment Arm</label>
+                            <div id="data-moment" class="text-xl font-bold font-mono">35.0 cm</div>
+                        </div>
+                        <div class="space-y-1">
+                            <label class="text-[9px] uppercase font-bold opacity-50">Load Force</label>
+                            <div id="data-load-f" class="text-xl font-bold font-mono">98.1 N</div>
+                        </div>
+                    </div>
+
+                    <div class="p-4 bg-blue-500/10 border border-blue-500/20 rounded-xl space-y-1">
+                        <label class="text-[9px] uppercase font-bold text-blue-400">Required Bicep Force (F<sub>B</sub>)</label>
+                        <div id="data-bicep-f" class="text-3xl font-bold font-mono text-blue-400">857 N</div>
+                        <p class="text-[8px] text-blue-500/80 leading-tight mt-2 italic">
+                            Assumes bicep insertion at 4cm from pivot.
+                        </p>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Physics Logic Card -->
+            <div class="glass-card p-6 rounded-3xl space-y-4">
+                <h3 class="text-xs font-bold text-slate-400 uppercase tracking-widest">Torque Equation</h3>
+                <div class="bg-slate-900/50 p-4 rounded-xl border border-slate-800 font-mono text-center text-emerald-500 text-sm">
+                    τ = F · r · sin(θ)
+                </div>
+                <p class="text-[10px] text-slate-400 leading-relaxed">
+                    Torque is the rotational equivalent of linear force. In a bicep curl, the load torque is highest when the forearm is parallel to the floor (90° flexion), as the horizontal distance (moment arm) from the elbow is maximized.
+                </p>
+                <div class="p-3 bg-slate-900/50 rounded-xl border border-slate-800">
+                    <div class="text-[9px] font-bold text-slate-500 uppercase mb-1">Mechanical Advantage</div>
+                    <p class="text-[9px] text-slate-600 leading-tight">
+                        Because the bicep inserts so close to the joint (~4cm) compared to the weight in the hand (~35cm), the muscle must exert roughly 8-10x more force than the weight of the object.
+                    </p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', () => {
+            const angleSlider = document.getElementById('angle-slider');
+            const massSlider = document.getElementById('mass-slider');
+            const angleDisplay = document.getElementById('angle-display');
+            const massDisplay = document.getElementById('mass-display');
+            
+            const forearmGroup = document.getElementById('forearm-group');
+            const weightLabelSvg = document.getElementById('weight-label-svg');
+            const bicepMuscle = document.getElementById('bicep-muscle');
+            const vectorLoadArrow = document.getElementById('vector-load-arrow');
+            const vectorMuscleArrow = document.getElementById('vector-muscle-arrow');
+            const momentArmVis = document.getElementById('moment-arm-vis');
+            const momentArmLabel = document.getElementById('moment-arm-label');
+
+            const dataTorque = document.getElementById('data-torque');
+            const dataMoment = document.getElementById('data-moment');
+            const dataLoadF = document.getElementById('data-load-f');
+            const dataBicepF = document.getElementById('data-bicep-f');
+
+            // Constants
+            const g = 9.806;
+            const L_forearm = 0.35; // 35 cm
+            const d_insertion = 0.04; // 4 cm
+            const pivotX = 300;
+            const pivotY = 250;
+
+            function update() {
+                const angleDeg = parseInt(angleSlider.value);
+                const mass = parseFloat(massSlider.value);
+                
+                // Visualization logic: 0 is straight down. 90 is horizontal.
+                // SVG rotation needs adjustment: rotate(0) is vertical down in our pathing
+                forearmGroup.setAttribute('transform', `rotate(${-angleDeg}, ${pivotX}, ${pivotY})`);
+                
+                // Update text displays
+                angleDisplay.textContent = `${angleDeg}°`;
+                massDisplay.textContent = `${mass.toFixed(1)} kg`;
+                weightLabelSvg.textContent = `${mass}kg`;
+
+                // Calculate Physics
+                const forceLoad = mass * g;
+                // Moment arm is the horizontal component of the forearm length
+                // If 0 deg is vertical down, moment arm = L * sin(theta)
+                const momentArm = L_forearm * Math.sin(angleDeg * Math.PI / 180);
+                const torque = forceLoad * momentArm;
+                const forceBicep = torque / d_insertion;
+
+                // Update Telemetry
+                dataTorque.textContent = `${torque.toFixed(1)} Nm`;
+                dataMoment.textContent = `${(momentArm * 100).toFixed(1)} cm`;
+                dataLoadF.textContent = `${forceLoad.toFixed(1)} N`;
+                dataBicepF.textContent = `${Math.round(forceBicep)} N`;
+
+                // Update Vectors
+                // Load vector always points down
+                vectorLoadArrow.setAttribute('transform', `rotate(${angleDeg}, 300, 450)`);
+                
+                // Adjust bicep muscle curve based on angle
+                // Bicep attaches to Humerus (~80y) and Radius (~270y when straight)
+                const rad = angleDeg * Math.PI / 180;
+                const attachX = pivotX + (25 * Math.sin(rad)); // simplified attachment point rotation
+                const attachY = pivotY + (25 * Math.cos(rad));
+                
+                // Update bicep path
+                const ctrlX = pivotX - 40;
+                const ctrlY = (80 + attachY) / 2;
+                // bicepMuscle.setAttribute('d', `M 295 80 Q ${ctrlX} ${ctrlY} ${attachX-5} ${attachY}`);
+                
+                // Update Moment Arm Visualization line
+                if (angleDeg > 5) {
+                    momentArmVis.setAttribute('x2', pivotX + (momentArm * 430)); // 430 is scale factor for px
+                    momentArmVis.setAttribute('opacity', '1');
+                    momentArmLabel.setAttribute('opacity', '1');
+                    momentArmLabel.setAttribute('x', pivotX + (momentArm * 215));
+                    momentArmLabel.textContent = `${(momentArm * 100).toFixed(0)}cm`;
+                } else {
+                    momentArmVis.setAttribute('opacity', '0');
+                    momentArmLabel.setAttribute('opacity', '0');
+                }
+
+                // Vector magnitudes (Visual scaling)
+                const loadScale = 20 + (mass * 2);
+                vectorLoadArrow.setAttribute('y2', 450 + loadScale);
+                
+                const muscleScale = 20 + (forceBicep / 20);
+                // vectorMuscleArrow...
+            }
+
+            angleSlider.addEventListener('input', update);
+            massSlider.addEventListener('input', update);
+
+            // Initial call
+            update();
+        });
+    </script>
+</body>
+</html>

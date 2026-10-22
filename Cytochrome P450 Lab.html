@@ -1,0 +1,377 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>CYP450 Metabolic Factory</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;700&family=Inter:wght@300;400;600;700&display=swap');
+
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: #020617;
+            color: #f1f5f9;
+            overflow: hidden;
+        }
+
+        .font-mono { font-family: 'JetBrains Mono', monospace; }
+
+        .glass-card {
+            background: rgba(15, 23, 42, 0.7);
+            backdrop-filter: blur(12px);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.5);
+        }
+
+        .digital-readout {
+            background: #061021;
+            color: #fbbf24; /* Amber for "Industrial" feel */
+            text-shadow: 0 0 8px rgba(251, 191, 36, 0.4);
+            border: 1px solid #1e293b;
+        }
+
+        /* Gear Rotation */
+        @keyframes rotate-cw { from { transform: rotate(0deg); } to { transform: rotate(360deg); } }
+        @keyframes rotate-ccw { from { transform: rotate(360deg); } to { transform: rotate(0deg); } }
+
+        .gear-cw { animation: rotate-cw var(--speed, 4s) linear infinite; transform-origin: center; }
+        .gear-ccw { animation: rotate-ccw var(--speed, 4s) linear infinite; transform-origin: center; }
+
+        /* Molecule Transitions */
+        .molecule {
+            transition: all 0.5s cubic-bezier(0.4, 0, 0.2, 1);
+            position: absolute;
+        }
+
+        .conveyor-belt {
+            stroke-dasharray: 10 5;
+            animation: belt-flow var(--speed, 4s) linear infinite;
+        }
+
+        @keyframes belt-flow {
+            from { stroke-dashoffset: 30; }
+            to { stroke-dashoffset: 0; }
+        }
+
+        /* Scanline effect */
+        .scanline {
+            width: 100%;
+            height: 2px;
+            background: rgba(251, 191, 36, 0.05);
+            position: absolute;
+            z-index: 10;
+            animation: scan 6s linear infinite;
+        }
+
+        @keyframes scan { 0% { top: 0%; } 100% { top: 100%; } }
+    </style>
+</head>
+<body class="min-h-screen p-4 md:p-8 flex items-center justify-center">
+
+    <div class="max-w-7xl w-full grid grid-cols-1 lg:grid-cols-12 gap-8 items-stretch">
+        
+        <!-- Simulation Viewport -->
+        <div class="lg:col-span-8 flex flex-col gap-6">
+            <div id="sim-viewport" class="glass-card rounded-3xl p-8 relative flex-grow min-h-[550px] overflow-hidden border border-slate-800">
+                <div class="scanline"></div>
+                
+                <!-- Status Header -->
+                <div class="absolute top-6 left-8 flex items-center gap-3 z-20">
+                    <div id="status-dot" class="w-2.5 h-2.5 rounded-full bg-amber-500 shadow-[0_0_10px_#f59e0b]"></div>
+                    <span id="status-label" class="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Hepatic Biotransformation Active</span>
+                </div>
+
+                <!-- SVG Layer: Liver & Factory -->
+                <div class="relative w-full h-full flex items-center justify-center">
+                    <svg id="liver-svg" viewBox="0 0 600 400" class="w-full h-auto opacity-20 transition-opacity duration-1000">
+                        <!-- Liver Silhouette -->
+                        <path d="M100,200 C100,100 250,50 400,80 C500,100 550,150 550,250 C550,350 400,380 300,380 C150,380 100,300 100,200" fill="none" stroke="#f43f5e" stroke-width="3" />
+                        
+                        <!-- Conveyor Belt Line -->
+                        <path d="M 50 200 L 550 200" stroke="#334155" stroke-width="40" stroke-linecap="round" opacity="0.3"/>
+                        <path d="M 50 200 L 550 200" fill="none" stroke="#475569" stroke-width="2" class="conveyor-belt" />
+
+                        <!-- Enzyme Gears (CYP450 Complexes) -->
+                        <g id="gears-container">
+                            <!-- Main Drive Gear -->
+                            <g class="gear-cw" id="gear-1" style="--speed: 4s">
+                                <circle cx="300" cy="200" r="45" fill="#1e293b" stroke="#f59e0b" stroke-width="2" />
+                                <rect x="295" y="145" width="10" height="110" fill="#f59e0b" rx="2"/>
+                                <rect x="295" y="145" width="10" height="110" fill="#f59e0b" rx="2" transform="rotate(45, 300, 200)"/>
+                                <rect x="295" y="145" width="10" height="110" fill="#f59e0b" rx="2" transform="rotate(90, 300, 200)"/>
+                                <rect x="295" y="145" width="10" height="110" fill="#f59e0b" rx="2" transform="rotate(135, 300, 200)"/>
+                                <circle cx="300" cy="200" r="15" fill="#020617" stroke="#f59e0b" stroke-width="1" />
+                            </g>
+                            <!-- Secondary Gear -->
+                            <g class="gear-ccw" id="gear-2" style="--speed: 4s">
+                                <circle cx="370" cy="245" r="30" fill="#1e293b" stroke="#f59e0b" stroke-width="2" />
+                                <rect x="366" y="210" width="8" height="70" fill="#f59e0b" rx="2"/>
+                                <rect x="366" y="210" width="8" height="70" fill="#f59e0b" rx="2" transform="rotate(60, 370, 245)"/>
+                                <rect x="366" y="210" width="8" height="70" fill="#f59e0b" rx="2" transform="rotate(120, 370, 245)"/>
+                                <circle cx="370" cy="245" r="10" fill="#020617" stroke="#f59e0b" stroke-width="1" />
+                            </g>
+                        </g>
+
+                        <!-- Labels -->
+                        <text x="50" y="170" fill="#64748b" font-size="12" font-weight="bold">LIPOPHILIC INPUT (Substrate)</text>
+                        <text x="550" y="170" fill="#f59e0b" font-size="12" font-weight="bold" text-anchor="end">WATER-SOLUBLE OUTPUT (Metabolite)</text>
+                    </svg>
+
+                    <!-- Particle Container (HTML elements for easier animation) -->
+                    <div id="particle-container" class="absolute inset-0 z-20 pointer-events-none"></div>
+                </div>
+
+                <!-- Environment Tags -->
+                <div class="absolute bottom-6 left-8 flex flex-col gap-1 z-20">
+                    <span class="text-[9px] font-mono text-slate-500 uppercase">System: Cytochrome P450 Monooxygenase</span>
+                    <span class="text-[9px] font-mono text-slate-500 uppercase">Pathway: Phase I Oxidation / Hydroxylation</span>
+                </div>
+            </div>
+
+            <!-- Controls -->
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div class="glass-card p-6 rounded-2xl space-y-4">
+                    <div class="flex justify-between items-center">
+                        <label class="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Enzyme Kinetics (Induction/Inhibition)</label>
+                        <span id="rate-label" class="text-xs font-mono text-amber-500">Normal (1.0x)</span>
+                    </div>
+                    <input type="range" id="rate-slider" min="0.2" max="3.0" step="0.1" value="1.0" class="w-full h-2 bg-slate-800 rounded-lg appearance-none cursor-pointer accent-amber-500">
+                    <div class="flex justify-between text-[9px] text-slate-500 uppercase">
+                        <span>Inhibition</span>
+                        <span>Induction</span>
+                    </div>
+                </div>
+                <button id="btn-start" class="bg-amber-600 hover:bg-amber-500 text-white font-bold rounded-2xl shadow-xl transition-all active:scale-95 flex items-center justify-center gap-3">
+                    <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"></path></svg>
+                    Begin Metabolism
+                </button>
+            </div>
+        </div>
+
+        <!-- Sidebar: Analytics -->
+        <div class="lg:col-span-4 flex flex-col gap-6">
+            
+            <!-- Digital Readout -->
+            <div class="digital-readout rounded-3xl p-6 space-y-6">
+                <div class="flex justify-between items-center border-b border-amber-900/30 pb-3">
+                    <span class="text-[10px] font-bold tracking-tighter opacity-60 uppercase">Hepatic Telemetry</span>
+                    <span class="text-xs font-mono animate-pulse">MONITORING</span>
+                </div>
+
+                <div class="space-y-6">
+                    <div class="flex justify-between items-end">
+                        <div class="space-y-1">
+                            <label class="text-[9px] uppercase font-bold opacity-50">Clearance Rate</label>
+                            <div id="data-clearance" class="text-4xl font-bold font-mono">0.0 mL/min</div>
+                        </div>
+                    </div>
+
+                    <div class="space-y-4 pt-2">
+                        <div class="flex justify-between items-center">
+                            <span class="text-[10px] text-slate-400 uppercase">Substrate Density</span>
+                            <span id="data-density" class="text-xs font-mono">0 Units</span>
+                        </div>
+                        <div class="h-1 w-full bg-slate-900 rounded-full overflow-hidden">
+                            <div id="progress-bar" class="h-full bg-amber-500 transition-all duration-300" style="width: 0%"></div>
+                        </div>
+                    </div>
+
+                    <div class="grid grid-cols-2 gap-4 pt-2 border-t border-amber-900/20">
+                        <div class="space-y-1">
+                            <label class="text-[9px] uppercase font-bold opacity-50">Metabolites</label>
+                            <div id="count-output" class="text-xl font-bold font-mono text-amber-500">0</div>
+                        </div>
+                        <div class="space-y-1">
+                            <label class="text-[9px] uppercase font-bold opacity-50">Bioavailability</label>
+                            <div id="data-bio" class="text-xl font-bold font-mono text-rose-500">100%</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Molecular Logic Card -->
+            <div class="glass-card p-6 rounded-3xl space-y-4">
+                <h3 class="text-xs font-bold text-slate-400 uppercase tracking-widest">Phase I Biotransformation</h3>
+                <div class="flex items-center gap-4 py-2">
+                    <div class="flex flex-col items-center gap-1">
+                        <div class="w-6 h-6 bg-slate-400 rotate-45" style="clip-path: polygon(50% 0%, 0% 100%, 100% 100%);"></div>
+                        <span class="text-[8px] text-slate-500">Drug</span>
+                    </div>
+                    <svg class="w-4 h-4 text-slate-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M14 5l7 7m0 0l-7 7m7-7H3"></path></svg>
+                    <div class="flex flex-col items-center gap-1">
+                        <div class="w-6 h-6 bg-amber-500 rounded-full"></div>
+                        <span class="text-[8px] text-slate-500">Metabolite</span>
+                    </div>
+                </div>
+                <p class="text-[10px] text-slate-400 leading-relaxed">
+                    CYP450 enzymes (mainly CYP3A4 and CYP2D6) add polar groups (like -OH) to lipophilic molecules. This makes them easier for the kidneys to filter and excrete, preventing systemic toxicity.
+                </p>
+                <div class="p-3 bg-slate-900/50 rounded-xl border border-slate-800">
+                    <div class="text-[9px] font-bold text-amber-500 uppercase mb-1">Clinical Note:</div>
+                    <p class="text-[9px] text-slate-500 italic">Grapefruit juice inhibits CYP3A4, slowing the breakdown of many drugs and potentially causing toxic buildup.</p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', () => {
+            const viewport = document.getElementById('sim-viewport');
+            const particleContainer = document.getElementById('particle-container');
+            const rateSlider = document.getElementById('rate-slider');
+            const rateLabel = document.getElementById('rate-label');
+            const btnStart = document.getElementById('btn-start');
+            
+            const dataClearance = document.getElementById('data-clearance');
+            const dataDensity = document.getElementById('data-density');
+            const countOutput = document.getElementById('count-output');
+            const dataBio = document.getElementById('data-bio');
+            const progressBar = document.getElementById('progress-bar');
+
+            const gears = [document.getElementById('gear-1'), document.getElementById('gear-2')];
+
+            let activeParticles = [];
+            let metaboliteCount = 0;
+            let speedMultiplier = 1.0;
+            let isRunning = false;
+            let spawnInterval = null;
+
+            function updateRate() {
+                speedMultiplier = parseFloat(rateSlider.value);
+                const label = speedMultiplier < 1 ? 'Inhibited' : (speedMultiplier > 1 ? 'Induced' : 'Normal');
+                rateLabel.textContent = `${label} (${speedMultiplier.toFixed(1)}x)`;
+                
+                // Update Gear Animation Speed
+                const duration = 4 / speedMultiplier;
+                gears.forEach(g => g.style.setProperty('--speed', `${duration}s`));
+                document.querySelector('.conveyor-belt').style.setProperty('--speed', `${duration}s`);
+            }
+
+            function createParticle() {
+                const particle = document.createElement('div');
+                particle.className = 'molecule';
+                
+                // Triangle Substrate
+                particle.style.width = '16px';
+                particle.style.height = '16px';
+                particle.style.backgroundColor = '#94a3b8';
+                particle.style.clipPath = 'polygon(50% 0%, 0% 100%, 100% 100%)';
+                particle.style.transform = 'rotate(45deg)';
+                
+                const startX = -50;
+                const centerY = viewport.clientHeight / 2;
+                const laneOffset = (Math.random() - 0.5) * 40;
+                
+                particle.style.left = `${startX}px`;
+                particle.style.top = `${centerY + laneOffset - 8}px`;
+                
+                particleContainer.appendChild(particle);
+                
+                const pObj = {
+                    el: particle,
+                    x: startX,
+                    y: centerY + laneOffset - 8,
+                    state: 'substrate', // substrate -> enzyme -> metabolite
+                    id: Date.now() + Math.random()
+                };
+                
+                activeParticles.push(pObj);
+            }
+
+            function updatePhysics() {
+                if (!isRunning) return;
+
+                const centerX = viewport.clientWidth / 2;
+                const exitX = viewport.clientWidth + 50;
+                const baseSpeed = 4 * speedMultiplier;
+
+                for (let i = activeParticles.length - 1; i >= 0; i--) {
+                    const p = activeParticles[i];
+                    
+                    if (p.state === 'substrate') {
+                        p.x += baseSpeed;
+                        // Transformation near the gears (center)
+                        if (p.x > centerX - 50) {
+                            p.state = 'enzyme';
+                            p.el.style.backgroundColor = '#f59e0b';
+                            p.el.style.boxShadow = '0 0 10px #f59e0b';
+                        }
+                    } else if (p.state === 'enzyme') {
+                        p.x += baseSpeed * 0.7; // Slows down in factory
+                        if (p.x > centerX + 40) {
+                            p.state = 'metabolite';
+                            p.el.style.clipPath = 'circle(50% at 50% 50%)';
+                            p.el.style.backgroundColor = '#fbbf24';
+                            metaboliteCount++;
+                            updateTelemetry();
+                        }
+                    } else {
+                        p.x += baseSpeed * 1.5; // Metabolites move fast to exit
+                    }
+
+                    p.el.style.left = `${p.x}px`;
+
+                    // Remove if exited
+                    if (p.x > exitX) {
+                        p.el.remove();
+                        activeParticles.splice(i, 1);
+                    }
+                }
+
+                updateLiveStats();
+                requestAnimationFrame(updatePhysics);
+            }
+
+            function updateTelemetry() {
+                countOutput.textContent = metaboliteCount;
+                const clearance = (metaboliteCount * speedMultiplier * 0.5).toFixed(1);
+                dataClearance.textContent = `${clearance} mL/min`;
+            }
+
+            function updateLiveStats() {
+                const count = activeParticles.length;
+                dataDensity.textContent = `${count} Units`;
+                progressBar.style.width = `${Math.min(count * 5, 100)}%`;
+                
+                // Simplified Bioavailability logic: Inversely related to clearance
+                const bio = Math.max(0, 100 - (metaboliteCount / 2));
+                dataBio.textContent = `${Math.round(bio)}%`;
+                dataBio.style.color = bio < 30 ? '#ef4444' : '#fbbf24';
+            }
+
+            function toggleSimulation() {
+                if (!isRunning) {
+                    isRunning = true;
+                    btnStart.innerHTML = '<svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 9v6m4-6v6m7-3a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg> Stop Simulation';
+                    btnStart.classList.replace('bg-amber-600', 'bg-slate-700');
+                    spawnInterval = setInterval(() => {
+                        if (activeParticles.length < 30) createParticle();
+                    }, 400 / speedMultiplier);
+                    updatePhysics();
+                } else {
+                    isRunning = false;
+                    btnStart.innerHTML = '<svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"></path></svg> Begin Metabolism';
+                    btnStart.classList.replace('bg-slate-700', 'bg-amber-600');
+                    clearInterval(spawnInterval);
+                }
+            }
+
+            rateSlider.addEventListener('input', () => {
+                updateRate();
+                if (isRunning) {
+                    clearInterval(spawnInterval);
+                    spawnInterval = setInterval(() => {
+                        if (activeParticles.length < 30) createParticle();
+                    }, 400 / speedMultiplier);
+                }
+            });
+            
+            btnStart.addEventListener('click', toggleSimulation);
+
+            // Initial Setup
+            updateRate();
+        });
+    </script>
+</body>
+</html>

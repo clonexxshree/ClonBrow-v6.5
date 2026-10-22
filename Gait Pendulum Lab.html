@@ -1,0 +1,318 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Gait Analysis: Leg Pendulum Simulator</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;700&family=Inter:wght@300;400;600;700&display=swap');
+
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: #020617;
+            color: #f1f5f9;
+            overflow-x: hidden;
+        }
+
+        .font-mono { font-family: 'JetBrains Mono', monospace; }
+
+        .glass-card {
+            background: rgba(15, 23, 42, 0.7);
+            backdrop-filter: blur(12px);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.5);
+        }
+
+        .digital-readout {
+            background: #061021;
+            color: #38bdf8;
+            text-shadow: 0 0 8px rgba(56, 189, 248, 0.4);
+            border: 1px solid #1e293b;
+        }
+
+        /* Joint Visuals */
+        .joint { fill: #334155; stroke: #475569; stroke-width: 2; }
+        .bone { fill: #1e293b; stroke: #334155; stroke-width: 2; rx: 10; }
+        
+        /* Path Trace */
+        .arc-path { fill: none; stroke: #38bdf8; stroke-width: 1; stroke-dasharray: 4 4; opacity: 0.3; }
+
+        input[type=range] {
+            accent-color: #38bdf8;
+        }
+
+        .scanline {
+            width: 100%;
+            height: 2px;
+            background: rgba(56, 189, 248, 0.05);
+            position: absolute;
+            z-index: 10;
+            animation: scan 10s linear infinite;
+        }
+        @keyframes scan { 0% { top: 0%; } 100% { top: 100%; } }
+    </style>
+</head>
+<body class="min-h-screen p-4 md:p-8 flex items-center justify-center">
+
+    <div class="max-w-7xl w-full grid grid-cols-1 lg:grid-cols-12 gap-8 items-stretch">
+        
+        <!-- Simulation Viewport -->
+        <div class="lg:col-span-8 flex flex-col gap-6">
+            <div id="sim-viewport" class="glass-card rounded-3xl p-8 relative flex-grow min-h-[500px] flex items-center justify-center overflow-hidden border border-slate-800">
+                <div class="scanline"></div>
+                
+                <!-- HUD Header -->
+                <div class="absolute top-6 left-8 flex items-center gap-3 z-20">
+                    <div id="status-dot" class="w-2.5 h-2.5 rounded-full bg-sky-500 shadow-[0_0_10px_#38bdf8] animate-pulse"></div>
+                    <span class="text-[10px] font-bold text-slate-400 uppercase tracking-widest font-mono">Gait Kinematics Active</span>
+                </div>
+
+                <!-- SVG Layer: Pendulum Leg -->
+                <svg id="gait-svg" viewBox="0 0 600 500" class="w-full h-auto relative z-10">
+                    <!-- Pivot Point (The Hip) -->
+                    <circle cx="300" cy="80" r="15" class="joint" />
+                    <text x="325" y="85" class="text-[10px] font-bold uppercase fill-slate-500">Acetabulum (Hip)</text>
+
+                    <!-- Motion Arc Trace -->
+                    <path id="motion-arc" class="arc-path" />
+
+                    <!-- Leg Assembly (Dynamic) -->
+                    <g id="leg-assembly" transform="rotate(0, 300, 80)">
+                        <!-- Upper Leg (Femur) -->
+                        <rect x="290" y="80" width="20" height="160" rx="10" class="bone" />
+                        
+                        <!-- Knee Joint -->
+                        <circle cx="300" cy="240" r="10" class="joint" />
+                        
+                        <!-- Lower Leg (Tibia/Fibula) -->
+                        <rect x="292" y="240" width="16" height="160" rx="8" class="bone" />
+                        
+                        <!-- The Foot -->
+                        <path d="M 292 400 L 330 415 Q 335 420 330 425 L 285 425 Q 280 425 282 410 Z" fill="#0f172a" stroke="#334155" />
+                        
+                        <!-- Center of Mass Indicator -->
+                        <circle cx="300" cy="250" r="4" fill="#f43f5e" opacity="0.6" />
+                    </g>
+
+                    <!-- Vertical Reference Line -->
+                    <line x1="300" y1="80" x2="300" y2="450" stroke="#1e293b" stroke-width="1" stroke-dasharray="8 4" />
+                </svg>
+
+                <!-- Tags -->
+                <div class="absolute bottom-6 left-8 flex flex-col gap-1">
+                    <span class="text-[9px] font-mono text-slate-500 uppercase">Model: Compound Passive Pendulum</span>
+                    <span class="text-[9px] font-mono text-slate-500 uppercase">Phase: Swing (Single Support)</span>
+                </div>
+            </div>
+
+            <!-- Controls -->
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div class="glass-card p-6 rounded-2xl space-y-4">
+                    <div class="flex justify-between items-center">
+                        <label class="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Leg Length (L)</label>
+                        <span id="l-display" class="text-xs font-mono text-sky-400">0.90 m</span>
+                    </div>
+                    <input type="range" id="l-slider" min="0.5" max="1.2" step="0.05" value="0.9" class="w-full h-1.5 bg-slate-800 rounded-lg appearance-none cursor-pointer">
+                    <div class="flex justify-between text-[9px] text-slate-500 uppercase">
+                        <span>Child / Short</span>
+                        <span>Adult / Long</span>
+                    </div>
+                </div>
+                <div class="glass-card p-6 rounded-2xl space-y-4">
+                    <div class="flex justify-between items-center">
+                        <label class="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Gravity (g)</label>
+                        <span id="g-display" class="text-xs font-mono text-sky-400">9.81 m/s²</span>
+                    </div>
+                    <input type="range" id="g-slider" min="1.6" max="25" step="0.1" value="9.81" class="w-full h-1.5 bg-slate-800 rounded-lg appearance-none cursor-pointer">
+                    <div class="flex justify-between text-[9px] text-slate-500 uppercase">
+                        <span>Moon (1.6)</span>
+                        <span>Earth (9.8)</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Sidebar: Analytics -->
+        <div class="lg:col-span-4 flex flex-col gap-6">
+            
+            <!-- Digital Readout -->
+            <div class="digital-readout rounded-3xl p-6 space-y-6">
+                <div class="flex justify-between items-center border-b border-sky-900/30 pb-3">
+                    <span class="text-[10px] font-bold tracking-tighter opacity-60 uppercase">Stride Frequency Telemetry</span>
+                    <span class="text-xs font-mono">STABLE</span>
+                </div>
+
+                <div class="space-y-6">
+                    <div class="space-y-1">
+                        <label class="text-[9px] uppercase font-bold opacity-50">Natural Cadence</label>
+                        <div id="data-cadence" class="text-4xl font-bold font-mono">110 SPM</div>
+                        <p class="text-[10px] opacity-40 uppercase">Steps Per Minute</p>
+                    </div>
+
+                    <div class="grid grid-cols-2 gap-4 pt-2 border-t border-sky-900/20">
+                        <div class="space-y-1">
+                            <label class="text-[9px] uppercase font-bold opacity-50">Period (T)</label>
+                            <div id="data-period" class="text-xl font-bold font-mono">1.09 s</div>
+                        </div>
+                        <div class="space-y-1">
+                            <label class="text-[9px] uppercase font-bold opacity-50">Frequency</label>
+                            <div id="data-freq" class="text-xl font-bold font-mono">0.92 Hz</div>
+                        </div>
+                    </div>
+
+                    <!-- Kinematic Graph -->
+                    <div class="h-40 bg-black/40 rounded-xl border border-slate-800 p-2 relative">
+                        <canvas id="gait-graph" class="w-full h-full"></canvas>
+                        <div class="absolute top-2 right-2 text-[8px] font-mono text-slate-600 uppercase">Angular Displacement (θ)</div>
+                    </div>
+
+                    <button id="btn-kick" class="w-full py-3 bg-sky-600 hover:bg-sky-500 text-white font-bold rounded-xl text-xs uppercase tracking-widest transition-all shadow-lg shadow-sky-900/40">
+                        Initiate Swing
+                    </button>
+                </div>
+            </div>
+
+            <!-- Theory Card -->
+            <div class="glass-card p-6 rounded-3xl space-y-4">
+                <h3 class="text-xs font-bold text-slate-400 uppercase tracking-widest">Natural Stride Length</h3>
+                <div class="bg-slate-900/50 p-4 rounded-xl border border-slate-800 font-mono text-center text-sky-400 text-sm">
+                    T = 2π√(L/g)
+                </div>
+                <p class="text-[10px] text-slate-400 leading-relaxed">
+                    Humans naturally walk at a cadence that matches the resonant frequency of their legs. Taller people have a longer "pendulum," resulting in a slower natural step frequency.
+                </p>
+                <div class="p-3 bg-slate-900/50 rounded-xl border border-slate-800">
+                    <div class="text-[9px] font-bold text-sky-500 uppercase mb-1">Efficiency Note</div>
+                    <p class="text-[9px] text-slate-500 leading-tight">
+                        Walking faster or slower than this resonant frequency requires significantly more metabolic energy (muscular work) to overcome gravity.
+                    </p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', () => {
+            const lSlider = document.getElementById('l-slider');
+            const gSlider = document.getElementById('g-slider');
+            const lDisplay = document.getElementById('l-display');
+            const gDisplay = document.getElementById('g-display');
+            const btnKick = document.getElementById('btn-kick');
+            
+            const legAssembly = document.getElementById('leg-assembly');
+            const dataCadence = document.getElementById('data-cadence');
+            const dataPeriod = document.getElementById('data-period');
+            const dataFreq = document.getElementById('data-freq');
+            
+            const canvas = document.getElementById('gait-graph');
+            const ctx = canvas.getContext('2d');
+
+            let animationId;
+            let time = 0;
+            let angle = 0;
+            let amplitude = 0; // Displacement
+            let isMoving = false;
+            let graphPoints = [];
+
+            function resizeCanvas() {
+                canvas.width = canvas.parentElement.clientWidth;
+                canvas.height = canvas.parentElement.clientHeight;
+            }
+            window.addEventListener('resize', resizeCanvas);
+            resizeCanvas();
+
+            function calculateGait() {
+                const L = parseFloat(lSlider.value);
+                const g = parseFloat(gSlider.value);
+                
+                lDisplay.textContent = `${L.toFixed(2)} m`;
+                gDisplay.textContent = `${g.toFixed(2)} m/s²`;
+
+                // Calculate period T for a compound pendulum (simplified)
+                // For a human leg, Center of Mass is roughly at 0.5L
+                // Period T = 2 * PI * sqrt( (2/3 * L) / g ) for a rod
+                const T = 2 * Math.PI * Math.sqrt((0.66 * L) / g);
+                const freq = 1 / T;
+                const cadence = Math.round(freq * 60 * 2); // 2 steps per full period
+
+                dataPeriod.textContent = `${T.toFixed(2)} s`;
+                dataFreq.textContent = `${freq.toFixed(2)} Hz`;
+                dataCadence.textContent = `${cadence} SPM`;
+
+                return { T, freq };
+            }
+
+            function drawGraph() {
+                ctx.clearRect(0, 0, canvas.width, canvas.height);
+                
+                // Grid
+                ctx.strokeStyle = '#111827';
+                ctx.lineWidth = 1;
+                for(let i=0; i<canvas.width; i+=30) {
+                    ctx.beginPath(); ctx.moveTo(i, 0); ctx.lineTo(i, canvas.height); ctx.stroke();
+                }
+                ctx.beginPath(); 
+                ctx.strokeStyle = '#1e293b';
+                ctx.moveTo(0, canvas.height/2); 
+                ctx.lineTo(canvas.width, canvas.height/2); 
+                ctx.stroke();
+
+                // Trace
+                if (graphPoints.length > 1) {
+                    ctx.beginPath();
+                    ctx.strokeStyle = '#38bdf8';
+                    ctx.lineWidth = 2;
+                    ctx.moveTo(0, graphPoints[0]);
+                    for(let i=1; i<graphPoints.length; i++) {
+                        const x = (i / 100) * canvas.width;
+                        ctx.lineTo(x, graphPoints[i]);
+                    }
+                    ctx.stroke();
+                }
+            }
+
+            function animate() {
+                const { T, freq } = calculateGait();
+                
+                if (isMoving) {
+                    time += 0.016; // ~60fps
+                    // Damped oscillation simulation
+                    amplitude *= 0.995; 
+                    angle = amplitude * Math.cos(2 * Math.PI * freq * time);
+                    
+                    if (Math.abs(amplitude) < 0.1) {
+                        isMoving = false;
+                        amplitude = 0;
+                        angle = 0;
+                    }
+                }
+
+                // Update SVG
+                legAssembly.setAttribute('transform', `rotate(${angle}, 300, 80)`);
+
+                // Update Graph
+                const y = (canvas.height / 2) - (angle * 2);
+                graphPoints.push(y);
+                if (graphPoints.length > 100) graphPoints.shift();
+                drawGraph();
+
+                animationId = requestAnimationFrame(animate);
+            }
+
+            btnKick.addEventListener('click', () => {
+                amplitude = 25; // 25 degrees initial swing
+                time = 0;
+                isMoving = true;
+            });
+
+            lSlider.addEventListener('input', calculateGait);
+            gSlider.addEventListener('input', calculateGait);
+
+            // Initial
+            calculateGait();
+            animate();
+        });
+    </script>
+</body>
+</html>

@@ -1,0 +1,367 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Clonbrow saver - The Forge</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Nunito:wght@600;700;800;900&display=swap" rel="stylesheet">
+    <script src="https://unpkg.com/lucide@latest"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+
+    <style>
+        body { font-family: 'Nunito', sans-serif; background-color: #f8fafc; color: #0f172a; margin: 0; overflow-x: hidden; }
+        
+        #bg-canvas { position: fixed; top: 0; left: 0; width: 100vw; height: 100vh; z-index: -1; }
+
+        .game-panel { background: rgba(255, 255, 255, 0.95); backdrop-filter: blur(12px); border: 4px solid #0f172a; border-radius: 32px; box-shadow: 0 12px 0px #0f172a; }
+        .game-input { border: 4px solid #cbd5e1; border-radius: 20px; padding: 14px 20px; font-weight: 800; transition: all 0.2s; font-size: 1.1rem; background-color: #ffffff; color: #0f172a; width: 100%; outline: none;}
+        .game-input:focus { border-color: #38bdf8; box-shadow: 0 0 0 4px rgba(56, 189, 248, 0.3); transform: translateY(-2px); }
+        
+        .btn-forge { background-color: #38bdf8; color: white; border: 4px solid #0f172a; border-bottom-width: 8px; border-radius: 24px; transition: all 0.1s; font-weight: 900; font-size: 1.5rem; text-transform: uppercase; cursor: pointer; width: 100%; letter-spacing: 1px;}
+        .btn-forge:active { border-bottom-width: 4px; transform: translateY(4px); }
+        
+        .btn-back { background-color: white; color: #0f172a; border: 4px solid #0f172a; border-bottom-width: 6px; border-radius: 16px; padding: 10px 24px; font-weight: 900; transition: all 0.1s; text-transform: uppercase; cursor: pointer; font-size: 1rem; letter-spacing: 1px;}
+        .btn-back:active { transform: translateY(4px); border-bottom-width: 2px; }
+
+        .custom-scrollbar::-webkit-scrollbar { width: 8px; }
+        .custom-scrollbar::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 10px; }
+
+        /* Tools Modal UI */
+        #toolsModal { display: none; background: rgba(15, 23, 42, 0.8); backdrop-filter: blur(8px); }
+        #toolsModal.active { display: flex; }
+        .tool-category.active { background: #e0f2fe; color: #0284c7; border-left: 4px solid #0284c7; }
+        
+        .tool-checkbox:checked + div { border-color: #38bdf8; background: #e0f2fe; color: #0284c7; transform: translateY(-2px); box-shadow: 0 4px 0 #38bdf8;}
+    </style>
+</head>
+<body class="p-4 md:p-8 min-h-screen relative flex justify-center">
+
+    <canvas id="bg-canvas"></canvas>
+
+    <div class="w-full max-w-4xl relative z-10 pt-4">
+        <header class="flex justify-between items-center mb-8">
+            <div class="flex items-center gap-5 game-panel px-6 py-4 shadow-[0_6px_0_#0f172a]">
+                <div class="w-16 h-16 bg-emerald-400 rounded-2xl flex items-center justify-center border-4 border-slate-900 shadow-[0_4px_0_#0f172a]">
+                    <i data-lucide="hammer" class="w-8 h-8 text-white"></i>
+                </div>
+                <h1 class="text-4xl font-black text-slate-800 tracking-tight">The Forge</h1>
+            </div>
+            <button onclick="window.location.href='dashboard.html?userId='+userId" class="btn-back flex items-center gap-2">
+                <i data-lucide="arrow-left" class="w-5 h-5 font-black"></i> Hub
+            </button>
+        </header>
+
+        <div class="game-panel p-8 md:p-10">
+            
+            <!-- QUEST MAKER BRIDGE -->
+            <div class="mb-10 pb-8 border-b-4 border-slate-200 border-dashed">
+                <h2 class="text-2xl font-black text-slate-800 mb-4 uppercase tracking-widest text-center">Interactive Challenges</h2>
+                <p class="text-center text-slate-500 font-bold mb-6">Build puzzles and quests for players to solve inside NPC Houses!</p>
+                <button type="button" onclick="window.location.href='quests.html?userId='+userId" class="btn-forge bg-amber-500 border-slate-900 flex justify-center items-center gap-3 py-5 w-full max-w-lg mx-auto shadow-[0_8px_0_#0f172a]">
+                    <i data-lucide="swords" class="w-8 h-8"></i> Enter Quest Maker
+                </button>
+            </div>
+
+            <form id="noteForm" class="space-y-6">
+                
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    <div>
+                        <label class="block text-sm font-black text-slate-400 mb-2 uppercase tracking-widest pl-2">Knowledge Title</label>
+                        <input type="text" id="noteTitle" required placeholder="e.g. Science Rules!" class="game-input">
+                    </div>
+
+                    <div>
+                        <label class="block text-sm font-black text-sky-500 mb-2 uppercase tracking-widest pl-2">Build Location</label>
+                        <select id="noteParent" class="game-input cursor-pointer">
+                            <option value="ROOT">🏠 Construct a Brand New House</option>
+                        </select>
+                    </div>
+                </div>
+
+                <div id="houseTypeContainer" class="grid grid-cols-1 md:grid-cols-2 gap-6 pt-4 border-t-4 border-slate-100 border-dashed">
+                    <div>
+                        <label class="block text-sm font-black text-amber-500 mb-2 uppercase tracking-widest pl-2">House Design</label>
+                        <select id="houseStyle" class="game-input cursor-pointer">
+                            <option value="house-1">🏡 Classic Dutch Design</option>
+                            <option value="house-2">🏕️ Viking Stronghold</option>
+                        </select>
+                    </div>
+                    <div>
+                        <label class="block text-sm font-black text-emerald-500 mb-2 uppercase tracking-widest pl-2">Age Bifurcation</label>
+                        <select id="ageGroup" class="game-input cursor-pointer">
+                            <option value="1-5">🧒 Ages 1 - 5</option>
+                            <option value="5-10">🧑 Ages 5 - 10</option>
+                            <option value="10-15">🧑‍🎓 Ages 10 - 15</option>
+                            <option value="15+">🎓 Ages 15+</option>
+                        </select>
+                    </div>
+                </div>
+
+                <div class="pt-4 border-t-4 border-slate-100 border-dashed">
+                    <label class="block text-sm font-black text-fuchsia-500 mb-2 uppercase tracking-widest pl-2">Learning Style</label>
+                    <select id="learningType" class="game-input cursor-pointer">
+                        <option value="standard">📖 Standard Reading</option>
+                        <option value="learn_by_doing">🔬 Learn by Doing (Mix of All Tools)</option>
+                    </select>
+                </div>
+
+                <div id="toolsLauncherContainer" class="hidden bg-slate-50 p-6 rounded-3xl border-4 border-slate-200 mt-4 text-center">
+                    <button type="button" onclick="openToolsModal()" class="btn-back w-full max-w-md mx-auto py-4 text-lg text-sky-600 border-sky-600 shadow-[0_6px_0_#0284c7]">
+                        <i data-lucide="package-open" class="inline w-6 h-6 mr-2"></i> 
+                        Select Tools (<span id="toolCount">0</span> Equipped)
+                    </button>
+                </div>
+
+                <!-- ATTACH QUEST DROPDOWN -->
+                <div class="pt-4 border-t-4 border-slate-100 border-dashed">
+                    <label class="block text-sm font-black text-rose-500 mb-2 uppercase tracking-widest pl-2">Attach a Puzzle / Quest</label>
+                    <select id="attachedQuest" class="game-input cursor-pointer border-rose-300 focus:border-rose-500">
+                        <option value="none">❌ No Quest (Just Free Info)</option>
+                        <!-- Populated by JS -->
+                    </select>
+                </div>
+
+                <div>
+                    <label class="block text-sm font-black text-slate-400 mb-2 uppercase tracking-widest pl-2">Secret Information</label>
+                    <textarea id="noteContent" rows="4" placeholder="Enter your detailed data here..." class="game-input resize-none"></textarea>
+                </div>
+
+                <button type="submit" id="submitBtn" class="btn-forge py-5 mt-4 flex justify-center items-center gap-3">
+                    Craft Data <i data-lucide="zap" class="w-6 h-6 fill-white"></i>
+                </button>
+            </form>
+
+            <div id="successMsg" class="hidden mt-6 p-4 bg-emerald-100 border-4 border-emerald-400 text-emerald-700 rounded-2xl font-black text-center text-xl shadow-inner">
+                Successfully Crafted & Saved! ✨
+            </div>
+        </div>
+    </div>
+
+    <!-- 200+ TOOLS BIFURCATED MODAL -->
+    <div id="toolsModal" class="fixed inset-0 z-50 items-center justify-center p-4">
+        <div class="game-panel w-full max-w-6xl h-[80vh] flex flex-col overflow-hidden">
+            <div class="flex justify-between items-center p-6 border-b-4 border-slate-200">
+                <h2 class="text-3xl font-black text-slate-800">Equip Tools</h2>
+                <button onclick="closeToolsModal()" class="w-10 h-10 bg-rose-400 text-white rounded-xl flex items-center justify-center border-4 border-slate-900 shadow-[0_4px_0_#0f172a]">
+                    <i data-lucide="x" class="w-5 h-5 font-black"></i>
+                </button>
+            </div>
+            
+            <div class="flex flex-1 overflow-hidden">
+                <!-- Sidebar Categories -->
+                <div id="categorySidebar" class="w-1/3 bg-slate-50 border-r-4 border-slate-200 p-4 overflow-y-auto custom-scrollbar">
+                </div>
+                <!-- Tool Grid -->
+                <div class="w-2/3 p-6 overflow-y-auto custom-scrollbar bg-white">
+                    <h3 id="currentCategoryTitle" class="text-2xl font-black text-sky-500 mb-6 border-b-2 border-slate-100 pb-2">Select a Category</h3>
+                    <div id="toolsGrid" class="grid grid-cols-2 md:grid-cols-3 gap-4">
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        lucide.createIcons();
+        const urlParams = new URLSearchParams(window.location.search);
+        let userId = urlParams.get('userId') || 1;
+        
+        // ENSURING DATA CONNECTION TO SERVER.PY
+        const API_BASE = 'https://shreeClonexx.pythonanywhere.com'; 
+        
+        // --- 200+ TOOL DATABASE BIFURCATION ---
+        const toolsDatabase = [
+            { id: 'diag', name: 'Diagnostics & Lab', icon: 'microscope', items: ['Audiology Lab', 'Breathalyzer', 'Centrifuge', 'Chromatography', 'Digital hospital', 'EEG Wave Lab', 'ELISA Microplate', 'Endoscopy', 'MRI Proton', 'PCR Thermal', 'Pulse Oximetry', 'Radio-Isotope', 'Spectrophotometer', 'Telemedicine', 'Ultrasound Echo', 'Urinalysis', 'X-Ray Density'] },
+            { id: 'surg', name: 'Surgical & Interventions', icon: 'scissors', items: ['3D Bioprinting', '3D Surgery Sim', 'Blood cancer surgery', 'System reboot', 'Bariatric Resection', 'CRISPR Splicer', 'Cryopreservation', 'Cryosurgery', 'Defibrillator', 'IV Titration', 'Laparoscopic', 'Nanorobot', 'Neural Resection', 'Radioactive Seed', 'Suture Tension', 'Tourniquet', 'Vascular Embolization'] },
+            { id: 'path', name: 'Pathologies & Trauma', icon: 'activity', items: ['PM2.5 Deposition', 'Antibiotic Resistance', 'Antivenom Sim', 'Asthma Airflow', 'Burn Estimator', 'Carbon Monoxide', 'Cataract Scattering', 'Color Blindness', 'Concussion', 'Cyanide Blockade', 'Heatstroke', 'Heavy Metal Chelation', 'Histamine Response', 'Hypothermia', 'Lead Poisoning', 'Spinal Compression', 'Thermal Fever', 'UV Mutation', 'Viral Hijack'] },
+            { id: 'bio', name: 'Biophysics & Physiology', icon: 'dna', items: ['Active Transport', 'Antacid Neutralization', 'Antigen-Antibody', 'Antioxidant', 'Bicep Torque', 'Biofeedback', 'Bionic Eye', 'Blood Agglutination', 'Blood Buffer', 'Blood-Brain Barrier', 'Bohr Effect', 'Bone Density', 'Capillary Action', 'Cell Membrane', 'Cerebrospinal Fluid', 'Clotting Cascade', 'Cortisol Stress', 'Cybernetic Haptic', 'Cytochrome P450', 'Dopamine Reward', 'Gait Pendulum', 'Gastric Absorption', 'Gene Drive', 'Glomerular Sieve', 'Half-Life', 'Kidney Filtration', 'Ligament Elasticity', 'Lock & Key', 'Lymph Node', 'Melanin', 'Metabolism', 'Muscle Fatigue', 'Myelin Insulation', 'Na K Action', 'Neural Resistance', 'Neuroplasticity', 'Organ Compatibility', 'Phagocytosis', 'Poiseuille Law', 'Prosthetic Force', 'Protein Synthesis', 'Punnett Square', 'Radiation Physics', 'Reflex Arc', 'Refractive Optics', 'Serotonin Balancer', 'Spirometry', 'Stability COG', 'Surface Tension', 'Synaptic Delay', 'Telomere Aging', 'Vaccine Memory'] },
+            { id: 'math', name: 'Mathematics', icon: 'calculator', items: ['Math Lab Dashboard'] },
+            { id: 'phys', name: 'Physics', icon: 'zap', items: ['Physics Lab Dashboard'] }
+        ];
+
+        let selectedToolsSet = new Set();
+
+        function initToolsModal() {
+            const sidebar = document.getElementById('categorySidebar');
+            toolsDatabase.forEach((cat, idx) => {
+                const btn = document.createElement('button');
+                btn.type = "button";
+                btn.className = `tool-category w-full text-left p-4 rounded-2xl font-bold text-slate-500 mb-2 flex items-center gap-3 transition-colors hover:bg-slate-100 ${idx === 0 ? 'active' : ''}`;
+                btn.innerHTML = `<i data-lucide="${cat.icon}" class="w-5 h-5"></i> ${cat.name}`;
+                btn.onclick = () => {
+                    document.querySelectorAll('.tool-category').forEach(b => b.classList.remove('active'));
+                    btn.classList.add('active');
+                    renderToolGrid(cat);
+                };
+                sidebar.appendChild(btn);
+            });
+            renderToolGrid(toolsDatabase[0]);
+            lucide.createIcons();
+        }
+
+        function renderToolGrid(category) {
+            document.getElementById('currentCategoryTitle').innerText = category.name;
+            const grid = document.getElementById('toolsGrid');
+            grid.innerHTML = category.items.map(tool => `
+                <label class="cursor-pointer relative">
+                    <input type="checkbox" class="tool-checkbox absolute opacity-0" value="${tool}" ${selectedToolsSet.has(tool) ? 'checked' : ''} onchange="toggleTool(this)">
+                    <div class="border-4 border-slate-200 rounded-2xl p-3 text-center text-slate-500 transition-all font-bold h-full flex items-center justify-center text-sm">
+                        ${tool}
+                    </div>
+                </label>
+            `).join('');
+        }
+
+        function toggleTool(checkbox) {
+            if(checkbox.checked) selectedToolsSet.add(checkbox.value);
+            else selectedToolsSet.delete(checkbox.value);
+            document.getElementById('toolCount').innerText = selectedToolsSet.size;
+        }
+
+        function openToolsModal() { document.getElementById('toolsModal').classList.add('active'); }
+        function closeToolsModal() { document.getElementById('toolsModal').classList.remove('active'); }
+
+        initToolsModal();
+
+        // Toggles
+        document.getElementById('noteParent').addEventListener('change', function() {
+            document.getElementById('houseTypeContainer').style.display = this.value === 'ROOT' ? 'grid' : 'none';
+        });
+
+        document.getElementById('learningType').addEventListener('change', function() {
+            document.getElementById('toolsLauncherContainer').style.display = this.value === 'learn_by_doing' ? 'block' : 'none';
+        });
+
+        async function fetchParents() {
+            try {
+                const res = await fetch(`${API_BASE}/api/world/${userId}`);
+                if(!res.ok) return;
+                const data = await res.json();
+                const select = document.getElementById('noteParent');
+                select.innerHTML = '<option value="ROOT">🏠 Construct a Brand New House</option>';
+                data.parents.forEach(p => {
+                    const opt = document.createElement('option');
+                    opt.value = p.id;
+                    opt.innerText = `↳ Add inside: ${p.title.split('|||')[0]}`;
+                    select.appendChild(opt);
+                });
+            } catch (err) {
+                console.warn("Could not load DB parents.");
+            }
+        }
+
+        // LOAD QUESTS FROM LOCAL STORAGE
+        function loadQuests() {
+            const quests = JSON.parse(localStorage.getItem('sd_quests')) || [];
+            const select = document.getElementById('attachedQuest');
+            quests.forEach(q => {
+                const opt = document.createElement('option');
+                opt.value = q.id;
+                opt.innerText = `🧩 ${q.name} (Reward: ${q.reward} 🪙)`;
+                select.appendChild(opt);
+            });
+        }
+
+        document.getElementById('noteForm').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const btn = document.getElementById('submitBtn');
+            btn.innerHTML = 'Crafting...';
+
+            let title = document.getElementById('noteTitle').value;
+            const parentValue = document.getElementById('noteParent').value;
+            const content = document.getElementById('noteContent').value;
+            const ageGroup = document.getElementById('ageGroup').value;
+            const learningType = document.getElementById('learningType').value;
+            const attachedQuest = document.getElementById('attachedQuest').value;
+            
+            const toolsString = Array.from(selectedToolsSet).join(', ');
+
+            try {
+                if (parentValue === 'ROOT') {
+                    const style = document.getElementById('houseStyle').value;
+                    title = `${title}|||${style}`;
+                    const rx = 100 + Math.random() * 600; 
+                    const ry = 100 + Math.random() * 400; 
+                    
+                    await fetch(`${API_BASE}/api/parents`, {
+                        method: 'POST', headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ userId, title, content, x: rx, y: ry, age_group: ageGroup, learning_type: learningType, tools: toolsString, quest_id: attachedQuest })
+                    });
+                } else {
+                    await fetch(`${API_BASE}/api/children`, {
+                        method: 'POST', headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ parentId: parentValue, title, content, age_group: ageGroup, learning_type: learningType, tools: toolsString, quest_id: attachedQuest })
+                    });
+                }
+
+                document.getElementById('noteForm').reset();
+                selectedToolsSet.clear();
+                document.getElementById('toolCount').innerText = 0;
+                document.getElementById('toolsLauncherContainer').style.display = 'none';
+                document.getElementById('houseTypeContainer').style.display = 'grid';
+                fetchParents();
+                
+                const msg = document.getElementById('successMsg');
+                msg.classList.remove('hidden');
+                setTimeout(() => msg.classList.add('hidden'), 3000);
+            } catch (err) { alert("Backend offline! Make sure ../Backend/server.py is running on port 5000."); }
+            btn.innerHTML = 'Craft Data';
+        });
+
+        fetchParents();
+        loadQuests();
+
+        // 3D Background
+        const canvas = document.getElementById('bg-canvas');
+        const scene = new THREE.Scene();
+        scene.background = new THREE.Color(0xffffff);
+        const camera = new THREE.PerspectiveCamera(60, window.innerWidth / window.innerHeight, 0.1, 1000);
+        camera.position.z = 30;
+        const renderer = new THREE.WebGLRenderer({ canvas: canvas, antialias: true });
+        renderer.setSize(window.innerWidth, window.innerHeight);
+
+        const ambientLight = new THREE.AmbientLight(0xffffff, 0.9);
+        scene.add(ambientLight);
+        const directionalLight = new THREE.DirectionalLight(0xffffff, 0.6);
+        directionalLight.position.set(10, 20, 10);
+        scene.add(directionalLight);
+
+        const colors = [0x38bdf8, 0x34d399, 0xf43f5e, 0xfbbf24, 0xa78bfa];
+        const geometries = [new THREE.BoxGeometry(3,3,3), new THREE.TetrahedronGeometry(3), new THREE.OctahedronGeometry(2)];
+        const particles = [];
+
+        for (let i = 0; i < 30; i++) {
+            const geo = geometries[Math.floor(Math.random() * geometries.length)];
+            const mat = new THREE.MeshStandardMaterial({ color: colors[Math.floor(Math.random() * colors.length)], roughness: 0.3, flatShading: true });
+            const mesh = new THREE.Mesh(geo, mat);
+            mesh.position.set((Math.random() - 0.5) * 80, (Math.random() - 0.5) * 60, (Math.random() - 0.5) * 40 - 10);
+            mesh.userData = { rx: (Math.random() - 0.5) * 0.02, ry: (Math.random() - 0.5) * 0.02, floatSpeed: (Math.random() * 0.02) + 0.01, floatOffset: Math.random() * Math.PI * 2 };
+            scene.add(mesh); particles.push(mesh);
+        }
+
+        let mouseX = 0, mouseY = 0;
+        document.addEventListener('mousemove', (e) => {
+            mouseX = (e.clientX - window.innerWidth / 2) * 0.001;
+            mouseY = (e.clientY - window.innerHeight / 2) * 0.001;
+        });
+
+        window.addEventListener('resize', () => {
+            camera.aspect = window.innerWidth / window.innerHeight; camera.updateProjectionMatrix();
+            renderer.setSize(window.innerWidth, window.innerHeight);
+        });
+
+        const clock = new THREE.Clock();
+        function animate() {
+            requestAnimationFrame(animate);
+            const time = clock.getElapsedTime();
+            camera.position.x += (mouseX * 15 - camera.position.x) * 0.05;
+            camera.position.y += (-mouseY * 15 - camera.position.y) * 0.05;
+            camera.lookAt(scene.position);
+            particles.forEach(p => { p.rotation.x += p.userData.rx; p.rotation.y += p.userData.ry; p.position.y += Math.sin(time * 3 + p.userData.floatOffset) * p.userData.floatSpeed; });
+            renderer.render(scene, camera);
+        }
+        animate();
+    </script>
+</body>
+</html>

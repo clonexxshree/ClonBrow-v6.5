@@ -1,0 +1,558 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Asthma Airflow & Bernoulli's Principle</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;700&family=Inter:wght@300;400;600;700&display=swap');
+
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: #020617;
+            color: #f8fafc;
+            overflow-x: hidden;
+        }
+
+        .font-mono { font-family: 'JetBrains Mono', monospace; }
+
+        /* UI Panels */
+        .glass-card {
+            background: rgba(15, 23, 42, 0.7);
+            backdrop-filter: blur(12px);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.5);
+        }
+
+        .digital-readout {
+            background: #061021;
+            color: #0ea5e9; /* Sky 500 */
+            text-shadow: 0 0 8px rgba(14, 165, 233, 0.4);
+            border: 1px solid #1e293b;
+            transition: all 0.3s ease;
+        }
+
+        .alert-severe {
+            color: #f43f5e !important;
+            text-shadow: 0 0 8px rgba(244, 63, 94, 0.6) !important;
+            border-color: rgba(244, 63, 94, 0.5) !important;
+            background: rgba(244, 63, 94, 0.05) !important;
+        }
+
+        /* SVG Anatomy Styles */
+        .muscle-band {
+            fill: none;
+            stroke: #be123c; /* Rose 700 */
+            stroke-width: 8;
+            stroke-linecap: round;
+            transition: d 0.2s ease;
+        }
+        
+        .airway-wall {
+            fill: #fda4af; /* Rose 300 */
+            stroke: #fb7185; /* Rose 400 */
+            stroke-width: 2;
+            transition: d 0.2s ease;
+        }
+
+        .mucosa {
+            fill: #fecdd3; /* Rose 200 */
+            opacity: 0.6;
+            transition: d 0.2s ease;
+        }
+
+        .cartilage {
+            fill: none;
+            stroke: #cbd5e1; /* Slate 300 */
+            stroke-width: 6;
+            stroke-linecap: round;
+            opacity: 0.5;
+        }
+
+        /* UI elements */
+        input[type=range] { accent-color: #0ea5e9; }
+        
+        /* Grid Background */
+        .physics-grid {
+            background-size: 40px 40px;
+            background-image: 
+                linear-gradient(to right, rgba(14, 165, 233, 0.05) 1px, transparent 1px),
+                linear-gradient(to bottom, rgba(14, 165, 233, 0.05) 1px, transparent 1px);
+        }
+    </style>
+</head>
+<body class="min-h-screen p-4 md:p-8 flex items-center justify-center">
+
+    <div class="max-w-7xl w-full grid grid-cols-1 lg:grid-cols-12 gap-8 items-stretch">
+        
+        <!-- Simulation Viewport -->
+        <div class="lg:col-span-8 flex flex-col gap-6">
+            <div class="glass-card rounded-3xl p-0 relative flex-grow min-h-[450px] flex flex-col overflow-hidden border border-slate-800 physics-grid">
+                
+                <!-- HUD Header -->
+                <div class="absolute top-6 left-8 flex items-center gap-3 z-20">
+                    <div id="status-dot" class="w-2.5 h-2.5 rounded-full bg-sky-500 shadow-[0_0_10px_#0ea5e9]"></div>
+                    <span id="status-text" class="text-[10px] font-bold text-slate-400 uppercase tracking-widest font-mono">Fluid Dynamics Active: <span id="hud-mode" class="text-sky-400">Normal Airway</span></span>
+                </div>
+
+                <!-- Simulation Area (SVG + Canvas Overlay) -->
+                <div class="relative w-full flex-grow flex items-center justify-center mt-12">
+                    
+                    <!-- SVG Airway Structure -->
+                    <svg id="airway-svg" viewBox="0 0 800 300" class="absolute inset-0 w-full h-full z-10" preserveAspectRatio="none">
+                        <!-- Background tint for tissue outside the tube -->
+                        <rect x="0" y="0" width="800" height="300" fill="#4c0519" opacity="0.3" />
+                        
+                        <!-- Smooth Muscle Bands (Wrap around the tube) -->
+                        <g id="muscle-layer">
+                            <!-- Generated via JS -->
+                        </g>
+
+                        <!-- Cartilage Rings (Only partial in bronchioles, but visual aid) -->
+                        <path d="M 100 40 Q 100 10 130 10" class="cartilage" />
+                        <path d="M 100 260 Q 100 290 130 290" class="cartilage" />
+                        <path d="M 700 40 Q 700 10 670 10" class="cartilage" />
+                        <path d="M 700 260 Q 700 290 670 290" class="cartilage" />
+
+                        <!-- Top Wall & Mucosa -->
+                        <path id="wall-top" class="airway-wall" d="M 0 0 L 800 0 L 800 50 L 0 50 Z" />
+                        <path id="mucosa-top" class="mucosa" d="M 0 50 L 800 50 L 800 60 L 0 60 Z" />
+                        
+                        <!-- Bottom Wall & Mucosa -->
+                        <path id="wall-bottom" class="airway-wall" d="M 0 300 L 800 300 L 800 250 L 0 250 Z" />
+                        <path id="mucosa-bottom" class="mucosa" d="M 0 250 L 800 250 L 800 240 L 0 240 Z" />
+
+                        <!-- The Lumen (Airspace) is the transparent gap in the middle -->
+                    </svg>
+
+                    <!-- Canvas Particle Flow -->
+                    <canvas id="airflow-canvas" class="absolute inset-0 w-full h-full z-20 pointer-events-none"></canvas>
+
+                    <!-- Center Pressure Readout -->
+                    <div class="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 z-30 flex flex-col items-center">
+                        <div id="local-pressure" class="text-2xl font-bold font-mono text-white drop-shadow-[0_2px_4px_rgba(0,0,0,0.8)]">0 cmH₂O</div>
+                        <div class="text-[9px] font-bold text-slate-300 uppercase tracking-widest drop-shadow-md">Local Pressure</div>
+                    </div>
+                </div>
+
+                <!-- Tags -->
+                <div class="absolute bottom-6 left-8 flex flex-col gap-1 z-30">
+                    <span class="text-[9px] font-mono text-slate-400 uppercase">Input Flow Rate (Q): Constant (1.0 L/s)</span>
+                    <span class="text-[9px] font-mono text-slate-400 uppercase">Equation: P + ½ρv² = Constant</span>
+                </div>
+            </div>
+
+            <!-- Controls -->
+            <div class="grid grid-cols-1 gap-4">
+                <div class="glass-card p-6 rounded-2xl space-y-4">
+                    <div class="flex justify-between items-center">
+                        <label class="text-[10px] font-bold text-slate-400 uppercase tracking-widest flex items-center gap-2">
+                            <svg class="w-4 h-4 text-rose-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"></path></svg>
+                            Asthma Exacerbation Severity
+                        </label>
+                        <span id="severity-display" class="text-xs font-mono text-sky-400">0% (Normal)</span>
+                    </div>
+                    <!-- Slider from 0 to 0.75 max constriction (75% radius reduction) -->
+                    <input type="range" id="severity-slider" min="0" max="0.75" step="0.01" value="0" class="w-full h-2 bg-slate-800 rounded-lg appearance-none cursor-pointer">
+                    <div class="flex justify-between text-[9px] text-slate-500 uppercase">
+                        <span>Healthy Airway</span>
+                        <span>Mild</span>
+                        <span>Moderate</span>
+                        <span class="text-rose-500 font-bold">Severe Attack</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Sidebar: Analytics & Data -->
+        <div class="lg:col-span-4 flex flex-col gap-6">
+            
+            <!-- Digital Readout -->
+            <div id="telemetry-panel" class="digital-readout rounded-3xl p-6 space-y-6">
+                <div class="flex justify-between items-center border-b border-current pb-3 opacity-60">
+                    <span class="text-[10px] font-bold tracking-tighter uppercase">Airway Telemetry</span>
+                    <span class="text-xs font-mono" id="sim-status">STABLE</span>
+                </div>
+
+                <div class="space-y-5">
+                    
+                    <!-- Air Velocity -->
+                    <div class="flex justify-between items-end">
+                        <div class="space-y-1">
+                            <label class="text-[9px] uppercase font-bold opacity-60">Air Velocity (Stricture)</label>
+                            <div id="data-velocity" class="text-4xl font-bold font-mono">1.0 m/s</div>
+                        </div>
+                        <div class="text-right space-y-1">
+                            <label class="text-[9px] uppercase font-bold opacity-60">Base Velocity</label>
+                            <div class="text-sm font-bold font-mono">1.0 m/s</div>
+                        </div>
+                    </div>
+
+                    <div class="grid grid-cols-2 gap-4 pt-4 border-t border-current opacity-80">
+                        <!-- Radius -->
+                        <div class="space-y-1">
+                            <label class="text-[9px] uppercase font-bold">Effective Radius</label>
+                            <div id="data-radius" class="text-xl font-bold font-mono">100%</div>
+                        </div>
+                        <!-- Cross-sectional Area -->
+                        <div class="space-y-1">
+                            <label class="text-[9px] uppercase font-bold">Cross-Section Area</label>
+                            <div id="data-area" class="text-xl font-bold font-mono">100%</div>
+                        </div>
+                    </div>
+
+                    <!-- Resistance (Poiseuille's) -->
+                    <div class="p-4 bg-black/30 rounded-xl border border-current space-y-1">
+                        <div class="flex justify-between items-center">
+                            <label class="text-[9px] uppercase font-bold text-current">Airway Resistance (R)</label>
+                            <span class="text-[8px] opacity-70 font-mono">R ∝ 1/r⁴</span>
+                        </div>
+                        <div id="data-resistance" class="text-3xl font-bold font-mono">1.0x</div>
+                        <p class="text-[9px] opacity-80 leading-tight mt-2">
+                            Work of breathing multiplier. A small drop in radius causes a massive exponential spike in resistance.
+                        </p>
+                    </div>
+
+                </div>
+            </div>
+
+            <!-- Physics Logic Card -->
+            <div class="glass-card p-6 rounded-3xl space-y-4 flex-grow flex flex-col">
+                <h3 class="text-xs font-bold text-slate-400 uppercase tracking-widest flex items-center gap-2">
+                    <svg class="w-4 h-4 text-sky-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19.428 15.428a2 2 0 00-1.022-.547l-2.387-.477a6 6 0 00-3.86.517l-.318.158a6 6 0 01-3.86.517L6.05 15.21a2 2 0 00-1.806.547M8 4h8l-1 1v5.172a2 2 0 00.586 1.414l5 5c1.26 1.26.367 3.414-1.415 3.414H4.828c-1.782 0-2.674-2.154-1.414-3.414l5-5A2 2 0 009 10.172V5L8 4z"></path></svg>
+                    Bernoulli's Principle
+                </h3>
+                
+                <div class="bg-slate-900/50 p-3 rounded-xl border border-slate-800 flex-grow space-y-3">
+                    <p class="text-[10px] text-slate-300 leading-relaxed">
+                        To maintain a constant flow rate ($Q$) through a narrowed tube, the air <strong>must accelerate</strong> ($V$ increases).
+                    </p>
+                    <p class="text-[10px] text-slate-300 leading-relaxed">
+                        According to Bernoulli's equation, an increase in fluid velocity results in a <strong>decrease in static pressure</strong>.
+                    </p>
+                    
+                    <!-- Dynamic Collapse Warning -->
+                    <div id="collapse-warning" class="hidden mt-4 p-3 border border-rose-500/50 bg-rose-500/10 rounded-lg">
+                        <div class="text-[10px] font-bold text-rose-500 mb-1 flex items-center gap-1">
+                            <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"></path></svg>
+                            Dynamic Airway Collapse!
+                        </div>
+                        <p class="text-[9px] text-rose-300/80 leading-tight">
+                            The extreme pressure drop (suction) inside the airway pulls the floppy walls inward during exhalation, causing air trapping and wheezing.
+                        </p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', () => {
+            const severitySlider = document.getElementById('severity-slider');
+            const severityDisplay = document.getElementById('severity-display');
+            const hudMode = document.getElementById('hud-mode');
+            const statusDot = document.getElementById('status-dot');
+            const telePanel = document.getElementById('telemetry-panel');
+            const simStatus = document.getElementById('sim-status');
+            const collapseWarning = document.getElementById('collapse-warning');
+
+            // SVG Elements
+            const svg = document.getElementById('airway-svg');
+            const wallTop = document.getElementById('wall-top');
+            const wallBottom = document.getElementById('wall-bottom');
+            const mucosaTop = document.getElementById('mucosa-top');
+            const mucosaBottom = document.getElementById('mucosa-bottom');
+            const muscleLayer = document.getElementById('muscle-layer');
+            const localPressureTxt = document.getElementById('local-pressure');
+
+            // Telemetry Elements
+            const dataVelocity = document.getElementById('data-velocity');
+            const dataRadius = document.getElementById('data-radius');
+            const dataArea = document.getElementById('data-area');
+            const dataResistance = document.getElementById('data-resistance');
+
+            // Canvas Elements
+            const canvas = document.getElementById('airflow-canvas');
+            const ctx = canvas.getContext('2d');
+
+            // Physics Base Constants
+            const baseVelocity = 1.0; // m/s
+            const baseRadius = 100; // %
+            const tubeWidth = 800;
+            const tubeHeight = 300;
+            const centerY = tubeHeight / 2;
+            const baseTubeRadius = 100; // SVG coordinate units
+
+            // State
+            let severity = 0; // 0 to 0.75
+            let particles = [];
+            const NUM_PARTICLES = 400;
+
+            // Initialize Muscle Bands
+            function initMuscles() {
+                muscleLayer.innerHTML = '';
+                // Draw multiple bands wrapped around the top and bottom
+                for(let i=100; i<=700; i+=60) {
+                    const topBand = document.createElementNS("http://www.w3.org/2000/svg", "path");
+                    topBand.id = `muscle-top-${i}`;
+                    topBand.setAttribute('class', 'muscle-band');
+                    muscleLayer.appendChild(topBand);
+
+                    const botBand = document.createElementNS("http://www.w3.org/2000/svg", "path");
+                    botBand.id = `muscle-bot-${i}`;
+                    botBand.setAttribute('class', 'muscle-band');
+                    muscleLayer.appendChild(botBand);
+                }
+            }
+
+            // Calculate SVG Profile for airway given severity
+            // We use a cosine dip centered at x=400
+            function getRadiusAtX(x, sev) {
+                // Stricture goes from x=200 to x=600
+                if (x < 200 || x > 600) return baseTubeRadius;
+                
+                // Normalized position in stricture 0 to 1
+                const nx = (x - 200) / 400; 
+                // Cosine curve for smooth dip: sin(nx * PI)
+                const dip = Math.sin(nx * Math.PI);
+                
+                // Max reduction at center is based on severity (0 to 0.75)
+                const reduction = sev * baseTubeRadius * dip;
+                return baseTubeRadius - reduction;
+            }
+
+            function updateSVG() {
+                // Generate path data
+                let dWallTop = `M 0 0 L 800 0 L 800 ${centerY - baseTubeRadius}`;
+                let dMucosaTop = `M 0 ${centerY - baseTubeRadius} L 800 ${centerY - baseTubeRadius}`;
+                let dMucosaBottom = `M 0 ${centerY + baseTubeRadius} L 800 ${centerY + baseTubeRadius}`;
+                let dWallBottom = `M 0 300 L 800 300 L 800 ${centerY + baseTubeRadius}`;
+
+                // Calculate thicknes of mucosa (swells with severity)
+                const mucosaBaseThickness = 10;
+                const mucosaSwell = mucosaBaseThickness + (severity * 20);
+
+                // Build paths backwards for the inner lumen boundary
+                let lumenTopPath = [];
+                let lumenBotPath = [];
+
+                for (let x = 800; x >= 0; x -= 20) {
+                    const r = getRadiusAtX(x, severity);
+                    // Mucosa swells inwards slightly more than the wall
+                    const yWallTop = centerY - r;
+                    const yLumenTop = centerY - r + mucosaSwell;
+                    
+                    const yWallBot = centerY + r;
+                    const yLumenBot = centerY + r - mucosaSwell;
+
+                    dWallTop += ` L ${x} ${yWallTop}`;
+                    dMucosaTop += ` L ${x} ${yLumenTop}`;
+                    dMucosaBottom += ` L ${x} ${yLumenBot}`;
+                    dWallBottom += ` L ${x} ${yWallBot}`;
+
+                    lumenTopPath.push({x, y: yLumenTop});
+                    lumenBotPath.push({x, y: yLumenBot});
+                }
+
+                dWallTop += ` Z`;
+                dWallBottom += ` Z`;
+
+                // Mucosa paths loop back along the wall
+                dMucosaTop += ` L 0 ${centerY - baseTubeRadius}`;
+                for (let x = 0; x <= 800; x += 20) {
+                    dMucosaTop += ` L ${x} ${centerY - getRadiusAtX(x, severity)}`;
+                }
+                dMucosaTop += ` Z`;
+
+                dMucosaBottom += ` L 0 ${centerY + baseTubeRadius}`;
+                for (let x = 0; x <= 800; x += 20) {
+                    dMucosaBottom += ` L ${x} ${centerY + getRadiusAtX(x, severity)}`;
+                }
+                dMucosaBottom += ` Z`;
+
+                wallTop.setAttribute('d', dWallTop);
+                wallBottom.setAttribute('d', dWallBottom);
+                mucosaTop.setAttribute('d', dMucosaTop);
+                mucosaBottom.setAttribute('d', dMucosaBottom);
+
+                // Update Muscle Bands
+                for(let i=100; i<=700; i+=60) {
+                    const r = getRadiusAtX(i, severity);
+                    const mTop = document.getElementById(`muscle-top-${i}`);
+                    const mBot = document.getElementById(`muscle-bot-${i}`);
+                    
+                    // Top band curves upwards
+                    mTop.setAttribute('d', `M ${i-10} ${centerY - r - 15} Q ${i} ${centerY - r - 30} ${i+10} ${centerY - r - 15}`);
+                    // Bottom band curves downwards
+                    mBot.setAttribute('d', `M ${i-10} ${centerY + r + 15} Q ${i} ${centerY + r + 30} ${i+10} ${centerY + r + 15}`);
+                }
+            }
+
+            // Canvas Particle System
+            function initParticles() {
+                particles = [];
+                for (let i = 0; i < NUM_PARTICLES; i++) {
+                    particles.push({
+                        x: Math.random() * canvas.width,
+                        // Normalized radial position (-1 to 1)
+                        rNorm: (Math.random() * 2) - 1, 
+                        length: Math.random() * 20 + 10,
+                        opacity: Math.random() * 0.5 + 0.3
+                    });
+                }
+            }
+
+            function resizeCanvas() {
+                canvas.width = canvas.parentElement.clientWidth;
+                canvas.height = canvas.parentElement.clientHeight;
+                initParticles();
+            }
+            window.addEventListener('resize', resizeCanvas);
+            
+            function animateCanvas() {
+                ctx.clearRect(0, 0, canvas.width, canvas.height);
+                
+                const scaleX = 800 / canvas.width;
+                const scaleY = 300 / canvas.height;
+                const centerCy = canvas.height / 2;
+
+                const mucosaSwell = 10 + (severity * 20);
+
+                ctx.strokeStyle = 'rgba(255, 255, 255, 0.6)';
+                ctx.lineCap = 'round';
+                ctx.lineWidth = 2;
+
+                particles.forEach(p => {
+                    // Physics mapping
+                    const svgX = p.x * scaleX;
+                    
+                    // Current tube radius at this X
+                    const svgRadius = getRadiusAtX(svgX, severity);
+                    // Actual lumen radius subtracts mucosa
+                    const lumenRadius = Math.max(10, svgRadius - mucosaSwell); 
+                    
+                    // Velocity calculation (Continuity Equation A1V1 = A2V2)
+                    // A = PI * r^2.  V2 = V1 * (r1/r2)^2
+                    const rBaseLumen = baseTubeRadius - 10; // normal lumen
+                    const areaRatio = Math.pow(rBaseLumen / lumenRadius, 2);
+                    
+                    // Velocity mapping to canvas speed
+                    const vX = baseVelocity * areaRatio * 3; // multiplier for visual
+                    
+                    // Draw Particle (Line based on velocity)
+                    ctx.beginPath();
+                    
+                    // Y position follows the stricture curve
+                    const pRadius = p.rNorm * lumenRadius;
+                    const canvasY = centerCy + (pRadius / scaleY);
+                    
+                    ctx.globalAlpha = p.opacity;
+                    ctx.moveTo(p.x, canvasY);
+                    ctx.lineTo(p.x - Math.min(p.length * vX, 100), canvasY); // Trail stretches with speed
+                    ctx.stroke();
+
+                    // Move particle
+                    p.x += vX;
+
+                    // Recycle
+                    if (p.x > canvas.width + 100) {
+                        p.x = -50;
+                        p.rNorm = (Math.random() * 2) - 1;
+                    }
+                });
+
+                requestAnimationFrame(animateCanvas);
+            }
+
+            function updatePhysics() {
+                severity = parseFloat(severitySlider.value);
+                
+                // Calculate minimum radius at center (x=400)
+                const minSvgRadius = getRadiusAtX(400, severity);
+                const mucosaSwell = 10 + (severity * 20);
+                const rNormalLumen = baseTubeRadius - 10; // 90
+                const rCurrentLumen = Math.max(1, minSvgRadius - mucosaSwell);
+                
+                const radiusPercent = (rCurrentLumen / rNormalLumen);
+                const areaPercent = Math.pow(radiusPercent, 2);
+                
+                // Velocity
+                const maxVelocity = baseVelocity / areaPercent;
+                
+                // Bernoulli Pressure Drop (Simplified: dP = 1/2 rho (V2^2 - V1^2))
+                // Arbitrary units mapped to cmH2O for clinical feel
+                const pressureDrop = -1.5 * (Math.pow(maxVelocity, 2) - Math.pow(baseVelocity, 2));
+                
+                // Poiseuille Resistance R = 1 / r^4
+                const resistance = 1 / Math.pow(radiusPercent, 4);
+
+                // --- Update UI ---
+                
+                // Header
+                if (severity === 0) {
+                    severityDisplay.textContent = "0% (Normal)";
+                    severityDisplay.className = "text-xs font-mono text-emerald-400";
+                    hudMode.textContent = "Normal Airway";
+                    hudMode.className = "text-emerald-400";
+                    statusDot.className = "w-2.5 h-2.5 rounded-full bg-emerald-500 shadow-[0_0_10px_#10b981]";
+                    
+                    telePanel.classList.remove('alert-severe');
+                    simStatus.textContent = "STABLE";
+                    collapseWarning.classList.add('hidden');
+                } else {
+                    const sevPct = Math.round(severity * 133); // Map 0.75 to 100% for display
+                    let cat = "Mild";
+                    let color = "text-amber-400";
+                    
+                    if (severity > 0.3) { cat = "Moderate"; color = "text-orange-400"; }
+                    if (severity > 0.5) { cat = "Severe"; color = "text-rose-500"; }
+                    
+                    severityDisplay.textContent = `${sevPct}% (${cat})`;
+                    severityDisplay.className = `text-xs font-mono ${color}`;
+                    hudMode.textContent = `Asthmatic Stricture`;
+                    hudMode.className = color;
+                    statusDot.className = `w-2.5 h-2.5 rounded-full bg-rose-500 shadow-[0_0_10px_#f43f5e] animate-pulse`;
+
+                    if (severity > 0.5) {
+                        telePanel.classList.add('alert-severe');
+                        simStatus.textContent = "CRITICAL RESISTANCE";
+                        collapseWarning.classList.remove('hidden');
+                    } else {
+                        telePanel.classList.remove('alert-severe');
+                        simStatus.textContent = "RESTRICTED";
+                        collapseWarning.classList.add('hidden');
+                    }
+                }
+
+                // Telemetry Data
+                dataVelocity.textContent = `${maxVelocity.toFixed(1)} m/s`;
+                dataRadius.textContent = `${(radiusPercent * 100).toFixed(0)}%`;
+                dataArea.textContent = `${(areaPercent * 100).toFixed(0)}%`;
+                
+                // Cap resistance display to prevent infinity text overflow
+                const dispRes = resistance > 999 ? ">999" : resistance.toFixed(1);
+                dataResistance.textContent = `${dispRes}x`;
+
+                localPressureTxt.textContent = `${pressureDrop.toFixed(1)} cmH₂O`;
+                
+                // Color code local pressure
+                if (pressureDrop < -15) localPressureTxt.className = "text-3xl font-bold font-mono text-rose-500 drop-shadow-[0_2px_10px_rgba(244,63,94,0.8)]";
+                else if (pressureDrop < -5) localPressureTxt.className = "text-2xl font-bold font-mono text-amber-400 drop-shadow-[0_2px_4px_rgba(0,0,0,0.8)]";
+                else localPressureTxt.className = "text-2xl font-bold font-mono text-white drop-shadow-[0_2px_4px_rgba(0,0,0,0.8)]";
+
+                updateSVG();
+            }
+
+            // Event Listeners
+            severitySlider.addEventListener('input', updatePhysics);
+
+            // Init
+            initMuscles();
+            resizeCanvas(); // Will init particles
+            updatePhysics();
+            requestAnimationFrame(animateCanvas);
+        });
+    </script>
+</body>
+</html>

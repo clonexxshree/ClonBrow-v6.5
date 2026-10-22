@@ -1,0 +1,386 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Clonexx AI - Clonmage v1</title>
+    
+    <script src="https://cdn.tailwindcss.com?plugins=typography"></script>
+    <script src="https://unpkg.com/@phosphor-icons/web"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Bodoni+Moda:ital,opsz,wght@0,6..96,400..900;1,6..96,400..900&family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    
+    <script>
+        window.addEventListener('DOMContentLoaded', () => {
+            if(window.tailwind) {
+                tailwind.config = { theme: { extend: { fontFamily: { sans: ['Inter', 'sans-serif'], bodoni: ['Bodoni Moda', 'serif'] } } } }
+            }
+        });
+    </script>
+
+    <style>
+        body { margin: 0; overflow: hidden; background-color: #f8f9fa; color: #1f2937; -webkit-font-smoothing: antialiased; }
+        .video-bg { position: fixed; inset: 0; z-index: -1; width: 100vw; height: 100vh; object-fit: cover; }
+        .video-overlay { position: fixed; inset: 0; z-index: 0; background: rgba(245, 247, 250, 0.65); backdrop-filter: blur(16px); -webkit-backdrop-filter: blur(16px); }
+        .glass-panel { background: rgba(255, 255, 255, 0.55); backdrop-filter: blur(32px); -webkit-backdrop-filter: blur(32px); border: 1px solid rgba(255, 255, 255, 0.6); border-bottom-color: rgba(0, 0, 0, 0.05); border-right-color: rgba(0, 0, 0, 0.05); }
+        .fade-in-up { animation: fadeInUp 0.4s ease-out forwards; }
+        @keyframes fadeInUp { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+        ::-webkit-scrollbar { width: 6px; height: 6px; } ::-webkit-scrollbar-track { background: transparent; } ::-webkit-scrollbar-thumb { background: rgba(0,0,0,0.15); border-radius: 10px; } ::-webkit-scrollbar-thumb:hover { background: rgba(0,0,0,0.25); }
+        
+        .prompt-input-container:focus-within { border-color: rgba(168, 85, 247, 0.4); background: rgba(255, 255, 255, 0.9); box-shadow: 0 4px 20px rgba(168, 85, 247, 0.1); }
+        .image-placeholder { background-image: radial-gradient(circle at 1px 1px, rgba(0,0,0,0.05) 1px, transparent 0); background-size: 20px 20px; }
+        .quantity-select { appearance: none; background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 24 24' stroke='currentColor'%3E%3Cpath stroke-linecap='round' stroke-linejoin='round' stroke-width='2' d='M19 9l-7 7-7-7'%3E%3C/path%3E%3C/svg%3E"); background-repeat: no-repeat; background-position: right 0.5rem center; background-size: 1em 1em; padding-right: 2rem; }
+    </style>
+</head>
+<body class="flex h-screen text-gray-800 font-sans antialiased selection:bg-purple-500/20">
+
+    <video autoplay loop muted playsinline class="video-bg"><source src="https://d8j0ntlcm91z4.cloudfront.net/user_38xzZboKViGWJOttwIXH07lWA1P/hf_20260417_061226_74f0749c-a22d-42b3-895e-5d6203bc741c.mp4" type="video/mp4"></video>
+    <div class="video-overlay"></div>
+
+    <aside id="sidebar-menu" class="w-64 h-full glass-panel border-r border-black/5 flex flex-col z-50 relative hidden md:flex shrink-0 transition-all duration-300">
+        <div class="h-16 flex items-center px-6 border-b border-black/5 shrink-0 justify-between">
+            <h1 class="font-bodoni text-2xl font-light tracking-tight italic text-gray-900 cursor-pointer" onclick="window.location.href='clonexx-(chat).html'">Clonexx<span class="font-bold">AI</span></h1>
+            <button onclick="toggleSidebar()" class="md:hidden text-gray-500 hover:text-red-500"><i class="ph ph-x text-xl"></i></button>
+        </div>
+
+        <div class="px-4 py-6 flex-1 overflow-y-auto space-y-6">
+            <div>
+                <p class="text-sm font-semibold text-gray-700 mb-2 px-2">Ecosystem</p>
+                <div class="space-y-0.5">
+                    <a href="clonmage.html" class="flex items-center gap-2.5 px-3 py-2 rounded-xl text-sm font-bold bg-purple-500/10 text-purple-700 transition-colors"><i class="ph-fill ph-image text-lg text-purple-500"></i> Clonmage v1</a>
+                    <a href="slideso.html" class="flex items-center gap-2.5 px-3 py-2 rounded-xl text-sm font-medium text-gray-700 hover:bg-black/5 transition-colors"><i class="ph ph-presentation-chart text-lg text-orange-500"></i> Slideso (PGM)</a>
+                    <a href="bcg.html" class="flex items-center gap-2.5 px-3 py-2 rounded-xl text-sm font-medium text-gray-700 hover:bg-black/5 transition-colors"><i class="ph ph-buildings text-lg text-blue-500"></i> BcG v1</a>
+                    <a href="lityl.html" class="flex items-center gap-2.5 px-3 py-2 rounded-xl text-sm font-medium text-gray-700 hover:bg-black/5 transition-colors"><i class="ph ph-student text-lg text-green-500"></i> Lityl</a>
+                </div>
+            </div>
+            <div>
+                <p class="text-sm font-semibold text-gray-700 mb-2 px-2">Workspace</p>
+                <div class="space-y-0.5">
+                    <a href="clonexx-(chat).html" class="flex items-center gap-2.5 px-3 py-2 rounded-xl text-sm font-medium text-gray-700 hover:bg-black/5 transition-colors"><i class="ph ph-chat-teardrop text-lg text-gray-600"></i> Sovereign Chat</a>
+                    <a href="formi.html" class="flex items-center gap-2.5 px-3 py-2 rounded-xl text-sm font-medium text-gray-700 hover:bg-black/5 transition-colors"><i class="ph ph-textbox text-lg text-pink-500"></i> Formi</a>
+                    <a href="datastore.html" class="flex items-center gap-2.5 px-3 py-2 rounded-xl text-sm font-medium text-gray-700 hover:bg-black/5 transition-colors"><i class="ph ph-database text-lg text-indigo-500"></i> Data Store (.dscl)</a>
+                    <a href="worder.html" class="flex items-center gap-2.5 px-3 py-2 rounded-xl text-sm font-medium text-gray-700 hover:bg-black/5 transition-colors"><i class="ph ph-file-text text-lg text-cyan-500"></i> Worder</a>
+                    <a href="webdi.html" class="flex items-center gap-2.5 px-3 py-2 rounded-xl text-sm font-medium text-gray-700 hover:bg-black/5 transition-colors"><i class="ph ph-browser text-lg text-teal-500"></i> Webdi</a>
+                    <a href="twoaisers.html" class="flex items-center gap-2.5 px-3 py-2 rounded-xl text-sm font-medium text-gray-700 hover:bg-black/5 transition-colors"><i class="ph ph-users-three text-lg text-rose-500"></i> TwoAisers</a>
+                    <a href="terminal.html" class="flex items-center gap-2.5 px-3 py-2 rounded-xl text-sm font-medium text-gray-700 hover:bg-black/5 transition-colors"><i class="ph ph-terminal text-lg text-gray-800"></i> Terminal</a>
+                </div>
+            </div>
+        </div>
+        
+        <div class="p-4 border-t border-black/5 shrink-0">
+            <div onclick="logout()" class="flex items-center gap-3 p-2 rounded-xl hover:bg-black/5 transition-colors cursor-pointer" title="Logout">
+                <div class="w-8 h-8 rounded-full bg-purple-100 border border-purple-200 flex items-center justify-center"><i class="ph-fill ph-user text-purple-600 text-sm"></i></div>
+                <div class="flex-1 min-w-0">
+                    <p id="user-profile-name" class="text-sm font-medium text-gray-800 truncate">Loading...</p>
+                    <p id="user-profile-email" class="text-xs text-gray-500 truncate">Connecting to DB...</p>
+                </div>
+                <i class="ph ph-sign-out text-gray-400"></i>
+            </div>
+        </div>
+    </aside>
+
+    <div class="flex-1 flex flex-col h-full relative z-10 min-w-0">
+        <!-- Header -->
+        <header class="h-16 glass-panel border-b border-black/5 flex items-center justify-between px-4 sm:px-6 shrink-0 relative z-20">
+            <div class="flex items-center gap-4">
+                <button onclick="toggleSidebar()" class="md:hidden p-2 text-gray-500 hover:text-purple-600 transition-colors"><i class="ph ph-list text-2xl"></i></button>
+                <div class="flex items-center gap-2">
+                    <i class="ph-fill ph-magic-wand text-2xl text-purple-500"></i>
+                    <h2 class="text-lg font-bold text-gray-800 tracking-tight">Clonmage <span class="font-normal text-gray-500">Studio</span></h2>
+                </div>
+            </div>
+            <div class="flex items-center gap-3">
+                <span class="hidden sm:flex px-3 py-1 rounded-full bg-green-500/10 text-green-600 text-xs font-bold items-center gap-1.5 border border-green-500/20"><span class="w-1.5 h-1.5 rounded-full bg-green-500 animate-pulse"></span> Vision Engine Active</span>
+                <button onclick="clearCanvas()" class="p-2 text-gray-500 hover:text-gray-900 rounded-xl hover:bg-black/5 transition-colors" title="Clear Canvas"><i class="ph ph-trash text-xl"></i></button>
+            </div>
+        </header>
+
+        <!-- Generation Gallery -->
+        <main id="gallery-container" class="flex-1 overflow-y-auto p-4 sm:p-8 flex flex-col items-center image-placeholder relative">
+            
+            <div id="empty-state" class="flex-1 flex flex-col items-center justify-center text-center max-w-lg mx-auto fade-in-up transition-opacity duration-300">
+                <div class="w-20 h-20 bg-purple-500/10 rounded-3xl flex items-center justify-center mb-6 shadow-sm border border-purple-500/20">
+                    <i class="ph-fill ph-image text-4xl text-purple-500"></i>
+                </div>
+                <h3 class="text-2xl font-bold text-gray-900 mb-2">Create something amazing</h3>
+                <p class="text-gray-500 font-medium leading-relaxed">Enter a detailed prompt below, attach an optional reference image, and let Clonexx Vision render your ideas.</p>
+            </div>
+
+            <div id="output-grid" class="w-full max-w-6xl grid grid-cols-1 md:grid-cols-2 lg:grid-cols-2 gap-6 hidden">
+                <!-- Images will inject here -->
+            </div>
+            
+        </main>
+
+        <!-- Image Control Console -->
+        <div class="w-full p-4 sm:p-6 shrink-0 relative z-20">
+            <div class="max-w-4xl mx-auto w-full relative">
+                
+                <div id="reference-preview-container" class="absolute bottom-[110%] left-4 bg-white p-1 rounded-xl shadow-lg border border-black/10 hidden items-center gap-2 fade-in-up">
+                    <div class="relative group">
+                        <img id="reference-img" src="" alt="Reference" class="w-16 h-16 object-cover rounded-lg border border-gray-200">
+                        <button onclick="removeReference()" class="absolute -top-2 -right-2 bg-red-500 text-white rounded-full p-1 shadow-md hover:bg-red-600 transition-transform scale-0 group-hover:scale-100"><i class="ph-bold ph-x text-xs"></i></button>
+                    </div>
+                    <div class="text-xs font-semibold text-gray-500 pr-2">Reference Image Attached</div>
+                </div>
+
+                <div class="prompt-input-container relative flex items-end sm:items-center rounded-3xl glass-panel border border-purple-500/20 transition-all duration-300">
+                    
+                    <label class="p-3 md:p-4 text-gray-400 hover:text-purple-600 transition-colors rounded-l-3xl shrink-0 cursor-pointer" title="Attach reference image">
+                        <input type="file" id="file-upload" accept="image/*" class="hidden" onchange="handleFileUpload(event)">
+                        <i class="ph-bold ph-paperclip text-lg md:text-xl"></i>
+                    </label>
+                    
+                    <textarea id="prompt-input" rows="1" placeholder="Describe the image you want to generate..." class="w-full bg-transparent text-gray-800 placeholder-gray-400 font-medium border-none focus:ring-0 resize-none py-4 px-2 max-h-32 text-[15px] outline-none scrollbar-hide" style="min-height: 56px;"></textarea>
+                    
+                    <div class="flex items-center gap-2 p-2 shrink-0">
+                        <div class="relative bg-black/5 rounded-xl border border-black/5 hover:border-purple-500/30 transition-colors flex items-center">
+                            <i class="ph-fill ph-squares-four text-gray-500 ml-3 text-sm"></i>
+                            <select id="image-count" class="quantity-select bg-transparent text-sm font-bold text-gray-700 py-2.5 pl-2 pr-8 outline-none cursor-pointer">
+                                <option value="1">1 Image</option>
+                                <option value="2">2 Images</option>
+                                <option value="3">3 Images</option>
+                                <option value="4">4 Images</option>
+                            </select>
+                        </div>
+
+                        <button id="generate-btn" onclick="handleGenerate()" class="bg-purple-600 hover:bg-purple-700 text-white p-2.5 sm:px-6 sm:py-2.5 rounded-xl font-bold transition-all shadow-md shadow-purple-500/20 flex items-center gap-2 group">
+                            <span class="hidden sm:block">Generate</span>
+                            <i class="ph-bold ph-magic-wand text-lg group-hover:rotate-12 transition-transform"></i>
+                        </button>
+                    </div>
+                </div>
+                
+                <div class="text-center mt-4 text-xs text-gray-400 tracking-wide font-medium flex items-center justify-center gap-1.5">
+                    <i class="ph-fill ph-lock-key"></i> Secure Vision Engine Connection. Data remains local.
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Toast -->
+    <div id="toast" class="toast glass-panel border border-black/5 rounded-xl p-4 fixed top-4 right-4 transform translate-x-[120%] transition-transform duration-300 z-50 flex items-center gap-3 shadow-lg">
+        <div class="w-8 h-8 rounded-full flex items-center justify-center bg-gray-100" id="toast-icon-bg"><i id="toast-icon" class="ph ph-check text-lg"></i></div>
+        <div class="min-w-[150px]">
+            <p id="toast-title" class="text-sm font-bold text-gray-800">Status</p>
+            <p id="toast-message" class="text-xs font-medium text-gray-600">Message</p>
+        </div>
+    </div>
+
+    <script>
+        const promptInput = document.getElementById('prompt-input');
+        const emptyState = document.getElementById('empty-state');
+        const outputGrid = document.getElementById('output-grid');
+        const generateBtn = document.getElementById('generate-btn');
+        const fileUpload = document.getElementById('file-upload');
+        const refPreviewContainer = document.getElementById('reference-preview-container');
+        const refImg = document.getElementById('reference-img');
+
+        const token = sessionStorage.getItem('clonexx_token');
+        let currentReferenceImage = null;
+        let isGenerating = false;
+
+        document.addEventListener('DOMContentLoaded', () => {
+            if (!token) { window.location.href = 'ClonexxAI.html'; return; }
+            loadUserProfile();
+        });
+
+        async function loadUserProfile() {
+            try {
+                const res = await fetch('https://shreeClonexx.pythonanywhere.com/api/user', {
+                    headers: { 'Authorization': `Bearer ${token}` }
+                });
+                if (res.ok) {
+                    const data = await res.json();
+                    document.getElementById('user-profile-name').textContent = data.user.fullName;
+                    document.getElementById('user-profile-email').textContent = data.user.email;
+                }
+            } catch (e) {
+                document.getElementById('user-profile-name').textContent = "Database Error";
+            }
+        }
+
+        window.toggleSidebar = () => {
+            const sidebar = document.getElementById('sidebar-menu');
+            sidebar.classList.toggle('hidden');
+            sidebar.classList.toggle('absolute');
+            sidebar.classList.toggle('bg-white');
+            sidebar.classList.toggle('shadow-2xl');
+        };
+
+        window.logout = () => {
+            sessionStorage.clear();
+            window.location.href = 'ClonexxAI.html';
+        };
+
+        window.handleFileUpload = (event) => {
+            const file = event.target.files[0];
+            if (file) {
+                const reader = new FileReader();
+                reader.onload = (e) => {
+                    currentReferenceImage = e.target.result;
+                    refImg.src = currentReferenceImage;
+                    refPreviewContainer.classList.remove('hidden');
+                    refPreviewContainer.classList.add('flex');
+                    showToast("Reference Attached", "Image ready for generation context.", "ph-image", "text-purple-500", "bg-purple-100");
+                };
+                reader.readAsDataURL(file);
+            }
+        };
+
+        window.removeReference = () => {
+            currentReferenceImage = null;
+            fileUpload.value = '';
+            refPreviewContainer.classList.add('hidden');
+            refPreviewContainer.classList.remove('flex');
+        };
+
+        window.handleGenerate = async () => {
+            const prompt = promptInput.value.trim();
+            const count = document.getElementById('image-count').value;
+
+            if (!prompt || isGenerating) {
+                if(!prompt) showToast("Missing Prompt", "Please describe what you want to generate.", "ph-warning", "text-orange-500", "bg-orange-100");
+                return;
+            }
+
+            isGenerating = true;
+            emptyState.style.display = 'none';
+            outputGrid.classList.remove('hidden');
+            generateBtn.innerHTML = `<i class="ph-bold ph-spinner animate-spin text-lg"></i> Generating...`;
+            generateBtn.disabled = true;
+            generateBtn.classList.add('opacity-75');
+
+            showToast("Booting Engine", "Sending prompt to Vision Node. This usually takes 5-10 seconds...", "ph-cpu", "text-blue-500", "bg-blue-100");
+
+            const tempIds = [];
+            for(let i=0; i<count; i++){
+                const tempId = 'loader_' + Date.now() + i;
+                tempIds.push(tempId);
+                const block = document.createElement('div');
+                block.id = tempId;
+                block.className = "bg-white p-4 rounded-3xl shadow-sm border border-black/5 fade-in-up";
+                block.innerHTML = `
+                    <div class="w-full aspect-square bg-gray-100 rounded-2xl flex flex-col items-center justify-center text-gray-400 border-2 border-dashed border-gray-200 mb-4 relative overflow-hidden">
+                        <i class="ph-bold ph-paint-brush text-4xl mb-2 animate-bounce"></i>
+                        <span class="text-sm font-bold text-center px-4">Processing Request...<br><span class="font-normal text-xs text-gray-400">Synthesizing Render</span></span>
+                        <div class="absolute bottom-0 left-0 h-1 bg-purple-500 w-full animate-pulse"></div>
+                    </div>
+                `;
+                outputGrid.prepend(block);
+            }
+
+            try {
+                const response = await fetch('http://localhost:8000/api/generate-image', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ 
+                        prompt: prompt, 
+                        count: parseInt(count),
+                        reference_image: currentReferenceImage 
+                    })
+                });
+
+                const data = await response.json();
+
+                tempIds.forEach(id => {
+                    const el = document.getElementById(id);
+                    if(el) el.remove();
+                });
+
+                if (data.success && data.images) {
+                    showToast("Success", `${data.images.length} images generated perfectly.`, "ph-check", "text-green-500", "bg-green-100");
+                    
+                    data.images.forEach(imgBase64 => {
+                        const block = document.createElement('div');
+                        block.className = "bg-white p-4 rounded-3xl shadow-sm border border-black/5 fade-in-up transition-transform hover:scale-[1.01]";
+                        
+                        block.innerHTML = `
+                            <div class="w-full aspect-square rounded-2xl mb-4 relative overflow-hidden group">
+                                <img src="${imgBase64}" alt="AI Generated Image" class="w-full h-full object-cover bg-gray-100">
+                                <div class="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center gap-4">
+                                    <button onclick="downloadImage('${imgBase64}')" class="p-3 bg-white text-gray-900 rounded-full hover:scale-110 transition-transform shadow-lg"><i class="ph-bold ph-download-simple text-xl"></i></button>
+                                </div>
+                            </div>
+                            <p class="text-sm font-semibold text-gray-800 line-clamp-2">"${prompt}"</p>
+                            <div class="flex items-center justify-between mt-3">
+                                <span class="text-xs font-bold text-purple-600 bg-purple-500/10 px-2 py-1 rounded-md">High-Res Render</span>
+                            </div>
+                        `;
+                        outputGrid.prepend(block);
+                    });
+                } else {
+                    showToast("Generation Failed", data.error || "The model encountered an error.", "ph-warning", "text-red-500", "bg-red-100");
+                }
+            } catch (err) {
+                tempIds.forEach(id => {
+                    const el = document.getElementById(id);
+                    if(el) el.remove();
+                });
+                showToast("Server Error", "Cannot connect to Python. Ensure ../Backend/main_gateway.py is running on port 8000.", "ph-plugs", "text-red-500", "bg-red-100");
+            } finally {
+                generateBtn.innerHTML = `<span class="hidden sm:block">Generate</span><i class="ph-bold ph-magic-wand text-lg group-hover:rotate-12 transition-transform"></i>`;
+                generateBtn.disabled = false;
+                generateBtn.classList.remove('opacity-75');
+                promptInput.value = '';
+                removeReference();
+                isGenerating = false;
+            }
+        };
+
+        promptInput.addEventListener('keydown', (e) => {
+            if (e.key === 'Enter' && !e.shiftKey) {
+                e.preventDefault();
+                handleGenerate();
+            }
+        });
+
+        window.clearCanvas = () => {
+            outputGrid.innerHTML = '';
+            outputGrid.classList.add('hidden');
+            emptyState.style.display = 'flex';
+            promptInput.value = '';
+            removeReference();
+        };
+
+        window.downloadImage = (dataUrl) => {
+            fetch(dataUrl)
+                .then(res => res.blob())
+                .then(blob => {
+                    const url = window.URL.createObjectURL(blob);
+                    const a = document.createElement('a');
+                    a.style.display = 'none';
+                    a.href = url;
+                    a.download = `clonexx_render_${Date.now()}.jpg`;
+                    document.body.appendChild(a);
+                    a.click();
+                    window.URL.revokeObjectURL(url);
+                    document.body.removeChild(a);
+                })
+                .catch(err => {
+                    // Fallback just in case
+                    const a = document.createElement('a');
+                    a.href = dataUrl;
+                    a.download = `clonexx_render_${Date.now()}.jpg`;
+                    document.body.appendChild(a);
+                    a.click();
+                    document.body.removeChild(a);
+                });
+        };
+
+        window.showToast = (title, msg, iconClass, colorClass, bgClass) => {
+            const toast = document.getElementById('toast');
+            document.getElementById('toast-title').textContent = title;
+            document.getElementById('toast-message').textContent = msg;
+            
+            const icon = document.getElementById('toast-icon');
+            icon.className = `ph ${iconClass} text-lg ${colorClass}`;
+            
+            const iconBg = document.getElementById('toast-icon-bg');
+            iconBg.className = `w-8 h-8 rounded-full flex items-center justify-center ${bgClass}`;
+
+            toast.style.transform = 'translateX(0)';
+            setTimeout(() => toast.style.transform = 'translateX(120%)', 3500);
+        };
+    </script>
+</body>
+</html>

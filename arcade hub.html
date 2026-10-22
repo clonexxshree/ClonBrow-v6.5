@@ -1,0 +1,268 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Arcade Hub - Brutalist Edition</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Black+Ops+One&family=Fredoka+One&family=Nunito:wght@400;700;900&display=swap');
+
+        :root {
+            --bg-dark: #0f172a;
+            --border-width: 4px;
+        }
+
+        body { 
+            margin: 0; background-color: #0ea5e9; 
+            font-family: 'Nunito', sans-serif; color: white;
+            overflow-x: hidden;
+            background-image: radial-gradient(circle at 2px 2px, rgba(255,255,255,0.15) 1px, transparent 0);
+            background-size: 40px 40px;
+        }
+
+        /* --- BRUTALIST UI COMPONENTS --- */
+        
+        .brutalist-card {
+            background: white;
+            border: var(--border-width) solid #000;
+            border-radius: 20px;
+            box-shadow: 8px 8px 0px #000;
+            transition: all 0.15s ease;
+            cursor: pointer;
+            overflow: hidden;
+            display: flex;
+            flex-direction: column;
+        }
+
+        .brutalist-card:hover {
+            transform: translate(-2px, -2px);
+            box-shadow: 12px 12px 0px #000;
+        }
+
+        .brutalist-card:active {
+            transform: translate(4px, 4px);
+            box-shadow: 0px 0px 0px #000;
+        }
+
+        .card-header {
+            height: 140px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-family: 'Black Ops One', cursive;
+            font-size: 42px;
+            border-bottom: var(--border-width) solid #000;
+            text-transform: uppercase;
+        }
+
+        .card-body {
+            padding: 15px;
+            background: #f8fafc;
+            color: #000;
+            flex-grow: 1;
+        }
+
+        .card-title {
+            font-family: 'Fredoka One', cursive;
+            font-size: 20px;
+            margin-bottom: 5px;
+        }
+
+        .tag-brutalist {
+            display: inline-block;
+            padding: 2px 10px;
+            background: #000;
+            color: #fff;
+            border-radius: 6px;
+            font-size: 10px;
+            font-weight: 900;
+            text-transform: uppercase;
+            margin-right: 5px;
+        }
+
+        /* --- DASHBOARD HEADER --- */
+        .hub-title {
+            font-family: 'Fredoka One', cursive;
+            font-size: clamp(48px, 10vw, 100px);
+            color: #fff;
+            -webkit-text-stroke: 3px #0369a1;
+            filter: drop-shadow(0 6px 0 #0369a1);
+            text-align: center;
+            margin-bottom: 10px;
+        }
+
+        .hub-subtitle {
+            text-align: center;
+            font-family: 'Nunito', sans-serif;
+            font-weight: 900;
+            font-size: 20px;
+            color: #e0f2fe;
+            margin-bottom: 50px;
+            text-transform: uppercase;
+            letter-spacing: 2px;
+        }
+
+        /* --- BUTTONS --- */
+        .btn-brutalist {
+            background: #FBBF24;
+            color: #000;
+            border: var(--border-width) solid #000;
+            padding: 12px 30px;
+            font-family: 'Fredoka One', cursive;
+            font-size: 20px;
+            border-radius: 40px;
+            box-shadow: 0 6px 0 #D97706;
+            cursor: pointer;
+            transition: 0.1s;
+            pointer-events: auto;
+        }
+
+        .btn-brutalist:hover {
+            background: #fcd34d;
+        }
+
+        .btn-brutalist:active {
+            transform: translateY(6px);
+            box-shadow: 0 0 0 #D97706;
+        }
+
+        /* --- GAME VIEWPORT --- */
+        #game-viewport {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100vw;
+            height: 100vh;
+            background: #000;
+            z-index: 100;
+            display: none;
+        }
+
+        #game-frame {
+            width: 100%;
+            height: 100%;
+            border: none;
+        }
+
+        #btn-exit {
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            z-index: 200;
+            display: none;
+        }
+
+        /* --- COLORS --- */
+        .bg-red { background-color: #ef4444; }
+        .bg-blue { background-color: #3b82f6; }
+        .bg-green { background-color: #22c55e; }
+        .bg-yellow { background-color: #eab308; }
+        .bg-purple { background-color: #a855f7; }
+        .bg-grey { background-color: #475569; }
+        .bg-orange { background-color: #f97316; }
+
+    </style>
+</head>
+<body class="p-8">
+
+    <div id="btn-exit">
+        <button class="btn-brutalist" style="background: #ef4444; box-shadow: 0 6px 0 #991b1b; color: white;" onclick="closeGame()">EXIT GAME</button>
+    </div>
+
+    <div id="dashboard">
+        <div class="hub-title">ARCADE HUB</div>
+        <div class="hub-subtitle">Premium Game Collection • Brutalist UI v2.0</div>
+
+        <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-8 max-w-7xl mx-auto" id="game-grid">
+            <!-- Cards will be generated here -->
+        </div>
+    </div>
+
+    <div id="game-viewport">
+        <iframe id="game-frame" src=""></iframe>
+    </div>
+
+    <script>
+        const games = [
+            { id: 'carrom', title: 'Carrom', label: 'CRM', color: 'bg-yellow', type: 'Physics', file: '../html-prototypes/carrom.html' },
+            { id: 'chess', title: 'Master Chess', label: 'CHS', color: 'bg-blue', type: 'Board', file: '../html-prototypes/chess.html' },
+            { id: 'cricket', title: 'Cricket 3D', label: 'CRI', color: 'bg-green', type: 'Sports', file: '../html-prototypes/cricket.html' },
+            { id: 'duo', title: 'Duo (Uno)', label: 'DUO', color: 'bg-red', type: 'Cards', file: '../html-prototypes/duo.html' },
+            { id: 'football', title: 'Football 2D', label: 'SOC', color: 'bg-green', type: 'Sports', file: '../html-prototypes/football.html' },
+            { id: 'fps', title: 'FPS Survival', label: 'FPS', color: 'bg-grey', type: 'Action', file: '../html-prototypes/fps.html' },
+            { id: 'ludo', title: 'Ludo Master', label: 'LDO', color: 'bg-blue', type: 'Board', file: '../html-prototypes/ludo.html' },
+            { id: 'city', title: 'City Builder', label: 'CTY', color: 'bg-purple', type: 'Strategy', file: 'city.html' },
+            { id: 'pizza', title: 'Pizzaria', label: 'PIZ', color: 'bg-orange', type: 'Tycoon', file: '../html-prototypes/pizzaria.html' },
+            { id: 'monopoly', title: 'Property Tycoon', label: 'TYC', color: 'bg-green', type: 'Board', file: '../html-prototypes/property-tycoon.html' },
+            { id: 'rubix', title: 'Rubix 3D', label: 'RBX', color: 'bg-purple', type: 'Puzzle', file: '../html-prototypes/rubix-cube.html' },
+            { id: 'snakes', title: 'Snakes & Ladders', label: 'S&L', color: 'bg-yellow', type: 'Board', file: 'snakes-ladders.html' },
+            { id: 'tictactoe', title: 'Tic Tac Toe', label: 'XOX', color: 'bg-blue', type: 'Puzzle', file: '../html-prototypes/tictactoe.html' },
+            { id: 'treasure', title: 'Treasure Hunt', label: 'FND', color: 'bg-orange', type: 'Adventure', file: 'treasure-hunt.html' }
+        ];
+
+        function initHub() {
+            const grid = document.getElementById('game-grid');
+            games.forEach(game => {
+                const card = document.createElement('div');
+                card.className = 'brutalist-card';
+                card.onclick = () => launchGame(game.file, game.title);
+                
+                card.innerHTML = `
+                    <div class="card-header ${game.color}">
+                        ${game.label}
+                    </div>
+                    <div class="card-body">
+                        <div class="card-title">${game.title}</div>
+                        <div>
+                            <span class="tag-brutalist">${game.type}</span>
+                            <span class="tag-brutalist" style="background:#22c55e">READY</span>
+                        </div>
+                    </div>
+                `;
+                grid.appendChild(card);
+            });
+        }
+
+        function launchGame(file, title) {
+            const dash = document.getElementById('dashboard');
+            const view = document.getElementById('game-viewport');
+            const frame = document.getElementById('game-frame');
+            const exitBtn = document.getElementById('btn-exit');
+
+            dash.style.display = 'none';
+            view.style.display = 'block';
+            exitBtn.style.display = 'block';
+            
+            // Set the src of the iframe to the specific game file
+            frame.src = file;
+            
+            // Fallback content if file doesn't exist
+            frame.onerror = () => {
+                frame.srcdoc = `
+                    <body style="background:#0f172a; color:white; display:flex; flex-direction:column; align-items:center; justify-content:center; height:100vh; font-family:sans-serif; text-align:center; padding: 20px;">
+                        <h1 style="font-size:64px; color:#facc15; font-family:'Fredoka One', cursive;">LOADING ERROR</h1>
+                        <p style="color:#94a3b8; font-size:24px; font-weight:bold;">Game File "${file}" Not Found</p>
+                        <p style="color:#64748b; max-width:500px;">Please ensure you have generated this game file and saved it in the same directory as this index.html.</p>
+                        <button onclick="window.parent.closeGame()" style="margin-top:40px; padding:15px 40px; background:#ef4444; border:none; color:white; border-radius:12px; font-weight:bold; cursor:pointer; font-size:20px;">BACK TO HUB</button>
+                    </body>
+                `;
+            };
+        }
+
+        function closeGame() {
+            const dash = document.getElementById('dashboard');
+            const view = document.getElementById('game-viewport');
+            const frame = document.getElementById('game-frame');
+            const exitBtn = document.getElementById('btn-exit');
+
+            view.style.display = 'none';
+            exitBtn.style.display = 'none';
+            frame.src = "";
+            dash.style.display = 'block';
+        }
+
+        window.onload = initHub;
+    </script>
+</body>
+</html>

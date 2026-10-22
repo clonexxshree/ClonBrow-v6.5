@@ -1,0 +1,296 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Med-Logic | TBSA Burn Estimator</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;600&family=JetBrains+Mono&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --bg-deep: #020617;
+            --degree-1: #fecaca;
+            --degree-2: #f87171;
+            --degree-3: #991b1b;
+        }
+
+        body {
+            font-family: 'Plus Jakarta Sans', sans-serif;
+            background-color: var(--bg-deep);
+            color: #f8fafc;
+            overflow: hidden;
+        }
+
+        .glass {
+            background: rgba(15, 23, 42, 0.7);
+            backdrop-filter: blur(16px);
+            border: 1px solid rgba(255, 255, 255, 0.08);
+        }
+
+        .body-part {
+            fill: rgba(255, 255, 255, 0.05);
+            stroke: rgba(255, 255, 255, 0.2);
+            stroke-width: 1;
+            transition: all 0.2s ease;
+            cursor: pointer;
+        }
+
+        .body-part:hover {
+            stroke: rgba(255, 255, 255, 0.5);
+            fill: rgba(255, 255, 255, 0.1);
+        }
+
+        .burned-1 { fill: var(--degree-1) !important; stroke: #ef4444 !important; }
+        .burned-2 { fill: var(--degree-2) !important; stroke: #dc2626 !important; }
+        .burned-3 { fill: var(--degree-3) !important; stroke: #7f1d1d !important; }
+
+        .sidebar-stat {
+            background: rgba(255, 255, 255, 0.03);
+            border: 1px solid rgba(255, 255, 255, 0.05);
+        }
+
+        .active-tool {
+            outline: 2px solid #6366f1;
+            background: rgba(99, 102, 241, 0.2) !important;
+        }
+
+        .anatomy-label {
+            font-size: 8px;
+            fill: #94a3b8;
+            pointer-events: none;
+            text-transform: uppercase;
+            font-weight: bold;
+        }
+    </style>
+</head>
+<body class="flex items-center justify-center min-h-screen">
+
+    <div class="fixed inset-0 bg-[radial-gradient(circle_at_bottom_left,_rgba(99,102,241,0.1)_0%,_transparent_50%)] -z-10"></div>
+
+    <main class="w-full max-w-7xl flex gap-6 px-6 h-[90vh]">
+        
+        <!-- Left: Diagnostic Summary -->
+        <div class="w-1/4 flex flex-col gap-4">
+            <div class="glass rounded-3xl p-8 flex flex-col h-full">
+                <div class="mb-8">
+                    <p class="text-[10px] font-bold tracking-[0.4em] text-rose-500 uppercase mb-1">Trauma Assessment v2.1</p>
+                    <h1 class="text-2xl font-light">Burn <span class="font-semibold text-white text-3xl block">Estimator</span></h1>
+                </div>
+
+                <div class="space-y-6 flex-grow">
+                    <div class="sidebar-stat p-6 rounded-2xl text-center">
+                        <label class="text-[10px] text-slate-400 uppercase tracking-widest font-bold block mb-2">Total Estimated TBSA</label>
+                        <div class="flex justify-center items-baseline gap-1">
+                            <span id="tbsa-display" class="text-6xl font-mono font-light text-rose-400">0.0</span>
+                            <span class="text-xl font-light text-slate-500">%</span>
+                        </div>
+                    </div>
+
+                    <div class="space-y-3">
+                        <h3 class="text-[10px] font-bold text-slate-500 uppercase tracking-widest">Regional Breakdown</h3>
+                        <div id="breakdown" class="space-y-2 text-xs font-mono">
+                            <!-- Populated by JS -->
+                            <div class="flex justify-between text-slate-500 italic">No regions selected</div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="mt-8 pt-6 border-t border-white/5">
+                    <button id="clear-all" class="w-full py-3 border border-rose-500/20 hover:bg-rose-500/10 text-rose-400 text-xs font-bold uppercase tracking-widest rounded-xl transition-all">
+                        Reset Assessment
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Center: Interactive Anatomy -->
+        <div class="flex-grow glass rounded-[2.5rem] relative overflow-hidden flex flex-col">
+            <div class="absolute top-8 left-1/2 -translate-x-1/2 flex gap-8 z-20">
+                <div class="flex items-center gap-3 bg-black/40 px-6 py-3 rounded-full border border-white/10">
+                    <span class="text-[10px] font-bold tracking-widest text-slate-400 uppercase">View:</span>
+                    <span class="text-xs font-semibold text-white uppercase">Anterior & Posterior</span>
+                </div>
+            </div>
+
+            <div class="flex-grow flex items-center justify-center gap-12 p-12">
+                <!-- Anterior (Front) -->
+                <div class="flex flex-col items-center">
+                    <span class="text-[10px] text-slate-500 uppercase tracking-[0.3em] mb-4">Anterior</span>
+                    <svg id="front-body" viewBox="0 0 200 450" class="h-[60vh] w-auto">
+                        <!-- Simplified Rule of Nines SVG Map -->
+                        <!-- Head (4.5%) -->
+                        <path d="M100,20 c-10,0 -15,10 -15,20 s5,15 15,15 s15,-5 15,-15 s-5,-20 -15,-20" class="body-part" data-region="head_front" data-value="4.5" />
+                        <!-- Torso (18%) -->
+                        <path d="M70,60 h60 v100 l-10,30 h-40 l-10,-30 z" class="body-part" data-region="torso_front" data-value="18" />
+                        <!-- Arm R (4.5%) -->
+                        <path d="M135,65 l25,10 l-10,100 l-15,-10 z" class="body-part" data-region="arm_r_front" data-value="4.5" />
+                        <!-- Arm L (4.5%) -->
+                        <path d="M65,65 l-25,10 l 10,100 l 15,-10 z" class="body-part" data-region="arm_l_front" data-value="4.5" />
+                        <!-- Leg R (9%) -->
+                        <path d="M105,195 h30 l15,180 h-30 z" class="body-part" data-region="leg_r_front" data-value="9" />
+                        <!-- Leg L (9%) -->
+                        <path d="M65,195 h30 l-15,180 h-30 z" class="body-part" data-region="leg_l_front" data-value="9" />
+                        <!-- Perineum (1%) -->
+                        <path d="M90,195 h20 l-5,15 h-10 z" class="body-part" data-region="perineum" data-value="1" />
+                    </svg>
+                </div>
+
+                <!-- Posterior (Back) -->
+                <div class="flex flex-col items-center">
+                    <span class="text-[10px] text-slate-500 uppercase tracking-[0.3em] mb-4">Posterior</span>
+                    <svg id="back-body" viewBox="0 0 200 450" class="h-[60vh] w-auto">
+                        <!-- Head (4.5%) -->
+                        <path d="M100,20 c-10,0 -15,10 -15,20 s5,15 15,15 s15,-5 15,-15 s-5,-20 -15,-20" class="body-part" data-region="head_back" data-value="4.5" />
+                        <!-- Back (18%) -->
+                        <path d="M70,60 h60 v130 h-60 z" class="body-part" data-region="torso_back" data-value="18" />
+                        <!-- Arm R (4.5%) -->
+                        <path d="M135,65 l25,10 l-10,100 l-15,-10 z" class="body-part" data-region="arm_r_back" data-value="4.5" />
+                        <!-- Arm L (4.5%) -->
+                        <path d="M65,65 l-25,10 l 10,100 l 15,-10 z" class="body-part" data-region="arm_l_back" data-value="4.5" />
+                        <!-- Leg R (9%) -->
+                        <path d="M105,195 h30 l15,180 h-30 z" class="body-part" data-region="leg_r_back" data-value="9" />
+                        <!-- Leg L (9%) -->
+                        <path d="M65,195 h30 l-15,180 h-30 z" class="body-part" data-region="leg_l_back" data-value="9" />
+                    </svg>
+                </div>
+            </div>
+
+            <div class="absolute bottom-10 left-10 text-[9px] font-mono text-slate-500 uppercase tracking-[0.2em] opacity-50">
+                Lund-Browder Chart Reference Active
+            </div>
+        </div>
+
+        <!-- Right: Tool Selection -->
+        <div class="w-64 flex flex-col gap-4">
+            <div class="glass rounded-3xl p-6 flex flex-col gap-6">
+                <h3 class="text-xs font-bold text-slate-500 uppercase tracking-widest">Severity Tool</h3>
+                
+                <div class="space-y-3">
+                    <button class="tool-btn w-full p-4 rounded-2xl flex items-center gap-4 border border-white/5 bg-white/5 transition-all hover:bg-white/10 active-tool" data-degree="2">
+                        <div class="w-4 h-4 rounded-full bg-red-400 shadow-[0_0_10px_rgba(248,113,113,0.5)]"></div>
+                        <div class="text-left">
+                            <p class="text-xs font-bold text-white uppercase">2nd Degree</p>
+                            <p class="text-[9px] text-slate-500">Partial Thickness</p>
+                        </div>
+                    </button>
+
+                    <button class="tool-btn w-full p-4 rounded-2xl flex items-center gap-4 border border-white/5 bg-white/5 transition-all hover:bg-white/10" data-degree="3">
+                        <div class="w-4 h-4 rounded-full bg-red-900 shadow-[0_0_10px_rgba(153,27,27,0.5)]"></div>
+                        <div class="text-left">
+                            <p class="text-xs font-bold text-white uppercase">3rd Degree</p>
+                            <p class="text-[9px] text-slate-500">Full Thickness</p>
+                        </div>
+                    </button>
+
+                    <button class="tool-btn w-full p-4 rounded-2xl flex items-center gap-4 border border-white/5 bg-white/5 transition-all hover:bg-white/10" data-degree="1">
+                        <div class="w-4 h-4 rounded-full bg-red-200"></div>
+                        <div class="text-left">
+                            <p class="text-xs font-bold text-white uppercase">1st Degree</p>
+                            <p class="text-[9px] text-slate-500">Superficial</p>
+                        </div>
+                    </button>
+
+                    <button class="tool-btn w-full p-4 rounded-2xl flex items-center gap-4 border border-white/5 bg-white/5 transition-all hover:bg-white/10" data-degree="0">
+                        <div class="w-4 h-4 rounded-full border border-slate-600"></div>
+                        <div class="text-left">
+                            <p class="text-xs font-bold text-white uppercase">Eraser</p>
+                            <p class="text-[9px] text-slate-500">Remove Shading</p>
+                        </div>
+                    </button>
+                </div>
+
+                <div class="mt-auto p-4 bg-indigo-500/10 rounded-xl border border-indigo-500/20">
+                    <p class="text-[10px] text-indigo-300 leading-relaxed italic">
+                        * TBSA calculations typically include only 2nd and 3rd-degree burns clinically.
+                    </p>
+                </div>
+            </div>
+        </div>
+    </main>
+
+    <script>
+        let selectedDegree = 2;
+        const regions = {};
+
+        const tbsaDisplay = document.getElementById('tbsa-display');
+        const breakdownContainer = document.getElementById('breakdown');
+        const toolBtns = document.querySelectorAll('.tool-btn');
+        const bodyParts = document.querySelectorAll('.body-part');
+        const clearBtn = document.getElementById('clear-all');
+
+        // Initialize tool selection
+        toolBtns.forEach(btn => {
+            btn.addEventListener('click', () => {
+                toolBtns.forEach(b => b.classList.remove('active-tool'));
+                btn.classList.add('active-tool');
+                selectedDegree = parseInt(btn.dataset.degree);
+            });
+        });
+
+        // Toggle region state
+        bodyParts.forEach(part => {
+            part.addEventListener('click', () => {
+                const regionId = part.dataset.region;
+                const value = parseFloat(part.dataset.value);
+
+                // Reset classes
+                part.classList.remove('burned-1', 'burned-2', 'burned-3');
+
+                if (selectedDegree === 0) {
+                    delete regions[regionId];
+                } else {
+                    part.classList.add(`burned-${selectedDegree}`);
+                    regions[regionId] = {
+                        value: value,
+                        degree: selectedDegree,
+                        name: regionId.replace(/_/g, ' ')
+                    };
+                }
+                calculateTBSA();
+            });
+        });
+
+        function calculateTBSA() {
+            let total = 0;
+            breakdownContainer.innerHTML = '';
+
+            const selectedRegionKeys = Object.keys(regions);
+            
+            if (selectedRegionKeys.length === 0) {
+                breakdownContainer.innerHTML = '<div class="text-slate-500 italic">No regions selected</div>';
+            }
+
+            selectedRegionKeys.forEach(key => {
+                const r = regions[key];
+                // Clinically, TBSA usually counts 2nd and 3rd degree
+                if (r.degree > 1) total += r.value;
+
+                const row = document.createElement('div');
+                row.className = 'flex justify-between items-center py-1 border-b border-white/5';
+                row.innerHTML = `
+                    <span class="capitalize text-slate-300">${r.name}</span>
+                    <div class="flex gap-2">
+                        <span class="text-[9px] px-1 bg-slate-800 rounded text-slate-500">DEG ${r.degree}</span>
+                        <span class="text-rose-400">${r.value}%</span>
+                    </div>
+                `;
+                breakdownContainer.appendChild(row);
+            });
+
+            tbsaDisplay.innerText = total.toFixed(1);
+            
+            // Animate number color based on severity
+            if (total > 40) tbsaDisplay.classList.replace('text-rose-400', 'text-rose-600');
+            else tbsaDisplay.classList.replace('text-rose-600', 'text-rose-400');
+        }
+
+        clearBtn.addEventListener('click', () => {
+            bodyParts.forEach(part => {
+                part.classList.remove('burned-1', 'burned-2', 'burned-3');
+            });
+            Object.keys(regions).forEach(key => delete regions[key]);
+            calculateTBSA();
+        });
+    </script>
+</body>
+</html>

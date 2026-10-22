@@ -1,0 +1,611 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Physics Lab - Electric Circuits</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        body, html {
+            margin: 0;
+            padding: 0;
+            width: 100%;
+            height: 100%;
+            overflow: hidden;
+            background-color: #020617; /* Deep space slate */
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+            touch-action: none;
+            user-select: none;
+        }
+        
+        #sim-canvas {
+            display: block;
+            width: 100%;
+            height: 100%;
+            cursor: grab;
+        }
+        #sim-canvas:active {
+            cursor: grabbing;
+        }
+
+        /* Premium Minimalist Sliders */
+        input[type=range] {
+            -webkit-appearance: none;
+            width: 100%;
+            background: transparent;
+        }
+        input[type=range]::-webkit-slider-thumb {
+            -webkit-appearance: none;
+            height: 18px;
+            width: 18px;
+            border-radius: 50%;
+            background: #ffffff;
+            cursor: pointer;
+            margin-top: -7px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.6);
+            transition: transform 0.1s ease;
+            border: 1px solid rgba(255,255,255,0.2);
+        }
+        input[type=range]::-webkit-slider-thumb:hover {
+            transform: scale(1.15);
+        }
+        input[type=range]::-webkit-slider-runnable-track {
+            width: 100%;
+            height: 4px;
+            cursor: pointer;
+            background: rgba(255, 255, 255, 0.15);
+            border-radius: 2px;
+            box-shadow: inset 0 1px 2px rgba(0,0,0,0.5);
+        }
+        
+        /* Deep Glassmorphism Panel */
+        .glass-panel {
+            background: linear-gradient(145deg, rgba(15, 23, 42, 0.85) 0%, rgba(2, 6, 23, 0.95) 100%);
+            backdrop-filter: blur(30px);
+            -webkit-backdrop-filter: blur(30px);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            border-top: 1px solid rgba(255, 255, 255, 0.2);
+            box-shadow: 0 30px 60px -12px rgba(0, 0, 0, 0.8), inset 0 1px 10px rgba(255, 255, 255, 0.05);
+        }
+
+        .scroll-area::-webkit-scrollbar { width: 4px; }
+        .scroll-area::-webkit-scrollbar-thumb { background: rgba(255, 255, 255, 0.2); border-radius: 4px; }
+        
+        /* Custom Switch Toggle */
+        .switch-toggle {
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+    </style>
+</head>
+<body>
+
+    <!-- Main UI Overlay -->
+    <div class="absolute top-5 left-5 md:top-8 md:left-8 z-10 w-[360px] glass-panel p-6 rounded-[1.5rem] pointer-events-auto flex flex-col max-h-[90vh]">
+        
+        <!-- Header -->
+        <div class="mb-5 border-b border-white/10 pb-5 shrink-0 flex items-center justify-between">
+            <div>
+                <h1 class="text-2xl font-bold tracking-tight text-white mb-1">Electric Circuits</h1>
+                <p class="text-[11px] font-medium text-yellow-400 uppercase tracking-widest">Ohm's Law & Power</p>
+            </div>
+            <div class="w-10 h-10 rounded-full bg-yellow-500/20 flex items-center justify-center text-yellow-400 shadow-[0_0_15px_rgba(234,179,8,0.3)]">
+                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"></path></svg>
+            </div>
+        </div>
+
+        <div class="scroll-area overflow-y-auto pr-2 pb-2 space-y-7">
+            
+            <!-- Dynamic Information Box -->
+            <div class="bg-black/30 p-4 rounded-xl border border-white/5 shadow-inner">
+                <p class="text-xs text-gray-400 leading-relaxed">
+                    <strong class="text-white">Interact:</strong> Drag the components to route the wires. Close the switch to complete the circuit and watch the electrons flow!
+                </p>
+            </div>
+
+            <!-- Physics Controls -->
+            <div class="space-y-6">
+                <!-- Voltage -->
+                <div class="space-y-3">
+                    <div class="flex justify-between items-end">
+                        <label class="text-[11px] font-semibold text-blue-400 uppercase tracking-widest">Battery Voltage (V)</label>
+                        <span id="volt-display" class="text-[11px] font-mono bg-blue-500/10 px-2 py-1 rounded text-blue-300">12.0 V</span>
+                    </div>
+                    <input type="range" id="volt-slider" min="0" max="24" step="0.5" value="12" style="accent-color: #3b82f6;">
+                </div>
+
+                <!-- Resistance -->
+                <div class="space-y-3">
+                    <div class="flex justify-between items-end">
+                        <label class="text-[11px] font-semibold text-red-400 uppercase tracking-widest">Bulb Resistance (Ω)</label>
+                        <span id="res-display" class="text-[11px] font-mono bg-red-500/10 px-2 py-1 rounded text-red-300">10 Ω</span>
+                    </div>
+                    <input type="range" id="res-slider" min="1" max="50" step="1" value="10" style="accent-color: #ef4444;">
+                </div>
+            </div>
+
+            <!-- Main Circuit Switch -->
+            <div class="pt-4 border-t border-white/10 flex items-center justify-between">
+                <div>
+                    <div class="text-[13px] font-bold text-white mb-0.5">Circuit Switch</div>
+                    <div class="text-[10px] text-gray-500 uppercase tracking-widest font-semibold" id="switch-status-text">Open (Off)</div>
+                </div>
+                <label class="relative inline-flex items-center cursor-pointer">
+                    <input type="checkbox" id="circuit-switch" class="sr-only peer">
+                    <div class="w-14 h-7 bg-gray-700 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-6 after:w-6 after:transition-all peer-checked:bg-yellow-500 shadow-inner"></div>
+                </label>
+            </div>
+
+            <!-- Visual Toggles -->
+            <div class="pt-4 border-t border-white/10 space-y-4">
+                <label class="flex items-center space-x-3 cursor-pointer group">
+                    <div class="relative">
+                        <input type="checkbox" id="toggle-electrons" class="sr-only peer" checked>
+                        <div class="w-10 h-6 bg-gray-700 rounded-full shadow-inner transition-colors group-hover:bg-gray-600 peer-checked:bg-cyan-500"></div>
+                        <div class="dot absolute left-1 top-1 bg-white w-4 h-4 rounded-full transition-transform peer-checked:translate-x-4 shadow"></div>
+                    </div>
+                    <span class="text-sm font-medium text-gray-300">Show Electron Flow</span>
+                </label>
+            </div>
+            
+        </div>
+    </div>
+
+    <!-- Live Physics HUD (Bottom Right) -->
+    <div class="absolute bottom-6 right-6 z-10 glass-panel p-5 rounded-2xl pointer-events-none min-w-[200px]">
+        <div class="text-[10px] font-bold uppercase tracking-widest text-gray-500 mb-3 border-b border-white/10 pb-2">Live Readings</div>
+        <div class="space-y-3">
+            <div class="flex justify-between items-center">
+                <span class="text-sm text-gray-300 font-medium">Current (I)</span>
+                <span id="current-display" class="text-lg font-mono font-bold text-cyan-400">0.00 A</span>
+            </div>
+            <div class="flex justify-between items-center">
+                <span class="text-sm text-gray-300 font-medium">Power (P)</span>
+                <span id="power-display" class="text-lg font-mono font-bold text-yellow-400">0.0 W</span>
+            </div>
+        </div>
+    </div>
+
+    <!-- 2D Physics Canvas -->
+    <canvas id="sim-canvas"></canvas>
+
+    <script>
+        const canvas = document.getElementById('sim-canvas');
+        const ctx = canvas.getContext('2d');
+
+        function resize() {
+            canvas.width = window.innerWidth;
+            canvas.height = window.innerHeight;
+            // Ensure objects stay on screen during resize
+            for (let key in components) {
+                const c = components[key];
+                if(c.x > canvas.width - 50) c.x = canvas.width - 100;
+                if(c.y > canvas.height - 50) c.y = canvas.height - 100;
+            }
+        }
+        window.addEventListener('resize', resize);
+
+        // --- PHYSICS STATE ---
+        let voltage = 12.0; // Volts
+        let resistance = 10.0; // Ohms
+        let isClosed = false; // Switch state
+        
+        let current = 0; // Amps (I = V / R)
+        let power = 0;   // Watts (P = V * I)
+
+        // UI Elements
+        const voltSlider = document.getElementById('volt-slider');
+        const resSlider = document.getElementById('res-slider');
+        const circuitSwitch = document.getElementById('circuit-switch');
+        const toggleElectrons = document.getElementById('toggle-electrons');
+        
+        voltSlider.addEventListener('input', (e) => {
+            voltage = parseFloat(e.target.value);
+            document.getElementById('volt-display').innerText = `${voltage.toFixed(1)} V`;
+            updateCircuitMath();
+        });
+        
+        resSlider.addEventListener('input', (e) => {
+            resistance = parseFloat(e.target.value);
+            document.getElementById('res-display').innerText = `${resistance.toFixed(0)} Ω`;
+            updateCircuitMath();
+        });
+
+        circuitSwitch.addEventListener('change', (e) => {
+            isClosed = e.target.checked;
+            document.getElementById('switch-status-text').innerText = isClosed ? "Closed (On)" : "Open (Off)";
+            document.getElementById('switch-status-text').className = isClosed 
+                ? "text-[10px] text-yellow-500 uppercase tracking-widest font-bold" 
+                : "text-[10px] text-gray-500 uppercase tracking-widest font-semibold";
+            updateCircuitMath();
+        });
+
+        function updateCircuitMath() {
+            if (isClosed) {
+                current = voltage / resistance;
+                power = voltage * current;
+            } else {
+                current = 0;
+                power = 0;
+            }
+            document.getElementById('current-display').innerText = `${current.toFixed(2)} A`;
+            document.getElementById('power-display').innerText = `${power.toFixed(1)} W`;
+        }
+
+        // --- COMPONENTS SETUP ---
+        const cx = window.innerWidth / 2 + 150;
+        const cy = window.innerHeight / 2;
+
+        const components = {
+            battery: { type: 'battery', x: cx - 200, y: cy + 150, w: 60, h: 120, isDragging: false, radius: 70 },
+            switch:  { type: 'switch', x: cx, y: cy + 150, w: 80, h: 40, isDragging: false, radius: 50 },
+            bulb:    { type: 'bulb', x: cx, y: cy - 100, w: 80, h: 100, isDragging: false, radius: 60 }
+        };
+
+        // --- BEZIER CURVE MATH ---
+        // Function to calculate a point on a cubic bezier curve at parameter t (0 to 1)
+        function getBezierPoint(t, p0, p1, p2, p3) {
+            const cx = 3 * (p1.x - p0.x);
+            const bx = 3 * (p2.x - p1.x) - cx;
+            const ax = p3.x - p0.x - cx - bx;
+            
+            const cy = 3 * (p1.y - p0.y);
+            const by = 3 * (p2.y - p1.y) - cy;
+            const ay = p3.y - p0.y - cy - by;
+            
+            const xt = ax*t*t*t + bx*t*t + cx*t + p0.x;
+            const yt = ay*t*t*t + by*t*t + cy*t + p0.y;
+            
+            return { x: xt, y: yt };
+        }
+
+        // Wire definitions connecting terminals
+        const wires = [
+            { from: 'battery', fromTerminal: 'positive', to: 'switch', toTerminal: 'in' },
+            { from: 'switch', fromTerminal: 'out', to: 'bulb', toTerminal: 'in' },
+            { from: 'bulb', fromTerminal: 'out', to: 'battery', toTerminal: 'negative' }
+        ];
+
+        // --- DRAWING FUNCTIONS ---
+
+        function drawBattery(c) {
+            ctx.save();
+            ctx.translate(c.x, c.y);
+            
+            // Drop shadow
+            ctx.shadowColor = c.isDragging ? 'rgba(255,255,255,0.3)' : 'rgba(0,0,0,0.6)';
+            ctx.shadowBlur = c.isDragging ? 20 : 10;
+            ctx.shadowOffsetY = c.isDragging ? 10 : 5;
+
+            // Battery Body
+            ctx.fillStyle = '#1e293b'; // Slate
+            ctx.beginPath(); ctx.roundRect(-c.w/2, -c.h/2, c.w, c.h, 6); ctx.fill();
+
+            // Positive Terminal (Top - Red)
+            ctx.fillStyle = '#ef4444';
+            ctx.beginPath(); ctx.roundRect(-c.w/2, -c.h/2, c.w, c.h*0.3, [6,6,0,0]); ctx.fill();
+            
+            // Negative Terminal (Bottom - Blue)
+            ctx.fillStyle = '#3b82f6';
+            ctx.beginPath(); ctx.roundRect(-c.w/2, c.h/2 - c.h*0.3, c.w, c.h*0.3, [0,0,6,6]); ctx.fill();
+
+            // Nub
+            ctx.fillStyle = '#94a3b8';
+            ctx.beginPath(); ctx.roundRect(-10, -c.h/2 - 8, 20, 8, [4,4,0,0]); ctx.fill();
+
+            // Labels
+            ctx.shadowBlur = 0;
+            ctx.fillStyle = '#ffffff';
+            ctx.font = 'bold 16px Inter';
+            ctx.textAlign = 'center';
+            ctx.textBaseline = 'middle';
+            ctx.fillText("+", 0, -c.h/2 + 15);
+            ctx.fillText("-", 0, c.h/2 - 15);
+            
+            // Volts text
+            ctx.font = 'bold 12px Inter';
+            ctx.fillText(`${voltage.toFixed(1)}V`, 0, 0);
+
+            ctx.restore();
+        }
+
+        function drawSwitch(c) {
+            ctx.save();
+            ctx.translate(c.x, c.y);
+            
+            ctx.shadowColor = c.isDragging ? 'rgba(255,255,255,0.3)' : 'rgba(0,0,0,0.5)';
+            ctx.shadowBlur = c.isDragging ? 20 : 10;
+
+            // Base
+            ctx.fillStyle = '#334155';
+            ctx.beginPath(); ctx.roundRect(-c.w/2, -c.h/2, c.w, c.h, 4); ctx.fill();
+
+            // Terminals (Metal circles)
+            ctx.fillStyle = '#94a3b8';
+            ctx.beginPath(); ctx.arc(-c.w/2 + 15, 0, 6, 0, Math.PI*2); ctx.fill();
+            ctx.beginPath(); ctx.arc(c.w/2 - 15, 0, 6, 0, Math.PI*2); ctx.fill();
+
+            // Lever Arm
+            ctx.lineWidth = 6;
+            ctx.lineCap = 'round';
+            ctx.strokeStyle = '#facc15';
+            ctx.beginPath();
+            ctx.moveTo(-c.w/2 + 15, 0); // Anchor at left terminal
+            
+            if (isClosed) {
+                ctx.lineTo(c.w/2 - 15, 0); // Down, touching right terminal
+            } else {
+                ctx.lineTo(-c.w/2 + 15 + 40, -30); // Up, broken circuit
+            }
+            ctx.stroke();
+
+            // Label
+            ctx.shadowBlur = 0;
+            ctx.fillStyle = '#94a3b8';
+            ctx.font = 'bold 10px Inter';
+            ctx.textAlign = 'center';
+            ctx.fillText("SWITCH", 0, c.h/2 + 15);
+
+            ctx.restore();
+        }
+
+        function drawBulb(c) {
+            ctx.save();
+            ctx.translate(c.x, c.y);
+
+            // Glow Effect if powered
+            if (power > 0) {
+                // Calculate glow radius based on power (Max realistic power here is 24V * 24A = 576W)
+                const maxPower = (24 * 24) / 1; // absolute max possible on sliders
+                const glowIntensity = Math.min(power / 100, 1.0); // Normalize somewhat
+                const glowRadius = 50 + (glowIntensity * 150);
+
+                const grad = ctx.createRadialGradient(0, -20, 10, 0, -20, glowRadius);
+                grad.addColorStop(0, `rgba(255, 255, 200, ${0.8 * glowIntensity})`);
+                grad.addColorStop(0.3, `rgba(253, 224, 71, ${0.4 * glowIntensity})`);
+                grad.addColorStop(1, 'rgba(253, 224, 71, 0)');
+                
+                ctx.fillStyle = grad;
+                ctx.globalCompositeOperation = 'screen';
+                ctx.beginPath(); ctx.arc(0, -20, glowRadius, 0, Math.PI*2); ctx.fill();
+                ctx.globalCompositeOperation = 'source-over';
+            }
+
+            ctx.shadowColor = c.isDragging ? 'rgba(255,255,255,0.3)' : 'rgba(0,0,0,0.5)';
+            ctx.shadowBlur = c.isDragging ? 20 : 10;
+
+            // Glass bulb shape
+            ctx.fillStyle = power > 0 ? 'rgba(255, 255, 240, 0.9)' : 'rgba(255, 255, 255, 0.15)';
+            ctx.strokeStyle = 'rgba(255, 255, 255, 0.4)';
+            ctx.lineWidth = 2;
+            
+            ctx.beginPath();
+            ctx.arc(0, -25, 35, Math.PI*0.75, Math.PI*2.25);
+            ctx.lineTo(15, 20);
+            ctx.lineTo(-15, 20);
+            ctx.closePath();
+            ctx.fill(); ctx.stroke();
+
+            // Filament (M shape)
+            ctx.shadowBlur = 0;
+            ctx.strokeStyle = power > 0 ? '#ffffff' : '#64748b';
+            ctx.lineWidth = power > 0 ? 3 : 2;
+            if(power > 0) { ctx.shadowColor = '#facc15'; ctx.shadowBlur = 10; }
+            
+            ctx.beginPath();
+            ctx.moveTo(-10, 0);
+            ctx.lineTo(-5, -20);
+            ctx.lineTo(0, -10);
+            ctx.lineTo(5, -20);
+            ctx.lineTo(10, 0);
+            ctx.stroke();
+
+            // Base (Metal screw)
+            ctx.shadowBlur = 0;
+            ctx.fillStyle = '#94a3b8';
+            ctx.fillRect(-15, 20, 30, 20);
+            ctx.fillStyle = '#475569';
+            ctx.fillRect(-10, 40, 20, 10);
+            
+            // Terminals
+            ctx.fillStyle = '#cbd5e1';
+            ctx.beginPath(); ctx.arc(-15, 30, 4, 0, Math.PI*2); ctx.fill(); // In
+            ctx.beginPath(); ctx.arc(15, 30, 4, 0, Math.PI*2); ctx.fill();  // Out
+
+            // Label
+            ctx.fillStyle = '#94a3b8';
+            ctx.font = 'bold 10px Inter';
+            ctx.textAlign = 'center';
+            ctx.fillText(`${resistance} Ω`, 0, 65);
+
+            ctx.restore();
+        }
+
+        // Helper to get precise (x,y) for terminals on objects
+        function getTerminalPos(objKey, terminal) {
+            const c = components[objKey];
+            if (objKey === 'battery') {
+                if (terminal === 'positive') return { x: c.x, y: c.y - c.h/2 - 8 }; // Top nub
+                if (terminal === 'negative') return { x: c.x, y: c.y + c.h/2 }; // Bottom
+            } else if (objKey === 'switch') {
+                if (terminal === 'in') return { x: c.x - c.w/2 + 15, y: c.y }; // Left
+                if (terminal === 'out') return { x: c.x + c.w/2 - 15, y: c.y }; // Right
+            } else if (objKey === 'bulb') {
+                if (terminal === 'in') return { x: c.x - 15, y: c.y + 30 }; // Base left
+                if (terminal === 'out') return { x: c.x + 15, y: c.y + 30 }; // Base right
+            }
+            return { x: c.x, y: c.y }; // Fallback
+        }
+
+        let animationTime = 0;
+
+        function render(timestamp) {
+            // Setup delta time for smooth electron animation regardless of frame rate
+            const dt = 16.66; // approx 60fps
+            
+            // Speed depends directly on current. Map 0-24A to a reasonable visual speed.
+            const electronSpeed = current * 0.0005; 
+            animationTime += electronSpeed * dt;
+
+            // Clear Background
+            ctx.fillStyle = '#020617';
+            ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+            // Subtle Grid
+            ctx.strokeStyle = 'rgba(255, 255, 255, 0.02)';
+            ctx.lineWidth = 1;
+            ctx.beginPath();
+            for(let i=0; i<canvas.width; i+=50) { ctx.moveTo(i,0); ctx.lineTo(i,canvas.height); }
+            for(let i=0; i<canvas.height; i+=50) { ctx.moveTo(0,i); ctx.lineTo(canvas.width,i); }
+            ctx.stroke();
+
+            // Pre-calculate wire curves to draw wires and electrons
+            const curves = [];
+
+            for (let wire of wires) {
+                const p0 = getTerminalPos(wire.from, wire.fromTerminal);
+                const p3 = getTerminalPos(wire.to, wire.toTerminal);
+                
+                // Procedural Gravity Sag for Wires
+                // Calculate control points that sag downwards to make wires look floppy
+                const sag = 80;
+                const distance = Math.hypot(p3.x - p0.x, p3.y - p0.y);
+                const dynamicSag = sag + (distance * 0.2); // Sags more if further apart
+
+                const p1 = { x: p0.x, y: p0.y + dynamicSag };
+                const p2 = { x: p3.x, y: p3.y + dynamicSag };
+
+                curves.push({ p0, p1, p2, p3, length: distance });
+
+                // Draw physical wire
+                ctx.beginPath();
+                ctx.moveTo(p0.x, p0.y);
+                ctx.bezierCurveTo(p1.x, p1.y, p2.x, p2.y, p3.x, p3.y);
+                
+                // Wire style
+                ctx.lineWidth = 6;
+                ctx.lineCap = 'round';
+                ctx.strokeStyle = '#475569'; // Dark gray insulation
+                ctx.shadowColor = 'rgba(0,0,0,0.5)';
+                ctx.shadowBlur = 10;
+                ctx.shadowOffsetY = 5;
+                ctx.stroke();
+                
+                // Inner copper highlight
+                ctx.lineWidth = 2;
+                ctx.strokeStyle = '#94a3b8';
+                ctx.shadowBlur = 0;
+                ctx.shadowOffsetY = 0;
+                ctx.stroke();
+            }
+
+            // Draw Electrons flowing along the curves
+            if (isClosed && toggleElectrons.checked && current > 0) {
+                ctx.fillStyle = '#22d3ee'; // Cyan electrons
+                ctx.shadowColor = '#22d3ee';
+                ctx.shadowBlur = 12;
+
+                for (let curve of curves) {
+                    // Density of electrons depends on the length of the wire
+                    const numElectrons = Math.floor(curve.length / 30) + 1;
+                    
+                    for (let i = 0; i < numElectrons; i++) {
+                        // t goes from 0 to 1 along the curve. 
+                        // Offset each electron by i/numElectrons. Add animationTime to move them.
+                        let t = ((i / numElectrons) + animationTime) % 1.0;
+                        
+                        const pt = getBezierPoint(t, curve.p0, curve.p1, curve.p2, curve.p3);
+                        
+                        ctx.beginPath();
+                        ctx.arc(pt.x, pt.y, 3, 0, Math.PI*2);
+                        ctx.fill();
+                    }
+                }
+                ctx.shadowBlur = 0; // reset
+            }
+
+            // Draw Components
+            drawBattery(components.battery);
+            drawSwitch(components.switch);
+            drawBulb(components.bulb);
+
+            requestAnimationFrame(render);
+        }
+
+        resize();
+        updateCircuitMath(); // Initial calculation
+        render(0);
+
+        // --- INTERACTION LOGIC (Drag & Drop) ---
+        let dragTarget = null;
+        let dragOffsetX = 0, dragOffsetY = 0;
+
+        function getMousePos(e) {
+            const rect = canvas.getBoundingClientRect();
+            const clientX = e.touches ? e.touches[0].clientX : e.clientX;
+            const clientY = e.touches ? e.touches[0].clientY : e.clientY;
+            return { x: clientX - rect.left, y: clientY - rect.top };
+        }
+
+        function onPointerDown(e) {
+            if(e.target.closest('.glass-panel')) return; // Ignore UI clicks
+
+            const pos = getMousePos(e);
+            
+            // Check bounding boxes
+            for(let key in components) {
+                const obj = components[key];
+                const dist = Math.hypot(pos.x - obj.x, pos.y - obj.y);
+                
+                // Hitbox check
+                if (dist < obj.radius) {
+                    obj.isDragging = true;
+                    dragTarget = obj;
+                    dragOffsetX = obj.x - pos.x;
+                    dragOffsetY = obj.y - pos.y;
+                    canvas.style.cursor = 'grabbing';
+                    return;
+                }
+            }
+        }
+
+        function onPointerMove(e) {
+            if(!dragTarget) return;
+            const pos = getMousePos(e);
+            
+            let nx = pos.x + dragOffsetX;
+            let ny = pos.y + dragOffsetY;
+            
+            // Boundary constraints (Keep away from UI panel and edges)
+            const minX = (window.innerWidth >= 768 ? 400 : 20) + dragTarget.radius; 
+            const maxX = canvas.width - dragTarget.radius;
+            const minY = dragTarget.radius;
+            const maxY = canvas.height - dragTarget.radius;
+
+            if (nx < minX) nx = minX; 
+            if (nx > maxX) nx = maxX;
+            if (ny < minY) ny = minY;
+            if (ny > maxY) ny = maxY;
+
+            dragTarget.x = nx;
+            dragTarget.y = ny;
+        }
+
+        function onPointerUp() {
+            if(dragTarget) {
+                dragTarget.isDragging = false;
+                dragTarget = null;
+                canvas.style.cursor = 'grab';
+            }
+        }
+
+        canvas.addEventListener('mousedown', onPointerDown);
+        canvas.addEventListener('mousemove', onPointerMove);
+        window.addEventListener('mouseup', onPointerUp);
+        canvas.addEventListener('touchstart', (e) => { e.preventDefault(); onPointerDown(e); }, {passive: false});
+        canvas.addEventListener('touchmove', (e) => { e.preventDefault(); onPointerMove(e); }, {passive: false});
+        window.addEventListener('touchend', onPointerUp);
+
+    </script>
+</body>
+</html>

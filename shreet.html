@@ -1,0 +1,919 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Mathematics Lab | Clonexx Research Centre</title>
+    
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Nunito:wght@700;900&display=swap" rel="stylesheet">
+    
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/cannon.js/0.6.2/cannon.min.js"></script>
+
+    <style>
+        body { 
+            margin: 0; overflow: hidden; background-color: #87CEEB; 
+            font-family: 'Nunito', sans-serif; user-select: none; touch-action: none; 
+        }
+        canvas { display: block; width: 100vw; height: 100vh; }
+        
+        #ui-layer { position: absolute; inset: 0; pointer-events: none; z-index: 10; }
+        
+        .crosshair {
+            position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%);
+            width: 20px; height: 20px; transition: all 0.1s;
+        }
+        .crosshair::before, .crosshair::after {
+            content: ''; position: absolute; background: white; border-radius: 2px; box-shadow: 0 0 4px rgba(0,0,0,0.8);
+        }
+        .crosshair::before { top: 9px; left: 0; width: 20px; height: 2px; }
+        .crosshair::after { top: 0; left: 9px; width: 2px; height: 20px; }
+        .crosshair.active::before, .crosshair.active::after { background: #f59e0b; box-shadow: 0 0 10px #f59e0b; } /* Golden crosshair for Math */
+
+        #interaction-prompt {
+            position: absolute; bottom: 20%; left: 50%; transform: translateX(-50%);
+            background: #d97706; color: white; padding: 15px 40px; border-radius: 15px;
+            font-size: 24px; font-weight: 900; border: 4px solid #92400e;
+            box-shadow: 0px 8px 0px #92400e; display: none; text-transform: uppercase; pointer-events: auto; cursor: pointer;
+            transition: transform 0.1s;
+        }
+        #interaction-prompt:active { transform: translate(-50%, 8px); box-shadow: 0px 0px 0px #92400e; }
+
+        #desktop-hint {
+            position: absolute; top: 20px; left: 50%; transform: translateX(-50%);
+            background: rgba(0,0,0,0.6); color: white; padding: 10px 24px; border-radius: 20px;
+            font-size: 14px; font-weight: bold; pointer-events: none; z-index: 10;
+        }
+
+        #mobile-controls { position: absolute; inset: 0; pointer-events: none; display: none; z-index: 20; }
+        @media (hover: none) and (pointer: coarse) {
+            #mobile-controls { display: block; }
+            .crosshair { display: none; }
+            #desktop-hint { display: none; }
+        }
+        
+        #joystick-zone {
+            position: absolute; bottom: 40px; left: 40px; width: 140px; height: 140px;
+            background: rgba(255, 255, 255, 0.15); border: 4px solid rgba(255, 255, 255, 0.4);
+            border-radius: 50%; pointer-events: auto; touch-action: none;
+        }
+        #joystick-knob {
+            position: absolute; top: 50%; left: 50%; width: 60px; height: 60px;
+            background: #fbbf24; border: 4px solid #b45309; border-radius: 50%; /* Golden joystick */
+            transform: translate(-50%, -50%); pointer-events: none;
+        }
+
+        /* Glassmorphism Terminal Overlay for Experiments */
+        #experiments-overlay {
+            display: none; position: fixed; inset: 0; z-index: 50; 
+            background: rgba(15, 23, 42, 0.8); backdrop-filter: blur(12px);
+            align-items: center; justify-content: center; padding: 20px;
+        }
+        
+        .card-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(250px, 1fr));
+            gap: 16px;
+            width: 100%;
+        }
+        
+        .exp-card {
+            background: rgba(255, 255, 255, 0.1);
+            border: 2px solid rgba(255, 255, 255, 0.2);
+            border-radius: 16px; padding: 16px; cursor: pointer;
+            transition: all 0.2s; color: white; display: flex; align-items: center; gap: 12px;
+        }
+        .exp-card:hover { transform: translateY(-4px); background: rgba(255, 255, 255, 0.2); border-color: white; }
+
+        /* Floating Iframe Overlay for Experiments */
+        #iframe-overlay {
+            display: none; position: fixed; inset: 5%; z-index: 100; 
+            background: rgba(15, 23, 42, 0.9); border: 4px solid #fbbf24; 
+            border-radius: 20px; box-shadow: 0 0 40px rgba(251, 191, 36, 0.4); backdrop-filter: blur(16px);
+            flex-direction: column; overflow: hidden;
+        }
+        #iframe-header {
+            height: 50px; background: rgba(0,0,0,0.5); border-bottom: 2px solid rgba(255,255,255,0.1);
+            display: flex; justify-content: space-between; align-items: center; padding: 0 20px;
+        }
+        #close-iframe {
+            background: #ef4444; color: white; border-radius: 50%; width: 30px; height: 30px;
+            font-weight: 900; display: flex; align-items: center; justify-content: center;
+            cursor: pointer; border: 2px solid #7f1d1d; transition: transform 0.1s;
+        }
+        #close-iframe:active { transform: scale(0.9); }
+    </style>
+</head>
+<body>
+
+    <!-- UI Overlay Elements -->
+    <div id="ui-layer">
+        <div class="crosshair" id="crosshair"></div>
+        <div id="desktop-hint">Click & Drag to look • WASD to move • Esc to free mouse</div>
+        <div id="interaction-prompt">ENTER</div>
+    </div>
+
+    <!-- Mobile Navigation -->
+    <div id="mobile-controls">
+        <div id="joystick-zone"><div id="joystick-knob"></div></div>
+    </div>
+
+    <!-- Terminal Overlay -->
+    <div id="experiments-overlay">
+        <div class="bg-slate-900 border-4 border-slate-700 rounded-3xl w-full max-w-4xl max-h-[85vh] flex flex-col shadow-2xl relative">
+            <button onclick="closeExperiments()" class="absolute -top-4 -right-4 w-12 h-12 bg-red-500 hover:bg-red-600 text-white rounded-full border-4 border-slate-900 font-black text-xl shadow-lg transition-transform active:scale-95 flex items-center justify-center z-10">
+                <i class="fas fa-times"></i>
+            </button>
+            
+            <div class="p-6 border-b-2 border-slate-700 bg-slate-800 rounded-t-3xl flex items-center gap-4 shrink-0">
+                <div id="term-icon" class="w-14 h-14 rounded-2xl flex items-center justify-center text-3xl border-2 border-white/20 text-white shadow-inner"></div>
+                <div>
+                    <h2 id="term-title" class="text-3xl font-black text-white">Category</h2>
+                    <p id="term-subtitle" class="text-slate-400 font-bold tracking-widest uppercase text-sm">Select an interactive module</p>
+                </div>
+            </div>
+            
+            <div class="p-6 overflow-y-auto flex-1 custom-scrollbar">
+                <div id="term-grid" class="card-grid">
+                    <!-- Cards injected via JS -->
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- The Floating Iframe Window -->
+    <div id="iframe-overlay">
+        <div id="iframe-header">
+            <div class="flex items-center gap-3 text-white font-bold tracking-widest uppercase text-sm">
+                <i class="fas fa-shapes text-[#fbbf24] animate-pulse"></i> 
+                <span id="iframe-title">Module Running...</span>
+            </div>
+            <button id="close-iframe" onclick="closeIframe()"><i class="fas fa-times"></i></button>
+        </div>
+        <iframe id="inner-frame" src="" class="w-full flex-1 border-none bg-white"></iframe>
+    </div>
+
+    <script>
+        const mathDatabase = {
+            "cat-1": {
+                id: "cat-1", category: "Class 3-5", icon: "fa-shapes", theme: "bg-emerald-500", textColor: "text-emerald-400",
+                files: [
+                    { id: "area-and-perimeter", file: "../html-prototypes/area-and-perimeter.html", title: "Area & Perimeter", icon: "fa-square" },
+                    { id: "bar-graphs", file: "../html-prototypes/bar-graphs.html", title: "Bar Graphs", icon: "fa-chart-bar" },
+                    { id: "clock-angles", file: "clock-../html-prototypes/angles.html", title: "Clock Angles", icon: "fa-clock" },
+                    { id: "fractions", file: "../html-prototypes/fractions.html", title: "Fractions", icon: "fa-chart-pie" },
+                    { id: "multiplication-arrays", file: "../html-prototypes/multiplication-arrays.html", title: "Multiplication Arrays", icon: "fa-th" },
+                    { id: "number-line", file: "../html-prototypes/number-line.html", title: "Number Line", icon: "fa-arrows-alt-h" },
+                    { id: "place-values", file: "../html-prototypes/place-values.html", title: "Place Values", icon: "fa-hashtag" },
+                    { id: "symmetry", file: "../html-prototypes/symmetry.html", title: "Symmetry", icon: "fa-columns" }
+                ]
+            },
+            "cat-2": {
+                id: "cat-2", category: "Class 6-8", icon: "fa-compass", theme: "bg-blue-500", textColor: "text-blue-400",
+                files: [
+                    { id: "3d-nets", file: "../html-prototypes/3d-nets.html", title: "3D Nets", icon: "fa-box" },
+                    { id: "algebra-scale", file: "../html-prototypes/algebra-scale.html", title: "Algebra Scale", icon: "fa-balance-scale" },
+                    { id: "angles", file: "../html-prototypes/angles.html", title: "Angles", icon: "fa-location-arrow" },
+                    { id: "coordinate-plane", file: "../html-prototypes/coordinate-plane.html", title: "Coordinate Plane", icon: "fa-map" },
+                    { id: "exponents", file: "../html-prototypes/exponents.html", title: "Exponents", icon: "fa-chevron-up" },
+                    { id: "probability", file: "../html-prototypes/probability.html", title: "Probability", icon: "fa-percentage" },
+                    { id: "ratios", file: "../html-prototypes/ratios.html", title: "Ratios", icon: "fa-divide" },
+                    { id: "statistics", file: "../html-prototypes/statistics.html", title: "Statistics", icon: "fa-chart-bar" },
+                    { id: "surface-area", file: "../html-prototypes/surface-area.html", title: "Surface Area", icon: "fa-expand-arrows-alt" },
+                    { id: "tessellations", file: "../html-prototypes/tessellations.html", title: "Tessellations", icon: "fa-th-large" },
+                    { id: "transformations", file: "../html-prototypes/transformations.html", title: "Transformations", icon: "fa-arrows-alt" },
+                    { id: "venn-diagrams", file: "../html-prototypes/venn-diagrams.html", title: "Venn Diagrams", icon: "fa-bullseye" },
+                    { id: "visualized-pi", file: "../html-prototypes/visualized-pi.html", title: "Visualized Pi", icon: "fa-circle-notch" },
+                    { id: "volume-of-cylinders", file: "../html-prototypes/volume-of-cylinders.html", title: "Volume of Cylinders", icon: "fa-database" }
+                ]
+            },
+            "cat-3": {
+                id: "cat-3", category: "Class 9-10", icon: "fa-bullseye", theme: "bg-indigo-500", textColor: "text-indigo-400",
+                files: [
+                    { id: "arithmetic-progressions", file: "../html-prototypes/arithmetic-progressions.html", title: "Arithmetic Progressions", icon: "fa-list-ol" },
+                    { id: "circle-tangents", file: "../html-prototypes/circle-tangents.html", title: "Circle Tangents", icon: "fa-dot-circle" },
+                    { id: "circle-theorems", file: "../html-prototypes/circle-theorems.html", title: "Circle Theorems", icon: "fa-bullseye" },
+                    { id: "congruency-vs-similarity", file: "../html-prototypes/congruency-vs-similarity.html", title: "Congruency vs Similarity", icon: "fa-copy" },
+                    { id: "galtons-board", file: "../html-prototypes/galtons-board.html", title: "Galton's Board", icon: "fa-chart-line" },
+                    { id: "pythagorean-theorem", file: "../html-prototypes/pythagorean-theorem.html", title: "Pythagorean Theorem", icon: "fa-play" },
+                    { id: "quadratic-roots", file: "../html-prototypes/quadratic-roots.html", title: "Quadratic Roots", icon: "fa-code-branch" },
+                    { id: "trigonometry", file: "../html-prototypes/trigonometry.html", title: "Trigonometry", icon: "fa-ruler" }
+                ]
+            },
+            "cat-4": {
+                id: "cat-4", category: "Class 11-12", icon: "fa-infinity", theme: "bg-purple-500", textColor: "text-purple-400",
+                files: [
+                    { id: "2d-vectors", file: "../html-prototypes/2d-vectors.html", title: "2D Vectors", icon: "fa-location-arrow" },
+                    { id: "3d-planes", file: "../html-prototypes/3d-planes.html", title: "3D Planes", icon: "fa-layer-group" },
+                    { id: "argand-plane", file: "../html-prototypes/argand-plane.html", title: "Argand Plane", icon: "fa-satellite-dish" },
+                    { id: "conic-sections", file: "../html-prototypes/conic-sections.html", title: "Conic Sections", icon: "fa-bullseye" },
+                    { id: "derivatives", file: "../html-prototypes/derivatives.html", title: "Derivatives", icon: "fa-chart-line" },
+                    { id: "dot-and-cross-products", file: "../html-prototypes/dot-and-cross-products.html", title: "Dot & Cross Products", icon: "fa-times" },
+                    { id: "eulers-identity", file: "../html-prototypes/eulers-identity.html", title: "Euler's Identity", icon: "fa-asterisk" },
+                    { id: "geometric-progressions", file: "../html-prototypes/geometric-progressions.html", title: "Geometric Progressions", icon: "fa-chart-line" },
+                    { id: "integration", file: "../html-prototypes/integration.html", title: "Integration", icon: "fa-infinity" },
+                    { id: "limits", file: "../html-prototypes/limits.html", title: "Limits", icon: "fa-arrow-right" },
+                    { id: "linear-programming", file: "../html-prototypes/linear-programming.html", title: "Linear Programming", icon: "fa-project-diagram" },
+                    { id: "matrices-2d", file: "../html-prototypes/matrices-2d.html", title: "Matrices (2D)", icon: "fa-th" },
+                    { id: "parabola-trajectory", file: "../html-prototypes/parabola-trajectory.html", title: "Parabola Trajectory", icon: "fa-level-down-alt" },
+                    { id: "parametric-spirograph", file: "../html-prototypes/parametric-spirograph.html", title: "Parametric Spirograph", icon: "fa-spinner" },
+                    { id: "unit-circle", file: "../html-prototypes/unit-circle.html", title: "Unit Circle", icon: "fa-crosshairs" }
+                ]
+            }
+        };
+
+        let scene, camera, renderer, raycaster;
+        let world, playerBody;
+        let interactables = [];
+        let clouds = [];
+        window.animatables = []; 
+        let mathMonumentGlobal; 
+        let mathSparks; 
+        
+        let moveForward = false, moveBackward = false, moveLeft = false, moveRight = false;
+        let joystickVec = { x: 0, y: 0 };
+        
+        let camYaw = 0;
+        let camPitch = 0;
+        let isLocked = false;
+        let uiOpen = false;
+
+        const ISLAND_RADIUS = 60;
+        let lastTime = 0;
+
+        window.onload = function() { init(); };
+
+        function init() {
+            world = new CANNON.World();
+            world.gravity.set(0, -30, 0); 
+            world.broadphase = new CANNON.NaiveBroadphase();
+            world.solver.iterations = 10;
+
+            scene = new THREE.Scene();
+            scene.background = new THREE.Color(0x87CEEB);
+            scene.fog = new THREE.FogExp2(0x87CEEB, 0.005);
+
+            camera = new THREE.PerspectiveCamera(70, window.innerWidth / window.innerHeight, 0.1, 1000);
+            raycaster = new THREE.Raycaster();
+
+            renderer = new THREE.WebGLRenderer({ antialias: true, powerPreference: "high-performance" });
+            renderer.setSize(window.innerWidth, window.innerHeight);
+            renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+            renderer.shadowMap.enabled = true;
+            renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+            document.body.appendChild(renderer.domElement);
+
+            buildLighting();
+            buildPlayer();
+            buildIsland();
+            buildGrass();
+            buildPath();
+            buildRocks();
+            buildLogs();
+            buildMathMonument(); 
+            buildMathSparks(); 
+            buildEducationalCaves();
+            buildForest();
+            buildClouds();
+            
+            setupControls();
+
+            window.addEventListener('resize', onWindowResize, false);
+            
+            lastTime = performance.now();
+            requestAnimationFrame(animate);
+        }
+
+        function buildLighting() {
+            const ambient = new THREE.AmbientLight(0xffffff, 0.5);
+            scene.add(ambient);
+
+            const sunLight = new THREE.DirectionalLight(0xffffee, 1.8);
+            sunLight.position.set(100, 150, 50);
+            sunLight.castShadow = true;
+            sunLight.shadow.mapSize.width = 1024;
+            sunLight.shadow.mapSize.height = 1024;
+            sunLight.shadow.camera.near = 0.5;
+            sunLight.shadow.camera.far = 300;
+            const d = 80;
+            sunLight.shadow.camera.left = -d; sunLight.shadow.camera.right = d;
+            sunLight.shadow.camera.top = d; sunLight.shadow.camera.bottom = -d;
+            scene.add(sunLight);
+
+            const sunGeo = new THREE.SphereGeometry(12, 32, 32);
+            const sunMat = new THREE.MeshBasicMaterial({ color: 0xffd700 });
+            const sunMesh = new THREE.Mesh(sunGeo, sunMat);
+            sunMesh.position.copy(sunLight.position);
+            scene.add(sunMesh);
+        }
+
+        function buildPlayer() {
+            const shape = new CANNON.Sphere(1);
+            playerBody = new CANNON.Body({ mass: 5, shape: shape });
+            playerBody.position.set(0, 5, 0); 
+            playerBody.linearDamping = 0.9;
+            world.addBody(playerBody);
+        }
+
+        function buildIsland() {
+            const islandGroup = new THREE.Group();
+
+            const dirtGeo = new THREE.CylinderGeometry(ISLAND_RADIUS, ISLAND_RADIUS - 10, 20, 64);
+            const dirtMat = new THREE.MeshStandardMaterial({ color: 0x4a3219, roughness: 1.0 });
+            const dirt = new THREE.Mesh(dirtGeo, dirtMat);
+            dirt.position.y = -10;
+            dirt.receiveShadow = true;
+            islandGroup.add(dirt);
+
+            const grassGeo = new THREE.CylinderGeometry(ISLAND_RADIUS + 0.5, ISLAND_RADIUS, 2, 64);
+            const grassMat = new THREE.MeshStandardMaterial({ color: 0x22c55e, roughness: 0.9 });
+            const grass = new THREE.Mesh(grassGeo, grassMat);
+            grass.position.y = 1;
+            grass.receiveShadow = true;
+            islandGroup.add(grass);
+
+            scene.add(islandGroup);
+
+            const groundShape = new CANNON.Box(new CANNON.Vec3(ISLAND_RADIUS, 50, ISLAND_RADIUS));
+            const groundBody = new CANNON.Body({ mass: 0, shape: groundShape });
+            groundBody.position.set(0, -48, 0);
+            world.addBody(groundBody);
+        }
+
+        function buildGrass() {
+            const grassCount = 40000; 
+            const bladeGeo = new THREE.PlaneGeometry(0.2, 0.7, 1, 3);
+            bladeGeo.translate(0, 0.35, 0); 
+            
+            const pos = bladeGeo.attributes.position.array;
+            for (let i = 0; i < pos.length; i += 3) {
+                const y = pos[i + 1];
+                if (y > 0.2) { pos[i] *= (0.8 - y); pos[i+2] += y * 0.15; }
+            }
+            bladeGeo.computeVertexNormals();
+            
+            const grassMat = new THREE.MeshStandardMaterial({ color: 0x22c55e, roughness: 0.8, side: THREE.DoubleSide });
+            const instancedGrass = new THREE.InstancedMesh(bladeGeo, grassMat, grassCount);
+            
+            const dummy = new THREE.Object3D();
+            let addedCount = 0;
+
+            for (let i = 0; i < grassCount; i++) {
+                let r = Math.sqrt(Math.random()) * (ISLAND_RADIUS - 2);
+                let theta = Math.random() * Math.PI * 2;
+                let x = Math.cos(theta) * r;
+                let z = Math.sin(theta) * r;
+
+                if (Math.hypot(x, z) < 14) continue; 
+                if (Math.abs(x) < 4 || Math.abs(z) < 4) continue;
+
+                dummy.position.set(x, 2, z);
+                dummy.rotation.y = Math.random() * Math.PI;
+                dummy.rotation.x = (Math.random() - 0.5) * 0.3;
+                dummy.rotation.z = (Math.random() - 0.5) * 0.3;
+                dummy.scale.setScalar(0.6 + Math.random() * 0.6);
+                dummy.updateMatrix();
+                instancedGrass.setMatrixAt(addedCount, dummy.matrix);
+                addedCount++;
+            }
+            instancedGrass.count = addedCount;
+            scene.add(instancedGrass);
+        }
+
+        function buildPath() {
+            const pathGroup = new THREE.Group();
+            const stoneGeo = new THREE.CylinderGeometry(1.8, 1.8, 0.4, 6);
+            const stoneMat = new THREE.MeshStandardMaterial({ color: 0x94a3b8, roughness: 0.9, flatShading: true });
+
+            const directions = [{x: 0, z: -1}, {x: 1, z: 0}, {x: 0, z: 1}, {x: -1, z: 0}];
+
+            directions.forEach(dir => {
+                for(let i = 12; i < 45; i += 3.5) {
+                    const stone = new THREE.Mesh(stoneGeo, stoneMat);
+                    stone.position.set(dir.x * i + (Math.random()-0.5), 2.2, dir.z * i + (Math.random()-0.5));
+                    stone.rotation.y = Math.random() * Math.PI;
+                    stone.rotation.x = (Math.random() - 0.5) * 0.1;
+                    stone.scale.setScalar(0.8 + Math.random() * 0.4);
+                    stone.receiveShadow = true; stone.castShadow = true;
+                    pathGroup.add(stone);
+                }
+            });
+            scene.add(pathGroup);
+        }
+
+        function buildMathMonument() {
+            const geometryGroup = new THREE.Group();
+            
+            // Center Dodecahedron (Golden Ratio representation)
+            const centerGeo = new THREE.DodecahedronGeometry(2.5, 0);
+            const centerMat = new THREE.MeshStandardMaterial({ color: 0xfbbf24, metalness: 0.6, roughness: 0.2, flatShading: true });
+            const centerMesh = new THREE.Mesh(centerGeo, centerMat);
+            centerMesh.castShadow = true;
+            geometryGroup.add(centerMesh);
+            
+            // Wireframe Rings representing axes/coordinates
+            const ringGeo1 = new THREE.TorusGeometry(5, 0.05, 8, 64);
+            const ringMat = new THREE.MeshBasicMaterial({ color: 0xf59e0b, transparent: true, opacity: 0.8 });
+            const ring1 = new THREE.Mesh(ringGeo1, ringMat);
+            ring1.rotation.x = Math.PI / 2;
+            geometryGroup.add(ring1);
+            
+            const ring2 = new THREE.Mesh(ringGeo1, ringMat);
+            ring2.rotation.y = Math.PI / 2;
+            geometryGroup.add(ring2);
+
+            // Orbiting Geometric Shapes
+            const shapes = [
+                { geo: new THREE.TetrahedronGeometry(0.8, 0), color: 0x38bdf8, dist: 6, speed: 0.015, yOffset: 2 },
+                { geo: new THREE.OctahedronGeometry(0.8, 0), color: 0xef4444, dist: 5, speed: -0.02, yOffset: -1.5 },
+                { geo: new THREE.IcosahedronGeometry(0.8, 0), color: 0xa855f7, dist: 7, speed: 0.01, yOffset: 0 }
+            ];
+
+            const shapesMat = new THREE.MeshStandardMaterial({ metalness: 0.3, roughness: 0.4, flatShading: true });
+
+            shapes.forEach(data => {
+                const orbitGroup = new THREE.Group();
+                const mat = shapesMat.clone();
+                mat.color.setHex(data.color);
+                const mesh = new THREE.Mesh(data.geo, mat);
+                mesh.position.set(data.dist, data.yOffset, 0);
+                mesh.castShadow = true;
+                orbitGroup.add(mesh);
+                geometryGroup.add(orbitGroup);
+                
+                // Add to animatables
+                window.animatables.push({ mesh: orbitGroup, speed: data.speed, axis: 'y' });
+                window.animatables.push({ mesh: mesh, speed: 0.03, axis: 'x' }); // Spin on own axis
+                window.animatables.push({ mesh: mesh, speed: 0.02, axis: 'z' });
+            });
+
+            // Geometric Pedestal (Hexagonal)
+            const pedGeo = new THREE.CylinderGeometry(3.5, 4.5, 1.5, 6);
+            const pedMat = new THREE.MeshStandardMaterial({ color: 0x1e293b, flatShading: true });
+            const ped = new THREE.Mesh(pedGeo, pedMat);
+            ped.position.y = -6;
+            ped.receiveShadow = true;
+            geometryGroup.add(ped);
+
+            geometryGroup.position.set(0, 10, 0); // Hovering above center spawn
+            scene.add(geometryGroup);
+            mathMonumentGlobal = geometryGroup; 
+            
+            window.animatables.push({ mesh: centerMesh, speed: 0.005, axis: 'y' });
+            window.animatables.push({ mesh: centerMesh, speed: 0.002, axis: 'x' });
+            window.animatables.push({ mesh: geometryGroup, speed: 0.003, axis: 'y' }); // Slow global spin
+        }
+
+        function buildMathSparks() {
+            const sparkGeo = new THREE.BufferGeometry();
+            const sparkCount = 150;
+            const posArray = new Float32Array(sparkCount * 3);
+            for(let i=0; i<sparkCount*3; i++) {
+                posArray[i] = (Math.random() - 0.5) * 35; // Spread around center
+            }
+            sparkGeo.setAttribute('position', new THREE.BufferAttribute(posArray, 3));
+            
+            const canvas = document.createElement('canvas');
+            canvas.width = 16; canvas.height = 16;
+            const ctx = canvas.getContext('2d');
+            const gradient = ctx.createRadialGradient(8, 8, 0, 8, 8, 8);
+            gradient.addColorStop(0, 'rgba(255,255,255,1)');
+            gradient.addColorStop(0.3, 'rgba(251,191,36,1)'); // Golden sparks for math
+            gradient.addColorStop(1, 'rgba(0,0,0,0)');
+            ctx.fillStyle = gradient; ctx.fillRect(0,0,16,16);
+            const texture = new THREE.CanvasTexture(canvas);
+
+            const sparkMat = new THREE.PointsMaterial({ 
+                size: 0.8, color: 0xffffff, map: texture,
+                transparent: true, opacity: 0.8, blending: THREE.AdditiveBlending, depthWrite: false
+            });
+            mathSparks = new THREE.Points(sparkGeo, sparkMat);
+            mathSparks.position.y = 8;
+            scene.add(mathSparks);
+        }
+
+        function buildEducationalCaves() {
+            const cavesData = [
+                { pos: new THREE.Vector3(0, 2, -45), key: "cat-1", color: 0x10b981 }, // North: Primary
+                { pos: new THREE.Vector3(45, 2, 0), key: "cat-2", color: 0x3b82f6 }, // East: Middle
+                { pos: new THREE.Vector3(0, 2, 45), key: "cat-3", color: 0x6366f1 }, // South: Secondary
+                { pos: new THREE.Vector3(-45, 2, 0), key: "cat-4", color: 0xa855f7 } // West: Higher Sec
+            ];
+
+            const rockGeo = new THREE.DodecahedronGeometry(3.5, 0); 
+            const rockMat = new THREE.MeshStandardMaterial({ color: 0x4b5563, roughness: 0.9, flatShading: true });
+            
+            cavesData.forEach(data => {
+                const caveGroup = new THREE.Group();
+                const dbInfo = mathDatabase[data.key];
+                
+                for(let i = -2; i <= 14; i++) { 
+                    const angle = (i / 12) * Math.PI;
+                    const r = 7.5; 
+                    const rock = new THREE.Mesh(rockGeo, rockMat);
+                    rock.position.set(Math.cos(angle) * r, Math.sin(angle) * r, 0);
+                    rock.position.z += (Math.random() - 0.5) * 2;
+                    rock.rotation.set(Math.random(), Math.random(), Math.random());
+                    rock.scale.setScalar(0.9 + Math.random() * 0.6);
+                    caveGroup.add(rock);
+                }
+
+                const voidGeo = new THREE.CircleGeometry(6.8, 32);
+                const voidMat = new THREE.MeshBasicMaterial({ color: 0x000000, side: THREE.DoubleSide });
+                const caveVoid = new THREE.Mesh(voidGeo, voidMat);
+                caveVoid.position.set(0, 5, -2.0);
+                caveGroup.add(caveVoid);
+
+                const portalGeo = new THREE.CircleGeometry(6.5, 32);
+                const portalMat = new THREE.MeshBasicMaterial({ color: data.color, transparent: true, opacity: 0.8, side: THREE.DoubleSide });
+                const portal = new THREE.Mesh(portalGeo, portalMat);
+                portal.position.set(0, 5, -1.5);
+                caveGroup.add(portal);
+
+                const glowGeo = new THREE.CircleGeometry(6.8, 32);
+                const glowMat = new THREE.MeshBasicMaterial({ color: data.color, transparent: true, opacity: 0.4, blending: THREE.AdditiveBlending, side: THREE.DoubleSide });
+                const glow = new THREE.Mesh(glowGeo, glowMat);
+                glow.position.set(0, 5, -1.3);
+                caveGroup.add(glow);
+
+                caveGroup.position.copy(data.pos);
+                caveGroup.lookAt(0, 2, 0);
+                scene.add(caveGroup);
+
+                const wallShape = new CANNON.Box(new CANNON.Vec3(8, 10, 2));
+                const wallBody = new CANNON.Body({ mass: 0, shape: wallShape });
+                wallBody.position.copy(data.pos);
+                const lookVec = new THREE.Vector3(0,0,0).sub(data.pos).normalize();
+                const angle = Math.atan2(lookVec.x, lookVec.z);
+                wallBody.quaternion.setFromAxisAngle(new CANNON.Vec3(0,1,0), angle);
+                world.addBody(wallBody);
+
+                const hitGeo = new THREE.BoxGeometry(14, 14, 10);
+                const hitMat = new THREE.MeshBasicMaterial({ visible: false });
+                const hitbox = new THREE.Mesh(hitGeo, hitMat);
+                hitbox.position.copy(data.pos);
+                hitbox.position.y = 7;
+                scene.add(hitbox);
+                
+                interactables.push({ 
+                    mesh: hitbox, 
+                    prompt: `ENTER ${dbInfo.category.toUpperCase()} LAB`, 
+                    catKey: data.key 
+                });
+            });
+        }
+
+        function buildForest() {
+            const treeGroup = new THREE.Group();
+            const trunkGeo = new THREE.CylinderGeometry(0.8, 1.2, 5, 6);
+            const trunkMat = new THREE.MeshStandardMaterial({ color: 0x4a3219, flatShading: true });
+            const leavesGeo = new THREE.DodecahedronGeometry(3.5, 0);
+            const leavesMat = new THREE.MeshStandardMaterial({ color: 0x065f46, flatShading: true });
+
+            for(let i = 0; i < 180; i++) {
+                let r = 16 + Math.random() * (ISLAND_RADIUS - 18);
+                let t = Math.random() * Math.PI * 2;
+                let x = Math.cos(t)*r;
+                let z = Math.sin(t)*r;
+                
+                if (Math.abs(x) < 8 || Math.abs(z) < 8) continue; 
+                if (Math.hypot(x - 0, z - (-45)) < 15) continue;
+                if (Math.hypot(x - 45, z - 0) < 15) continue;
+                if (Math.hypot(x - 0, z - 45) < 15) continue;
+                if (Math.hypot(x - (-45), z - 0) < 15) continue;
+
+                const tree = new THREE.Group();
+                const trunk = new THREE.Mesh(trunkGeo, trunkMat);
+                trunk.position.y = 2.5; trunk.castShadow = true; tree.add(trunk);
+
+                const l1 = new THREE.Mesh(leavesGeo, leavesMat);
+                l1.position.y = 5; l1.castShadow = true; tree.add(l1);
+                
+                const l2 = new THREE.Mesh(leavesGeo, leavesMat);
+                l2.position.y = 7.5; l2.scale.setScalar(0.8); l2.rotation.y = Math.PI/4; l2.castShadow = true; tree.add(l2);
+
+                const scale = 0.7 + Math.random() * 0.6;
+                tree.scale.setScalar(scale);
+                tree.position.set(x, 2, z);
+                treeGroup.add(tree);
+
+                const treeShape = new CANNON.Box(new CANNON.Vec3(1 * scale, 5 * scale, 1 * scale));
+                const treeBody = new CANNON.Body({ mass: 0, shape: treeShape });
+                treeBody.position.set(x, 2 + (5 * scale), z);
+                world.addBody(treeBody);
+            }
+            scene.add(treeGroup);
+        }
+
+        function buildRocks() {
+            const rockGroup = new THREE.Group();
+            const rockGeo = new THREE.DodecahedronGeometry(2.8, 0);
+            const rockMat = new THREE.MeshStandardMaterial({ color: 0x6b7280, roughness: 0.9, flatShading: true });
+            
+            for(let i=0; i<150; i++) {
+                let r = 10 + Math.random() * (ISLAND_RADIUS - 12); 
+                let t = Math.random() * Math.PI * 2;
+                let x = Math.cos(t)*r; let z = Math.sin(t)*r;
+                
+                if (Math.abs(x) < 6 || Math.abs(z) < 6) continue;
+                if (Math.hypot(x - 0, z - (-45)) < 15) continue;
+                if (Math.hypot(x - 45, z - 0) < 15) continue;
+                if (Math.hypot(x - 0, z - 45) < 15) continue;
+                if (Math.hypot(x - (-45), z - 0) < 15) continue;
+
+                const rock = new THREE.Mesh(rockGeo, rockMat);
+                rock.position.set(x, 2.2, z);
+                const scaleBase = 0.5 + Math.random() * 1.5; 
+                rock.scale.set(scaleBase, scaleBase * 0.6, scaleBase + Math.random()*0.5);
+                rock.rotation.set(Math.random()*Math.PI, Math.random()*Math.PI, Math.random()*Math.PI);
+                rock.castShadow = true; rockGroup.add(rock);
+            }
+            scene.add(rockGroup);
+        }
+
+        function buildLogs() {
+            const logGroup = new THREE.Group();
+            const logGeo = new THREE.CylinderGeometry(0.6, 0.6, 4, 6);
+            const logMat = new THREE.MeshStandardMaterial({ color: 0x4a3219, roughness: 0.9, flatShading: true });
+
+            for(let i=0; i<30; i++) {
+                let r = 15 + Math.random() * (ISLAND_RADIUS - 17); 
+                let t = Math.random() * Math.PI * 2;
+                let x = Math.cos(t)*r; let z = Math.sin(t)*r;
+                
+                if (Math.abs(x) < 6 || Math.abs(z) < 6) continue;
+                if (Math.hypot(x - 0, z - (-45)) < 15) continue;
+                if (Math.hypot(x - 45, z - 0) < 15) continue;
+                if (Math.hypot(x - 0, z - 45) < 15) continue;
+                if (Math.hypot(x - (-45), z - 0) < 15) continue;
+
+                const log = new THREE.Mesh(logGeo, logMat);
+                log.rotation.x = Math.PI / 2;
+                log.rotation.z = Math.random() * Math.PI;
+                log.position.set(x, 2.5, z);
+                log.castShadow = true;
+                logGroup.add(log);
+            }
+            scene.add(logGroup);
+        }
+
+        function buildClouds() {
+            const cloudGeo = new THREE.DodecahedronGeometry(4, 0);
+            const cloudMat = new THREE.MeshStandardMaterial({ color: 0xffffff, flatShading: true });
+
+            for(let i = 0; i < 15; i++) {
+                const cloud = new THREE.Group();
+                const puffs = 3 + Math.floor(Math.random() * 4);
+                
+                for(let p=0; p<puffs; p++) {
+                    const puff = new THREE.Mesh(cloudGeo, cloudMat);
+                    puff.position.set((Math.random()-0.5)*8, (Math.random()-0.5)*4, (Math.random()-0.5)*8);
+                    puff.scale.setScalar(0.5 + Math.random() * 1.5);
+                    puff.rotation.set(Math.random(), Math.random(), Math.random());
+                    puff.castShadow = true;
+                    cloud.add(puff);
+                }
+                
+                cloud.position.set((Math.random() - 0.5) * 150, 40 + Math.random() * 20, (Math.random() - 0.5) * 150);
+                scene.add(cloud);
+                clouds.push(cloud);
+            }
+        }
+
+        function setupControls() {
+            document.addEventListener('keydown', (e) => {
+                if (uiOpen) return;
+                switch(e.code) {
+                    case 'KeyW': case 'ArrowUp': moveForward = true; break;
+                    case 'KeyA': case 'ArrowLeft': moveLeft = true; break;
+                    case 'KeyS': case 'ArrowDown': moveBackward = true; break;
+                    case 'KeyD': case 'ArrowRight': moveRight = true; break;
+                    case 'Space': if(playerBody.position.y < 7) playerBody.velocity.y = 12; break;
+                }
+            });
+            document.addEventListener('keyup', (e) => {
+                switch(e.code) {
+                    case 'KeyW': case 'ArrowUp': moveForward = false; break;
+                    case 'KeyA': case 'ArrowLeft': moveLeft = false; break;
+                    case 'KeyS': case 'ArrowDown': moveBackward = false; break;
+                    case 'KeyD': case 'ArrowRight': moveRight = false; break;
+                }
+            });
+
+            document.addEventListener('mousedown', (e) => {
+                if (uiOpen || e.target.id === 'interaction-prompt') return;
+                if (document.pointerLockElement !== document.body) document.body.requestPointerLock();
+            });
+
+            document.addEventListener('pointerlockchange', () => {
+                isLocked = (document.pointerLockElement === document.body);
+            });
+            
+            document.addEventListener('mousemove', (e) => {
+                if (!isLocked || uiOpen) return;
+                const movX = Number(e.movementX) || 0;
+                const movY = Number(e.movementY) || 0;
+
+                camYaw -= movX * 0.003;
+                camPitch -= movY * 0.003;
+                camPitch = Math.max(-Math.PI/2 + 0.1, Math.min(Math.PI/2 - 0.1, camPitch));
+            });
+
+            const joystickZone = document.getElementById('joystick-zone');
+            const joystickKnob = document.getElementById('joystick-knob');
+            let moveTouchId = null;
+
+            joystickZone.addEventListener('touchstart', (e) => {
+                e.preventDefault();
+                moveTouchId = e.changedTouches[0].identifier;
+            }, {passive: false});
+
+            document.addEventListener('touchmove', (e) => {
+                if(uiOpen) return;
+                for(let i=0; i<e.changedTouches.length; i++) {
+                    const touch = e.changedTouches[i];
+                    if(touch.identifier === moveTouchId) {
+                        const rect = joystickZone.getBoundingClientRect();
+                        const cx = rect.left + rect.width/2; const cy = rect.top + rect.height/2;
+                        let dx = touch.clientX - cx; let dy = touch.clientY - cy;
+                        const dist = Math.min(Math.sqrt(dx*dx + dy*dy), 40);
+                        const angle = Math.atan2(dy, dx);
+                        const kx = Math.cos(angle)*dist; const ky = Math.sin(angle)*dist;
+                        joystickKnob.style.transform = `translate(calc(-50% + ${kx}px), calc(-50% + ${ky}px))`;
+                        joystickVec = { x: kx/40, y: ky/40 };
+                    } else if (!document.getElementById('interaction-prompt').contains(e.target)) {
+                        camYaw -= (touch.clientX - (touch.lastX || touch.clientX)) * 0.005;
+                        camPitch -= (touch.clientY - (touch.lastY || touch.clientY)) * 0.005;
+                        camPitch = Math.max(-Math.PI/2 + 0.1, Math.min(Math.PI/2 - 0.1, camPitch));
+                        touch.lastX = touch.clientX; touch.lastY = touch.clientY;
+                    }
+                }
+            }, {passive: false});
+
+            const endTouch = (e) => {
+                for(let i=0; i<e.changedTouches.length; i++) {
+                    if(e.changedTouches[i].identifier === moveTouchId) {
+                        moveTouchId = null; joystickVec = {x:0, y:0};
+                        joystickKnob.style.transform = 'translate(-50%, -50%)';
+                    }
+                }
+            };
+            document.addEventListener('touchend', endTouch);
+            document.addEventListener('touchcancel', endTouch);
+
+            document.getElementById('interaction-prompt').addEventListener('click', () => {
+                const prompt = document.getElementById('interaction-prompt');
+                if (prompt.dataset.catKey) {
+                    openExperiments(prompt.dataset.catKey);
+                }
+            });
+        }
+
+        function openExperiments(catKey) {
+            uiOpen = true;
+            document.exitPointerLock();
+            
+            moveForward = false; moveBackward = false; moveLeft = false; moveRight = false;
+            playerBody.velocity.set(0,0,0);
+            
+            const dbInfo = mathDatabase[catKey];
+            const overlay = document.getElementById('experiments-overlay');
+            const grid = document.getElementById('term-grid');
+            
+            document.getElementById('term-title').innerText = dbInfo.category + " Math Labs";
+            
+            const iconDiv = document.getElementById('term-icon');
+            iconDiv.className = `w-14 h-14 rounded-2xl flex items-center justify-center text-3xl border-2 border-white/20 text-white shadow-inner ${dbInfo.theme}`;
+            iconDiv.innerHTML = `<i class="fas ${dbInfo.icon}"></i>`;
+            
+            grid.innerHTML = '';
+            
+            dbInfo.files.forEach(exp => {
+                const card = document.createElement('div');
+                card.className = "exp-card group";
+                card.onclick = () => openIframe(exp.file, exp.title);
+                
+                card.innerHTML = `
+                    <div class="w-12 h-12 rounded-xl flex items-center justify-center text-xl bg-slate-700 border-2 border-slate-600 group-hover:${dbInfo.theme} transition-colors">
+                        <i class="fas ${exp.icon}"></i>
+                    </div>
+                    <div class="flex-1">
+                        <h3 class="font-black text-lg text-white leading-tight">${exp.title}</h3>
+                        <p class="text-xs font-bold ${dbInfo.textColor} uppercase tracking-widest mt-1">Initialize <i class="fas fa-arrow-right text-[10px] ml-1"></i></p>
+                    </div>
+                `;
+                grid.appendChild(card);
+            });
+            
+            overlay.style.display = 'flex';
+        }
+
+        function closeExperiments() {
+            uiOpen = false;
+            document.getElementById('experiments-overlay').style.display = 'none';
+        }
+
+        function openIframe(url, title) {
+            document.getElementById('experiments-overlay').style.display = 'none';
+            document.getElementById('iframe-title').innerText = title;
+            document.getElementById('inner-frame').src = url;
+            document.getElementById('iframe-overlay').style.display = 'flex';
+        }
+
+        function closeIframe() {
+            document.getElementById('inner-frame').src = '';
+            document.getElementById('iframe-overlay').style.display = 'none';
+            document.getElementById('experiments-overlay').style.display = 'flex';
+        }
+
+        function onWindowResize() {
+            camera.aspect = window.innerWidth / window.innerHeight;
+            camera.updateProjectionMatrix();
+            renderer.setSize(window.innerWidth, window.innerHeight);
+        }
+
+        function animate(time) {
+            requestAnimationFrame(animate);
+            
+            try {
+                let dt = (time - lastTime) / 1000;
+                lastTime = time;
+                if(dt > 0.1) dt = 0.1; 
+                
+                world.step(1/60, dt, 3);
+
+                if (isNaN(playerBody.position.x) || playerBody.position.y < -30) {
+                    playerBody.position.set(0, 5, 0);
+                    playerBody.velocity.set(0, 0, 0);
+                }
+
+                if (!uiOpen) {
+                    const speed = 15.0;
+                    let inputX = Number(moveRight) - Number(moveLeft) + joystickVec.x;
+                    let inputZ = Number(moveBackward) - Number(moveForward) + joystickVec.y;
+                    
+                    const inputVec = new THREE.Vector3(inputX, 0, inputZ);
+                    if (inputVec.lengthSq() > 0) inputVec.normalize();
+                    inputVec.applyAxisAngle(new THREE.Vector3(0, 1, 0), camYaw);
+                    
+                    playerBody.velocity.x = inputVec.x * speed;
+                    playerBody.velocity.z = inputVec.z * speed;
+                }
+
+                camera.position.copy(playerBody.position);
+                camera.position.y += 2; 
+                camera.rotation.set(camPitch, camYaw, 0, 'YXZ');
+
+                if (window.animatables) {
+                    window.animatables.forEach(a => a.mesh.rotation[a.axis] -= a.speed);
+                }
+
+                if (mathMonumentGlobal) {
+                    mathMonumentGlobal.position.y = 10 + Math.sin(time * 0.002) * 1.5;
+                }
+                if (mathSparks) {
+                    mathSparks.rotation.y += 0.001;
+                    const positions = mathSparks.geometry.attributes.position.array;
+                    for(let i=1; i<positions.length; i+=3) {
+                        positions[i] += Math.sin(time * 0.001 + positions[i-1]) * 0.02; 
+                    }
+                    mathSparks.geometry.attributes.position.needsUpdate = true;
+                }
+
+                clouds.forEach(cloud => {
+                    cloud.rotation.y += 0.002;
+                    cloud.position.x -= 0.05;
+                    if(cloud.position.x < -150) cloud.position.x = 150;
+                });
+
+                if (!uiOpen) {
+                    const prompt = document.getElementById('interaction-prompt');
+                    const crosshair = document.getElementById('crosshair');
+                    
+                    raycaster.setFromCamera(new THREE.Vector2(0,0), camera);
+                    const intersects = raycaster.intersectObjects(interactables.map(i => i.mesh));
+                    
+                    if (intersects.length > 0 && intersects[0].distance < 12) {
+                        const hitData = interactables.find(i => i.mesh === intersects[0].object);
+                        if (hitData) {
+                            prompt.innerText = hitData.prompt;
+                            prompt.dataset.catKey = hitData.catKey;
+                            prompt.style.display = 'block';
+                            crosshair.classList.add('active');
+                        }
+                    } else {
+                        prompt.style.display = 'none';
+                        crosshair.classList.remove('active');
+                    }
+                }
+
+                renderer.render(scene, camera);
+            } catch (e) {
+                console.error("Safeguard caught render error: ", e);
+            }
+        }
+    </script>
+</body>
+</html>

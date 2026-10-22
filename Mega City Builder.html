@@ -1,0 +1,944 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Mega City Builder Ultimate</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://unpkg.com/fflate@0.8.2"></script>
+    <script src="https://cdn.jsdelivr.net/npm/three@0.140.0/build/three.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/three@0.140.0/examples/js/loaders/GLTFLoader.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/three@0.140.0/examples/js/utils/SkeletonUtils.js"></script>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Fredoka+One&family=Nunito:wght@700&display=swap');
+
+        body { 
+            margin: 0; overflow: hidden; background-color: #87CEEB; 
+            font-family: 'Nunito', sans-serif; user-select: none;
+            -webkit-font-smoothing: antialiased;
+        }
+        
+        #game-canvas { display: block; width: 100vw; height: 100vh; cursor: crosshair; }
+
+        /* --- UI LAYER --- */
+        #ui-layer {
+            position: absolute; top: 0; left: 0; width: 100%; height: 100%;
+            pointer-events: none; display: flex; flex-direction: column;
+            justify-content: space-between; padding: 20px; z-index: 10;
+        }
+
+        .glass-pill {
+            background: rgba(255, 255, 255, 0.95); backdrop-filter: blur(10px);
+            border-radius: 30px; padding: 15px 30px; display: flex;
+            align-items: center; gap: 30px; box-shadow: 0 8px 32px rgba(0, 150, 255, 0.2);
+            border: 3px solid rgba(255, 255, 255, 1); pointer-events: auto;
+        }
+
+        .title-text { font-family: 'Fredoka One', cursive; color: #777; font-size: 14px; letter-spacing: 1px; text-transform: uppercase;}
+        .stat-val { font-family: 'Fredoka One', cursive; font-size: 28px; }
+        
+        .text-blue { color: #29B6F6; text-shadow: 0 2px 0px #E1F5FE; }
+        .text-green { color: #4CAF50; text-shadow: 0 2px 0px #E8F5E9; }
+        .text-red { color: #EF4444; text-shadow: 0 2px 0px #FEE2E2; font-size: 16px; margin-top: -5px;}
+
+        .btn-action {
+            background: #F59E0B; color: white; border: 3px solid #D97706; border-radius: 12px;
+            padding: 8px 16px; font-family: 'Fredoka One'; cursor: pointer; transition: 0.1s;
+            box-shadow: 0 4px 0 #D97706; text-transform: uppercase;
+        }
+        .btn-action:active { transform: translateY(4px); box-shadow: 0 0 0 #D97706; }
+
+        /* Build Toolbar */
+        .toolbar-container {
+            width: 100%; display: flex; justify-content: center; pointer-events: auto;
+        }
+        .toolbar {
+            background: rgba(255, 255, 255, 0.95); padding: 12px 16px; border-radius: 25px;
+            display: flex; gap: 12px; box-shadow: 0 10px 40px rgba(0,0,0,0.2);
+            border: 3px solid #fff; margin-bottom: 10px;
+            flex-wrap: nowrap; overflow-x: auto; max-width: 95vw; align-items: center;
+        }
+
+        .toolbar::-webkit-scrollbar { height: 12px; }
+        .toolbar::-webkit-scrollbar-track { background: rgba(0,0,0,0.05); border-radius: 10px;}
+        .toolbar::-webkit-scrollbar-thumb { background: #90CAF9; border-radius: 10px; border: 2px solid #fff;}
+
+        .tool-btn {
+            background: #f8f9fa; border: 3px solid #e2e8f0; padding: 8px 12px;
+            border-radius: 16px; cursor: pointer; transition: all 0.2s;
+            display: flex; flex-direction: column; align-items: center; min-width: 75px;
+            flex-shrink: 0;
+        }
+        .tool-btn:hover { background: #eff6ff; border-color: #93c5fd; transform: translateY(-3px); }
+        .tool-btn.active { background: #3b82f6; border-color: #2563eb; color: white; transform: translateY(-5px); box-shadow: 0 8px 20px rgba(59, 130, 246, 0.4); }
+        .tool-btn.active .tool-cost { color: #fef08a; }
+        
+        .tool-sym { font-size: 24px; margin-bottom: 2px; }
+        .tool-name { font-family: 'Fredoka One'; font-size: 11px; margin-bottom: 2px; text-align: center; }
+        .tool-cost { font-size: 11px; color: #10b981; font-weight: bold; }
+        .tool-pop { font-size: 10px; color: #8b5cf6; font-weight: bold; }
+
+        .controls-hint {
+            background: rgba(255, 255, 255, 0.95); padding: 12px 24px;
+            border-radius: 20px; font-weight: bold; color: #555;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.1); display: inline-flex; flex-direction: column; align-items: flex-end; gap: 8px; border: 2px solid #fff; pointer-events: auto;
+        }
+        .key { background: #f1f5f9; padding: 4px 10px; border-radius: 6px; border: 2px solid #cbd5e1; color: #333; font-family: 'Fredoka One'; font-size: 12px;}
+
+        /* Loan Modal */
+        #loan-modal {
+            position: absolute; top: 0; left: 0; width: 100vw; height: 100vh;
+            background: rgba(0,0,0,0.6); z-index: 150; display: none;
+            align-items: center; justify-content: center; pointer-events: auto;
+        }
+        .modal-box {
+            background: white; padding: 40px; border-radius: 24px; border: 4px solid #3B82F6;
+            text-align: center; box-shadow: 0 20px 50px rgba(0,0,0,0.3); width: 400px;
+        }
+        .modal-input {
+            width: 100%; padding: 12px; margin: 10px 0; border-radius: 8px; border: 2px solid #cbd5e1;
+            font-size: 18px; font-family: 'Nunito'; text-align: center;
+        }
+
+        /* Start Menu / Loading */
+        #start-menu {
+            position: absolute; top: 0; left: 0; width: 100%; height: 100%;
+            background: rgba(14, 165, 233, 0.95); z-index: 100;
+            display: flex; flex-direction: column; align-items: center; justify-content: center;
+        }
+        .btn-start {
+            background: #FBBF24; color: #111; border: 4px solid #F59E0B; padding: 20px 60px;
+            font-family: 'Fredoka One'; font-size: 36px; border-radius: 40px;
+            box-shadow: 0 8px 0 #D97706; cursor: pointer; transition: 0.1s; margin-top: 30px; display: none;
+        }
+        .btn-start:active { transform: translateY(8px); box-shadow: 0 0 0 #D97706; }
+
+        .loading-container { width: 400px; height: 20px; background: rgba(0,0,0,0.5); border-radius: 10px; border: 2px solid #fff; overflow: hidden; margin-top: 20px;}
+        #loading-bar { height: 100%; width: 0%; background: #4CAF50; transition: width 0.3s; }
+
+        /* Notifications */
+        .income-pop {
+            position: absolute; color: #4ADE80; font-family: 'Fredoka One'; font-size: 32px;
+            text-shadow: 0 3px 0 #166534, 0 0 10px rgba(74, 222, 128, 0.5); pointer-events: none;
+            animation: floatUp 2s forwards; z-index: 50; opacity: 0;
+        }
+        @keyframes floatUp { 0% { opacity: 1; transform: translateY(0) scale(0.5); } 20% { transform: translateY(-20px) scale(1.2); } 100% { opacity: 0; transform: translateY(-100px) scale(1); } }
+
+    </style>
+</head>
+<body>
+
+    <div id="loan-modal">
+        <div class="modal-box">
+            <h2 style="font-family: 'Fredoka One'; font-size: 32px; color: #1E3A8A; margin-top:0;">CITY BANK LOAN</h2>
+            <p style="color: #64748B; margin-bottom: 20px;">Enter amount. Standard loans deduct 5% per cycle.</p>
+            <input type="number" id="loan-amt" class="modal-input" placeholder="Amount (e.g. 50000)">
+            <input type="text" id="loan-code" class="modal-input" placeholder="Promo Code (Optional)">
+            <div style="display: flex; gap: 10px; margin-top: 20px;">
+                <button class="btn-action" style="flex: 1; background: #EF4444; border-color: #B91C1C; box-shadow: 0 4px 0 #B91C1C;" onclick="closeLoanModal()">CANCEL</button>
+                <button class="btn-action" style="flex: 1; background: #10B981; border-color: #047857; box-shadow: 0 4px 0 #047857;" onclick="takeLoan()">TAKE LOAN</button>
+            </div>
+        </div>
+    </div>
+
+    <div id="start-menu">
+        <h1 style="font-family: 'Fredoka One'; font-size: 96px; color: #fff; text-shadow: 0 8px 0 #0284C7;">MEGA CITY BUILDER</h1>
+        <p style="font-size: 24px; color: #E0F2FE; font-weight: bold; max-width: 800px; text-align: center; margin-top: -10px;">
+            Auto-bridges, Smart Zoning, Airports, and massive Interchanges!<br>Loading Custom 3D Assets...
+        </p>
+        <div class="loading-container" id="loading-ui"><div id="loading-bar"></div></div>
+        <button class="btn-start" id="btn-play">START BUILDING</button>
+    </div>
+
+    <canvas id="game-canvas"></canvas>
+
+    <div id="ui-layer">
+        <!-- Top HUD -->
+        <div class="flex justify-between items-start w-full">
+            <div class="glass-pill">
+                <div class="flex flex-col">
+                    <span class="title-text text-blue">POPULATION</span>
+                    <span id="pop-val" class="stat-val text-blue">0</span>
+                </div>
+                <div class="w-1 h-12 bg-gray-200 rounded"></div>
+                <div class="flex flex-col">
+                    <span class="title-text text-green">FUNDS</span>
+                    <span id="funds-val" class="stat-val text-green">$50,000</span>
+                    <span id="debt-val" class="title-text text-red" style="display:none;">DEBT: $0</span>
+                </div>
+                <div class="w-1 h-12 bg-gray-200 rounded"></div>
+                <div class="flex flex-col">
+                    <span class="title-text" style="color: #F59E0B;">INCOME</span>
+                    <span id="income-val" class="stat-val" style="color: #FBBF24;">+$0/cycle</span>
+                </div>
+                <button class="btn-action" onclick="openLoanModal()">🏦 LOANS</button>
+            </div>
+            
+            <div class="controls-hint">
+                <div><span class="key">DRAG / CLICK</span> Build</div>
+                <div><span class="key">RIGHT-CLICK + DRAG</span> Pan Camera</div>
+                <div><span class="key">SCROLL WHEEL</span> Zoom In/Out</div>
+            </div>
+        </div>
+
+        <!-- Bottom Build Menu -->
+        <div class="toolbar-container pb-2">
+            <div class="toolbar" id="toolbar">
+                <!-- Buttons injected by JS -->
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // --- GAME STATE & TOOLS ---
+        const State = {
+            population: 0, 
+            funds: 50000,
+            income: 0,
+            loanDebt: 0,
+            loanPayment: 0,
+            activeTool: 'road'
+        };
+
+        const CELL_SIZE = 10;
+        
+        const TOOLS = [
+            { id: 'clear', name: 'Bulldoze', sym: '🧨', cost: 20, pop: 0, income: 0, type: 'single' },
+            { id: 'water', name: 'Water', sym: '💧', cost: 10, pop: 0, income: 0, type: 'single' },
+            { id: 'road', name: 'Road', sym: '🛣️', cost: 50, pop: 0, income: 0, type: 'single' },
+            { id: 'bridge', name: 'Bridge', sym: '🌉', cost: 200, pop: 0, income: 0, type: 'single' },
+            { id: 'interchange', name: 'Interchange', sym: '🛣️', cost: 20000, pop: 0, income: 0, type: 'macro' },
+            { id: 'track', name: 'Rail Track', sym: '🛤️', cost: 100, pop: 0, income: 0, type: 'single' },
+            { id: 'station', name: 'Train Stn', sym: '🚉', cost: 1500, pop: 5, income: 100, type: 'single' },
+            { id: 'bus_stn', name: 'Bus Depot', sym: '🚌', cost: 800, pop: 5, income: 50, type: 'single' },
+            { id: 'house', name: 'House', sym: '🏠', cost: 500, pop: 12, income: 0, type: 'single' },
+            { id: 'apart', name: 'Apartments', sym: '🏢', cost: 1500, pop: 45, income: 0, type: 'single' },
+            { id: 'sky', name: 'Skyscraper', sym: '🏙️', cost: 5000, pop: 250, income: 0, type: 'single' },
+            { id: 'res_zone', name: 'Res Zone', sym: '🟩', cost: 10000, pop: 0, income: 0, type: 'macro' }, 
+            { id: 'ind_zone', name: 'Ind Zone', sym: '🟧', cost: 8000, pop: 0, income: 0, type: 'macro' }, 
+            { id: 'office', name: 'Office(3D)', sym: '💼', cost: 3500, pop: 100, income: 300, type: 'single' }, 
+            { id: 'shop', name: 'Market', sym: '🏪', cost: 1000, pop: 5, income: 150, type: 'single' },
+            { id: 'bank', name: 'Bank', sym: '💰', cost: 5000, pop: 20, income: 500, type: 'single' },
+            { id: 'factory', name: 'Factory', sym: '🏭', cost: 2500, pop: -10, income: 400, type: 'single' },
+            { id: 'farm', name: 'Farm', sym: '🌾', cost: 800, pop: 0, income: 250, type: 'single' },
+            { id: 'park', name: 'Park', sym: '🌲', cost: 200, pop: 5, income: 0, type: 'single' },
+            { id: 'school', name: 'School', sym: '🏫', cost: 2500, pop: 30, income: 0, type: 'single' },
+            { id: 'hospital', name: 'Hospital', sym: '🏥', cost: 3000, pop: 20, income: 0, type: 'single' },
+            { id: 'police', name: 'Police', sym: '🚓', cost: 2000, pop: 10, income: 0, type: 'single' },
+            { id: 'court', name: 'Court', sym: '🏛️', cost: 4000, pop: 10, income: 0, type: 'single' },
+            { id: 'prison', name: 'Prison', sym: '⛓️', cost: 3000, pop: -50, income: 0, type: 'single' },
+            { id: 'theatre', name: 'Theatre', sym: '🎬', cost: 3000, pop: 25, income: 400, type: 'single' },
+            { id: 'amuse', name: 'Theme Park', sym: '🎡', cost: 6000, pop: 50, income: 800, type: 'single' },
+            { id: 'airport', name: 'Airport', sym: '✈️', cost: 15000, pop: 100, income: 1000, type: 'macro' },
+            { id: 'port', name: 'Seaport', sym: '🚢', cost: 10000, pop: 50, income: 800, type: 'macro' }
+        ];
+
+        // --- THREE.JS GLOBALS ---
+        let scene, camera, renderer;
+        let buildCursor;
+        let grid = new Map(); 
+        let vehicles = []; 
+        let animatables = []; 
+        
+        let raycaster = new THREE.Raycaster();
+        let mouse = new THREE.Vector2();
+        let isDragging = false;
+        let isPlacing = false; // For dragging to build
+        let previousMousePosition = { x: 0, y: 0 };
+        
+        let clock = new THREE.Clock();
+        let incomeTimer = 0;
+
+        const Colors = {
+            bg: 0x87CEEB, ground: 0x86EFAC, grid: 0x4ADE80, water: 0x38BDF8,
+            asphalt: 0x475569, roadLines: 0xFCD34D, trackWood: 0x78350F, trackIron: 0x94A3B8,
+            parkGrass: 0x22C55E, treeTrunk: 0x78350F, treeLeaves: [0x166534, 0x15803D],
+            residential: [0xFEF3C7, 0xFEE2E2, 0xE0F2FE], roof: 0x991B1B,
+            commercial: 0x38BDF8, factory: 0x64748B, farmDirt: 0x5D4037, farmCrop: 0x4CAF50,
+            police: 0x1E3A8A, hospital: 0xF8FAFC, school: 0xF59E0B, theatre: 0x9D174D,
+            prison: 0x9CA3B8, bank: 0xFCD34D, court: 0xF8FAFC,
+            carBody: [0xEF4444, 0x3B82F6, 0x10B981, 0xF59E0B, 0x111111, 0xFFFFFF]
+        };
+
+        // --- ASSET LOADING ---
+        const LoadedModels = {};
+        let loadedCount = 0;
+        const modelUrls = [
+            { name: 'office', url: 'https://res.cloudinary.com/ds93qby5a/image/upload/v1778069019/low_poly_building_zj6v0u.glb', type: 'gltf' }
+        ];
+
+        // --- PROCEDURAL TEXTURES ---
+        function createBuildingTexture(baseColorHex, winColorHex, windowDensity = 0.5) {
+            const canvas = document.createElement('canvas'); 
+            canvas.width = 128; canvas.height = 128; 
+            const ctx = canvas.getContext('2d');
+            ctx.fillStyle = baseColorHex; ctx.fillRect(0, 0, 128, 128); 
+            ctx.fillStyle = winColorHex;
+            for(let y=10; y<120; y+=20) {
+                for(let x=10; x<120; x+=20) { 
+                    if(Math.random() < windowDensity) ctx.fillRect(x, y, 12, 12); 
+                }
+            }
+            const tex = new THREE.CanvasTexture(canvas); 
+            tex.magFilter = THREE.NearestFilter; 
+            return tex;
+        }
+
+        const Textures = {
+            apart: createBuildingTexture('#94A3B8', '#FEF08A', 0.6),
+            sky1: createBuildingTexture('#38BDF8', '#FFFFFF', 0.8),
+            sky2: createBuildingTexture('#6366F1', '#E0E7FF', 0.7),
+            factory: createBuildingTexture('#475569', '#FDE047', 0.2),
+            shop: createBuildingTexture('#FCA5A5', '#FEF9C3', 0.4),
+            hospital: createBuildingTexture('#F8FAFC', '#93C5FD', 0.6),
+            police: createBuildingTexture('#1E3A8A', '#FEF08A', 0.5),
+            school: createBuildingTexture('#F59E0B', '#FFFFFF', 0.7),
+            bank: createBuildingTexture('#FCD34D', '#10B981', 0.4)
+        };
+
+        window.onload = init;
+
+        function init() {
+            scene = new THREE.Scene();
+            scene.background = new THREE.Color(Colors.bg);
+            
+            const aspect = window.innerWidth / window.innerHeight;
+            const d = 150; 
+            camera = new THREE.OrthographicCamera(-d * aspect, d * aspect, d, -d, 1, 2000);
+            camera.position.set(300, 300, 300); 
+            camera.lookAt(0, 0, 0);
+
+            renderer = new THREE.WebGLRenderer({ canvas: document.getElementById('game-canvas'), antialias: true });
+            renderer.setSize(window.innerWidth, window.innerHeight);
+            renderer.shadowMap.enabled = true;
+            renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+
+            const hemiLight = new THREE.HemisphereLight(0xffffff, 0xffffff, 0.6); scene.add(hemiLight);
+            const sunLight = new THREE.DirectionalLight(0xffffff, 0.8);
+            sunLight.position.set(200, 300, 150); sunLight.castShadow = true;
+            sunLight.shadow.mapSize.width = 4096; sunLight.shadow.mapSize.height = 4096;
+            sunLight.shadow.camera.left = -400; sunLight.shadow.camera.right = 400;
+            sunLight.shadow.camera.top = 400; sunLight.shadow.camera.bottom = -400;
+            scene.add(sunLight);
+
+            // Load Custom Model
+            const loader = new THREE.GLTFLoader();
+            modelUrls.forEach(m => {
+                loader.load(m.url, (gltf) => { 
+                    LoadedModels[m.name] = gltf; checkLoadProgress(); 
+                }, undefined, (err) => { 
+                    console.error("Failed to load", m.name, err);
+                    LoadedModels[m.name] = { isFallback: true }; checkLoadProgress(); 
+                });
+            });
+
+            // Timeout fallback
+            setTimeout(checkLoadProgress, 5000);
+
+            window.addEventListener('resize', onWindowResize, false);
+            const canvas = document.getElementById('game-canvas');
+            canvas.addEventListener('mousemove', onMouseMove);
+            canvas.addEventListener('mousedown', onMouseDown);
+            canvas.addEventListener('mouseup', onMouseUp);
+            canvas.addEventListener('wheel', onMouseWheel);
+            canvas.addEventListener('contextmenu', e => e.preventDefault());
+            
+            document.getElementById('btn-play').addEventListener('click', () => {
+                document.getElementById('start-menu').style.display = 'none';
+            });
+        }
+
+        function checkLoadProgress() {
+            if(loadedCount >= modelUrls.length) return; 
+            loadedCount++;
+            document.getElementById('loading-bar').style.width = `${(loadedCount / modelUrls.length) * 100}%`;
+            
+            if (loadedCount >= modelUrls.length) {
+                document.getElementById('loading-ui').style.display = 'none';
+                document.getElementById('btn-play').style.display = 'block';
+                
+                buildUI();
+                buildBaseWorld();
+
+                buildCursor = new THREE.Mesh(
+                    new THREE.BoxGeometry(CELL_SIZE, 0.5, CELL_SIZE),
+                    new THREE.MeshBasicMaterial({ color: 0x3B82F6, transparent: true, opacity: 0.6 })
+                );
+                scene.add(buildCursor);
+
+                // Initial Placement
+                placeSingle(0, 0, TOOLS.find(t=>t.id==='road'), true);
+                placeSingle(10, 0, TOOLS.find(t=>t.id==='house'), true);
+
+                animate();
+            }
+        }
+
+        // --- UI & LOAN LOGIC ---
+
+        function buildUI() {
+            const tb = document.getElementById('toolbar');
+            TOOLS.forEach(tool => {
+                const btn = document.createElement('div');
+                btn.className = `tool-btn ${State.activeTool === tool.id ? 'active' : ''}`;
+                btn.onclick = () => selectTool(tool.id);
+                btn.id = `tool-${tool.id}`; 
+                
+                const sym = document.createElement('span'); sym.className = 'tool-sym'; sym.innerText = tool.sym;
+                const name = document.createElement('span'); name.className = 'tool-name'; name.innerText = tool.name;
+                const cost = document.createElement('span'); cost.className = 'tool-cost'; cost.innerText = `$${tool.cost}`;
+                
+                btn.appendChild(sym); btn.appendChild(name); btn.appendChild(cost);
+                tb.appendChild(btn);
+            });
+            updateStats();
+        }
+
+        function selectTool(id) {
+            State.activeTool = id;
+            document.querySelectorAll('.tool-btn').forEach(btn => btn.classList.remove('active'));
+            document.getElementById(`tool-${id}`).classList.add('active');
+            
+            const toolInfo = TOOLS.find(t=>t.id===id);
+            if (id === 'clear') buildCursor.material.color.setHex(0xEF4444); 
+            else if (toolInfo.type === 'macro') buildCursor.material.color.setHex(0xA855F7); // Purple for large
+            else if (['water'].includes(id)) buildCursor.material.color.setHex(0x38BDF8);
+            else buildCursor.material.color.setHex(0x3B82F6); 
+
+            // Scale cursor for macros to show area
+            if (toolInfo.type === 'macro') {
+                let size = 5; // Default 5x5
+                if(id === 'port') size = 3;
+                if(id === 'airport') size = 7;
+                buildCursor.scale.set(size, 1, size);
+            } else {
+                buildCursor.scale.set(1, 1, 1);
+            }
+        }
+
+        function updateStats() {
+            document.getElementById('funds-val').innerText = `$${Math.floor(State.funds).toLocaleString()}`;
+            document.getElementById('pop-val').innerText = State.population.toLocaleString();
+            document.getElementById('income-val').innerText = `+$${State.income}/cycle`;
+            
+            const debtEl = document.getElementById('debt-val');
+            if(State.loanDebt > 0) {
+                debtEl.style.display = 'block';
+                debtEl.innerText = `DEBT: $${Math.floor(State.loanDebt).toLocaleString()}`;
+            } else {
+                debtEl.style.display = 'none';
+            }
+        }
+
+        function openLoanModal() { document.getElementById('loan-modal').style.display = 'flex'; }
+        function closeLoanModal() { 
+            document.getElementById('loan-modal').style.display = 'none'; 
+            document.getElementById('loan-amt').value = '';
+            document.getElementById('loan-code').value = '';
+        }
+
+        function takeLoan() {
+            let amt = parseInt(document.getElementById('loan-amt').value);
+            let code = document.getElementById('loan-code').value.trim().toUpperCase();
+            
+            if(isNaN(amt) || amt <= 0) { alert("Enter a valid amount"); return; }
+            
+            State.funds += amt;
+            if(code !== 'SHREE') {
+                State.loanDebt += amt;
+                State.loanPayment = Math.max(100, Math.ceil(amt * 0.05)); // 5% minimum 100
+            } else {
+                alert("CODE SHREE ACCEPTED: FREE FUNDS ADDED!");
+            }
+            
+            updateStats();
+            closeLoanModal();
+        }
+
+        function triggerIncomePop() {
+            let net = State.income;
+            if (State.loanDebt > 0) {
+                let pay = Math.min(State.loanDebt, State.loanPayment);
+                State.loanDebt -= pay;
+                net -= pay;
+            }
+
+            State.funds += net; 
+            updateStats();
+
+            if (net !== 0) {
+                const pop = document.createElement('div'); pop.className = 'income-pop'; 
+                pop.innerText = net > 0 ? `+$${net}` : `-$${Math.abs(net)}`;
+                pop.style.color = net > 0 ? '#4ADE80' : '#EF4444';
+                pop.style.left = '50%'; pop.style.top = '100px'; document.body.appendChild(pop);
+                setTimeout(() => pop.remove(), 2000);
+            }
+        }
+
+        function buildBaseWorld() {
+            const ground = new THREE.Mesh(new THREE.PlaneGeometry(2000, 2000), new THREE.MeshLambertMaterial({ color: Colors.ground }));
+            ground.rotation.x = -Math.PI / 2; ground.receiveShadow = true; scene.add(ground);
+
+            const gridHelper = new THREE.GridHelper(2000, 200, Colors.grid, Colors.grid);
+            gridHelper.position.y = 0.05; gridHelper.material.opacity = 0.5; gridHelper.material.transparent = true;
+            scene.add(gridHelper);
+        }
+
+        // --- BUILDING LOGIC ---
+
+        function executeTool(rx, rz) {
+            const tool = TOOLS.find(t => t.id === State.activeTool);
+            if (!tool) return;
+
+            if (tool.type === 'macro') {
+                if (State.funds < tool.cost) return;
+                State.funds -= tool.cost; // Pay once for macro
+                
+                if (tool.id === 'res_zone' || tool.id === 'ind_zone') {
+                    for(let x=-2; x<=2; x++) {
+                        for(let z=-2; z<=2; z++) {
+                            let dist = Math.max(Math.abs(x), Math.abs(z));
+                            let subId = 'house';
+                            if (tool.id === 'res_zone') subId = dist === 0 ? 'sky' : (dist === 1 ? 'apart' : 'house');
+                            if (tool.id === 'ind_zone') subId = dist === 0 ? 'factory' : (dist === 1 ? 'factory' : 'shop');
+                            placeSingle(rx + x*CELL_SIZE, rz + z*CELL_SIZE, TOOLS.find(t=>t.id===subId), true);
+                        }
+                    }
+                }
+                else if (tool.id === 'interchange') {
+                    for(let x=-2; x<=2; x++) {
+                        for(let z=-2; z<=2; z++) {
+                            let subId = 'road';
+                            if (x===0 || z===0) subId = 'bridge';
+                            if (x===0 && z===0) subId = 'bridge'; // center
+                            if (Math.abs(x)===2 && Math.abs(z)===2) subId = 'road'; // corners
+                            placeSingle(rx + x*CELL_SIZE, rz + z*CELL_SIZE, TOOLS.find(t=>t.id===subId), true);
+                        }
+                    }
+                }
+                else if (tool.id === 'airport') {
+                    // 7x7 grid
+                    for(let x=-3; x<=3; x++) {
+                        for(let z=-3; z<=3; z++) {
+                            if (x === -2 || x === 0 || x === 2) placeSingle(rx + x*CELL_SIZE, rz + z*CELL_SIZE, TOOLS.find(t=>t.id==='road'), true);
+                            else placeSingle(rx + x*CELL_SIZE, rz + z*CELL_SIZE, TOOLS.find(t=>t.id==='water'), true); // Clear space
+                        }
+                    }
+                    // Add large visual mesh over it
+                    const ap = generateLargeMesh('airport'); ap.position.set(rx, 0, rz); scene.add(ap);
+                    grid.set(`macro_${rx},${rz}`, { mesh: ap, pop: tool.pop, income: tool.income });
+                }
+                else if (tool.id === 'port') {
+                    for(let x=-1; x<=1; x++) {
+                        for(let z=-1; z<=1; z++) {
+                            placeSingle(rx + x*CELL_SIZE, rz + z*CELL_SIZE, TOOLS.find(t=>t.id==='water'), true);
+                        }
+                    }
+                    const pt = generateLargeMesh('port'); pt.position.set(rx, 0, rz); scene.add(pt);
+                    grid.set(`macro_${rx},${rz}`, { mesh: pt, pop: tool.pop, income: tool.income });
+                }
+                
+                State.population += tool.pop;
+                State.income += tool.income;
+                updateStats();
+            } else {
+                placeSingle(rx, rz, tool, false);
+            }
+        }
+
+        function placeSingle(rx, rz, tool, free = false) {
+            const key = `${rx},${rz}`;
+            const existing = grid.get(key);
+
+            // Auto-Bridge Logic!
+            if (tool.id === 'road' && existing && existing.type === 'water') {
+                tool = TOOLS.find(t=>t.id === 'bridge');
+            }
+
+            if (tool.id === 'clear') {
+                if (!existing) return;
+                scene.remove(existing.mesh); grid.delete(key);
+                State.population -= existing.pop; State.income -= existing.income;
+                if (!free) State.funds -= tool.cost;
+                animatables = animatables.filter(a => a.parent !== existing.mesh && a !== existing.mesh);
+                updateStats(); return;
+            }
+
+            // Allowed overwrites (road over water handled above)
+            if (existing && !(existing.type === 'water' && tool.id === 'bridge')) return;
+
+            if (!free && State.funds < tool.cost) return;
+
+            if (!free) State.funds -= tool.cost;
+            State.population += tool.pop; State.income += tool.income || 0;
+            updateStats();
+
+            // Clear water if placing bridge
+            if (existing && existing.type === 'water') {
+                scene.remove(existing.mesh); grid.delete(key);
+            }
+
+            const mesh = generateMeshForTool(tool.id);
+            mesh.position.set(rx, 0, rz);
+            scene.add(mesh);
+
+            grid.set(key, { type: tool.id, mesh: mesh, pop: tool.pop, income: tool.income || 0 });
+
+            // Spawners
+            if (tool.id === 'road' && Math.random() < 0.3) spawnVehicle('car', rx, rz);
+            if (tool.id === 'bus_stn' && Math.random() < 0.8) spawnVehicle('bus', rx, rz);
+            if (tool.id === 'station' && Math.random() < 0.8) spawnVehicle('train', rx, rz);
+        }
+
+        function generateLargeMesh(type) {
+            const grp = new THREE.Group();
+            if (type === 'airport') {
+                const runway = new THREE.Mesh(new THREE.BoxGeometry(CELL_SIZE*7, 0.3, CELL_SIZE*3), new THREE.MeshLambertMaterial({color: 0x333333}));
+                runway.position.set(0, 0.15, 0); grp.add(runway);
+                const term = new THREE.Mesh(new THREE.BoxGeometry(CELL_SIZE*5, 10, CELL_SIZE*2), new THREE.MeshLambertMaterial({color: 0xFFFFFF}));
+                term.position.set(0, 5, CELL_SIZE*2); grp.add(term);
+                // Mini planes
+                for(let i=-2; i<=2; i+=2) {
+                    const plane = new THREE.Mesh(new THREE.BoxGeometry(4, 2, 8), new THREE.MeshLambertMaterial({color: 0xE0F2FE}));
+                    plane.position.set(i*CELL_SIZE, 1.5, 0); grp.add(plane);
+                }
+            } else if (type === 'port') {
+                const dock = new THREE.Mesh(new THREE.BoxGeometry(CELL_SIZE*3, 1, CELL_SIZE), new THREE.MeshLambertMaterial({color: 0x555555}));
+                dock.position.set(0, 0.5, CELL_SIZE); grp.add(dock);
+                // Cranes
+                const craneMat = new THREE.MeshLambertMaterial({color: 0xF59E0B});
+                const c1 = new THREE.Mesh(new THREE.CylinderGeometry(0.5, 0.5, 15), craneMat); c1.position.set(-CELL_SIZE, 7.5, CELL_SIZE); grp.add(c1);
+                const c2 = new THREE.Mesh(new THREE.BoxGeometry(10, 1, 1), craneMat); c2.position.set(-CELL_SIZE, 14, CELL_SIZE-3); grp.add(c2);
+                // Ship
+                const ship = new THREE.Mesh(new THREE.BoxGeometry(CELL_SIZE*2.5, 4, CELL_SIZE*1.5), new THREE.MeshLambertMaterial({color: 0x991B1B}));
+                ship.position.set(0, 2, -CELL_SIZE/2); grp.add(ship);
+            }
+            return grp;
+        }
+
+        function generateMeshForTool(id) {
+            const grp = new THREE.Group();
+            
+            if (id === 'water') {
+                const water = new THREE.Mesh(new THREE.BoxGeometry(CELL_SIZE, 0.4, CELL_SIZE), new THREE.MeshLambertMaterial({ color: Colors.water }));
+                water.position.y = 0.2; grp.add(water);
+            }
+            else if (id === 'road') {
+                const road = new THREE.Mesh(new THREE.BoxGeometry(CELL_SIZE, 0.2, CELL_SIZE), new THREE.MeshLambertMaterial({ color: Colors.asphalt }));
+                road.position.y = 0.1; road.receiveShadow = true; grp.add(road);
+                // Intersecting visual lines makes it look like a seamless grid/curve connector
+                const l1 = new THREE.Mesh(new THREE.BoxGeometry(1, 0.25, 4), new THREE.MeshBasicMaterial({ color: Colors.roadLines })); l1.position.y = 0.12; grp.add(l1);
+                const l2 = new THREE.Mesh(new THREE.BoxGeometry(4, 0.25, 1), new THREE.MeshBasicMaterial({ color: Colors.roadLines })); l2.position.y = 0.12; grp.add(l2);
+            } 
+            else if (id === 'bridge') {
+                const road = new THREE.Mesh(new THREE.BoxGeometry(CELL_SIZE, 0.5, CELL_SIZE), new THREE.MeshLambertMaterial({ color: Colors.asphalt }));
+                road.position.y = 4.5; road.receiveShadow = true; road.castShadow = true; grp.add(road);
+                const p1 = new THREE.Mesh(new THREE.CylinderGeometry(0.5, 0.5, 4.5, 8), new THREE.MeshLambertMaterial({color: 0x9CA3AF})); p1.position.set(-3, 2.25, 3); grp.add(p1);
+                const p2 = new THREE.Mesh(new THREE.CylinderGeometry(0.5, 0.5, 4.5, 8), new THREE.MeshLambertMaterial({color: 0x9CA3AF})); p2.position.set(3, 2.25, -3); grp.add(p2);
+                const line = new THREE.Mesh(new THREE.BoxGeometry(1, 0.25, 4), new THREE.MeshBasicMaterial({ color: Colors.roadLines })); line.position.y = 4.76; grp.add(line);
+            }
+            else if (id === 'track') {
+                const base = new THREE.Mesh(new THREE.BoxGeometry(CELL_SIZE, 0.2, CELL_SIZE), new THREE.MeshLambertMaterial({ color: 0x555555 })); base.position.y = 0.1; grp.add(base);
+                const rail1 = new THREE.Mesh(new THREE.BoxGeometry(0.4, 0.3, CELL_SIZE), new THREE.MeshLambertMaterial({color: Colors.trackIron})); rail1.position.set(-2, 0.15, 0); grp.add(rail1);
+                const rail2 = new THREE.Mesh(new THREE.BoxGeometry(0.4, 0.3, CELL_SIZE), new THREE.MeshLambertMaterial({color: Colors.trackIron})); rail2.position.set(2, 0.15, 0); grp.add(rail2);
+                for(let i=-4; i<=4; i+=2) {
+                    const sleep = new THREE.Mesh(new THREE.BoxGeometry(6, 0.25, 0.5), new THREE.MeshLambertMaterial({color: Colors.trackWood})); sleep.position.set(0, 0.12, i); grp.add(sleep);
+                }
+            }
+            else if (id === 'station') {
+                const plat = new THREE.Mesh(new THREE.BoxGeometry(CELL_SIZE, 1, CELL_SIZE), new THREE.MeshLambertMaterial({color: 0x9CA3AF})); plat.position.y = 0.5; grp.add(plat);
+                const roof = new THREE.Mesh(new THREE.BoxGeometry(CELL_SIZE-1, 0.5, CELL_SIZE-4), new THREE.MeshLambertMaterial({color: 0xEF4444})); roof.position.set(0, 4, -1); grp.add(roof);
+            }
+            else if (id === 'bus_stn') {
+                const plat = new THREE.Mesh(new THREE.BoxGeometry(CELL_SIZE, 0.2, CELL_SIZE), new THREE.MeshLambertMaterial({color: Colors.asphalt})); plat.position.y = 0.1; grp.add(plat);
+                const build = new THREE.Mesh(new THREE.BoxGeometry(4, 3, 6), new THREE.MeshLambertMaterial({color: 0x38BDF8})); build.position.set(-2, 1.5, 0); grp.add(build);
+            }
+            else if (id === 'house') {
+                const count = Math.random() > 0.5 ? 2 : 1;
+                for(let i=0; i<count; i++) {
+                    const hGrp = new THREE.Group();
+                    const mat = new THREE.MeshLambertMaterial({ color: Colors.residential[Math.floor(Math.random()*Colors.residential.length)] });
+                    const bw = 3 + Math.random()*2; const bd = 3 + Math.random()*2;
+                    const base = new THREE.Mesh(new THREE.BoxGeometry(bw, 4, bd), mat); base.position.y = 2; base.castShadow = true; hGrp.add(base);
+                    const roof = new THREE.Mesh(new THREE.ConeGeometry(bw*0.8, 2.5, 4), new THREE.MeshLambertMaterial({ color: Colors.roof }));
+                    roof.position.y = 5.25; roof.rotation.y = Math.PI/4; roof.castShadow = true; hGrp.add(roof);
+                    hGrp.position.set((Math.random()-0.5)*3, 0, (Math.random()-0.5)*3); grp.add(hGrp);
+                }
+                const yard = new THREE.Mesh(new THREE.BoxGeometry(CELL_SIZE-0.5, 0.1, CELL_SIZE-0.5), new THREE.MeshLambertMaterial({ color: Colors.parkGrass })); yard.position.y = 0.05; grp.add(yard);
+            }
+            else if (id === 'apart') {
+                const mat = new THREE.MeshLambertMaterial({ map: Textures.apart });
+                const base = new THREE.Mesh(new THREE.BoxGeometry(CELL_SIZE-1, 15, CELL_SIZE-1), mat); base.position.y = 7.5; base.castShadow = true; grp.add(base);
+            }
+            else if (id === 'sky') {
+                const h1 = 20 + Math.random() * 20; const h2 = 15 + Math.random() * 20; const h3 = 10 + Math.random() * 15;
+                const mat = new THREE.MeshLambertMaterial({ map: Math.random() > 0.5 ? Textures.sky1 : Textures.sky2 });
+                const t1 = new THREE.Mesh(new THREE.BoxGeometry(CELL_SIZE-1, h1, CELL_SIZE-1), mat); t1.position.y = h1/2; t1.castShadow = true; grp.add(t1);
+                const t2 = new THREE.Mesh(new THREE.BoxGeometry(CELL_SIZE-3, h2, CELL_SIZE-3), mat); t2.position.y = h1 + h2/2; t2.castShadow = true; grp.add(t2);
+                const t3 = new THREE.Mesh(new THREE.BoxGeometry(CELL_SIZE-5, h3, CELL_SIZE-5), mat); t3.position.y = h1 + h2 + h3/2; t3.castShadow = true; grp.add(t3);
+                const ant = new THREE.Mesh(new THREE.CylinderGeometry(0.1, 0.1, 12), new THREE.MeshLambertMaterial({color: 0xffffff})); ant.position.y = h1 + h2 + h3 + 6; grp.add(ant);
+            }
+            else if (id === 'office') {
+                const modelData = LoadedModels['office'];
+                if(modelData && modelData.scene && !modelData.isFallback) {
+                    const mesh = THREE.SkeletonUtils.clone(modelData.scene);
+                    const box = new THREE.Box3().setFromObject(mesh);
+                    const size = box.getSize(new THREE.Vector3());
+                    const scale = (CELL_SIZE - 1) / Math.max(size.x, size.z);
+                    mesh.scale.setScalar(scale);
+                    
+                    mesh.scale.y *= (0.6 + Math.random() * 1.5);
+                    const colors = [0xFFFFFF, 0x93C5FD, 0xFDE047, 0xCBD5E1, 0xA78BFA];
+                    const tint = colors[Math.floor(Math.random() * colors.length)];
+                    mesh.traverse(c => {
+                        if(c.isMesh) {
+                            c.castShadow = true; c.receiveShadow = true;
+                            if(c.material) {
+                                c.material = c.material.clone(); c.material.color.setHex(tint);
+                            }
+                        }
+                    });
+                    
+                    box.setFromObject(mesh); const center = box.getCenter(new THREE.Vector3());
+                    mesh.position.sub(center); mesh.position.y += box.getSize(new THREE.Vector3()).y / 2;
+                    grp.add(mesh);
+                } else {
+                    const base = new THREE.Mesh(new THREE.BoxGeometry(CELL_SIZE-1, 20, CELL_SIZE-1), new THREE.MeshLambertMaterial({color: 0x94A3B8}));
+                    base.position.y = 10; grp.add(base);
+                }
+            }
+            else if (id === 'bank') {
+                const base = new THREE.Mesh(new THREE.BoxGeometry(CELL_SIZE-1, 25, CELL_SIZE-1), new THREE.MeshLambertMaterial({map: Textures.bank})); base.position.y = 12.5; base.castShadow = true; grp.add(base);
+                const sign = new THREE.Mesh(new THREE.BoxGeometry(4, 4, 1), new THREE.MeshLambertMaterial({color: 0x10B981})); sign.position.set(0, 26, 4.5); grp.add(sign);
+            }
+            else if (id === 'court') {
+                const base = new THREE.Mesh(new THREE.BoxGeometry(CELL_SIZE-1, 10, CELL_SIZE-3), new THREE.MeshLambertMaterial({color: Colors.court})); base.position.set(0, 5, -1); base.castShadow = true; grp.add(base);
+                const roof = new THREE.Mesh(new THREE.ConeGeometry(CELL_SIZE-1, 4, 4), new THREE.MeshLambertMaterial({color: 0xCBD5E1})); roof.position.set(0, 12, 0); roof.rotation.y = Math.PI/4; grp.add(roof);
+                for(let x=-3; x<=3; x+=2) { const p = new THREE.Mesh(new THREE.CylinderGeometry(0.4, 0.4, 10), new THREE.MeshLambertMaterial({color: Colors.court})); p.position.set(x, 5, 3); grp.add(p); }
+            }
+            else if (id === 'prison') {
+                const base = new THREE.Mesh(new THREE.BoxGeometry(CELL_SIZE-1, 6, CELL_SIZE-1), new THREE.MeshLambertMaterial({color: Colors.prison})); base.position.y = 3; base.castShadow = true; grp.add(base);
+                const wall = new THREE.Mesh(new THREE.BoxGeometry(CELL_SIZE, 3, CELL_SIZE), new THREE.MeshBasicMaterial({color: 0x64748B, wireframe: true})); wall.position.y = 1.5; grp.add(wall);
+                [[-4,-4], [4,-4], [-4,4], [4,4]].forEach(p => {
+                    const t = new THREE.Mesh(new THREE.CylinderGeometry(0.8, 0.8, 10), new THREE.MeshLambertMaterial({color: 0x475569})); t.position.set(p[0], 5, p[1]); grp.add(t);
+                });
+            }
+            else if (id === 'shop') {
+                const mat = new THREE.MeshLambertMaterial({ map: Textures.shop });
+                const base = new THREE.Mesh(new THREE.BoxGeometry(CELL_SIZE-1, 6, CELL_SIZE-1), mat); base.position.y = 3; base.castShadow = true; grp.add(base);
+            }
+            else if (id === 'factory') {
+                const base = new THREE.Mesh(new THREE.BoxGeometry(CELL_SIZE-1, 8, CELL_SIZE-1), new THREE.MeshLambertMaterial({ map: Textures.factory })); base.position.y = 4; base.castShadow = true; grp.add(base);
+                const stackGeo = new THREE.CylinderGeometry(0.8, 1.2, 10, 8); const stackMat = new THREE.MeshLambertMaterial({color: 0x333333});
+                const s1 = new THREE.Mesh(stackGeo, stackMat); s1.position.set(-2, 10, 0); s1.castShadow=true; grp.add(s1);
+                const s2 = new THREE.Mesh(stackGeo, stackMat); s2.position.set(2, 10, 0); s2.castShadow=true; grp.add(s2);
+            }
+            else if (id === 'farm') {
+                const soil = new THREE.Mesh(new THREE.BoxGeometry(CELL_SIZE, 0.2, CELL_SIZE), new THREE.MeshLambertMaterial({ color: Colors.farmDirt })); soil.position.y = 0.1; grp.add(soil);
+                const cropGeo = new THREE.BoxGeometry(CELL_SIZE-1, 0.5, 1); const cropMat = new THREE.MeshLambertMaterial({color: Colors.farmCrop});
+                for(let i=-3; i<=3; i+=3) { const c = new THREE.Mesh(cropGeo, cropMat); c.position.set(0, 0.35, i); grp.add(c); }
+            }
+            else if (id === 'park') {
+                const grass = new THREE.Mesh(new THREE.BoxGeometry(CELL_SIZE, 0.15, CELL_SIZE), new THREE.MeshLambertMaterial({ color: Colors.parkGrass })); grass.position.y = 0.075; grp.add(grass);
+                const trees = 2 + Math.floor(Math.random()*3);
+                for(let i=0; i<trees; i++) {
+                    const t = new THREE.Group();
+                    const tr = new THREE.Mesh(new THREE.CylinderGeometry(0.3, 0.4, 3), new THREE.MeshLambertMaterial({color: Colors.treeTrunk})); tr.position.y = 1.5; tr.castShadow = true; t.add(tr);
+                    const lv = new THREE.Mesh(new THREE.DodecahedronGeometry(2, 0), new THREE.MeshLambertMaterial({color: Colors.treeLeaves[Math.floor(Math.random()*2)], flatShading: true})); lv.position.y = 3.5; lv.castShadow = true; t.add(lv);
+                    t.position.set((Math.random()-0.5)*5, 0, (Math.random()-0.5)*5); grp.add(t);
+                }
+            }
+            else if (id === 'school') {
+                const base = new THREE.Mesh(new THREE.BoxGeometry(CELL_SIZE-1, 8, CELL_SIZE/2), new THREE.MeshLambertMaterial({map: Textures.school})); base.position.set(0, 4, -2); base.castShadow = true; grp.add(base);
+                const yard = new THREE.Mesh(new THREE.BoxGeometry(CELL_SIZE-1, 0.2, CELL_SIZE/2), new THREE.MeshLambertMaterial({color: 0x9CA3AF})); yard.position.set(0, 0.1, 2.5); grp.add(yard);
+            }
+            else if (id === 'amuse') {
+                const base = new THREE.Mesh(new THREE.BoxGeometry(CELL_SIZE, 0.5, CELL_SIZE), new THREE.MeshLambertMaterial({color: 0xA78BFA})); base.position.y = 0.25; grp.add(base);
+                const pL = new THREE.Mesh(new THREE.CylinderGeometry(0.2, 0.5, 8), new THREE.MeshLambertMaterial({color: 0xFFFFFF})); pL.position.set(-2, 4, 0); pL.rotation.z = -0.2; grp.add(pL);
+                const pR = new THREE.Mesh(new THREE.CylinderGeometry(0.2, 0.5, 8), new THREE.MeshLambertMaterial({color: 0xFFFFFF})); pR.position.set(2, 4, 0); pR.rotation.z = 0.2; grp.add(pR);
+                
+                const wheelGrp = new THREE.Group();
+                const wheel = new THREE.Mesh(new THREE.TorusGeometry(3.5, 0.2, 8, 16), new THREE.MeshLambertMaterial({color: 0xEF4444}));
+                wheelGrp.add(wheel);
+                for(let i=0; i<8; i++){
+                   const cart = new THREE.Mesh(new THREE.BoxGeometry(1,1,1), new THREE.MeshLambertMaterial({color:0x38BDF8}));
+                   const angle = (i/8)*Math.PI*2;
+                   cart.position.set(Math.cos(angle)*3.5, Math.sin(angle)*3.5, 0);
+                   wheelGrp.add(cart);
+                }
+                wheelGrp.position.y = 8; grp.add(wheelGrp); animatables.push(wheelGrp);
+            }
+            else if (id === 'theatre') {
+                const base = new THREE.Mesh(new THREE.BoxGeometry(CELL_SIZE-1, 8, CELL_SIZE-1), new THREE.MeshLambertMaterial({color: Colors.theatre})); base.position.y = 4; base.castShadow = true; grp.add(base);
+                const marquee = new THREE.Mesh(new THREE.BoxGeometry(8, 2, 2), new THREE.MeshLambertMaterial({color: 0xFDE047})); marquee.position.set(0, 5, 4); grp.add(marquee);
+                const carpet = new THREE.Mesh(new THREE.BoxGeometry(3, 0.2, 4), new THREE.MeshLambertMaterial({color: 0xEF4444})); carpet.position.set(0, 0.1, 4); grp.add(carpet);
+            }
+            else if (id === 'police') {
+                const base = new THREE.Mesh(new THREE.BoxGeometry(CELL_SIZE-1, 10, CELL_SIZE-1), new THREE.MeshLambertMaterial({map: Textures.police})); base.position.y = 5; base.castShadow = true; grp.add(base);
+                const s1 = new THREE.Mesh(new THREE.CylinderGeometry(0.5, 0.5, 0.5, 8), new THREE.MeshLambertMaterial({color: 0xEF4444})); s1.position.set(-2, 10.25, 0); grp.add(s1);
+                const s2 = new THREE.Mesh(new THREE.CylinderGeometry(0.5, 0.5, 0.5, 8), new THREE.MeshLambertMaterial({color: 0x3B82F6})); s2.position.set(2, 10.25, 0); grp.add(s2);
+            }
+            else if (id === 'hospital') {
+                const base = new THREE.Mesh(new THREE.BoxGeometry(CELL_SIZE-1, 12, CELL_SIZE-1), new THREE.MeshLambertMaterial({map: Textures.hospital})); base.position.y = 6; base.castShadow = true; grp.add(base);
+                const crossMat = new THREE.MeshLambertMaterial({color: 0xEF4444});
+                const c1 = new THREE.Mesh(new THREE.BoxGeometry(4, 1.5, 0.5), crossMat); c1.position.set(0, 10, 4.5); grp.add(c1);
+                const c2 = new THREE.Mesh(new THREE.BoxGeometry(1.5, 4, 0.5), crossMat); c2.position.set(0, 10, 4.5); grp.add(c2);
+                
+                const amb = new THREE.Group();
+                const ambBody = new THREE.Mesh(new THREE.BoxGeometry(1.5, 1, 3), new THREE.MeshLambertMaterial({color: 0xffffff})); ambBody.position.y = 0.5; amb.add(ambBody);
+                const redStripe = new THREE.Mesh(new THREE.BoxGeometry(1.55, 0.2, 3.01), new THREE.MeshBasicMaterial({color: 0xff0000})); redStripe.position.y = 0.5; amb.add(redStripe);
+                amb.position.set(3, 0.2, 3); grp.add(amb);
+            }
+
+            return grp;
+        }
+
+        // --- DYNAMIC VEHICLES ---
+
+        function spawnVehicle(type, x, z) {
+            if(vehicles.length > 80) return;
+            const veh = new THREE.Group();
+            
+            if (type === 'car') {
+                const cColor = Colors.carBody[Math.floor(Math.random() * Colors.carBody.length)];
+                const bottom = new THREE.Mesh(new THREE.BoxGeometry(2.5, 1, 4.5), new THREE.MeshLambertMaterial({ color: cColor }));
+                bottom.position.y = 0.5; bottom.castShadow = true; veh.add(bottom);
+                const top = new THREE.Mesh(new THREE.BoxGeometry(2, 0.8, 2.5), new THREE.MeshLambertMaterial({ color: 0x111111 }));
+                top.position.set(0, 1.4, -0.2); top.castShadow = true; veh.add(top);
+                veh.speed = 20 + Math.random()*10;
+            } else if (type === 'bus') {
+                const body = new THREE.Mesh(new THREE.BoxGeometry(3, 2.5, 8), new THREE.MeshLambertMaterial({ color: 0xFBBF24 }));
+                body.position.y = 1.25; body.castShadow = true; veh.add(body);
+                const windows = new THREE.Mesh(new THREE.BoxGeometry(3.1, 1, 7.8), new THREE.MeshLambertMaterial({ color: 0x111111 }));
+                windows.position.y = 1.8; veh.add(windows);
+                veh.speed = 15 + Math.random()*5;
+            } else if (type === 'train') {
+                const matR = new THREE.MeshLambertMaterial({color: 0xEF4444}); const matG = new THREE.MeshLambertMaterial({color: 0x9CA3AF});
+                const engine = new THREE.Mesh(new THREE.BoxGeometry(3, 3, 6), matR); engine.position.set(0, 1.5, 0); veh.add(engine);
+                const c1 = new THREE.Mesh(new THREE.BoxGeometry(3, 3, 6), matG); c1.position.set(0, 1.5, -6.5); veh.add(c1);
+                const c2 = new THREE.Mesh(new THREE.BoxGeometry(3, 3, 6), matG); c2.position.set(0, 1.5, -13); veh.add(c2);
+                veh.speed = 30 + Math.random()*10;
+            }
+
+            veh.position.set(x, 0, z);
+            scene.add(veh);
+            veh.rotation.y = Math.floor(Math.random() * 4) * (Math.PI / 2);
+            vehicles.push({ mesh: veh, speed: veh.speed, type: type });
+        }
+
+        function updateVehicles(delta) {
+            vehicles.forEach(v => {
+                const fwdX = Math.sin(v.mesh.rotation.y);
+                const fwdZ = Math.cos(v.mesh.rotation.y);
+                
+                const nextX = v.mesh.position.x + fwdX * (CELL_SIZE * 0.6);
+                const nextZ = v.mesh.position.z + fwdZ * (CELL_SIZE * 0.6);
+                
+                const rx = Math.round(nextX / CELL_SIZE) * CELL_SIZE;
+                const rz = Math.round(nextZ / CELL_SIZE) * CELL_SIZE;
+                const key = `${rx},${rz}`;
+                const gridObj = grid.get(key);
+
+                let validTiles = ['road', 'bridge'];
+                if(v.type === 'train') validTiles = ['track', 'station'];
+
+                if (gridObj && validTiles.includes(gridObj.type)) {
+                    v.mesh.position.x += fwdX * v.speed * delta;
+                    v.mesh.position.z += fwdZ * v.speed * delta;
+                    v.mesh.position.y = gridObj.type === 'bridge' ? 4.5 : 0;
+                } else {
+                    v.mesh.position.x = Math.round(v.mesh.position.x / CELL_SIZE) * CELL_SIZE;
+                    v.mesh.position.z = Math.round(v.mesh.position.z / CELL_SIZE) * CELL_SIZE;
+                    v.mesh.rotation.y += (Math.random() > 0.5 ? Math.PI/2 : -Math.PI/2);
+                }
+            });
+        }
+
+        // --- CONTROLS ---
+
+        function onMouseDown(event) {
+            if (event.button === 0) { 
+                isPlacing = true;
+                executeTool(buildCursor.position.x, buildCursor.position.z);
+            } else if (event.button === 2) { 
+                isDragging = true;
+                previousMousePosition = { x: event.clientX, y: event.clientY };
+            }
+        }
+        
+        function onMouseUp(event) {
+            if (event.button === 0) isPlacing = false;
+            if (event.button === 2) isDragging = false;
+        }
+
+        function onMouseMove(event) {
+            if (isDragging) {
+                const deltaX = event.clientX - previousMousePosition.x;
+                const deltaY = event.clientY - previousMousePosition.y;
+                camera.position.x -= (deltaX - deltaY) * 0.5;
+                camera.position.z -= (deltaX + deltaY) * 0.5;
+                previousMousePosition = { x: event.clientX, y: event.clientY };
+            }
+
+            mouse.x = (event.clientX / window.innerWidth) * 2 - 1;
+            mouse.y = -(event.clientY / window.innerHeight) * 2 + 1;
+
+            raycaster.setFromCamera(mouse, camera);
+            const plane = new THREE.Plane(new THREE.Vector3(0, 1, 0), 0);
+            const target = new THREE.Vector3();
+            raycaster.ray.intersectPlane(plane, target);
+            
+            if (target && buildCursor) {
+                const rx = Math.round(target.x / CELL_SIZE) * CELL_SIZE;
+                const rz = Math.round(target.z / CELL_SIZE) * CELL_SIZE;
+                
+                if (buildCursor.position.x !== rx || buildCursor.position.z !== rz) {
+                    buildCursor.position.set(rx, 0.26, rz);
+                    if (isPlacing) {
+                        const tool = TOOLS.find(t => t.id === State.activeTool);
+                        if(tool && tool.type !== 'macro') executeTool(rx, rz);
+                    }
+                }
+            }
+        }
+
+        function onMouseWheel(event) {
+            const zoomAmount = event.deltaY * 0.05;
+            camera.zoom = Math.max(0.2, Math.min(3.0, camera.zoom - zoomAmount));
+            camera.updateProjectionMatrix();
+        }
+
+        function onWindowResize() {
+            const aspect = window.innerWidth / window.innerHeight;
+            const d = 150;
+            camera.left = -d * aspect;
+            camera.right = d * aspect;
+            camera.top = d;
+            camera.bottom = -d;
+            camera.updateProjectionMatrix();
+            renderer.setSize(window.innerWidth, window.innerHeight);
+        }
+
+        // --- GAME LOOP ---
+
+        function animate() {
+            requestAnimationFrame(animate);
+            const delta = Math.min(clock.getDelta(), 0.1);
+
+            incomeTimer += delta;
+            if (incomeTimer >= 5.0) { 
+                triggerIncomePop(); incomeTimer = 0;
+            }
+
+            animatables.forEach(a => {
+                if(a.rotation) a.rotation.z += delta * 0.5;
+            });
+
+            updateVehicles(delta);
+
+            renderer.render(scene, camera);
+        }
+
+    </script>
+</body>
+</html>

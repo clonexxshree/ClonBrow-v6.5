@@ -1,0 +1,631 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>X-Ray Density Map Lab</title>
+    <style>
+        :root {
+            --bg-color: #0f172a;
+            --panel-bg: #1e293b;
+            --text-main: #f8fafc;
+            --text-muted: #94a3b8;
+            --accent: #38bdf8; /* X-Ray Cyan */
+            --border-color: #334155;
+            --detector-glow: #10b981;
+            --bone: #f1f5f9;
+            --metal: #94a3b8;
+            --tissue: #fca5a5;
+            --fat: #fef08a;
+            --air: #e2e8f0;
+        }
+
+        * { box-sizing: border-box; margin: 0; padding: 0; }
+
+        body {
+            background-color: #020617;
+            color: var(--text-main);
+            font-family: 'Inter', -apple-system, system-ui, sans-serif;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            padding: 20px;
+        }
+
+        .app-container {
+            display: flex;
+            background: var(--panel-bg);
+            border-radius: 20px;
+            box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.5);
+            width: 100%;
+            max-width: 1200px;
+            height: 800px;
+            overflow: hidden;
+            border: 1px solid var(--border-color);
+        }
+
+        /* Sidebar */
+        .sidebar {
+            width: 400px;
+            padding: 35px;
+            border-right: 1px solid var(--border-color);
+            display: flex;
+            flex-direction: column;
+            gap: 25px;
+            background: #0f172a;
+            z-index: 10;
+        }
+
+        .sidebar h1 { font-size: 24px; font-weight: 800; color: var(--text-main); }
+        
+        .math-box {
+            background: #1e293b;
+            padding: 15px;
+            border-radius: 12px;
+            font-size: 14px;
+            border: 1px solid var(--border-color);
+            line-height: 1.6;
+        }
+
+        .formula {
+            font-family: 'Courier New', Courier, monospace;
+            font-size: 18px;
+            text-align: center;
+            margin: 10px 0;
+            font-weight: bold;
+            color: var(--accent);
+            background: #020617;
+            padding: 10px;
+            border-radius: 8px;
+            border: 1px solid #334155;
+        }
+
+        .control-group { display: flex; flex-direction: column; gap: 10px; }
+        label { font-size: 13px; font-weight: 700; display: flex; justify-content: space-between; align-items: center; color: #cbd5e1;}
+        
+        input[type="range"] {
+            width: 100%;
+            cursor: pointer;
+            accent-color: var(--accent);
+        }
+
+        .material-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 10px;
+        }
+
+        .mat-btn {
+            padding: 10px;
+            background: #334155;
+            color: #f1f5f9;
+            border: 1px solid #475569;
+            border-radius: 8px;
+            font-size: 12px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+
+        .mat-btn:hover { background: #475569; }
+        .mat-btn.active {
+            background: var(--accent);
+            color: #020617;
+            border-color: var(--accent);
+            box-shadow: 0 0 10px rgba(56, 189, 248, 0.4);
+        }
+
+        .status-card {
+            background: #1e293b;
+            padding: 20px;
+            border-radius: 12px;
+            font-size: 13px;
+            line-height: 1.5;
+            color: var(--text-muted);
+            border-left: 4px solid var(--accent);
+            transition: all 0.3s;
+        }
+
+        /* Simulation Area */
+        .lab-area {
+            flex: 1;
+            background: radial-gradient(circle at center, #1e293b, #020617);
+            position: relative;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            overflow: hidden;
+        }
+
+        /* Radiograph Overlay (X-Ray Film Result) */
+        .radiograph-panel {
+            position: absolute;
+            top: 30px;
+            right: 30px;
+            background: #000;
+            padding: 15px;
+            border-radius: 12px;
+            border: 2px solid #334155;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.8);
+            z-index: 20;
+            width: 220px;
+        }
+
+        .radiograph-label {
+            font-size: 10px;
+            text-transform: uppercase;
+            color: #94a3b8;
+            letter-spacing: 1px;
+            margin-bottom: 10px;
+            display: flex;
+            justify-content: space-between;
+        }
+
+        .radiograph-film {
+            width: 100%;
+            height: 120px;
+            background: #000;
+            border-radius: 6px;
+            border: 1px solid #1e293b;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            overflow: hidden;
+            position: relative;
+        }
+
+        .film-exposure {
+            width: 80px;
+            height: 120px;
+            background: #fff;
+            transition: background-color 0.3s;
+            filter: blur(5px);
+        }
+
+        /* Data Readouts */
+        .data-overlay {
+            position: absolute;
+            bottom: 30px;
+            right: 30px;
+            background: rgba(15, 23, 42, 0.8);
+            padding: 20px;
+            border-radius: 12px;
+            backdrop-filter: blur(8px);
+            border: 1px solid #334155;
+            z-index: 10;
+            min-width: 220px;
+        }
+
+        .data-row { margin-bottom: 10px; display: flex; flex-direction: column; }
+        .data-row:last-child { margin-bottom: 0; }
+        .data-label { font-size: 10px; text-transform: uppercase; color: #94a3b8; letter-spacing: 1px; }
+        .data-value { font-size: 24px; font-weight: 800; font-family: monospace; color: var(--text-main); }
+        .data-unit { font-size: 12px; color: #94a3b8; margin-left: 4px; font-family: 'Inter', sans-serif;}
+
+        /* Graphics */
+        .svg-canvas {
+            position: absolute;
+            top: 0; left: 0; width: 100%; height: 100%;
+            z-index: 1;
+            pointer-events: none;
+        }
+
+        #particleCanvas {
+            position: absolute;
+            top: 0; left: 0; width: 100%; height: 100%;
+            z-index: 2;
+            pointer-events: none;
+            mix-blend-mode: screen;
+        }
+
+        .xray-tube { fill: #334155; stroke: #475569; stroke-width: 3; }
+        .detector-plate { fill: #1e293b; stroke: #475569; stroke-width: 4; }
+        .detector-glow { transition: opacity 0.1s; }
+
+        .sample-block {
+            transition: fill 0.3s, stroke 0.3s;
+            stroke-width: 2;
+            stroke: #475569;
+        }
+
+        @media (max-width: 900px) {
+            .app-container { flex-direction: column; height: auto; }
+            .sidebar { width: 100%; border-right: none; }
+            .lab-area { height: 600px; }
+        }
+    </style>
+</head>
+<body>
+
+    <div class="app-container">
+        <aside class="sidebar">
+            <h1>X-Ray Density Lab</h1>
+            <p style="font-size: 13px; color: var(--text-muted);">
+                Understand how material density affects X-ray attenuation. High-density materials block X-rays (causing shadows), while low-density materials let them pass.
+            </p>
+
+            <div class="math-box">
+                <div style="font-size: 11px; color: var(--text-muted); text-transform: uppercase; letter-spacing: 1px;">Beer-Lambert Law (Attenuation)</div>
+                <div class="formula">
+                    I = I₀ · e<sup style="font-size:12px;">-μx</sup>
+                </div>
+                <div style="font-size: 12px; color: var(--text-muted); margin-top: 10px;">
+                    <strong>I</strong> = Transmitted Intensity<br>
+                    <strong>I₀</strong> = Initial X-Ray Intensity<br>
+                    <strong>μ</strong> = Linear Attenuation Coefficient (Density)<br>
+                </div>
+            </div>
+
+            <div class="control-group">
+                <label style="margin-bottom: 5px;">Tissue / Material Sample</label>
+                <div class="material-grid">
+                    <button class="mat-btn active" data-mat="air">Air (Lungs)</button>
+                    <button class="mat-btn" data-mat="fat">Adipose (Fat)</button>
+                    <button class="mat-btn" data-mat="tissue">Soft Tissue</button>
+                    <button class="mat-btn" data-mat="bone">Cortical Bone</button>
+                    <button class="mat-btn" data-mat="metal" style="grid-column: span 2;">Metal (Surgical Implant)</button>
+                </div>
+            </div>
+
+            <div class="control-group" style="margin-top: 15px;">
+                <label>
+                    X-Ray Energy (kVp)
+                    <span id="energyVal" style="color: var(--accent); font-family: monospace; font-size: 14px;">70 kVp</span>
+                </label>
+                <input type="range" id="energySlider" min="40" max="140" step="5" value="70">
+                <span style="font-size: 11px; color: var(--text-muted);">Higher voltage increases photon energy, allowing rays to penetrate denser materials.</span>
+            </div>
+
+            <div class="status-card" id="diagnosticCard">
+                <strong id="diagTitle" style="color: #f8fafc;">Film Exposure: Black (Radiolucent)</strong><br>
+                <span id="diagText">Air has extremely low density. Most X-ray photons pass through and strike the detector, fully exposing the film and turning it black.</span>
+            </div>
+            
+            <div style="margin-top: auto; font-size: 11px; color: var(--text-muted); line-height: 1.4; border-top: 1px solid #334155; padding-top: 15px;">
+                <strong>Counter-Intuitive Fact:</strong> X-ray film starts white! Photons hitting the film cause a chemical reaction that turns it black. Therefore, bones (which block photons) leave a white "shadow" on the film.
+            </div>
+        </aside>
+
+        <main class="lab-area">
+            <!-- Simulated X-Ray Film Preview -->
+            <div class="radiograph-panel">
+                <div class="radiograph-label">
+                    <span>X-Ray Film Result</span>
+                    <span id="filmIntensity" style="color: var(--accent);">100%</span>
+                </div>
+                <div class="radiograph-film">
+                    <!-- The surrounding background simulates exposed air (black), the middle is the sample -->
+                    <div class="film-exposure" id="filmResult"></div>
+                </div>
+            </div>
+
+            <!-- Real-time Data -->
+            <div class="data-overlay">
+                <div class="data-row">
+                    <div class="data-label">Photons Emitted (I₀)</div>
+                    <div class="data-value" style="color: var(--accent);">100<span class="data-unit">%</span></div>
+                </div>
+                <div class="data-row" style="margin-top: 10px;">
+                    <div class="data-label">Photons Transmitted (I)</div>
+                    <div class="data-value" id="transmittedDisplay" style="color: var(--detector-glow);">98.5<span class="data-unit">%</span></div>
+                </div>
+                <div class="data-row" style="margin-top: 10px;">
+                    <div class="data-label">Photons Absorbed</div>
+                    <div class="data-value" id="absorbedDisplay" style="color: #fca5a5;">1.5<span class="data-unit">%</span></div>
+                </div>
+            </div>
+
+            <!-- SVG Lab Setup -->
+            <svg class="svg-canvas" viewBox="0 0 800 600" id="mainSvg">
+                <defs>
+                    <linearGradient id="beamGlow" x1="0%" y1="0%" x2="100%" y2="0%">
+                        <stop offset="0%" stop-color="rgba(56, 189, 248, 0.8)" />
+                        <stop offset="100%" stop-color="rgba(56, 189, 248, 0)" />
+                    </linearGradient>
+                    <filter id="blurGlow">
+                        <feGaussianBlur stdDeviation="8" result="blur" />
+                        <feMerge>
+                            <feMergeNode in="blur" />
+                            <feMergeNode in="SourceGraphic" />
+                        </feMerge>
+                    </filter>
+                </defs>
+
+                <!-- Grid Background -->
+                <g stroke="#1e293b" stroke-width="1">
+                    <line x1="400" y1="0" x2="400" y2="600" stroke-dasharray="10 10"/>
+                    <line x1="0" y1="300" x2="800" y2="300" stroke-dasharray="10 10"/>
+                </g>
+
+                <!-- X-Ray Emitter (Left) -->
+                <g transform="translate(50, 300)">
+                    <rect x="-30" y="-60" width="60" height="120" rx="10" class="xray-tube" />
+                    <polygon points="30,-20 60,-40 60,40 30,20" fill="#475569" />
+                    <circle cx="0" cy="0" r="15" fill="#f59e0b" filter="url(#blurGlow)" />
+                    <text x="0" y="-75" font-size="12" font-weight="bold" fill="#94a3b8" text-anchor="middle">X-RAY TUBE</text>
+                </g>
+
+                <!-- Target Material Box (Center) -->
+                <g transform="translate(400, 300)">
+                    <rect id="sampleBlock" x="-50" y="-120" width="100" height="240" rx="8" class="sample-block" fill="#e2e8f0" />
+                    <text id="sampleLabel" x="0" y="-140" font-size="12" font-weight="bold" fill="#94a3b8" text-anchor="middle">AIR</text>
+                    
+                    <!-- Measurements -->
+                    <line x1="-50" y1="140" x2="50" y2="140" stroke="#64748b" stroke-width="1" />
+                    <line x1="-50" y1="135" x2="-50" y2="145" stroke="#64748b" stroke-width="1" />
+                    <line x1="50" y1="135" x2="50" y2="145" stroke="#64748b" stroke-width="1" />
+                    <text x="0" y="160" font-size="10" fill="#64748b" text-anchor="middle">Thickness (x)</text>
+                </g>
+
+                <!-- Detector Panel (Right) -->
+                <g transform="translate(700, 300)">
+                    <rect x="-10" y="-150" width="20" height="300" rx="5" class="detector-plate" />
+                    <!-- Dynamic glow showing where rays hit -->
+                    <rect id="detectorGlow" x="-15" y="-140" width="10" height="280" fill="var(--detector-glow)" class="detector-glow" filter="url(#blurGlow)" opacity="1" />
+                    <text x="0" y="-170" font-size="12" font-weight="bold" fill="#94a3b8" text-anchor="middle">DETECTOR / FILM</text>
+                </g>
+            </svg>
+
+            <!-- Dynamic Particles (Canvas) -->
+            <canvas id="particleCanvas"></canvas>
+        </main>
+    </div>
+
+    <script>
+        const energySlider = document.getElementById('energySlider');
+        const energyVal = document.getElementById('energyVal');
+        const matBtns = document.querySelectorAll('.mat-btn');
+        
+        const sampleBlock = document.getElementById('sampleBlock');
+        const sampleLabel = document.getElementById('sampleLabel');
+        const filmResult = document.getElementById('filmResult');
+        const filmIntensity = document.getElementById('filmIntensity');
+        const detectorGlow = document.getElementById('detectorGlow');
+        
+        const transmittedDisplay = document.getElementById('transmittedDisplay');
+        const absorbedDisplay = document.getElementById('absorbedDisplay');
+        
+        const diagTitle = document.getElementById('diagTitle');
+        const diagText = document.getElementById('diagText');
+        const diagnosticCard = document.getElementById('diagnosticCard');
+        
+        const canvas = document.getElementById('particleCanvas');
+        const ctx = canvas.getContext('2d');
+
+        // Physics Data Dictionary
+        const materials = {
+            air: { 
+                name: 'Air', 
+                density: 0.001, // approximate relative attenuation coefficient
+                color: '#0f172a', // visually transparent/dark 
+                stroke: '#334155',
+                desc: 'Air has extremely low density. Most X-ray photons pass through and strike the detector, fully exposing the film and turning it black.'
+            },
+            fat: { 
+                name: 'Adipose (Fat)', 
+                density: 0.2, 
+                color: '#422006', // dark yellowish brown visual
+                stroke: '#78350f',
+                desc: 'Fat is slightly denser than air. It absorbs some low-energy X-rays, appearing as a dark gray shadow on the film.'
+            },
+            tissue: { 
+                name: 'Soft Tissue', 
+                density: 0.4, 
+                color: '#7f1d1d', // reddish dark
+                stroke: '#b91c1c',
+                desc: 'Soft tissues and water absorb a moderate amount of X-rays. They appear as mid-range gray on a radiograph.'
+            },
+            bone: { 
+                name: 'Cortical Bone', 
+                density: 1.5, 
+                color: '#e2e8f0', // off-white
+                stroke: '#94a3b8',
+                desc: 'Bone is dense due to calcium and phosphorus. It absorbs a large percentage of X-rays, casting a strong white shadow on the film.'
+            },
+            metal: { 
+                name: 'Metal Implant', 
+                density: 5.0, 
+                color: '#94a3b8', // metallic gray
+                stroke: '#e2e8f0',
+                desc: 'Metal (like surgical screws or lead) is incredibly dense. It blocks nearly 100% of X-rays, leaving a pure white, highly opaque shadow.'
+            }
+        };
+
+        let currentMatKey = 'air';
+        let currentEnergy = 70;
+        let transmissionRate = 1.0;
+        
+        let photons = [];
+
+        function resizeCanvas() {
+            canvas.width = canvas.offsetWidth;
+            canvas.height = canvas.offsetHeight;
+        }
+        window.addEventListener('resize', resizeCanvas);
+        resizeCanvas();
+
+        class Photon {
+            constructor() {
+                this.reset();
+            }
+
+            reset() {
+                // Map SVG coordinates to Canvas
+                const cx = canvas.width / 800;
+                const cy = canvas.height / 600;
+                
+                this.x = 100 * cx; // Emitter tip
+                // Cone of radiation spreading out from the emitter
+                const spread = (Math.random() - 0.5) * 200;
+                this.y = (300 + spread) * cy; 
+                
+                // Speed
+                this.vx = 15 + Math.random() * 5;
+                this.vy = (spread / 300) * this.vx; 
+                
+                this.active = true;
+                this.absorbed = false;
+                
+                // The visual trail length
+                this.tail = [];
+            }
+
+            update() {
+                if (!this.active) return;
+
+                this.tail.push({x: this.x, y: this.y});
+                if (this.tail.length > 5) this.tail.shift();
+
+                this.x += this.vx;
+                this.y += this.vy;
+
+                // Physics check: Does it hit the block?
+                const cx = canvas.width / 800;
+                const blockLeft = 350 * cx;
+                const blockRight = 450 * cx;
+                const blockTop = 180 * cx;
+                const blockBottom = 420 * cx;
+
+                // If inside the block and not yet calculated absorption
+                if (this.x > blockLeft && this.x < blockRight && this.y > blockTop && this.y < blockBottom) {
+                    if (!this.absorbedChecked) {
+                        this.absorbedChecked = true;
+                        // Determine if photon is absorbed based on transmission rate
+                        if (Math.random() > transmissionRate) {
+                            this.absorbed = true;
+                            this.active = false;
+                            
+                            // Spawn a tiny visual scatter spark
+                            this.tail = []; // Kill trail
+                        }
+                    }
+                }
+
+                // If it hits the detector
+                if (this.x > 690 * cx) {
+                    this.active = false;
+                }
+            }
+
+            draw() {
+                if (this.absorbed) {
+                    // Draw a quick spark if just absorbed
+                    ctx.beginPath();
+                    ctx.arc(this.x, this.y, 2, 0, Math.PI * 2);
+                    ctx.fillStyle = '#fca5a5';
+                    ctx.fill();
+                    return;
+                }
+
+                if (!this.active || this.tail.length < 2) return;
+
+                ctx.beginPath();
+                ctx.moveTo(this.tail[0].x, this.tail[0].y);
+                ctx.lineTo(this.x, this.y);
+                
+                // Photons are cyan, higher energy = whiter/brighter
+                const energyColor = currentEnergy > 100 ? '#e0f2fe' : '#38bdf8';
+                ctx.strokeStyle = energyColor;
+                ctx.lineWidth = 2;
+                ctx.stroke();
+            }
+        }
+
+        for (let i = 0; i < 200; i++) {
+            photons.push(new Photon());
+            // Pre-warm locations
+            photons[i].x += Math.random() * canvas.width;
+        }
+
+        function updatePhysics() {
+            currentEnergy = parseInt(energySlider.value);
+            energyVal.textContent = `${currentEnergy} kVp`;
+
+            const mat = materials[currentMatKey];
+            
+            // Beer-Lambert Law approximation
+            // Attenuation is proportional to density, inversely proportional to energy
+            // Transmission = e^(-density * thickness / energy_factor)
+            const thickness = 10; // arbitrary constant
+            const energyFactor = currentEnergy / 40; // Normalize so 40kVp is baseline
+            
+            // I = I0 * e^(-mu * x)
+            const exponent = -1 * (mat.density * thickness) / energyFactor;
+            transmissionRate = Math.exp(exponent);
+
+            // Cap metal to 0% transmission for visual clarity
+            if (currentMatKey === 'metal') transmissionRate = 0;
+            // Cap air to near 100%
+            if (currentMatKey === 'air') transmissionRate = 0.99;
+
+            const transmittedPercent = transmissionRate * 100;
+            const absorbedPercent = 100 - transmittedPercent;
+
+            // UI Updates
+            transmittedDisplay.innerHTML = `${transmittedPercent.toFixed(1)}<span class="data-unit">%</span>`;
+            absorbedDisplay.innerHTML = `${absorbedPercent.toFixed(1)}<span class="data-unit">%</span>`;
+
+            // Film / Detector Visuals
+            // Film starts white (255). Exposure turns it black (0).
+            // 100% transmission = 0 (Black). 0% transmission = 255 (White).
+            const filmBrightness = Math.round(255 * (1 - transmissionRate));
+            const filmColor = `rgb(${filmBrightness}, ${filmBrightness}, ${filmBrightness})`;
+            
+            filmResult.style.backgroundColor = filmColor;
+            filmIntensity.textContent = `${transmittedPercent.toFixed(0)}% EXP`;
+            
+            // Detector glow updates
+            detectorGlow.style.opacity = transmissionRate;
+
+            // Material Visuals
+            sampleBlock.setAttribute('fill', mat.color);
+            sampleBlock.setAttribute('stroke', mat.stroke);
+            sampleLabel.textContent = mat.name.toUpperCase();
+
+            // Status Card
+            diagnosticCard.style.borderLeftColor = currentMatKey === 'air' ? '#10b981' : currentMatKey === 'bone' || currentMatKey === 'metal' ? '#ef4444' : '#f59e0b';
+            
+            let statusPrefix = "Radiolucent (Dark)";
+            if (transmissionRate < 0.1) statusPrefix = "Radiopaque (Bright White)";
+            else if (transmissionRate < 0.6) statusPrefix = "Intermediate (Gray)";
+            
+            diagTitle.textContent = `Film Exposure: ${statusPrefix}`;
+            diagTitle.style.color = currentMatKey === 'air' ? '#10b981' : currentMatKey === 'bone' || currentMatKey === 'metal' ? '#ef4444' : '#f59e0b';
+            diagText.textContent = mat.desc;
+        }
+
+        // Event Listeners
+        energySlider.addEventListener('input', updatePhysics);
+
+        matBtns.forEach(btn => {
+            btn.addEventListener('click', (e) => {
+                matBtns.forEach(b => b.classList.remove('active'));
+                e.target.classList.add('active');
+                currentMatKey = e.target.getAttribute('data-mat');
+                updatePhysics();
+            });
+        });
+
+        // Animation Loop
+        function animate() {
+            // Slight motion blur effect
+            ctx.fillStyle = 'rgba(2, 6, 23, 0.3)';
+            ctx.fillRect(0, 0, canvas.width, canvas.height);
+            
+            photons.forEach(p => {
+                if (!p.active) p.reset();
+                p.update();
+                p.draw();
+            });
+            
+            requestAnimationFrame(animate);
+        }
+
+        // Init
+        updatePhysics();
+        requestAnimationFrame(animate);
+
+    </script>
+</body>
+</html>

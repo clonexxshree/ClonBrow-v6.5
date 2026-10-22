@@ -1,0 +1,471 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>States of Matter - Minimalist Physics</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600&display=swap" rel="stylesheet">
+    <style>
+        body, html {
+            margin: 0;
+            padding: 0;
+            width: 100%;
+            height: 100%;
+            overflow: hidden;
+            background-color: #ffffff;
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+        }
+        #canvas-container {
+            width: 100%;
+            height: 100%;
+            display: block;
+        }
+        /* Custom minimal slider */
+        input[type=range] {
+            -webkit-appearance: none;
+            width: 100%;
+            background: transparent;
+        }
+        input[type=range]::-webkit-slider-thumb {
+            -webkit-appearance: none;
+            height: 20px;
+            width: 20px;
+            border-radius: 50%;
+            background: #ffffff;
+            border: 1px solid #d1d5db;
+            cursor: pointer;
+            margin-top: -8px;
+            box-shadow: 0 4px 10px rgba(0,0,0,0.12);
+            transition: transform 0.2s cubic-bezier(0.2, 0.8, 0.2, 1);
+        }
+        input[type=range]::-webkit-slider-thumb:hover {
+            transform: scale(1.1);
+        }
+        input[type=range]::-webkit-slider-runnable-track {
+            width: 100%;
+            height: 4px;
+            cursor: pointer;
+            background: rgba(0,0,0,0.08);
+            border-radius: 2px;
+        }
+        .state-btn {
+            transition: all 0.2s ease;
+        }
+    </style>
+    <!-- Import Maps for Three.js -->
+    <script type="importmap">
+        {
+            "imports": {
+                "three": "https://cdn.jsdelivr.net/npm/three@0.160.0/build/three.module.js",
+                "three/addons/": "https://cdn.jsdelivr.net/npm/three@0.160.0/examples/jsm/"
+            }
+        }
+    </script>
+</head>
+<body>
+
+    <!-- UI Overlay -->
+    <div class="absolute top-6 left-6 md:top-8 md:left-8 z-10 w-80 bg-white/40 backdrop-blur-2xl border border-white/50 p-6 rounded-[1.5rem] shadow-[0_8px_32px_rgba(0,0,0,0.08)] pointer-events-auto" style="-webkit-backdrop-filter: blur(24px);">
+        <h1 class="text-2xl font-semibold tracking-tight text-gray-900 mb-1">States of Matter</h1>
+        <p class="text-sm font-medium text-gray-500 mb-6">Interactive Particle Simulation</p>
+
+        <div class="space-y-6">
+            <!-- State Buttons (Segmented Control Style) -->
+            <div class="flex p-1 bg-black/5 backdrop-blur-md rounded-xl shadow-inner gap-1">
+                <button id="btn-solid" class="state-btn active flex-1 py-1.5 text-sm font-medium rounded-lg bg-white shadow-sm text-gray-900">Solid</button>
+                <button id="btn-liquid" class="state-btn flex-1 py-1.5 text-sm font-medium rounded-lg text-gray-500 hover:text-gray-800">Liquid</button>
+                <button id="btn-gas" class="state-btn flex-1 py-1.5 text-sm font-medium rounded-lg text-gray-500 hover:text-gray-800">Gas</button>
+            </div>
+
+            <!-- Temperature Slider -->
+            <div class="space-y-3">
+                <div class="flex justify-between items-end">
+                    <label class="text-sm font-medium text-gray-700">Temperature</label>
+                    <span id="temp-display" class="text-xs font-semibold bg-white/80 px-2 py-1 rounded-md text-gray-800 shadow-sm border border-white/50">0 K</span>
+                </div>
+                <input type="range" id="temp-slider" min="0" max="100" value="0" class="w-full">
+            </div>
+
+            <!-- Instructions -->
+            <div class="pt-4 border-t border-gray-200/50 text-xs text-gray-500 leading-relaxed">
+                <p>Drag to rotate camera. Scroll to zoom.</p>
+            </div>
+        </div>
+    </div>
+
+    <!-- 3D Canvas Container -->
+    <div id="canvas-container"></div>
+
+    <script type="module">
+        import * as THREE from 'three';
+        import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
+        import { RoomEnvironment } from 'three/addons/environments/RoomEnvironment.js';
+
+        // --- SCENE SETUP ---
+        const container = document.getElementById('canvas-container');
+        const scene = new THREE.Scene();
+        scene.background = new THREE.Color(0xf8f9fa);
+        scene.fog = new THREE.FogExp2(0xf8f9fa, 0.012);
+
+        const camera = new THREE.PerspectiveCamera(45, window.innerWidth / window.innerHeight, 0.1, 100);
+        camera.position.set(0, 15, 30);
+
+        const renderer = new THREE.WebGLRenderer({ antialias: true, alpha: false });
+        renderer.setSize(window.innerWidth, window.innerHeight);
+        renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+        
+        // Raytraced look configuration
+        renderer.shadowMap.enabled = true;
+        renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+        renderer.toneMapping = THREE.ACESFilmicToneMapping;
+        renderer.toneMappingExposure = 1.0;
+        container.appendChild(renderer.domElement);
+
+        // Add High Quality Environment Lighting
+        const pmremGenerator = new THREE.PMREMGenerator(renderer);
+        scene.environment = pmremGenerator.fromScene(new RoomEnvironment(), 0.04).texture;
+
+        const controls = new OrbitControls(camera, renderer.domElement);
+        controls.enableDamping = true;
+        controls.dampingFactor = 0.05;
+        controls.target.set(0, 5, 0);
+        controls.maxPolarAngle = Math.PI / 2 + 0.1; // Prevent going too far below ground
+        controls.minDistance = 10;
+        controls.maxDistance = 50;
+
+        // --- LIGHTING ---
+        const ambientLight = new THREE.AmbientLight(0xffffff, 0.6);
+        scene.add(ambientLight);
+
+        const dirLight = new THREE.DirectionalLight(0xffffff, 2.5);
+        dirLight.position.set(10, 25, 10);
+        dirLight.castShadow = true;
+        dirLight.shadow.mapSize.width = 2048;
+        dirLight.shadow.mapSize.height = 2048;
+        dirLight.shadow.camera.near = 0.5;
+        dirLight.shadow.camera.far = 50;
+        const d = 12;
+        dirLight.shadow.camera.left = -d;
+        dirLight.shadow.camera.right = d;
+        dirLight.shadow.camera.top = d;
+        dirLight.shadow.camera.bottom = -d;
+        dirLight.shadow.bias = -0.0005;
+        dirLight.shadow.radius = 4; // Soft edges
+        scene.add(dirLight);
+
+        // Fill light
+        const pointLight = new THREE.PointLight(0xf0f5ff, 1.0, 50);
+        pointLight.position.set(-10, 5, -10);
+        scene.add(pointLight);
+
+        // --- ENVIRONMENT ---
+        // Floor shadow catcher
+        const floorGeo = new THREE.PlaneGeometry(100, 100);
+        const floorMat = new THREE.MeshStandardMaterial({ 
+            color: 0xffffff,
+            roughness: 1.0,
+            metalness: 0.0
+        });
+        const floor = new THREE.Mesh(floorGeo, floorMat);
+        floor.rotation.x = -Math.PI / 2;
+        floor.receiveShadow = true;
+        scene.add(floor);
+
+        // Container Box (Visual only)
+        const boxSize = 12;
+        const boxGeo = new THREE.BoxGeometry(boxSize, boxSize, boxSize);
+        const edgesGeo = new THREE.EdgesGeometry(boxGeo);
+        const edgesMat = new THREE.LineBasicMaterial({ color: 0x000000, transparent: true, opacity: 0.05 });
+        const boxOutline = new THREE.LineSegments(edgesGeo, edgesMat);
+        boxOutline.position.y = boxSize / 2;
+        scene.add(boxOutline);
+
+        // --- PHYSICS SETTINGS ---
+        const numParticles = 80;
+        const radius = 0.9;
+        const particles = [];
+        
+        // Physics state targets (interpolated for smooth transitions)
+        let targetTemp = 0; // 0 to 100
+        let currentTemp = 0;
+
+        // Beautiful glass/pearl material for the "Raytraced" look
+        const particleMaterial = new THREE.MeshPhysicalMaterial({
+            color: 0xffffff,
+            metalness: 0.15,
+            roughness: 0.05, // Smoother surface
+            clearcoat: 1.0,
+            clearcoatRoughness: 0.05,
+            ior: 1.45,
+            transmission: 0.8, // Much more glassy/transparent
+            thickness: 1.5,
+            attenuationColor: new THREE.Color(0xe8f0ff), // Subtle blue tint inside the glass
+            attenuationDistance: 2.0
+        });
+
+        const sphereGeo = new THREE.SphereGeometry(radius, 64, 64); // Higher resolution spheres
+
+        class Particle {
+            constructor(x, y, z) {
+                this.pos = new THREE.Vector3(x, y, z);
+                this.oldPos = new THREE.Vector3(x, y, z);
+                this.acc = new THREE.Vector3();
+                
+                this.mesh = new THREE.Mesh(sphereGeo, particleMaterial);
+                this.mesh.castShadow = true;
+                this.mesh.receiveShadow = true;
+                scene.add(this.mesh);
+            }
+        }
+
+        // Initialize particles in a tight grid (Solid start)
+        let idx = 0;
+        const startSize = 3;
+        for (let x = -startSize; x < startSize; x++) {
+            for (let y = 0; y < 4; y++) {
+                for (let z = -startSize; z < startSize; z++) {
+                    if (idx++ < numParticles) {
+                        // Add slight noise to prevent perfect initial stacking issues
+                        let px = x * radius * 2.1 + (Math.random()-0.5)*0.1;
+                        let py = y * radius * 2.1 + radius + 0.1;
+                        let pz = z * radius * 2.1 + (Math.random()-0.5)*0.1;
+                        particles.push(new Particle(px, py, pz));
+                    }
+                }
+            }
+        }
+
+        // --- VERLET PHYSICS ENGINE ---
+        const boundsX = boxSize / 2;
+        const boundsZ = boxSize / 2;
+        const boundsY = boxSize;
+        const dt = 1/60;
+        const subSteps = 6; // High substeps for stable crystal/liquid simulation
+        const sdt = dt / subSteps;
+
+        function lerp(start, end, amt) {
+            return (1 - amt) * start + amt * end;
+        }
+
+        function updatePhysics() {
+            // Smoothly interpolate temperature
+            currentTemp += (targetTemp - currentTemp) * 0.05;
+
+            // Map temperature (0-100) to physics parameters
+            const t = currentTemp / 100;
+            
+            // Solid (t=0) -> Liquid (t=0.5) -> Gas (t=1.0)
+            const gravity = lerp(40, lerp(20, 0, (t-0.5)*2), t < 0.5 ? 0 : 1); 
+            // Solid has high cohesion to stick together, Gas has 0
+            const cohesion = lerp(300, 0, Math.pow(t, 0.7)); 
+            // Gas has huge random kinetic energy
+            const jitter = lerp(0, 300, Math.pow(t, 2.5));
+            // Solid loses energy fast to freeze, Gas retains it
+            const damping = lerp(0.92, 0.999, t); 
+
+            for (let step = 0; step < subSteps; step++) {
+                
+                // 1. Apply Forces
+                for (let i = 0; i < numParticles; i++) {
+                    const p = particles[i];
+                    p.acc.set(0, 0, 0);
+
+                    // Gravity
+                    p.acc.y -= gravity;
+
+                    // Kinetic Energy (Jitter)
+                    if (jitter > 0) {
+                        p.acc.x += (Math.random() - 0.5) * jitter;
+                        p.acc.y += (Math.random() - 0.5) * jitter;
+                        p.acc.z += (Math.random() - 0.5) * jitter;
+                    }
+
+                    // Cohesion (Molecular attraction)
+                    if (cohesion > 0) {
+                        // Apply a gentle pull towards the center of mass of nearby particles
+                        // To optimize, we approximate. A true N-body cohesion is O(N^2).
+                        // Since N=150, O(N^2) is fine for modern JS.
+                        for(let j = i + 1; j < numParticles; j++) {
+                            const p2 = particles[j];
+                            const dx = p2.pos.x - p.pos.x;
+                            const dy = p2.pos.y - p.pos.y;
+                            const dz = p2.pos.z - p.pos.z;
+                            const distSq = dx*dx + dy*dy + dz*dz;
+                            const influenceRadius = radius * 5;
+
+                            if(distSq < influenceRadius*influenceRadius && distSq > 0) {
+                                const dist = Math.sqrt(distSq);
+                                // Attraction force increases with distance up to influence limit
+                                const force = cohesion * (dist / influenceRadius) * 0.1;
+                                const nx = dx / dist;
+                                const ny = dy / dist;
+                                const nz = dz / dist;
+
+                                p.acc.x += nx * force;
+                                p.acc.y += ny * force;
+                                p.acc.z += nz * force;
+                                
+                                p2.acc.x -= nx * force;
+                                p2.acc.y -= ny * force;
+                                p2.acc.z -= nz * force;
+                            }
+                        }
+                    }
+                    
+                    // Clamp max acceleration to prevent explosions
+                    if(p.acc.lengthSq() > 100000) p.acc.setLength(300);
+                }
+
+                // 2. Verlet Integration
+                for (let i = 0; i < numParticles; i++) {
+                    const p = particles[i];
+                    
+                    const velX = (p.pos.x - p.oldPos.x) * damping;
+                    const velY = (p.pos.y - p.oldPos.y) * damping;
+                    const velZ = (p.pos.z - p.oldPos.z) * damping;
+
+                    p.oldPos.copy(p.pos);
+
+                    p.pos.x += velX + p.acc.x * sdt * sdt;
+                    p.pos.y += velY + p.acc.y * sdt * sdt;
+                    p.pos.z += velZ + p.acc.z * sdt * sdt;
+                }
+
+                // 3. Resolve Collisions (Constraints)
+                const constraintIters = 2; // Iterations for solid stability
+                for (let iter = 0; iter < constraintIters; iter++) {
+                    
+                    // Particle collisions
+                    for (let i = 0; i < numParticles; i++) {
+                        for (let j = i + 1; j < numParticles; j++) {
+                            const p1 = particles[i];
+                            const p2 = particles[j];
+                            const dx = p1.pos.x - p2.pos.x;
+                            const dy = p1.pos.y - p2.pos.y;
+                            const dz = p1.pos.z - p2.pos.z;
+                            const distSq = dx*dx + dy*dy + dz*dz;
+                            const minDist = radius * 2.0; // Exact sphere boundary
+
+                            if (distSq < minDist * minDist && distSq > 0.0001) {
+                                const dist = Math.sqrt(distSq);
+                                const overlap = minDist - dist;
+                                const nx = dx / dist;
+                                const ny = dy / dist;
+                                const nz = dz / dist;
+
+                                const pushX = nx * overlap * 0.5;
+                                const pushY = ny * overlap * 0.5;
+                                const pushZ = nz * overlap * 0.5;
+
+                                p1.pos.x += pushX;
+                                p1.pos.y += pushY;
+                                p1.pos.z += pushZ;
+
+                                p2.pos.x -= pushX;
+                                p2.pos.y -= pushY;
+                                p2.pos.z -= pushZ;
+                            }
+                        }
+                    }
+
+                    // Boundary collisions
+                    const bounce = 0.5; // Wall energy loss
+                    for (let i = 0; i < numParticles; i++) {
+                        const p = particles[i];
+                        
+                        // Floor
+                        if (p.pos.y < radius) {
+                            p.pos.y = radius;
+                            p.oldPos.y = p.pos.y + (p.pos.y - p.oldPos.y) * bounce;
+                        }
+                        // Ceiling
+                        if (p.pos.y > boundsY - radius) {
+                            p.pos.y = boundsY - radius;
+                            p.oldPos.y = p.pos.y + (p.pos.y - p.oldPos.y) * bounce;
+                        }
+                        // Walls X
+                        if (p.pos.x < -boundsX + radius) {
+                            p.pos.x = -boundsX + radius;
+                            p.oldPos.x = p.pos.x + (p.pos.x - p.oldPos.x) * bounce;
+                        } else if (p.pos.x > boundsX - radius) {
+                            p.pos.x = boundsX - radius;
+                            p.oldPos.x = p.pos.x + (p.pos.x - p.oldPos.x) * bounce;
+                        }
+                        // Walls Z
+                        if (p.pos.z < -boundsZ + radius) {
+                            p.pos.z = -boundsZ + radius;
+                            p.oldPos.z = p.pos.z + (p.pos.z - p.oldPos.z) * bounce;
+                        } else if (p.pos.z > boundsZ - radius) {
+                            p.pos.z = boundsZ - radius;
+                            p.oldPos.z = p.pos.z + (p.pos.z - p.oldPos.z) * bounce;
+                        }
+                    }
+                }
+            }
+
+            // Sync visual meshes with physics positions
+            for (let i = 0; i < numParticles; i++) {
+                particles[i].mesh.position.copy(particles[i].pos);
+            }
+        }
+
+        // --- RENDER LOOP ---
+        function animate() {
+            requestAnimationFrame(animate);
+            updatePhysics();
+            controls.update();
+            renderer.render(scene, camera);
+        }
+
+        // Wait for fonts/styles to settle then start
+        window.onload = () => {
+            animate();
+        };
+
+        // --- UI CONTROLS ---
+        const slider = document.getElementById('temp-slider');
+        const tempDisplay = document.getElementById('temp-display');
+        const btnSolid = document.getElementById('btn-solid');
+        const btnLiquid = document.getElementById('btn-liquid');
+        const btnGas = document.getElementById('btn-gas');
+        const btns = [btnSolid, btnLiquid, btnGas];
+
+        function updateUI() {
+            tempDisplay.innerText = `${targetTemp} K`;
+            slider.value = targetTemp;
+            
+            btns.forEach(b => b.classList.remove('active', 'bg-white', 'shadow-sm', 'text-gray-900'));
+            btns.forEach(b => b.classList.add('text-gray-500'));
+            
+            if (targetTemp === 0) {
+                btnSolid.classList.add('active', 'bg-white', 'shadow-sm', 'text-gray-900');
+                btnSolid.classList.remove('text-gray-500');
+            } else if (targetTemp === 50) {
+                btnLiquid.classList.add('active', 'bg-white', 'shadow-sm', 'text-gray-900');
+                btnLiquid.classList.remove('text-gray-500');
+            } else if (targetTemp === 100) {
+                btnGas.classList.add('active', 'bg-white', 'shadow-sm', 'text-gray-900');
+                btnGas.classList.remove('text-gray-500');
+            }
+        }
+
+        slider.addEventListener('input', (e) => {
+            targetTemp = parseInt(e.target.value);
+            updateUI();
+        });
+
+        btnSolid.addEventListener('click', () => { targetTemp = 0; updateUI(); });
+        btnLiquid.addEventListener('click', () => { targetTemp = 50; updateUI(); });
+        btnGas.addEventListener('click', () => { targetTemp = 100; updateUI(); });
+
+        // --- RESIZE HANDLER ---
+        window.addEventListener('resize', () => {
+            camera.aspect = window.innerWidth / window.innerHeight;
+            camera.updateProjectionMatrix();
+            renderer.setSize(window.innerWidth, window.innerHeight);
+        });
+
+    </script>
+</body>
+</html>

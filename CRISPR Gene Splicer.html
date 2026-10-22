@@ -1,0 +1,482 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>CRISPR-Cas9 Genomic Editor</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;700&family=Inter:wght@300;400;600;700&display=swap');
+
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: #020617;
+            color: #f8fafc;
+            overflow: hidden;
+            user-select: none;
+            touch-action: none;
+        }
+
+        .font-mono { font-family: 'JetBrains Mono', monospace; }
+
+        .glass-card {
+            background: rgba(15, 23, 42, 0.75);
+            backdrop-filter: blur(16px);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.5);
+        }
+
+        .digital-readout {
+            background: #061021;
+            color: #10b981; /* Emerald base */
+            text-shadow: 0 0 10px rgba(16, 185, 129, 0.4);
+            border: 1px solid #1e293b;
+            transition: all 0.3s ease;
+        }
+
+        .status-editing {
+            color: #fbbf24 !important; /* Amber */
+            text-shadow: 0 0 12px rgba(251, 191, 36, 0.6) !important;
+        }
+
+        .status-cleaved {
+            color: #f43f5e !important; /* Rose */
+            text-shadow: 0 0 12px rgba(244, 63, 94, 0.6) !important;
+        }
+
+        /* DNA Visuals */
+        .dna-backbone {
+            fill: none;
+            stroke: #334155;
+            stroke-width: 4;
+            stroke-linecap: round;
+        }
+
+        .base-pair {
+            stroke-width: 3;
+            stroke-linecap: round;
+        }
+
+        .mutation {
+            stroke: #f43f5e;
+            filter: drop-shadow(0 0 8px #f43f5e);
+            animation: pulse-error 1.5s infinite;
+        }
+
+        @keyframes pulse-error {
+            0%, 100% { opacity: 1; stroke-width: 4; }
+            50% { opacity: 0.6; stroke-width: 2; }
+        }
+
+        .healthy-insert {
+            stroke: #10b981;
+            filter: drop-shadow(0 0 8px #10b981);
+        }
+
+        /* Cas9 Scissor Tool */
+        #cas9-effector {
+            cursor: crosshair;
+            pointer-events: none;
+            transition: transform 0.1s ease-out;
+        }
+
+        .cas-protein {
+            fill: rgba(56, 189, 248, 0.15);
+            stroke: #0ea5e9;
+            stroke-width: 2;
+            stroke-dasharray: 4 2;
+        }
+
+        .scissor-blade {
+            fill: #94a3b8;
+            stroke: #f8fafc;
+            stroke-width: 1;
+            transition: transform 0.3s ease;
+        }
+
+        /* Physics Grid */
+        .lab-grid {
+            background-size: 50px 50px;
+            background-image: 
+                linear-gradient(to right, rgba(16, 185, 129, 0.03) 1px, transparent 1px),
+                linear-gradient(to bottom, rgba(16, 185, 129, 0.03) 1px, transparent 1px);
+        }
+
+        .scanline {
+            width: 100%;
+            height: 2px;
+            background: rgba(16, 185, 129, 0.05);
+            position: absolute;
+            z-index: 10;
+            animation: scan 12s linear infinite;
+        }
+        @keyframes scan { 0% { top: 0%; } 100% { top: 100%; } }
+
+        /* DNA Motion */
+        .dna-float {
+            animation: dna-drift 10s infinite ease-in-out;
+        }
+        @keyframes dna-drift {
+            0%, 100% { transform: translateY(0) rotate(0deg); }
+            50% { transform: translateY(-20px) rotate(1deg); }
+        }
+    </style>
+</head>
+<body class="min-h-screen p-4 md:p-8 flex items-center justify-center">
+
+    <div class="max-w-7xl w-full grid grid-cols-1 lg:grid-cols-12 gap-8 items-stretch">
+        
+        <!-- Simulation Viewport -->
+        <div class="lg:col-span-8 flex flex-col gap-6">
+            <div id="sim-viewport" class="glass-card rounded-3xl p-0 relative flex-grow min-h-[500px] flex flex-col overflow-hidden border border-slate-800 lab-grid cursor-none">
+                <div class="scanline"></div>
+                
+                <!-- HUD Header -->
+                <div class="absolute top-6 left-8 flex items-center gap-3 z-30">
+                    <div id="status-dot" class="w-2.5 h-2.5 rounded-full bg-emerald-500 shadow-[0_0_10px_#10b981]"></div>
+                    <span id="status-text" class="text-[10px] font-bold text-slate-400 uppercase tracking-widest font-mono">Sequencing: <span id="hud-mode" class="text-emerald-400">Intact Helix</span></span>
+                </div>
+
+                <!-- Simulation Area -->
+                <div class="relative w-full flex-grow flex items-center justify-center">
+                    
+                    <!-- DNA Strand SVG -->
+                    <svg id="dna-svg" viewBox="0 0 800 400" class="w-full h-full relative z-10 dna-float">
+                        <defs>
+                            <filter id="glow">
+                                <feGaussianBlur stdDeviation="2.5" result="coloredBlur"/>
+                                <feMerge>
+                                    <feMergeNode in="coloredBlur"/><feMergeNode in="SourceGraphic"/>
+                                </feMerge>
+                            </filter>
+                        </defs>
+                        
+                        <!-- DNA backbones and base pairs generated via JS -->
+                        <g id="dna-strand-group"></g>
+                        
+                        <!-- Cas9 Visual follows cursor -->
+                        <g id="cas9-effector" transform="translate(-200, -200)">
+                            <!-- The guiding RNA circle -->
+                            <circle cx="0" cy="0" r="60" class="cas-protein" />
+                            <text y="-70" text-anchor="middle" font-size="10" font-weight="bold" fill="#0ea5e9" class="font-mono uppercase tracking-tighter">Cas9 Nuclease</text>
+                            
+                            <!-- The Scissors -->
+                            <g id="scissors-group">
+                                <path id="blade-top" d="M -5,0 L -30,-40 L 0,-45 L 5,0 Z" class="scissor-blade" />
+                                <path id="blade-bottom" d="M -5,0 L -30,40 L 0,45 L 5,0 Z" class="scissor-blade" />
+                                <circle cx="0" cy="0" r="3" fill="#0ea5e9" />
+                            </g>
+                        </g>
+                    </svg>
+
+                </div>
+
+                <!-- Tags -->
+                <div class="absolute bottom-6 left-8 flex flex-col gap-1 z-30">
+                    <span class="text-[9px] font-mono text-slate-500 uppercase">Target: HBB Gene (Sickle Cell Mutation)</span>
+                    <span class="text-[9px] font-mono text-slate-500 uppercase">Method: RNP Electroporation</span>
+                </div>
+            </div>
+
+            <!-- Controls -->
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div class="glass-card p-4 rounded-2xl flex items-center justify-between">
+                    <div class="flex items-center gap-4">
+                        <div class="w-10 h-10 rounded-full bg-slate-800 border border-slate-700 flex items-center justify-center">
+                            <svg class="w-5 h-5 text-sky-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"></path><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"></path></svg>
+                        </div>
+                        <div>
+                            <div class="text-xs font-bold text-slate-200 uppercase tracking-widest">Guide RNA Control</div>
+                            <div class="text-[10px] text-slate-500 font-mono">Move Cas9 to target site (RED) and click to cleave.</div>
+                        </div>
+                    </div>
+                </div>
+                <button id="btn-repair" disabled class="group px-8 py-5 bg-slate-900 text-slate-500 font-bold rounded-2xl transition-all border border-slate-800 disabled:cursor-not-allowed flex items-center justify-center gap-3">
+                    <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z"></path></svg>
+                    <span>Deploy Repair Template (HDR)</span>
+                </button>
+            </div>
+        </div>
+
+        <!-- Sidebar: Analytics & Data -->
+        <div class="lg:col-span-4 flex flex-col gap-6">
+            
+            <!-- Digital Readout -->
+            <div id="telemetry-panel" class="digital-readout rounded-3xl p-6 space-y-6">
+                <div class="flex justify-between items-center border-b border-current pb-3 opacity-60">
+                    <span class="text-[10px] font-bold tracking-tighter uppercase">Genomic Telemetry</span>
+                    <span class="text-xs font-mono animate-pulse">MONITORING</span>
+                </div>
+
+                <div class="space-y-6">
+                    <!-- Integrity Status -->
+                    <div class="space-y-1">
+                        <label class="text-[9px] uppercase font-bold opacity-60">Helix Integrity</label>
+                        <div id="data-integrity" class="text-5xl font-bold font-mono">100%</div>
+                    </div>
+
+                    <div class="grid grid-cols-2 gap-4 pt-4 border-t border-current opacity-80">
+                        <div class="space-y-1">
+                            <label class="text-[9px] uppercase font-bold text-current">Cleavage State</label>
+                            <div id="data-cleavage" class="text-xl font-bold font-mono">NONE</div>
+                        </div>
+                        <div class="space-y-1 text-right">
+                            <label class="text-[9px] uppercase font-bold text-current">PAM Match</label>
+                            <div id="data-pam" class="text-xl font-bold font-mono text-rose-500">FALSE</div>
+                        </div>
+                    </div>
+
+                    <!-- Alignment Progress -->
+                    <div class="p-4 bg-black/30 rounded-xl border border-current space-y-2">
+                        <div class="flex justify-between items-center">
+                            <label class="text-[9px] uppercase font-bold text-current">Guide RNA Homology</label>
+                            <span id="data-homology" class="text-[10px] font-mono">0%</span>
+                        </div>
+                        <div class="h-1.5 w-full bg-slate-900 rounded-full overflow-hidden">
+                            <div id="homology-bar" class="h-full bg-cyan-400 transition-all duration-200" style="width: 0%"></div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Editing Guide Card -->
+            <div class="glass-card p-6 rounded-3xl space-y-4 flex-grow flex flex-col">
+                <h3 class="text-xs font-bold text-slate-400 uppercase tracking-widest">CRISPR Editing Protocol</h3>
+                
+                <div class="space-y-4 text-[10px] text-slate-300 leading-relaxed">
+                    <div class="p-3 bg-sky-900/20 rounded-xl border border-sky-500/20">
+                        <strong class="text-sky-400 block mb-1">1. Recognition</strong>
+                        The Cas9 enzyme scans the DNA for a <strong>PAM sequence</strong> (NGG). Once found, the gRNA attempts to unzip and bind to the target.
+                    </div>
+
+                    <div id="step-cleavage" class="p-3 bg-slate-900/50 rounded-xl border border-slate-700 opacity-50 transition-opacity">
+                        <strong class="text-rose-400 block mb-1">2. Cleavage</strong>
+                        Two active nuclease domains (RuvC and HNH) generate a double-strand break precisely 3 base pairs upstream of the PAM.
+                    </div>
+
+                    <div id="step-repair" class="p-3 bg-slate-900/50 rounded-xl border border-slate-700 opacity-50 transition-opacity">
+                        <strong class="text-emerald-400 block mb-1">3. Repair</strong>
+                        Instead of error-prone NHEJ, we provide a <strong>Repair Template</strong>. The cell uses Homology-Directed Repair to stitch the healthy gene into the gap.
+                    </div>
+                </div>
+
+                <button id="btn-reset" class="mt-auto w-full py-3 bg-slate-800 hover:bg-slate-700 text-slate-400 rounded-xl text-[10px] font-bold uppercase tracking-widest border border-slate-700 transition-all">
+                    Reset Genome
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', () => {
+            const dnaGroup = document.getElementById('dna-strand-group');
+            const cas9Effector = document.getElementById('cas9-effector');
+            const bladeTop = document.getElementById('blade-top');
+            const bladeBottom = document.getElementById('blade-bottom');
+            const viewport = document.getElementById('sim-viewport');
+            
+            const dataIntegrity = document.getElementById('data-integrity');
+            const dataCleavage = document.getElementById('data-cleavage');
+            const dataPam = document.getElementById('data-pam');
+            const dataHomology = document.getElementById('data-homology');
+            const homologyBar = document.getElementById('homology-bar');
+            
+            const btnRepair = document.getElementById('btn-repair');
+            const btnReset = document.getElementById('btn-reset');
+            const hudMode = document.getElementById('hud-mode');
+            const telePanel = document.getElementById('telemetry-panel');
+            const statusDot = document.getElementById('status-dot');
+
+            const stepCleavage = document.getElementById('step-cleavage');
+            const stepRepair = document.getElementById('step-repair');
+
+            // --- State ---
+            let cleaved = false;
+            let repaired = false;
+            let currentX = -200;
+            let currentY = -200;
+            
+            // DNA points
+            const points = [];
+            const numSteps = 25;
+            const stepWidth = 35;
+            const mutationIndex = 12; // The center-ish part
+
+            function initDNA() {
+                dnaGroup.innerHTML = '';
+                points.length = 0;
+                
+                for (let i = 0; i < numSteps; i++) {
+                    const x = i * stepWidth - 40;
+                    // Sine wave for double helix backbone
+                    const yOffset = Math.sin(i * 0.8) * 40;
+                    points.push({ x, y: 200 + yOffset, y2: 200 - yOffset });
+                }
+
+                // Render backbones
+                const path1 = document.createElementNS('http://www.w3.org/2000/svg', 'path');
+                const path2 = document.createElementNS('http://www.w3.org/2000/svg', 'path');
+                path1.setAttribute('class', 'dna-backbone');
+                path2.setAttribute('class', 'dna-backbone');
+                
+                let d1 = `M ${points[0].x} ${points[0].y}`;
+                let d2 = `M ${points[0].x} ${points[0].y2}`;
+                
+                for (let i = 1; i < numSteps; i++) {
+                    d1 += ` L ${points[i].x} ${points[i].y}`;
+                    d2 += ` L ${points[i].x} ${points[i].y2}`;
+                }
+                path1.setAttribute('d', d1);
+                path2.setAttribute('d', d2);
+                dnaGroup.appendChild(path1);
+                dnaGroup.appendChild(path2);
+
+                // Render base pairs (rungs)
+                points.forEach((p, idx) => {
+                    const rung = document.createElementNS('http://www.w3.org/2000/svg', 'line');
+                    rung.setAttribute('x1', p.x);
+                    rung.setAttribute('y1', p.y);
+                    rung.setAttribute('x2', p.x);
+                    rung.setAttribute('y2', p.y2);
+                    rung.setAttribute('class', 'base-pair');
+                    rung.id = `rung-${idx}`;
+                    
+                    if (idx === mutationIndex) {
+                        rung.classList.add('mutation');
+                    } else {
+                        rung.setAttribute('stroke', '#475569');
+                    }
+                    dnaGroup.appendChild(rung);
+                });
+            }
+
+            function updateInteraction(e) {
+                const rect = viewport.getBoundingClientRect();
+                const clientX = e.touches ? e.touches[0].clientX : e.clientX;
+                const clientY = e.touches ? e.touches[0].clientY : e.clientY;
+                
+                currentX = (clientX - rect.left) * (800 / rect.width);
+                currentY = (clientY - rect.top) * (600 / rect.height);
+
+                cas9Effector.setAttribute('transform', `translate(${currentX}, ${currentY})`);
+
+                if (!cleaved && !repaired) {
+                    // Check homology with target
+                    const targetX = points[mutationIndex].x;
+                    const dist = Math.abs(currentX - targetX);
+                    const homology = Math.max(0, 100 - (dist / 1.5));
+                    
+                    homologyBar.style.width = `${homology}%`;
+                    dataHomology.textContent = `${Math.round(homology)}%`;
+
+                    if (homology > 95) {
+                        dataPam.textContent = "TRUE";
+                        dataPam.className = "text-xl font-bold font-mono text-emerald-400";
+                        hudMode.textContent = "Target Sequence Matched";
+                        statusDot.className = "w-2.5 h-2.5 rounded-full bg-emerald-500 animate-ping";
+                    } else {
+                        dataPam.textContent = "FALSE";
+                        dataPam.className = "text-xl font-bold font-mono text-rose-500";
+                        hudMode.textContent = "Searching for Mutation";
+                        statusDot.className = "w-2.5 h-2.5 rounded-full bg-emerald-500 shadow-[0_0_10px_#10b981]";
+                    }
+                }
+            }
+
+            function handleCleave() {
+                if (cleaved || repaired) return;
+
+                const targetX = points[mutationIndex].x;
+                const dist = Math.abs(currentX - targetX);
+
+                if (dist < 30) {
+                    // SNAP!
+                    cleaved = true;
+                    
+                    // Scissor animation
+                    bladeTop.style.transform = 'rotate(-20deg)';
+                    bladeBottom.style.transform = 'rotate(20deg)';
+                    setTimeout(() => {
+                        bladeTop.style.transform = '';
+                        bladeBottom.style.transform = '';
+                    }, 200);
+
+                    // DNA Visual Break
+                    const rung = document.getElementById(`rung-${mutationIndex}`);
+                    rung.style.opacity = '0';
+                    rung.style.transition = 'opacity 0.5s';
+
+                    // Update UI
+                    dataIntegrity.textContent = "50%";
+                    dataIntegrity.style.color = "#f43f5e";
+                    dataCleavage.textContent = "DOUBLE STRAND";
+                    dataCleavage.className = "text-xl font-bold font-mono text-rose-500";
+                    telePanel.classList.add('status-cleaved');
+                    hudMode.textContent = "Genomic Break Detected";
+                    statusDot.className = "w-2.5 h-2.5 rounded-full bg-rose-500 animate-pulse";
+
+                    stepCleavage.style.opacity = '1';
+                    btnRepair.disabled = false;
+                    btnRepair.classList.replace('bg-slate-900', 'bg-emerald-600');
+                    btnRepair.classList.replace('text-slate-500', 'text-white');
+                    btnRepair.classList.add('shadow-lg', 'shadow-emerald-900/40');
+                }
+            }
+
+            function handleRepair() {
+                if (!cleaved || repaired) return;
+                repaired = true;
+                btnRepair.disabled = true;
+
+                // Visual Repair
+                const rung = document.getElementById(`rung-${mutationIndex}`);
+                rung.classList.remove('mutation');
+                rung.classList.add('healthy-insert');
+                rung.style.opacity = '1';
+
+                // Update UI
+                dataIntegrity.textContent = "100%";
+                dataIntegrity.style.color = "#10b981";
+                dataCleavage.textContent = "HDR COMPLETE";
+                dataCleavage.className = "text-xl font-bold font-mono text-emerald-400";
+                telePanel.classList.remove('status-cleaved');
+                telePanel.classList.add('status-neutralized');
+                hudMode.textContent = "Gene Corrected Successfully";
+                statusDot.className = "w-2.5 h-2.5 rounded-full bg-emerald-500 shadow-[0_0_20px_#10b981]";
+
+                stepRepair.style.opacity = '1';
+                cas9Effector.style.opacity = '0.2';
+            }
+
+            function reset() {
+                cleaved = false;
+                repaired = false;
+                btnRepair.disabled = true;
+                btnRepair.className = "group px-8 py-5 bg-slate-900 text-slate-500 font-bold rounded-2xl transition-all border border-slate-800 disabled:cursor-not-allowed flex items-center justify-center gap-3";
+                
+                dataIntegrity.textContent = "100%";
+                dataIntegrity.style.color = "";
+                dataCleavage.textContent = "NONE";
+                dataCleavage.className = "text-xl font-bold font-mono";
+                telePanel.className = "digital-readout rounded-3xl p-6 space-y-6";
+                
+                stepCleavage.style.opacity = '0.5';
+                stepRepair.style.opacity = '0.5';
+                cas9Effector.style.opacity = '1';
+                
+                initDNA();
+            }
+
+            // Events
+            viewport.addEventListener('mousemove', updateInteraction);
+            viewport.addEventListener('touchmove', updateInteraction);
+            viewport.addEventListener('click', handleCleave);
+            btnRepair.addEventListener('click', handleRepair);
+            btnReset.addEventListener('click', reset);
+
+            // Init
+            initDNA();
+        });
+    </script>
+</body>
+</html>

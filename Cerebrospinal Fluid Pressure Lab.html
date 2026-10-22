@@ -1,0 +1,563 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Cerebrospinal Pressure: Pascal's Law Lab</title>
+    <style>
+        :root {
+            --bg-color: #f8fafc;
+            --panel-bg: #ffffff;
+            --text-main: #0f172a;
+            --text-muted: #64748b;
+            --accent: #0ea5e9; /* Cyan/Blue for CSF */
+            --brain-color: #f1f5f9;
+            --csf-color: rgba(14, 165, 233, 0.2);
+            --csf-border: #0284c7;
+            --border-color: #e2e8f0;
+            --success: #10b981;
+            --warning: #f59e0b;
+            --danger: #ef4444;
+            --gauge-bg: #1e293b;
+        }
+
+        * { box-sizing: border-box; margin: 0; padding: 0; }
+
+        body {
+            background-color: #f1f5f9;
+            color: var(--text-main);
+            font-family: 'Inter', -apple-system, system-ui, sans-serif;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            padding: 20px;
+        }
+
+        .app-container {
+            display: flex;
+            background: var(--panel-bg);
+            border-radius: 20px;
+            box-shadow: 0 20px 50px -12px rgba(0, 0, 0, 0.15);
+            width: 100%;
+            max-width: 1200px;
+            height: 800px;
+            overflow: hidden;
+            border: 1px solid var(--border-color);
+        }
+
+        /* Sidebar */
+        .sidebar {
+            width: 400px;
+            padding: 35px;
+            border-right: 1px solid var(--border-color);
+            display: flex;
+            flex-direction: column;
+            gap: 25px;
+            background: #fff;
+            z-index: 10;
+        }
+
+        .sidebar h1 { font-size: 24px; font-weight: 800; color: #0369a1; }
+        
+        .math-box {
+            background: #f8fafc;
+            padding: 15px;
+            border-radius: 12px;
+            font-size: 14px;
+            border: 1px solid var(--border-color);
+            line-height: 1.6;
+        }
+
+        .formula {
+            font-family: 'Times New Roman', Times, serif;
+            font-size: 22px;
+            text-align: center;
+            margin: 10px 0;
+            font-weight: bold;
+            color: #1e293b;
+            background: #e0f2fe;
+            padding: 10px;
+            border-radius: 8px;
+        }
+
+        .control-group { display: flex; flex-direction: column; gap: 15px; }
+        label { font-size: 14px; font-weight: 700; display: flex; justify-content: space-between; align-items: center;}
+        
+        input[type="range"] {
+            width: 100%;
+            cursor: pointer;
+            accent-color: var(--accent);
+        }
+
+        .status-card {
+            background: #f0fdf4;
+            padding: 20px;
+            border-radius: 12px;
+            font-size: 14px;
+            line-height: 1.5;
+            color: var(--text-main);
+            border-left: 4px solid var(--success);
+            transition: all 0.3s;
+        }
+
+        /* Simulation Area */
+        .lab-area {
+            flex: 1;
+            background: radial-gradient(circle at center, #ffffff, #e0f2fe);
+            position: relative;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            overflow: hidden;
+        }
+
+        .data-overlay {
+            position: absolute;
+            top: 30px;
+            right: 30px;
+            background: rgba(15, 23, 42, 0.9);
+            color: white;
+            padding: 25px;
+            border-radius: 15px;
+            backdrop-filter: blur(8px);
+            min-width: 250px;
+            border: 1px solid rgba(255,255,255,0.1);
+            z-index: 10;
+        }
+
+        .data-row { margin-bottom: 15px; display: flex; flex-direction: column; }
+        .data-row:last-child { margin-bottom: 0; }
+        .data-label { font-size: 10px; text-transform: uppercase; color: #94a3b8; letter-spacing: 1px; }
+        .data-value { font-size: 28px; font-weight: 800; font-family: monospace; transition: color 0.3s; color: #38bdf8; }
+        .data-unit { font-size: 12px; color: #94a3b8; margin-left: 4px; font-family: 'Inter', sans-serif;}
+
+        /* Graphics */
+        .svg-canvas {
+            position: absolute;
+            top: 0; left: 0; width: 100%; height: 100%;
+            z-index: 2;
+            pointer-events: none;
+        }
+
+        #particleCanvas {
+            position: absolute;
+            top: 0; left: 0; width: 100%; height: 100%;
+            z-index: 1;
+            pointer-events: none;
+        }
+
+        .csf-fluid {
+            fill: var(--csf-color);
+            stroke: var(--csf-border);
+            stroke-width: 4;
+            transition: d 0.1s;
+        }
+
+        .piston {
+            fill: #64748b;
+            transition: transform 0.1s;
+        }
+
+        /* Gauge Styles */
+        .gauge-bg { fill: var(--gauge-bg); stroke: #334155; stroke-width: 2; }
+        .gauge-needle { stroke: #ef4444; stroke-width: 3; stroke-linecap: round; transition: transform 0.1s cubic-bezier(0.4, 0, 0.2, 1); }
+        .gauge-center { fill: #f8fafc; }
+        .gauge-text { font-family: monospace; font-size: 14px; font-weight: bold; fill: #fff; text-anchor: middle; }
+
+        @media (max-width: 900px) {
+            .app-container { flex-direction: column; height: auto; }
+            .sidebar { width: 100%; border-right: none; }
+            .lab-area { height: 600px; }
+        }
+    </style>
+</head>
+<body>
+
+    <div class="app-container">
+        <aside class="sidebar">
+            <h1>CSF Dynamics Lab</h1>
+            <p style="font-size: 14px; color: var(--text-muted);">
+                Observe how the central nervous system acts as a closed hydraulic system, transmitting pressure instantly from the spine to the brain.
+            </p>
+
+            <div class="math-box">
+                <div style="font-size: 12px; color: var(--text-muted); text-transform: uppercase; letter-spacing: 1px;">Pascal's Law</div>
+                <div class="formula">
+                    ΔP₁ = ΔP₂
+                </div>
+                <div style="font-size: 13px; color: var(--text-main); margin-top: 10px; text-align: center;">
+                    "A pressure change occurring anywhere in a confined incompressible fluid is transmitted throughout the fluid such that the same change occurs everywhere."
+                </div>
+            </div>
+
+            <div class="control-group">
+                <label>
+                    Abdominal/Lumbar Compression Force
+                    <span id="forceVal" style="color: var(--accent); font-family: monospace; font-size: 16px;">0 N</span>
+                </label>
+                <input type="range" id="forceSlider" min="0" max="20" step="0.5" value="0">
+                <span style="font-size: 11px; color: var(--text-muted);">Simulates coughing, sneezing, or a Queckenstedt maneuver.</span>
+            </div>
+
+            <div class="status-card" id="diagnosticCard">
+                <strong id="diagTitle">Status: Normal ICP</strong><br>
+                <span id="diagText">Intracranial Pressure (ICP) is within the healthy resting range of 5–15 mmHg.</span>
+            </div>
+            
+            <div style="margin-top: auto; font-size: 12px; color: var(--text-muted); line-height: 1.4;">
+                <strong>Clinical Note:</strong> Because Cerebrospinal Fluid (CSF) is mostly water and thus incompressible, any compression of the spinal dural sac instantly spikes the pressure inside the rigid skull.
+            </div>
+        </aside>
+
+        <main class="lab-area">
+            <!-- Data Overlay -->
+            <div class="data-overlay">
+                <div class="data-row">
+                    <div class="data-label">Lumbar Spinal Pressure (P₁)</div>
+                    <div class="data-value" id="lumbarPressureDisplay">10.0<span class="data-unit">mmHg</span></div>
+                </div>
+                <div class="data-row" style="margin-top: 10px; padding-top: 15px; border-top: 1px solid rgba(255,255,255,0.1);">
+                    <div class="data-label">Intracranial Pressure (P₂)</div>
+                    <div class="data-value" id="brainPressureDisplay" style="color: #ef4444;">10.0<span class="data-unit">mmHg</span></div>
+                </div>
+                <div class="data-row" style="margin-top: 10px; padding-top: 15px; border-top: 1px solid rgba(255,255,255,0.1);">
+                    <div class="data-label">System Pressure Change (ΔP)</div>
+                    <div class="data-value" id="deltaDisplay" style="font-size: 20px; color: #10b981;">+0.0<span class="data-unit">mmHg</span></div>
+                </div>
+            </div>
+
+            <!-- Dynamic Particles (Canvas) -->
+            <canvas id="particleCanvas"></canvas>
+
+            <!-- SVG Anatomy -->
+            <svg class="svg-canvas" viewBox="0 0 800 800" id="mainSvg">
+                <defs>
+                    <filter id="glow">
+                        <feGaussianBlur stdDeviation="3" result="blur" />
+                        <feComposite in="SourceGraphic" in2="blur" operator="over" />
+                    </filter>
+                </defs>
+
+                <!-- Background Silhouette (Head and Torso) -->
+                <path d="M 300 50 C 200 50, 180 150, 250 220 L 250 750 C 250 800, 350 800, 350 750 L 350 220 C 420 150, 400 50, 300 50 Z" fill="#f1f5f9" stroke="#cbd5e1" stroke-width="2" />
+                <text x="300" y="30" font-size="14" font-weight="bold" fill="#94a3b8" text-anchor="middle">CENTRAL NERVOUS SYSTEM</text>
+
+                <!-- Dural Sac / CSF Pathway (Dynamic) -->
+                <path id="csfPath" class="csf-fluid" d="" />
+
+                <!-- Anatomical Labels -->
+                <text x="300" y="150" font-size="12" font-weight="bold" fill="#0284c7" text-anchor="middle">BRAIN (CRANIUM)</text>
+                <text x="300" y="450" font-size="12" font-weight="bold" fill="#0284c7" text-anchor="middle" transform="rotate(-90 300 450)">SPINAL CORD</text>
+
+                <!-- Compression Mechanism (Pistons) -->
+                <g id="pistonLeft" transform="translate(230, 600)">
+                    <rect x="-40" y="-30" width="40" height="60" class="piston" />
+                    <line x1="-60" y1="0" x2="-45" y2="0" stroke="#ef4444" stroke-width="4" marker-end="url(#arrow)" />
+                </g>
+                <g id="pistonRight" transform="translate(370, 600)">
+                    <rect x="0" y="-30" width="40" height="60" class="piston" />
+                    <line x1="60" y1="0" x2="45" y2="0" stroke="#ef4444" stroke-width="4" marker-end="url(#arrow)" />
+                </g>
+
+                <!-- Pressure Gauge: BRAIN (P2) -->
+                <g transform="translate(120, 150)">
+                    <circle cx="0" cy="0" r="45" class="gauge-bg" />
+                    <!-- Ticks -->
+                    <path d="M -30 20 A 35 35 0 1 1 30 20" fill="none" stroke="#475569" stroke-width="4" stroke-dasharray="4 6" />
+                    <path d="M -30 20 A 35 35 0 0 1 -15 -30" fill="none" stroke="#10b981" stroke-width="4" /> <!-- Normal -->
+                    <path d="M -15 -30 A 35 35 0 0 1 15 -30" fill="none" stroke="#f59e0b" stroke-width="4" /> <!-- Elevated -->
+                    <path d="M 15 -30 A 35 35 0 0 1 30 20" fill="none" stroke="#ef4444" stroke-width="4" /> <!-- Danger -->
+                    
+                    <line id="needleBrain" class="gauge-needle" x1="0" y1="0" x2="-25" y2="20" />
+                    <circle cx="0" cy="0" r="6" class="gauge-center" />
+                    <text x="0" y="25" class="gauge-text" id="gaugeBrainText">10</text>
+                    <text x="0" y="40" font-size="10" fill="#94a3b8" text-anchor="middle">ICP (mmHg)</text>
+                    <line x1="45" y1="0" x2="110" y2="0" stroke="#94a3b8" stroke-width="2" stroke-dasharray="4" />
+                </g>
+
+                <!-- Pressure Gauge: LUMBAR (P1) -->
+                <g transform="translate(480, 600)">
+                    <circle cx="0" cy="0" r="45" class="gauge-bg" />
+                    <!-- Ticks -->
+                    <path d="M -30 20 A 35 35 0 1 1 30 20" fill="none" stroke="#475569" stroke-width="4" stroke-dasharray="4 6" />
+                    <line id="needleLumbar" class="gauge-needle" x1="0" y1="0" x2="-25" y2="20" />
+                    <circle cx="0" cy="0" r="6" class="gauge-center" />
+                    <text x="0" y="25" class="gauge-text" id="gaugeLumbarText">10</text>
+                    <text x="0" y="40" font-size="10" fill="#94a3b8" text-anchor="middle">LUMBAR (mmHg)</text>
+                    <line x1="-45" y1="0" x2="-70" y2="0" stroke="#94a3b8" stroke-width="2" stroke-dasharray="4" />
+                </g>
+
+                <!-- Markers -->
+                <defs>
+                    <marker id="arrow" markerWidth="10" markerHeight="10" refX="8" refY="3" orient="auto-start-reverse">
+                        <path d="M 0 0 L 10 3 L 0 6 Z" fill="#ef4444" />
+                    </marker>
+                </defs>
+            </svg>
+        </main>
+    </div>
+
+    <script>
+        const forceSlider = document.getElementById('forceSlider');
+        const forceVal = document.getElementById('forceVal');
+        
+        const lumbarPressureDisplay = document.getElementById('lumbarPressureDisplay');
+        const brainPressureDisplay = document.getElementById('brainPressureDisplay');
+        const deltaDisplay = document.getElementById('deltaDisplay');
+        
+        const diagTitle = document.getElementById('diagTitle');
+        const diagText = document.getElementById('diagText');
+        const diagnosticCard = document.getElementById('diagnosticCard');
+        
+        const canvas = document.getElementById('particleCanvas');
+        const ctx = canvas.getContext('2d');
+
+        // SVG Elements
+        const csfPath = document.getElementById('csfPath');
+        const pistonLeft = document.getElementById('pistonLeft');
+        const pistonRight = document.getElementById('pistonRight');
+        const needleBrain = document.getElementById('needleBrain');
+        const needleLumbar = document.getElementById('needleLumbar');
+        const gaugeBrainText = document.getElementById('gaugeBrainText');
+        const gaugeLumbarText = document.getElementById('gaugeLumbarText');
+
+        // Physics Variables
+        const BASE_PRESSURE = 10.0; // mmHg
+        // Conversion factor: applied force maps to pressure increase
+        const FORCE_TO_PRESSURE_RATIO = 1.2; 
+        
+        let currentPressure = BASE_PRESSURE;
+        let particles = [];
+
+        // Resize Canvas to match SVG overlay
+        function resizeCanvas() {
+            canvas.width = canvas.offsetWidth;
+            canvas.height = canvas.offsetHeight;
+        }
+        window.addEventListener('resize', resizeCanvas);
+        resizeCanvas();
+
+        // Bounds for CSF particles
+        const bounds = {
+            brain: { cx: 300, cy: 150, r: 60 },
+            spine: { x: 270, y: 200, defaultW: 60, h: 550 },
+            currentSpineW: 60, // Dynamically changes with compression
+            compressionY: 600,
+            compressionH: 60
+        };
+
+        class CSFParticle {
+            constructor() {
+                this.x = 300;
+                this.y = 400;
+                this.vx = (Math.random() - 0.5) * 2;
+                this.vy = (Math.random() - 0.5) * 2;
+                this.radius = 1.5 + Math.random() * 1.5;
+                this.placeRandomly();
+            }
+
+            placeRandomly() {
+                if (Math.random() > 0.5) {
+                    // Place in brain
+                    const angle = Math.random() * Math.PI * 2;
+                    const r = Math.random() * bounds.brain.r * 0.9;
+                    this.x = bounds.brain.cx + Math.cos(angle) * r;
+                    this.y = bounds.brain.cy + Math.sin(angle) * r;
+                } else {
+                    // Place in spine
+                    this.x = bounds.spine.x + Math.random() * bounds.currentSpineW;
+                    this.y = bounds.spine.y + Math.random() * bounds.spine.h;
+                }
+            }
+
+            update(pressureFactor) {
+                // Higher pressure = higher agitation (Brownian motion proxy)
+                const agitation = 1 + (pressureFactor * 0.2);
+                
+                this.x += this.vx * agitation;
+                this.y += this.vy * agitation;
+
+                // Boundary Collision Detection
+                // Brain (Circle)
+                if (this.y < bounds.spine.y) {
+                    const dx = this.x - bounds.brain.cx;
+                    const dy = this.y - bounds.brain.cy;
+                    if (dx*dx + dy*dy > Math.pow(bounds.brain.r, 2)) {
+                        // Reflect vector towards center
+                        const angle = Math.atan2(dy, dx);
+                        this.vx = -Math.cos(angle) * Math.abs(this.vx);
+                        this.vy = -Math.sin(angle) * Math.abs(this.vy);
+                        // Nudge inside
+                        this.x = bounds.brain.cx + Math.cos(angle) * bounds.brain.r * 0.95;
+                        this.y = bounds.brain.cy + Math.sin(angle) * bounds.brain.r * 0.95;
+                    }
+                } 
+                // Spine (Rectangle with dynamic pinch)
+                else {
+                    let localSpineW = bounds.currentSpineW;
+                    let localSpineX = 300 - (localSpineW / 2);
+
+                    // Check if particle is in the compression zone
+                    if (this.y >= bounds.compressionY - 30 && this.y <= bounds.compressionY + bounds.compressionH + 30) {
+                        // If it gets caught outside the narrowing spine, push it up or down rapidly (transmitting the wave)
+                        if (this.x < localSpineX || this.x > localSpineX + localSpineW) {
+                            this.x = 300 + (Math.random() - 0.5) * localSpineW * 0.8;
+                            // Push away from compression
+                            this.vy = (this.y > bounds.compressionY + bounds.compressionH/2) ? Math.abs(this.vy)*3 : -Math.abs(this.vy)*3;
+                        }
+                    }
+
+                    // Standard spine wall collision
+                    if (this.x < localSpineX) { this.x = localSpineX; this.vx *= -1; }
+                    if (this.x > localSpineX + localSpineW) { this.x = localSpineX + localSpineW; this.vx *= -1; }
+                    
+                    // Bottom collision
+                    if (this.y > bounds.spine.y + bounds.spine.h) { this.y = bounds.spine.y + bounds.spine.h; this.vy *= -1; }
+                }
+
+                // Random jitter
+                this.vx += (Math.random() - 0.5) * 0.5;
+                this.vy += (Math.random() - 0.5) * 0.5;
+                
+                // Speed limit
+                const maxSpeed = 3 * agitation;
+                const speed = Math.sqrt(this.vx*this.vx + this.vy*this.vy);
+                if (speed > maxSpeed) {
+                    this.vx = (this.vx / speed) * maxSpeed;
+                    this.vy = (this.vy / speed) * maxSpeed;
+                }
+            }
+
+            draw() {
+                const scaleX = canvas.width / 800;
+                const scaleY = canvas.height / 800;
+                
+                ctx.beginPath();
+                ctx.arc(this.x * scaleX, this.y * scaleY, this.radius * scaleX, 0, Math.PI * 2);
+                ctx.fillStyle = 'rgba(14, 165, 233, 0.6)';
+                ctx.fill();
+            }
+        }
+
+        for (let i = 0; i < 400; i++) particles.push(new CSFParticle());
+
+        // Update Gauge Rotation
+        // Needle maps from -135deg (0 mmHg) to +135deg (40 mmHg)
+        function updateGauge(needleEl, textEl, pressure) {
+            const minAngle = -135;
+            const maxAngle = 135;
+            const maxPressure = 40;
+            
+            let angle = minAngle + (pressure / maxPressure) * (maxAngle - minAngle);
+            if (angle > maxAngle) angle = maxAngle;
+            
+            needleEl.setAttribute('transform', `rotate(${angle})`);
+            textEl.textContent = pressure.toFixed(1);
+        }
+
+        // Generate SVG Path for the Dural Sac dynamically based on compression
+        function updateSVGPath(pinchAmount) {
+            const cx = 300;
+            const cr = 60; // Brain radius
+            const sw = 60 - pinchAmount; // Spine width
+            const hw = sw / 2; // Half width
+
+            bounds.currentSpineW = sw;
+
+            // M top-center, Brain right arc, spine right down, pinch in, pinch out, spine right bottom, 
+            // bottom arc, spine left up, pinch out, pinch in, spine left up, Brain left arc
+            const pathData = `
+                M 300 90
+                A 60 60 0 0 1 360 150
+                C 360 200, ${300 + hw} 200, ${300 + hw} 250
+                L ${300 + hw} 570
+                C ${300 + hw} 580, ${300 + hw} 590, ${300 + hw} 600
+                L ${300 + hw} 660
+                C ${300 + hw} 670, ${300 + hw} 680, ${300 + hw} 690
+                L ${300 + hw} 730
+                A ${hw} ${hw} 0 0 1 ${300 - hw} 730
+                L ${300 - hw} 690
+                C ${300 - hw} 680, ${300 - hw} 670, ${300 - hw} 660
+                L ${300 - hw} 600
+                C ${300 - hw} 590, ${300 - hw} 580, ${300 - hw} 570
+                L ${300 - hw} 250
+                C ${300 - hw} 200, 240 200, 240 150
+                A 60 60 0 0 1 300 90 Z
+            `;
+            csfPath.setAttribute('d', pathData);
+
+            // Move visual pistons
+            pistonLeft.setAttribute('transform', `translate(${230 + (pinchAmount/2)}, 600)`);
+            pistonRight.setAttribute('transform', `translate(${370 - (pinchAmount/2)}, 600)`);
+        }
+
+        function updatePhysics() {
+            const force = parseFloat(forceSlider.value);
+            forceVal.textContent = `${force.toFixed(1)} N`;
+
+            // Physics Math
+            const deltaP = force * FORCE_TO_PRESSURE_RATIO;
+            currentPressure = BASE_PRESSURE + deltaP;
+
+            // Update UI Data Displays
+            lumbarPressureDisplay.innerHTML = `${currentPressure.toFixed(1)}<span class="data-unit">mmHg</span>`;
+            brainPressureDisplay.innerHTML = `${currentPressure.toFixed(1)}<span class="data-unit">mmHg</span>`;
+            deltaDisplay.innerHTML = `+${deltaP.toFixed(1)}<span class="data-unit">mmHg</span>`;
+
+            // Visual Compression (Max pinch = 40px)
+            const pinchPx = (force / 20) * 40;
+            updateSVGPath(pinchPx);
+
+            // Update Gauges (Both simultaneously - Pascal's Law)
+            updateGauge(needleLumbar, gaugeLumbarText, currentPressure);
+            updateGauge(needleBrain, gaugeBrainText, currentPressure);
+
+            // Diagnostics
+            if (currentPressure <= 15.0) {
+                diagnosticCard.style.borderLeftColor = "var(--success)";
+                diagnosticCard.style.backgroundColor = "#f0fdf4";
+                diagTitle.textContent = "Status: Normal ICP";
+                diagTitle.style.color = "var(--success)";
+                diagText.textContent = "Intracranial Pressure (ICP) is within the healthy resting range of 5–15 mmHg.";
+                brainPressureDisplay.style.color = "var(--success)";
+            } else if (currentPressure <= 20.0) {
+                diagnosticCard.style.borderLeftColor = "var(--warning)";
+                diagnosticCard.style.backgroundColor = "#fffbeb";
+                diagTitle.textContent = "Status: Elevated ICP";
+                diagTitle.style.color = "var(--warning)";
+                diagText.textContent = "Pressure is slightly elevated due to external compression. Usually well tolerated transiently (e.g., coughing).";
+                brainPressureDisplay.style.color = "var(--warning)";
+            } else {
+                diagnosticCard.style.borderLeftColor = "var(--danger)";
+                diagnosticCard.style.backgroundColor = "#fef2f2";
+                diagTitle.textContent = "Status: Intracranial Hypertension";
+                diagTitle.style.color = "var(--danger)";
+                diagText.textContent = "Danger! High pressure (> 20 mmHg) inside the rigid skull restricts blood flow to the brain, risking ischemia or herniation.";
+                brainPressureDisplay.style.color = "var(--danger)";
+            }
+        }
+
+        forceSlider.addEventListener('input', updatePhysics);
+
+        // Animation Loop
+        function animate() {
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+            
+            const pressureFactor = (currentPressure - BASE_PRESSURE);
+            
+            particles.forEach(p => {
+                p.update(pressureFactor);
+                p.draw();
+            });
+            
+            requestAnimationFrame(animate);
+        }
+
+        // Init
+        updatePhysics();
+        requestAnimationFrame(animate);
+
+    </script>
+</body>
+</html>

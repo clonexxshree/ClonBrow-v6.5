@@ -1,0 +1,502 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Impulse & Momentum: Concussion Simulator</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;700&family=Inter:wght@300;400;600;700&display=swap');
+
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: #020617;
+            color: #f1f5f9;
+            overflow-x: hidden;
+        }
+
+        .font-mono { font-family: 'JetBrains Mono', monospace; }
+
+        .glass-card {
+            background: rgba(15, 23, 42, 0.7);
+            backdrop-filter: blur(12px);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.5);
+        }
+
+        .digital-readout {
+            background: #061021;
+            color: #f43f5e;
+            text-shadow: 0 0 8px rgba(244, 63, 94, 0.4);
+            border: 1px solid #1e293b;
+        }
+
+        .digital-readout.safe {
+            color: #34d399;
+            text-shadow: 0 0 8px rgba(52, 211, 153, 0.4);
+        }
+        .digital-readout.warning {
+            color: #fbbf24;
+            text-shadow: 0 0 8px rgba(251, 191, 36, 0.4);
+        }
+
+        /* SVG Elements */
+        .skull { fill: #e2e8f0; stroke: #94a3b8; stroke-width: 3; }
+        .brain { fill: #fca5a5; stroke: #f87171; stroke-width: 2; transition: fill 0.3s ease; }
+        .helmet-shell { fill: #0284c7; stroke: #0369a1; stroke-width: 3; }
+        .helmet-foam { fill: #38bdf8; opacity: 0.8; }
+        .barrier { fill: #334155; stroke: #475569; stroke-width: 4; }
+
+        /* Slosh Animation */
+        @keyframes slosh-severe {
+            0% { transform: translateX(0); fill: #fca5a5; }
+            30% { transform: translateX(25px) scaleX(0.85); fill: #ef4444; }
+            60% { transform: translateX(-15px) scaleX(0.95); fill: #dc2626; }
+            100% { transform: translateX(0); fill: #fca5a5; }
+        }
+        
+        @keyframes slosh-mild {
+            0% { transform: translateX(0); fill: #fca5a5; }
+            30% { transform: translateX(8px) scaleX(0.95); fill: #f87171; }
+            60% { transform: translateX(-4px); fill: #fca5a5; }
+            100% { transform: translateX(0); fill: #fca5a5; }
+        }
+
+        .anim-slosh-severe { animation: slosh-severe 0.6s ease-out; }
+        .anim-slosh-mild { animation: slosh-mild 0.8s ease-out; }
+
+        /* Impact lines */
+        @keyframes flash {
+            0% { opacity: 0; transform: scale(0.5); }
+            20% { opacity: 1; transform: scale(1.2); }
+            100% { opacity: 0; transform: scale(1.5); }
+        }
+        .impact-flash { opacity: 0; stroke: #fbbf24; stroke-width: 4; stroke-linecap: round; transform-origin: center; }
+        .anim-flash { animation: flash 0.4s ease-out; }
+
+        input[type=range] { accent-color: #f43f5e; }
+        input[type=range].safe-slider { accent-color: #34d399; }
+
+        /* Grid Background */
+        .bg-grid {
+            background-size: 40px 40px;
+            background-image: linear-gradient(to right, rgba(255, 255, 255, 0.05) 1px, transparent 1px),
+                              linear-gradient(to bottom, rgba(255, 255, 255, 0.05) 1px, transparent 1px);
+        }
+    </style>
+</head>
+<body class="min-h-screen p-4 md:p-8 flex items-center justify-center">
+
+    <div class="max-w-7xl w-full grid grid-cols-1 lg:grid-cols-12 gap-8 items-stretch">
+        
+        <!-- Simulation Viewport -->
+        <div class="lg:col-span-8 flex flex-col gap-6">
+            <div class="glass-card rounded-3xl p-0 relative flex-grow min-h-[450px] flex items-center justify-center overflow-hidden border border-slate-800 bg-grid">
+                
+                <!-- HUD Header -->
+                <div class="absolute top-6 left-8 flex items-center gap-3 z-20">
+                    <div id="status-dot" class="w-2.5 h-2.5 rounded-full bg-slate-500"></div>
+                    <span id="status-text" class="text-[10px] font-bold text-slate-400 uppercase tracking-widest font-mono">Test Sled Ready</span>
+                </div>
+
+                <!-- SVG Layer: Crash Test -->
+                <svg id="crash-svg" viewBox="0 0 800 400" class="w-full h-full relative z-10">
+                    
+                    <!-- Ground Line -->
+                    <line x1="0" y1="320" x2="800" y2="320" stroke="#334155" stroke-width="4" stroke-dasharray="20 10" />
+
+                    <!-- The Barrier -->
+                    <rect x="650" y="80" width="100" height="240" class="barrier" rx="8" />
+                    <line x1="660" y1="80" x2="660" y2="320" stroke="#f43f5e" stroke-width="2" stroke-dasharray="10 5" opacity="0.5"/>
+                    <text x="700" y="200" fill="#64748b" font-weight="bold" font-size="20" text-anchor="middle" transform="rotate(90, 700, 200)">RIGID WALL</text>
+
+                    <!-- The Head/Helmet Assembly -->
+                    <!-- Wrapped in a group so we can translate it horizontally -->
+                    <g id="head-assembly" transform="translate(100, 0)">
+                        
+                        <!-- Neck -->
+                        <path d="M 120 250 L 120 320 L 160 320 L 160 250 Z" fill="#1e293b" />
+                        
+                        <!-- Skull -->
+                        <path d="M 80 180 C 80 100, 200 100, 200 180 C 200 240, 160 260, 140 260 C 120 260, 80 240, 80 180 Z" class="skull" />
+                        
+                        <!-- Brain (Separate group for slosh physics) -->
+                        <g id="brain-mass" transform="translate(0, 0)">
+                            <path d="M 95 175 C 95 120, 185 120, 185 175 C 185 220, 155 235, 140 235 C 125 235, 95 220, 95 175 Z" class="brain" />
+                            <!-- Sulci/Gyri details -->
+                            <path d="M 110 150 Q 130 130 140 160 T 170 150" fill="none" stroke="#f87171" stroke-width="2" opacity="0.6"/>
+                            <path d="M 120 180 Q 140 170 150 200" fill="none" stroke="#f87171" stroke-width="2" opacity="0.6"/>
+                        </g>
+
+                        <!-- Helmet (Toggled via JS) -->
+                        <g id="helmet-group" style="opacity: 0; transition: opacity 0.3s ease;">
+                            <!-- EPS Foam (Crumple Zone) -->
+                            <path id="helmet-foam-path" d="M 60 180 C 60 70, 220 70, 220 180 C 220 200, 210 220, 210 220 L 190 220 C 190 220, 200 200, 200 180 C 200 90, 80 90, 80 180 C 80 200, 90 220, 90 220 L 70 220 C 70 220, 60 200, 60 180 Z" class="helmet-foam" />
+                            <!-- Hard Outer Shell -->
+                            <path id="helmet-shell-path" d="M 50 180 C 50 60, 230 60, 230 180 L 220 180 C 220 70, 60 70, 60 180 Z" class="helmet-shell" />
+                        </g>
+                    </g>
+
+                    <!-- Impact Flash Vectors -->
+                    <g id="impact-effects" transform="translate(650, 180)">
+                        <line x1="-10" y1="0" x2="-60" y2="0" class="impact-flash" />
+                        <line x1="-10" y1="-20" x2="-50" y2="-50" class="impact-flash" />
+                        <line x1="-10" y1="20" x2="-50" y2="50" class="impact-flash" />
+                        <circle cx="-10" cy="0" r="10" fill="#f43f5e" class="impact-flash" />
+                    </g>
+                </svg>
+
+                <!-- Tags -->
+                <div class="absolute bottom-6 left-8 flex flex-col gap-1">
+                    <span class="text-[9px] font-mono text-slate-500 uppercase">System Mass (m): 5.0 kg (Head)</span>
+                    <span class="text-[9px] font-mono text-slate-500 uppercase">Variable: Impact Duration (Δt)</span>
+                </div>
+            </div>
+
+            <!-- Controls -->
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div class="glass-card p-6 rounded-2xl space-y-4">
+                    <div class="flex justify-between items-center">
+                        <label class="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Impact Velocity (v)</label>
+                        <span id="vel-display" class="text-xs font-mono text-rose-400">8.0 m/s</span>
+                    </div>
+                    <input type="range" id="vel-slider" min="2" max="15" step="0.5" value="8" class="w-full h-1.5 bg-slate-800 rounded-lg appearance-none cursor-pointer">
+                    <div class="flex justify-between text-[9px] text-slate-500 uppercase">
+                        <span>Jogging</span>
+                        <span>Cycling/Skiing</span>
+                    </div>
+                </div>
+                <div class="glass-card p-6 rounded-2xl flex flex-col justify-center">
+                    <div class="flex items-center justify-between mb-2">
+                        <label class="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Protective Gear</label>
+                        <span id="helmet-status" class="text-xs font-mono text-slate-500">UNPROTECTED</span>
+                    </div>
+                    <button id="btn-toggle-helmet" class="w-full py-3 bg-slate-800 hover:bg-slate-700 text-white font-bold rounded-xl transition-all border border-slate-600 flex items-center justify-center gap-2">
+                        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20.618 5.984A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z"></path></svg>
+                        Equip Helmet
+                    </button>
+                </div>
+            </div>
+            
+            <button id="btn-crash" class="w-full py-4 bg-rose-600 hover:bg-rose-500 text-white font-bold rounded-2xl transition-all shadow-lg shadow-rose-900/50 flex items-center justify-center gap-3 text-lg">
+                <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"></path></svg>
+                Simulate Impact
+            </button>
+        </div>
+
+        <!-- Sidebar: Analytics & Graphs -->
+        <div class="lg:col-span-4 flex flex-col gap-6">
+            
+            <!-- Digital Readout -->
+            <div id="telemetry-panel" class="digital-readout rounded-3xl p-6 space-y-6 transition-colors duration-500">
+                <div class="flex justify-between items-center border-b border-current pb-3 opacity-60">
+                    <span class="text-[10px] font-bold tracking-tighter uppercase">Impact Telemetry</span>
+                    <span class="text-xs font-mono">STANDBY</span>
+                </div>
+
+                <div class="space-y-4">
+                    <div class="space-y-1">
+                        <label class="text-[9px] uppercase font-bold opacity-60">Peak Force (F<sub>max</sub>)</label>
+                        <div id="data-force" class="text-4xl font-bold font-mono">0 N</div>
+                    </div>
+
+                    <div class="grid grid-cols-2 gap-4 pt-2">
+                        <div class="space-y-1">
+                            <label class="text-[9px] uppercase font-bold opacity-60">Impact Time (Δt)</label>
+                            <div id="data-time" class="text-xl font-bold font-mono">0 ms</div>
+                        </div>
+                        <div class="space-y-1">
+                            <label class="text-[9px] uppercase font-bold opacity-60">Momentum (Δp)</label>
+                            <div id="data-momentum" class="text-xl font-bold font-mono">0 kg·m/s</div>
+                        </div>
+                    </div>
+
+                    <div class="pt-4 border-t border-current opacity-80 space-y-2">
+                        <label class="text-[9px] uppercase font-bold">Brain Injury Risk</label>
+                        <div class="flex items-center justify-between">
+                            <div id="risk-label" class="text-lg font-bold">---</div>
+                            <div id="g-force" class="text-sm font-mono">0 G</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Force vs Time Graph -->
+            <div class="glass-card p-6 rounded-3xl space-y-4 flex-grow flex flex-col">
+                <h3 class="text-xs font-bold text-slate-400 uppercase tracking-widest flex justify-between">
+                    <span>Force vs. Time</span>
+                    <span class="text-slate-500 font-mono text-[9px]">Impulse Curve</span>
+                </h3>
+                <div class="flex-grow bg-slate-900/80 rounded-xl border border-slate-700 p-3 relative min-h-[150px]">
+                    <canvas id="impulse-graph" class="w-full h-full absolute inset-0 p-3"></canvas>
+                    <!-- Axes labels -->
+                    <div class="absolute left-1 top-2 text-[8px] text-slate-500 -rotate-90 origin-left">Force (N)</div>
+                    <div class="absolute right-2 bottom-1 text-[8px] text-slate-500">Time (ms)</div>
+                </div>
+                <div class="text-[9px] text-slate-400 leading-relaxed text-center">
+                    The area under the curve is the <strong>Impulse (Δp)</strong>. Since momentum change is constant, extending the impact time flattens the curve, reducing lethal peak forces.
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', () => {
+            const velSlider = document.getElementById('vel-slider');
+            const velDisplay = document.getElementById('vel-display');
+            const btnHelmet = document.getElementById('btn-toggle-helmet');
+            const helmetStatus = document.getElementById('helmet-status');
+            const btnCrash = document.getElementById('btn-crash');
+            
+            const headAssembly = document.getElementById('head-assembly');
+            const helmetGroup = document.getElementById('helmet-group');
+            const helmetShellPath = document.getElementById('helmet-shell-path');
+            const helmetFoamPath = document.getElementById('helmet-foam-path');
+            const brainMass = document.getElementById('brain-mass');
+            const impactEffects = document.getElementById('impact-effects');
+            const impactFlashes = document.querySelectorAll('.impact-flash');
+            
+            const telemetryPanel = document.getElementById('telemetry-panel');
+            const dataForce = document.getElementById('data-force');
+            const dataTime = document.getElementById('data-time');
+            const dataMomentum = document.getElementById('data-momentum');
+            const riskLabel = document.getElementById('risk-label');
+            const gForceLabel = document.getElementById('g-force');
+            
+            const canvas = document.getElementById('impulse-graph');
+            const ctx = canvas.getContext('2d');
+
+            // Physics Constants
+            const massHead = 5.0; // kg
+            const dtSkull = 0.005; // 5ms impact bare skull
+            const dtHelmet = 0.025; // 25ms impact with helmet (stretches impulse)
+
+            let hasHelmet = false;
+            let isAnimating = false;
+
+            // Base SVG paths for helmet to reset after crumple
+            const baseFoamD = "M 60 180 C 60 70, 220 70, 220 180 C 220 200, 210 220, 210 220 L 190 220 C 190 220, 200 200, 200 180 C 200 90, 80 90, 80 180 C 80 200, 90 220, 90 220 L 70 220 C 70 220, 60 200, 60 180 Z";
+            const baseShellD = "M 50 180 C 50 60, 230 60, 230 180 L 220 180 C 220 70, 60 70, 60 180 Z";
+
+            // Crumpled paths (compressed right side)
+            const crushFoamD = "M 60 180 C 60 70, 205 70, 205 180 C 205 200, 200 220, 200 220 L 190 220 C 190 220, 195 200, 195 180 C 195 90, 80 90, 80 180 C 80 200, 90 220, 90 220 L 70 220 C 70 220, 60 200, 60 180 Z";
+            const crushShellD = "M 50 180 C 50 60, 210 60, 210 180 L 205 180 C 205 70, 60 70, 60 180 Z";
+
+            function resizeCanvas() {
+                // To prevent stretching
+                const rect = canvas.parentElement.getBoundingClientRect();
+                canvas.width = rect.width - 24; // padding
+                canvas.height = rect.height - 24;
+            }
+            window.addEventListener('resize', resizeCanvas);
+            resizeCanvas();
+
+            function drawGraph(peakForce, duration, isSafe) {
+                ctx.clearRect(0, 0, canvas.width, canvas.height);
+                
+                const w = canvas.width;
+                const h = canvas.height;
+                
+                // Max limits for scaling
+                const maxForce = 20000; // N (deadly)
+                const maxTime = 35; // ms
+
+                // Draw curve (approximated as a half-sine or bell curve for visual)
+                ctx.beginPath();
+                ctx.moveTo(0, h);
+                
+                const steps = 50;
+                for (let i = 0; i <= steps; i++) {
+                    const t = (i / steps) * duration;
+                    const x = (t / maxTime) * w;
+                    // Sinusoidal impulse pulse: F(t) = F_peak * sin(pi * t / dt)
+                    const f = peakForce * Math.sin(Math.PI * (t / duration));
+                    const y = h - ((f / maxForce) * h);
+                    
+                    ctx.lineTo(x, y);
+                }
+                
+                // Color based on safety
+                const color = isSafe ? '#34d399' : '#f43f5e';
+                
+                // Fill
+                ctx.lineTo((duration / maxTime) * w, h);
+                ctx.fillStyle = color + '40'; // add transparency
+                ctx.fill();
+                
+                // Stroke
+                ctx.strokeStyle = color;
+                ctx.lineWidth = 3;
+                ctx.stroke();
+
+                // Draw Concussion Threshold Line (approx 4000 N for visual scale)
+                const threshY = h - ((4000 / maxForce) * h);
+                ctx.beginPath();
+                ctx.strokeStyle = '#fbbf24';
+                ctx.lineWidth = 1;
+                ctx.setLineDash([5, 5]);
+                ctx.moveTo(0, threshY);
+                ctx.lineTo(w, threshY);
+                ctx.stroke();
+                ctx.setLineDash([]);
+                
+                ctx.fillStyle = '#fbbf24';
+                ctx.font = '10px sans-serif';
+                ctx.fillText('Concussion Threshold', 5, threshY - 5);
+            }
+
+            function updateUI() {
+                const vel = parseFloat(velSlider.value);
+                velDisplay.textContent = `${vel.toFixed(1)} m/s`;
+                velSlider.className = hasHelmet ? "w-full h-1.5 bg-slate-800 rounded-lg appearance-none cursor-pointer safe-slider" : "w-full h-1.5 bg-slate-800 rounded-lg appearance-none cursor-pointer";
+                
+                // Pre-calculate to show expected data (optional, or just update on crash)
+                // Let's reset telemetry when slider moves
+                if (!isAnimating) {
+                    resetStage();
+                }
+            }
+
+            function toggleHelmet() {
+                if (isAnimating) return;
+                hasHelmet = !hasHelmet;
+                
+                if (hasHelmet) {
+                    helmetStatus.textContent = "HELMET EQUIPPED";
+                    helmetStatus.className = "text-xs font-mono text-emerald-400";
+                    btnHelmet.classList.replace('bg-slate-800', 'bg-emerald-600');
+                    btnHelmet.classList.replace('hover:bg-slate-700', 'hover:bg-emerald-500');
+                    helmetGroup.style.opacity = '1';
+                } else {
+                    helmetStatus.textContent = "UNPROTECTED";
+                    helmetStatus.className = "text-xs font-mono text-rose-500";
+                    btnHelmet.classList.replace('bg-emerald-600', 'bg-slate-800');
+                    btnHelmet.classList.replace('hover:bg-emerald-500', 'hover:bg-slate-700');
+                    helmetGroup.style.opacity = '0';
+                }
+                updateUI();
+            }
+
+            function resetStage() {
+                headAssembly.style.transition = 'none';
+                headAssembly.style.transform = 'translate(100px, 0)';
+                
+                brainMass.classList.remove('anim-slosh-severe', 'anim-slosh-mild');
+                impactFlashes.forEach(f => f.classList.remove('anim-flash'));
+                
+                helmetFoamPath.setAttribute('d', baseFoamD);
+                helmetShellPath.setAttribute('d', baseShellD);
+
+                telemetryPanel.className = "digital-readout rounded-3xl p-6 space-y-6 transition-colors duration-500";
+                dataForce.textContent = "0 N";
+                dataTime.textContent = "0 ms";
+                dataMomentum.textContent = "0 kg·m/s";
+                riskLabel.textContent = "---";
+                gForceLabel.textContent = "0 G";
+                
+                ctx.clearRect(0, 0, canvas.width, canvas.height);
+            }
+
+            function executeCrash() {
+                if (isAnimating) return;
+                isAnimating = true;
+                btnCrash.disabled = true;
+
+                resetStage();
+
+                const vel = parseFloat(velSlider.value);
+                const p = massHead * vel; // Momentum
+                const dt = hasHelmet ? dtHelmet : dtSkull; // Time in seconds
+                
+                // Impulse = F_avg * dt => F_avg = p / dt
+                // Assuming sine wave pulse, F_peak is approx (pi/2) * F_avg, let's use 2x for simplicity
+                const fPeak = (p / dt) * 2; 
+                const gForce = fPeak / (massHead * 9.81);
+
+                // Concussion threshold simplified logic (>4000N = severe, >2000N = mild)
+                const isSafe = fPeak < 3000;
+                const isDeadly = fPeak > 8000;
+
+                // Animate Head moving to wall
+                // Wall is at x=650. Head right edge is at local x=200.
+                // If head_x + 200 = 650 => head_x = 450.
+                // If helmet, it sticks out more, hits earlier.
+                const targetX = hasHelmet ? 420 : 450;
+                const animDuration = (350 / vel) * 5; // Fake scaling time for visual
+                
+                // Force layout reflow
+                void headAssembly.offsetWidth; 
+                
+                headAssembly.style.transition = `transform ${animDuration}ms linear`;
+                headAssembly.style.transform = `translate(${targetX}px, 0)`;
+
+                // Wait for impact
+                setTimeout(() => {
+                    // Impact happens!
+                    
+                    // 1. Telemetry Update
+                    dataMomentum.textContent = `${p.toFixed(0)} kg·m/s`;
+                    dataTime.textContent = `${dt * 1000} ms`;
+                    dataForce.textContent = `${Math.round(fPeak)} N`;
+                    gForceLabel.textContent = `${Math.round(gForce)} G`;
+
+                    if (isSafe) {
+                        telemetryPanel.classList.add('safe');
+                        riskLabel.textContent = "LOW (Mild Jolt)";
+                    } else if (isDeadly) {
+                        telemetryPanel.classList.add('digital-readout'); // Red
+                        riskLabel.textContent = "EXTREME (Trauma)";
+                    } else {
+                        telemetryPanel.classList.add('warning');
+                        riskLabel.textContent = "HIGH (Concussion)";
+                    }
+
+                    // 2. Draw Graph
+                    drawGraph(fPeak, dt * 1000, isSafe);
+
+                    // 3. SVG Impact Animations
+                    impactFlashes.forEach(f => {
+                        f.style.stroke = isSafe ? '#34d399' : '#f43f5e';
+                        f.classList.add('anim-flash');
+                    });
+
+                    if (hasHelmet) {
+                        // Crumple helmet
+                        helmetFoamPath.style.transition = `d ${dt}s ease-out`;
+                        helmetShellPath.style.transition = `d ${dt}s ease-out`;
+                        helmetFoamPath.setAttribute('d', crushFoamD);
+                        helmetShellPath.setAttribute('d', crushShellD);
+                        
+                        // Head moves slightly deeper during crush
+                        headAssembly.style.transition = `transform ${dt*1000}ms ease-out`;
+                        headAssembly.style.transform = `translate(${targetX + 25}px, 0)`;
+
+                        // Mild brain slosh
+                        if(vel > 10) brainMass.classList.add('anim-slosh-mild');
+                    } else {
+                        // Severe brain slosh
+                        brainMass.classList.add('anim-slosh-severe');
+                        // Bounce back slightly
+                        headAssembly.style.transition = `transform 0.5s ease-out`;
+                        headAssembly.style.transform = `translate(${targetX - 20}px, 0)`;
+                    }
+
+                    // Cleanup
+                    setTimeout(() => {
+                        isAnimating = false;
+                        btnCrash.disabled = false;
+                    }, 1000);
+
+                }, animDuration);
+            }
+
+            velSlider.addEventListener('input', updateUI);
+            btnHelmet.addEventListener('click', toggleHelmet);
+            btnCrash.addEventListener('click', executeCrash);
+
+            // Initial UI setup
+            updateUI();
+        });
+    </script>
+</body>
+</html>

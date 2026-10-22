@@ -1,0 +1,480 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Lymph Node Filter Simulation</title>
+    <style>
+        :root {
+            --bg-color: #f8fafc;
+            --panel-bg: #ffffff;
+            --text-main: #0f172a;
+            --text-muted: #64748b;
+            --accent: #10b981; /* Lymph Green */
+            --fluid-color: #0ea5e9; /* Fluid Blue */
+            --debris-color: #475569; /* Pathogen Gray */
+            --border-color: #e2e8f0;
+            --node-bg: #f0fdf4;
+        }
+
+        * { box-sizing: border-box; margin: 0; padding: 0; }
+
+        body {
+            background-color: #f1f5f9;
+            color: var(--text-main);
+            font-family: 'Inter', -apple-system, system-ui, sans-serif;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            padding: 20px;
+            overflow: hidden;
+        }
+
+        .app-container {
+            display: flex;
+            background: var(--panel-bg);
+            border-radius: 24px;
+            box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.15);
+            width: 100%;
+            max-width: 1200px;
+            height: 850px;
+            overflow: hidden;
+            border: 1px solid var(--border-color);
+        }
+
+        /* Sidebar */
+        .sidebar {
+            width: 380px;
+            padding: 40px;
+            border-right: 1px solid var(--border-color);
+            display: flex;
+            flex-direction: column;
+            gap: 25px;
+            background: #fff;
+            z-index: 10;
+        }
+
+        .sidebar h1 { font-size: 24px; font-weight: 800; color: #059669; letter-spacing: -0.5px; }
+        .description { font-size: 14px; line-height: 1.6; color: var(--text-muted); }
+
+        .control-group { 
+            background: #f8fafc;
+            padding: 20px;
+            border-radius: 16px;
+            border: 1px solid var(--border-color);
+            display: flex; 
+            flex-direction: column; 
+            gap: 15px; 
+        }
+        
+        label { font-size: 12px; font-weight: 800; display: flex; justify-content: space-between; align-items: center; text-transform: uppercase; letter-spacing: 0.5px; color: #475569;}
+        
+        input[type="range"] {
+            width: 100%;
+            cursor: pointer;
+            accent-color: var(--accent);
+        }
+
+        .main-btn {
+            width: 100%;
+            padding: 14px;
+            background: var(--accent);
+            color: white;
+            border: none;
+            border-radius: 12px;
+            font-size: 14px;
+            font-weight: 700;
+            cursor: pointer;
+            transition: all 0.2s;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+        .main-btn:hover { background: #059669; transform: translateY(-1px); }
+        .main-btn:active { transform: translateY(0); }
+
+        .status-card {
+            padding: 20px;
+            border-radius: 16px;
+            font-size: 13px;
+            line-height: 1.5;
+            transition: all 0.3s;
+            border-left: 4px solid var(--accent);
+            background: #f0fdf4;
+            margin-top: auto;
+        }
+
+        /* Simulation Area */
+        .sim-area {
+            flex: 1;
+            background: radial-gradient(circle at center, #ffffff, #f1f5f9);
+            position: relative;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            overflow: hidden;
+        }
+
+        #particleCanvas {
+            position: absolute;
+            top: 0; left: 0; width: 100%; height: 100%;
+            z-index: 2;
+        }
+
+        .svg-overlay {
+            width: 100%;
+            height: 100%;
+            z-index: 1;
+            pointer-events: none;
+        }
+
+        /* Anatomy Styles */
+        .lymph-node-capsule {
+            fill: var(--node-bg);
+            stroke: #10b981;
+            stroke-width: 4;
+            opacity: 0.8;
+        }
+
+        .reticular-mesh {
+            stroke: #cbd5e1;
+            stroke-width: 1;
+            fill: none;
+            stroke-dasharray: 2 2;
+        }
+
+        .vessel {
+            fill: #f0fdf4;
+            stroke: #10b981;
+            stroke-width: 3;
+        }
+
+        /* Readout Overlay */
+        .data-overlay {
+            position: absolute;
+            top: 30px;
+            right: 30px;
+            background: rgba(15, 23, 42, 0.9);
+            color: white;
+            padding: 20px;
+            border-radius: 16px;
+            backdrop-filter: blur(8px);
+            min-width: 220px;
+            border: 1px solid rgba(255,255,255,0.1);
+            z-index: 10;
+        }
+
+        .data-row { margin-bottom: 12px; }
+        .data-label { font-size: 10px; text-transform: uppercase; color: #94a3b8; letter-spacing: 1px; }
+        .data-value { font-size: 20px; font-weight: 800; font-family: monospace; }
+
+        @media (max-width: 900px) {
+            .app-container { flex-direction: column; height: auto; }
+            .sidebar { width: 100%; border-right: none; }
+            .sim-area { height: 500px; }
+        }
+    </style>
+</head>
+<body>
+
+    <div class="app-container">
+        <aside class="sidebar">
+            <h1>Lymph Filter Lab</h1>
+            <p class="description">
+                Lymph nodes act as specialized filtering stations. As lymph fluid percolates through the internal <strong>reticular mesh</strong>, large debris and pathogens are trapped to be consumed by immune cells.
+            </p>
+
+            <div class="control-group">
+                <label>
+                    Flow Velocity
+                    <span id="flowVal">Medium</span>
+                </label>
+                <input type="range" id="flowSlider" min="1" max="5" step="0.5" value="2">
+                
+                <label style="margin-top: 10px;">
+                    Debris Concentration
+                    <span id="debrisVal">Low</span>
+                </label>
+                <input type="range" id="debrisSlider" min="5" max="50" value="10">
+            </div>
+
+            <button class="main-btn" id="btnClear">Clear Trapped Debris</button>
+
+            <div class="status-card" id="statusCard">
+                <strong id="statusTitle" style="color: #065f46;">Phase: Active Filtration</strong><br>
+                <span id="statusText">Fluid is moving through the subcapsular sinus. The reticular fibers are successfully capturing particulate matter.</span>
+            </div>
+
+            <div style="margin-top: 20px; font-size: 11px; color: var(--text-muted); line-height: 1.4;">
+                <strong>Physiology:</strong> Afferent vessels bring "unfiltered" lymph in. The efferent vessel (bottom) carries "cleaned" lymph back toward the thoracic duct.
+            </div>
+        </aside>
+
+        <main class="sim-area">
+            <!-- Data Overlay -->
+            <div class="data-overlay">
+                <div class="data-row">
+                    <div class="data-label">Filtration Efficiency</div>
+                    <div class="data-value" id="effDisplay" style="color: var(--accent);">98.2%</div>
+                </div>
+                <div class="data-row">
+                    <div class="data-label">Trapped Particles</div>
+                    <div class="data-value" id="trappedDisplay">0</div>
+                </div>
+                <div class="data-row">
+                    <div class="data-label">Outgoing Purity</div>
+                    <div class="data-value" id="purityDisplay" style="color: var(--fluid-color);">High</div>
+                </div>
+            </div>
+
+            <canvas id="particleCanvas"></canvas>
+
+            <svg class="svg-overlay" viewBox="0 0 600 800" id="anatomySvg">
+                <!-- Afferent Vessels (Top Inputs) -->
+                <path class="vessel" d="M 150 0 L 150 80 Q 150 120 200 130" />
+                <path class="vessel" d="M 450 0 L 450 80 Q 450 120 400 130" />
+                
+                <!-- The Lymph Node (Bean Shape) -->
+                <path class="lymph-node-capsule" d="M 300 120 
+                    C 100 120, 80 300, 80 450 
+                    C 80 650, 250 700, 300 700
+                    C 350 700, 520 650, 520 450
+                    C 520 300, 500 120, 300 120 Z" />
+
+                <!-- Reticular Mesh (Grid) -->
+                <g id="mesh-lines">
+                    <!-- Generated via JS for collision logic -->
+                </g>
+
+                <!-- Efferent Vessel (Bottom Output) -->
+                <path class="vessel" d="M 280 700 L 280 800" />
+                <path class="vessel" d="M 320 700 L 320 800" />
+
+                <g font-size="10" font-weight="bold" fill="#059669" text-anchor="middle">
+                    <text x="300" y="160">SUBCAPSULAR SINUS</text>
+                    <text x="300" y="450" opacity="0.3" font-size="24">RETICULAR MESH</text>
+                </g>
+            </svg>
+        </main>
+    </div>
+
+    <script>
+        const flowSlider = document.getElementById('flowSlider');
+        const debrisSlider = document.getElementById('debrisSlider');
+        const flowVal = document.getElementById('flowVal');
+        const debrisVal = document.getElementById('debrisVal');
+        const btnClear = document.getElementById('btnClear');
+        
+        const trappedDisplay = document.getElementById('trappedDisplay');
+        const effDisplay = document.getElementById('effDisplay');
+        const purityDisplay = document.getElementById('purityDisplay');
+
+        const canvas = document.getElementById('particleCanvas');
+        const ctx = canvas.getContext('2d');
+
+        let particles = [];
+        let meshLines = []; // To store collision boundaries
+        let flowSpeed = 2;
+        let debrisCount = 10;
+        let trappedCount = 0;
+
+        function resize() {
+            canvas.width = canvas.offsetWidth;
+            canvas.height = canvas.offsetHeight;
+            initMesh();
+        }
+        window.addEventListener('resize', resize);
+        resize();
+
+        // Initialize a grid of mesh points for collision
+        function initMesh() {
+            meshLines = [];
+            const meshGroup = document.getElementById('mesh-lines');
+            meshGroup.innerHTML = '';
+            
+            // Create a randomized organic grid
+            for(let y = 200; y < 650; y += 40) {
+                for(let x = 150; x < 450; x += 40) {
+                    if (Math.random() > 0.3) {
+                        const xOffset = (Math.random() - 0.5) * 30;
+                        const yOffset = (Math.random() - 0.5) * 30;
+                        const length = 30 + Math.random() * 30;
+                        const angle = Math.random() * Math.PI * 2;
+                        
+                        const line = {
+                            x1: x + xOffset,
+                            y1: y + yOffset,
+                            x2: x + xOffset + Math.cos(angle) * length,
+                            y2: y + yOffset + Math.sin(angle) * length
+                        };
+                        meshLines.push(line);
+
+                        const svgLine = document.createElementNS("http://www.w3.org/2000/svg", "line");
+                        svgLine.setAttribute("x1", line.x1);
+                        svgLine.setAttribute("y1", line.y1);
+                        svgLine.setAttribute("x2", line.x2);
+                        svgLine.setAttribute("y2", line.y2);
+                        svgLine.setAttribute("class", "reticular-mesh");
+                        meshGroup.appendChild(svgLine);
+                    }
+                }
+            }
+        }
+
+        class Particle {
+            constructor(type) {
+                this.type = type; // 'fluid' or 'debris'
+                this.reset();
+                // Randomize initial position so they aren't all in a line
+                this.y = Math.random() * -400; 
+            }
+
+            reset() {
+                // Randomly choose one of the two afferent vessels
+                this.x = Math.random() > 0.5 ? 150 : 450;
+                this.y = -20;
+                this.vx = 0;
+                this.vy = (0.5 + Math.random()) * flowSpeed;
+                this.radius = this.type === 'fluid' ? 2 : 5 + Math.random() * 4;
+                this.isTrapped = false;
+                this.opacity = 1;
+                this.pathPhase = 'vessel'; // vessel, node, exit
+            }
+
+            update() {
+                if (this.isTrapped) return;
+
+                // Move
+                this.x += this.vx;
+                this.y += this.vy;
+
+                // Simple path logic
+                if (this.y < 120) {
+                    this.pathPhase = 'vessel';
+                } else if (this.y >= 120 && this.y < 700) {
+                    this.pathPhase = 'node';
+                    // Spread out in node
+                    const targetX = 300 + (this.x - 300) * 1.05;
+                    this.vx = (targetX - this.x) * 0.02;
+                    
+                    // Collision with mesh (Only for debris)
+                    if (this.type === 'debris') {
+                        for (let line of meshLines) {
+                            if (this.checkCollision(line)) {
+                                this.isTrapped = true;
+                                trappedCount++;
+                                trappedDisplay.textContent = trappedCount;
+                                break;
+                            }
+                        }
+                    }
+                } else {
+                    this.pathPhase = 'exit';
+                    // Funnel to exit vessel
+                    const targetX = 300 + (Math.random() - 0.5) * 30;
+                    this.vx = (targetX - this.x) * 0.1;
+                    if (this.y > canvas.height + 20) this.reset();
+                }
+
+                // Brownian noise
+                this.vx += (Math.random() - 0.5) * 0.2;
+                this.vy += (Math.random() - 0.5) * 0.1;
+            }
+
+            checkCollision(line) {
+                // Point to line segment distance
+                const { x, y, radius } = this;
+                const { x1, y1, x2, y2 } = line;
+                const A = x - x1;
+                const B = y - y1;
+                const C = x2 - x1;
+                const D = y2 - y1;
+                const dot = A * C + B * D;
+                const lenSq = C * C + D * D;
+                let param = -1;
+                if (lenSq !== 0) param = dot / lenSq;
+                let xx, yy;
+                if (param < 0) { xx = x1; yy = y1; }
+                else if (param > 1) { xx = x2; yy = y2; }
+                else { xx = x1 + param * C; yy = y1 + param * D; }
+                const dx = x - xx;
+                const dy = y - yy;
+                return Math.sqrt(dx * dx + dy * dy) < radius;
+            }
+
+            draw() {
+                const sx = canvas.width / 600;
+                const sy = canvas.height / 800;
+
+                ctx.beginPath();
+                ctx.arc(this.x * sx, this.y * sy, this.radius * sx, 0, Math.PI * 2);
+                
+                if (this.type === 'fluid') {
+                    ctx.fillStyle = 'rgba(14, 165, 233, 0.4)';
+                } else {
+                    // Debris is dark gray, becomes "glowy" if trapped
+                    ctx.fillStyle = this.isTrapped ? '#ef4444' : '#475569';
+                }
+                ctx.fill();
+            }
+        }
+
+        function initParticles() {
+            particles = [];
+            for (let i = 0; i < 150; i++) particles.push(new Particle('fluid'));
+            syncDebris();
+        }
+
+        function syncDebris() {
+            const currentDebris = particles.filter(p => p.type === 'debris' && !p.isTrapped).length;
+            if (currentDebris < debrisCount) {
+                for(let i=0; i < (debrisCount - currentDebris); i++) particles.push(new Particle('debris'));
+            }
+        }
+
+        function updateUI() {
+            flowSpeed = parseFloat(flowSlider.value);
+            debrisCount = parseInt(debrisSlider.value);
+            
+            flowVal.textContent = flowSpeed < 2 ? "Slow" : flowSpeed < 4 ? "Medium" : "Fast";
+            debrisVal.textContent = debrisCount < 15 ? "Low" : debrisCount < 35 ? "High" : "Sepsis Risk";
+
+            // Update display data
+            const efficiency = 100 - (particles.filter(p => p.type === 'debris' && p.pathPhase === 'exit').length * 2);
+            effDisplay.textContent = Math.max(0, efficiency).toFixed(1) + "%";
+            purityDisplay.textContent = efficiency > 90 ? "High" : efficiency > 70 ? "Moderate" : "Low (Alert)";
+            purityDisplay.style.color = efficiency > 70 ? "var(--fluid-color)" : "var(--danger)";
+
+            syncDebris();
+        }
+
+        function animate() {
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+            
+            particles.forEach(p => {
+                p.update();
+                p.draw();
+            });
+
+            requestAnimationFrame(animate);
+        }
+
+        flowSlider.addEventListener('input', updateUI);
+        debrisSlider.addEventListener('input', updateUI);
+        
+        btnClear.addEventListener('click', () => {
+            // "Macrophages" clean the node
+            particles = particles.filter(p => !p.isTrapped);
+            trappedCount = 0;
+            trappedDisplay.textContent = "0";
+            updateUI();
+        });
+
+        // Init
+        initParticles();
+        updateUI();
+        animate();
+
+    </script>
+</body>
+</html>

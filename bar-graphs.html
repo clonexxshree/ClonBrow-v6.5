@@ -1,0 +1,704 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Math Lab - Applied Geometry & Data</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Fira+Code:wght@400;500&display=swap" rel="stylesheet">
+    <style>
+        body, html {
+            margin: 0;
+            padding: 0;
+            width: 100%;
+            height: 100%;
+            overflow: hidden;
+            background-color: #020617; /* Slate 950 */
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+            touch-action: none;
+            user-select: none;
+        }
+
+        .main-shell { display: flex; width: 100%; height: 100%; }
+
+        .workspace {
+            flex-grow: 1;
+            position: relative;
+            overflow: hidden;
+        }
+        
+        #canvas-2d {
+            position: absolute;
+            top: 0; left: 0;
+            width: 100%; height: 100%;
+            z-index: 10;
+        }
+
+        #canvas-3d {
+            position: absolute;
+            top: 0; left: 0;
+            width: 100%; height: 100%;
+            z-index: 5;
+        }
+
+        .glass-panel {
+            background: linear-gradient(145deg, rgba(15, 23, 42, 0.9) 0%, rgba(2, 6, 23, 0.98) 100%);
+            backdrop-filter: blur(40px);
+            -webkit-backdrop-filter: blur(40px);
+            border-right: 1px solid rgba(255, 255, 255, 0.1);
+            box-shadow: 20px 0 50px rgba(0, 0, 0, 0.5);
+            display: flex;
+            flex-direction: column;
+            padding: 2rem;
+            z-index: 100;
+            width: 380px;
+        }
+
+        @media (max-width: 1024px) {
+            .glass-panel { width: 100%; height: 38%; border-right: none; border-bottom: 1px solid rgba(255,255,255,0.1); padding: 1rem; }
+            .main-shell { flex-direction: column; }
+        }
+
+        .tab-btn { transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1); }
+        .tab-btn.active {
+            background-color: #ffffff; color: #020617; box-shadow: 0 4px 12px rgba(0,0,0,0.4);
+        }
+
+        input[type=range] { -webkit-appearance: none; width: 100%; background: transparent; }
+        input[type=range]::-webkit-slider-thumb {
+            -webkit-appearance: none; height: 20px; width: 20px; border-radius: 50%;
+            background: #ffffff; cursor: pointer; margin-top: -8px;
+            box-shadow: 0 4px 10px rgba(0,0,0,0.5); border: 1px solid rgba(255,255,255,0.2);
+            transition: transform 0.2s cubic-bezier(0.2, 0.8, 0.2, 1);
+        }
+        input[type=range]::-webkit-slider-thumb:hover { transform: scale(1.15); }
+        input[type=range]::-webkit-slider-runnable-track {
+            width: 100%; height: 4px; cursor: pointer;
+            background: rgba(255, 255, 255, 0.15); border-radius: 2px;
+        }
+
+        .formula-box { font-family: 'Fira Code', monospace; }
+        .scroll-area::-webkit-scrollbar { width: 4px; }
+        .scroll-area::-webkit-scrollbar-thumb { background: rgba(255, 255, 255, 0.2); border-radius: 4px; }
+
+        #loading-screen {
+            position: absolute; inset: 0; background: #020617;
+            display: flex; flex-direction: column; align-items: center; justify-content: center;
+            color: white; z-index: 150; transition: opacity 0.6s ease;
+        }
+    </style>
+    <!-- Three.js for 3D Renderings -->
+    <script type="importmap">
+        {
+            "imports": {
+                "three": "https://cdn.jsdelivr.net/npm/three@0.160.0/build/three.module.js",
+                "three/addons/": "https://cdn.jsdelivr.net/npm/three@0.160.0/examples/jsm/"
+            }
+        }
+    </script>
+</head>
+<body>
+
+    <div id="loading-screen">
+        <svg class="animate-spin h-10 w-10 text-emerald-500 mb-4" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="3"></circle><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path></svg>
+        <span class="text-xs font-bold tracking-widest text-gray-400 uppercase italic">Initializing 2D/3D Hybrid Engine...</span>
+    </div>
+
+    <div class="main-shell">
+        <!-- UI Panel -->
+        <div class="glass-panel shrink-0">
+            <div class="mb-6 border-b border-white/10 pb-6 shrink-0 flex items-center justify-between">
+                <div>
+                    <h1 class="text-2xl font-bold tracking-tight text-white mb-1">Applied Math</h1>
+                    <p class="text-[11px] font-medium text-emerald-400 uppercase tracking-widest">Geometry & Data</p>
+                </div>
+                <div class="w-10 h-10 rounded-full bg-emerald-500/20 flex items-center justify-center text-emerald-400 shadow-[0_0_15px_rgba(16,185,129,0.3)]">
+                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M14 10l-2 1m0 0l-2-1m2 1v2.5M20 7l-2 1m2-1l-2-1m2 1v2.5M14 4l-2-1-2 1M4 7l2-1M4 7l2 1M4 7v2.5M12 21l-2-1m2 1l2-1m-2 1v-2.5M6 18l-2-1v-2.5M18 18l2-1v-2.5"></path></svg>
+                </div>
+            </div>
+
+            <!-- Tab Navigation -->
+            <div class="grid grid-cols-2 p-1 bg-black/40 rounded-xl shadow-inner gap-1 mb-6 shrink-0 border border-white/5">
+                <button data-tab="tessellation" class="tab-btn active py-2 text-[10px] font-bold uppercase tracking-wider rounded-lg text-gray-400">Tessellations</button>
+                <button data-tab="graphs" class="tab-btn py-2 text-[10px] font-bold uppercase tracking-wider rounded-lg text-gray-400">Bar Graphs</button>
+                <button data-tab="angles" class="tab-btn py-2 text-[10px] font-bold uppercase tracking-wider rounded-lg text-gray-400">Angles</button>
+                <button data-tab="nets" class="tab-btn py-2 text-[10px] font-bold uppercase tracking-wider rounded-lg text-gray-400">3D Nets</button>
+            </div>
+
+            <div class="scroll-area overflow-y-auto pr-2 pb-2 flex-1">
+                
+                <!-- Dynamic Info Box -->
+                <div class="bg-black/30 p-4 rounded-xl border border-white/5 shadow-inner mb-6">
+                    <h2 id="info-title" class="text-sm font-bold text-white mb-2 italic">Geometric Tessellations</h2>
+                    <p id="info-desc" class="text-xs text-gray-400 leading-relaxed">
+                        Tessellations occur when geometric shapes fit together perfectly without any gaps or overlaps, much like designing a floor tile pattern.
+                    </p>
+                </div>
+
+                <!-- 1. TESSELLATION CONTROLS (2D) -->
+                <div id="controls-tessellation" class="space-y-6">
+                    <div class="space-y-2">
+                        <div class="flex justify-between items-end">
+                            <label class="text-[11px] font-semibold text-emerald-400 uppercase tracking-widest">Pattern Spread</label>
+                            <span id="tess-spread-disp" class="text-[11px] font-mono bg-emerald-500/10 px-2 py-1 rounded text-emerald-300">Level 1</span>
+                        </div>
+                        <input type="range" id="tess-spread" min="1" max="10" step="1" value="1" style="accent-color: #10b981;">
+                    </div>
+                </div>
+
+                <!-- 2. BAR GRAPH CONTROLS (3D) -->
+                <div id="controls-graphs" class="space-y-6 hidden">
+                    <div class="space-y-4">
+                        <div class="space-y-2">
+                            <div class="flex justify-between items-end">
+                                <label class="text-[11px] font-semibold text-red-400 uppercase tracking-widest">Data Input A</label>
+                                <span id="bar-a-disp" class="text-[11px] font-mono bg-red-500/10 px-2 py-1 rounded text-red-300">5 units</span>
+                            </div>
+                            <input type="range" id="bar-a" min="1" max="12" step="1" value="5" style="accent-color: #ef4444;">
+                        </div>
+                        <div class="space-y-2">
+                            <div class="flex justify-between items-end">
+                                <label class="text-[11px] font-semibold text-blue-400 uppercase tracking-widest">Data Input B</label>
+                                <span id="bar-b-disp" class="text-[11px] font-mono bg-blue-500/10 px-2 py-1 rounded text-blue-300">8 units</span>
+                            </div>
+                            <input type="range" id="bar-b" min="1" max="12" step="1" value="8" style="accent-color: #3b82f6;">
+                        </div>
+                        <div class="space-y-2">
+                            <div class="flex justify-between items-end">
+                                <label class="text-[11px] font-semibold text-yellow-400 uppercase tracking-widest">Data Input C</label>
+                                <span id="bar-c-disp" class="text-[11px] font-mono bg-yellow-500/10 px-2 py-1 rounded text-yellow-300">3 units</span>
+                            </div>
+                            <input type="range" id="bar-c" min="1" max="12" step="1" value="3" style="accent-color: #facc15;">
+                        </div>
+                    </div>
+                </div>
+
+                <!-- 3. ANGLES CONTROLS (2D) -->
+                <div id="controls-angles" class="space-y-6 hidden">
+                    <div class="space-y-4">
+                        <div class="space-y-2">
+                            <div class="flex justify-between items-end">
+                                <label class="text-[11px] font-semibold text-purple-400 uppercase tracking-widest">Swing Door</label>
+                                <span id="angle-deg-disp" class="text-[11px] font-mono bg-purple-500/10 px-2 py-1 rounded text-purple-300">45°</span>
+                            </div>
+                            <input type="range" id="angle-deg" min="0" max="180" step="1" value="45" style="accent-color: #c084fc;">
+                            <div class="flex justify-between px-1 mt-1">
+                                <span class="text-[9px] font-bold text-gray-500 uppercase">Closed</span>
+                                <span class="text-[9px] font-bold text-gray-500 uppercase">Wide Open</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- 4. 3D NETS CONTROLS (3D) -->
+                <div id="controls-nets" class="space-y-6 hidden">
+                    <div class="space-y-4">
+                        <div class="space-y-2">
+                            <div class="flex justify-between items-end">
+                                <label class="text-[11px] font-semibold text-cyan-400 uppercase tracking-widest">Fold Geometry</label>
+                                <span id="net-fold-disp" class="text-[11px] font-mono bg-cyan-500/10 px-2 py-1 rounded text-cyan-300">0%</span>
+                            </div>
+                            <input type="range" id="net-fold" min="0" max="100" step="1" value="0" style="accent-color: #22d3ee;">
+                            <div class="flex justify-between px-1 mt-1">
+                                <span class="text-[9px] font-bold text-gray-500 uppercase">2D Flat Net</span>
+                                <span class="text-[9px] font-bold text-gray-500 uppercase">3D Folded Cube</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+            </div>
+            
+            <div class="pt-6 border-t border-white/5 text-[10px] text-gray-600 font-medium text-center shrink-0 mt-4 uppercase tracking-tighter">
+                Dynamic Physics & Rendering Engine
+            </div>
+        </div>
+
+        <!-- Simulation Workspace -->
+        <div class="workspace" id="workspace">
+            
+            <!-- Dual Engines layered on top of each other -->
+            <div id="canvas-3d"></div>
+            <canvas id="canvas-2d"></canvas>
+            
+            <!-- Real-Time Data HUD -->
+            <div id="hud" class="absolute bottom-8 right-8 z-20 glass-panel !w-[240px] !p-5 !border !rounded-2xl pointer-events-none shadow-2xl">
+                <div class="text-[10px] font-bold uppercase tracking-widest text-gray-500 mb-3 border-b border-white/5 pb-1">Live Metrics</div>
+                <div class="space-y-3">
+                    <div class="flex justify-between items-center">
+                        <span class="text-[11px] text-gray-400 font-medium" id="hud-label-1">Data 1</span>
+                        <span id="hud-val-1" class="text-sm font-mono font-bold text-emerald-400">---</span>
+                    </div>
+                    <div class="flex justify-between items-center">
+                        <span class="text-[11px] text-gray-400 font-medium" id="hud-label-2">Data 2</span>
+                        <span id="hud-val-2" class="text-sm font-mono font-bold text-white">---</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- MAIN ENGINE SCRIPT -->
+    <script type="module">
+        import * as THREE from 'three';
+        import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
+
+        // --- DOM Elements ---
+        const canvas2D = document.getElementById('canvas-2d');
+        const ctx = canvas2D.getContext('2d');
+        const container3D = document.getElementById('canvas-3d');
+        const workspace = document.getElementById('workspace');
+
+        // --- GLOBAL STATE ---
+        let currentMode = 'tessellation'; // tessellation, graphs, angles, nets
+        let cx, cy, wsWidth, wsHeight;
+        let time = 0;
+
+        // Data Models
+        const M = {
+            tess: { spread: 1 },
+            graphs: { a: 5, b: 8, c: 3 },
+            angles: { deg: 45 },
+            nets: { fold: 0 }
+        };
+
+        // --- 2D CANVAS SETUP ---
+        function resize2D() {
+            canvas2D.width = workspace.clientWidth;
+            canvas2D.height = workspace.clientHeight;
+            wsWidth = canvas2D.width;
+            wsHeight = canvas2D.height;
+            cx = wsWidth / 2;
+            cy = wsHeight / 2;
+        }
+        window.addEventListener('resize', resize2D);
+        resize2D();
+
+        // --- 3D SCENE SETUP ---
+        const scene = new THREE.Scene();
+        // Transparent background so we can layer it if needed, or solid dark
+        scene.background = new THREE.Color(0x020617);
+        
+        const camera = new THREE.PerspectiveCamera(45, workspace.clientWidth / workspace.clientHeight, 0.1, 100);
+        const renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true });
+        renderer.setSize(workspace.clientWidth, workspace.clientHeight);
+        renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+        renderer.shadowMap.enabled = true;
+        renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+        container3D.appendChild(renderer.domElement);
+
+        const controls = new OrbitControls(camera, renderer.domElement);
+        controls.enableDamping = true;
+        controls.dampingFactor = 0.05;
+
+        const ambientLight = new THREE.AmbientLight(0xffffff, 0.4);
+        scene.add(ambientLight);
+
+        const dirLight = new THREE.DirectionalLight(0xffffff, 2.0);
+        dirLight.position.set(10, 20, 15);
+        dirLight.castShadow = true;
+        dirLight.shadow.mapSize.width = 2048;
+        dirLight.shadow.mapSize.height = 2048;
+        scene.add(dirLight);
+
+        // --- 3D SCENE: BAR GRAPHS ---
+        const graphGroup = new THREE.Group();
+        scene.add(graphGroup);
+        
+        const baseGeo = new THREE.BoxGeometry(10, 0.5, 6);
+        const baseMat = new THREE.MeshStandardMaterial({ color: 0x1e293b, roughness: 0.8 });
+        const graphBase = new THREE.Mesh(baseGeo, baseMat);
+        graphBase.position.y = -0.25;
+        graphBase.receiveShadow = true;
+        graphGroup.add(graphBase);
+
+        const blockGeo = new THREE.BoxGeometry(1.5, 0.9, 1.5);
+        const matA = new THREE.MeshStandardMaterial({ color: 0xef4444, roughness: 0.2, metalness: 0.1 });
+        const matB = new THREE.MeshStandardMaterial({ color: 0x3b82f6, roughness: 0.2, metalness: 0.1 });
+        const matC = new THREE.MeshStandardMaterial({ color: 0xfacc15, roughness: 0.2, metalness: 0.1 });
+
+        const blocksA = [], blocksB = [], blocksC = [];
+        
+        function createBlockStack(val, array, mat, xPos) {
+            // Add or remove blocks to match value
+            while(array.length < val) {
+                const mesh = new THREE.Mesh(blockGeo, mat);
+                mesh.castShadow = true; mesh.receiveShadow = true;
+                mesh.position.set(xPos, array.length * 1.0 + 0.5, 0);
+                
+                // Pop-in animation scale
+                mesh.scale.set(0.01, 0.01, 0.01); 
+                mesh.userData.targetScale = 1;
+                
+                graphGroup.add(mesh);
+                array.push(mesh);
+            }
+            while(array.length > val) {
+                const mesh = array.pop();
+                graphGroup.remove(mesh);
+            }
+            // Animate scale
+            array.forEach(m => {
+                m.scale.lerp(new THREE.Vector3(m.userData.targetScale, m.userData.targetScale, m.userData.targetScale), 0.2);
+            });
+        }
+
+        // --- 3D SCENE: 3D NETS ---
+        const netGroup = new THREE.Group();
+        scene.add(netGroup);
+        
+        // Cardboard material
+        const planeGeo = new THREE.PlaneGeometry(3, 3);
+        const planeMat = new THREE.MeshStandardMaterial({ 
+            color: 0x38bdf8, 
+            side: THREE.DoubleSide, 
+            roughness: 0.7, 
+            metalness: 0.1 
+        });
+
+        // To rotate a plane around its EDGE, we must put it in a pivot group
+        function createHinge(x, y, meshX, meshY) {
+            const pivot = new THREE.Group();
+            pivot.position.set(x, y, 0);
+            const face = new THREE.Mesh(planeGeo, planeMat);
+            face.castShadow = true; face.receiveShadow = true;
+            // Offset the mesh so the pivot is at the edge
+            face.position.set(meshX, meshY, 0);
+            pivot.add(face);
+            return pivot;
+        }
+
+        // Base square (flat on XY plane, we will rotate the whole group to lie flat on XZ)
+        const netBase = new THREE.Mesh(planeGeo, planeMat);
+        netBase.castShadow = true; netBase.receiveShadow = true;
+        netGroup.add(netBase);
+
+        // 4 side flaps
+        const hingeRight = createHinge(1.5, 0, 1.5, 0);
+        const hingeLeft = createHinge(-1.5, 0, -1.5, 0);
+        const hingeTop = createHinge(0, 1.5, 0, 1.5);
+        const hingeBottom = createHinge(0, -1.5, 0, -1.5);
+
+        // The Lid (attached to Top flap)
+        const hingeLid = createHinge(0, 3.0, 0, 1.5);
+        hingeTop.children[0].add(hingeLid); // Add pivot to the mesh of the Top flap
+
+        netBase.add(hingeRight, hingeLeft, hingeTop, hingeBottom);
+        
+        // Lay the whole net flat on the floor
+        netGroup.rotation.x = -Math.PI / 2;
+        netGroup.position.y = 0.1;
+
+        // Shadow floor for nets
+        const netFloor = new THREE.Mesh(new THREE.PlaneGeometry(40, 40), new THREE.MeshStandardMaterial({color: 0x0f172a}));
+        netFloor.rotation.x = -Math.PI / 2;
+        netFloor.receiveShadow = true;
+        netGroup.add(netFloor);
+
+        // Window resize for 3D
+        window.addEventListener('resize', () => {
+            camera.aspect = workspace.clientWidth / workspace.clientHeight;
+            camera.updateProjectionMatrix();
+            renderer.setSize(workspace.clientWidth, workspace.clientHeight);
+        });
+
+        // --- UI BINDINGS ---
+        const bindSlider = (id, obj, key, displayId, suffix="", callback=null) => {
+            const el = document.getElementById(id);
+            if(!el) return;
+            el.addEventListener('input', (e) => {
+                obj[key] = parseFloat(e.target.value);
+                document.getElementById(displayId).innerText = obj[key] + suffix;
+                if(callback) callback();
+            });
+        };
+
+        bindSlider('tess-spread', M.tess, 'spread', 'tess-spread-disp', ' Levels');
+        bindSlider('bar-a', M.graphs, 'a', 'bar-a-disp', ' units');
+        bindSlider('bar-b', M.graphs, 'b', 'bar-b-disp', ' units');
+        bindSlider('bar-c', M.graphs, 'c', 'bar-c-disp', ' units');
+        bindSlider('angle-deg', M.angles, 'deg', 'angle-deg-disp', '°');
+        bindSlider('net-fold', M.nets, 'fold', 'net-fold-disp', '%');
+
+
+        // --- 2D RENDER FUNCTIONS ---
+
+        function drawHexagon(x, y, r, color, delayScale) {
+            // Animate scale based on time and delay
+            const scale = Math.min(1, Math.max(0, (time*2) - delayScale));
+            if (scale <= 0) return;
+
+            ctx.save();
+            ctx.translate(x, y);
+            ctx.scale(scale, scale);
+            ctx.beginPath();
+            for (let i = 0; i < 6; i++) {
+                const angle = (Math.PI / 3) * i - (Math.PI / 6);
+                const px = r * Math.cos(angle);
+                const py = r * Math.sin(angle);
+                if (i === 0) ctx.moveTo(px, py);
+                else ctx.lineTo(px, py);
+            }
+            ctx.closePath();
+            
+            ctx.fillStyle = color;
+            ctx.fill();
+            ctx.lineWidth = 2;
+            ctx.strokeStyle = 'rgba(255, 255, 255, 0.4)';
+            ctx.stroke();
+
+            // Inner styling
+            ctx.fillStyle = 'rgba(255,255,255,0.1)';
+            ctx.beginPath(); ctx.arc(0, 0, r*0.5, 0, Math.PI*2); ctx.fill();
+            
+            ctx.restore();
+        }
+
+        function drawTessellations() {
+            ctx.clearRect(0, 0, wsWidth, wsHeight);
+            
+            const r = 45;
+            const w = Math.sqrt(3) * r;
+            const h = 2 * r;
+            const yOffset = h * 0.75;
+            const maxRings = M.tess.spread;
+
+            const colors = ['#10b981', '#0ea5e9', '#6366f1', '#8b5cf6'];
+            let totalTiles = 0;
+
+            for (let q = -maxRings; q <= maxRings; q++) {
+                for (let r_ax = -maxRings; r_ax <= maxRings; r_ax++) {
+                    const s = -q - r_ax;
+                    // Hexagonal bounds check (distance from center in axial coords)
+                    if (Math.max(Math.abs(q), Math.abs(r_ax), Math.abs(s)) < maxRings) {
+                        
+                        const x = cx + w * (q + r_ax/2);
+                        const y = cy + yOffset * r_ax;
+                        
+                        // Distance determines animation pop-in order
+                        const dist = Math.max(Math.abs(q), Math.abs(r_ax), Math.abs(s));
+                        const color = colors[dist % colors.length];
+
+                        drawHexagon(x, y, r * 0.95, color, dist * 0.2);
+                        totalTiles++;
+                    }
+                }
+            }
+
+            document.getElementById('hud-label-1').innerText = "Total Tiles";
+            document.getElementById('hud-val-1').innerText = totalTiles;
+            document.getElementById('hud-val-1').style.color = "#10b981";
+            document.getElementById('hud-label-2').innerText = "Geometric Rule";
+            document.getElementById('hud-val-2').innerText = "No Gaps, No Overlaps";
+        }
+
+        function drawAngles() {
+            ctx.clearRect(0, 0, wsWidth, wsHeight);
+            
+            const doorLen = 220;
+            const rad = M.angles.deg * Math.PI / 180;
+            
+            ctx.save();
+            ctx.translate(cx, cy + 100); // Anchor at bottom center
+
+            // 1. Draw Wall
+            ctx.lineWidth = 15;
+            ctx.lineCap = 'round';
+            ctx.strokeStyle = '#334155';
+            ctx.beginPath(); ctx.moveTo(0, 0); ctx.lineTo(300, 0); ctx.stroke();
+            
+            // 2. Draw Arc indicator
+            if (M.angles.deg > 0) {
+                ctx.beginPath();
+                ctx.moveTo(0, 0);
+                // Arc drawn from -rad to 0 (since Y is down in canvas, -Y goes UP)
+                ctx.arc(0, 0, 80, -rad, 0, false);
+                ctx.closePath();
+                ctx.fillStyle = 'rgba(192, 132, 252, 0.2)'; // Purple tint
+                ctx.fill();
+                
+                ctx.beginPath();
+                ctx.arc(0, 0, 80, -rad, 0, false);
+                ctx.strokeStyle = '#c084fc';
+                ctx.lineWidth = 3;
+                ctx.stroke();
+
+                // Angle text on arc
+                const textAng = -rad / 2;
+                ctx.fillStyle = '#ffffff';
+                ctx.font = 'bold 14px Inter';
+                ctx.textAlign = 'center';
+                ctx.fillText(`${M.angles.deg}°`, Math.cos(textAng) * 110, Math.sin(textAng) * 110);
+            }
+
+            // 3. Draw Door
+            ctx.shadowBlur = 20; ctx.shadowColor = 'rgba(0,0,0,0.5)';
+            ctx.lineWidth = 12;
+            ctx.strokeStyle = '#a8a29e'; // Grayish door
+            
+            const dx = Math.cos(-rad) * doorLen;
+            const dy = Math.sin(-rad) * doorLen;
+            
+            ctx.beginPath(); ctx.moveTo(0, 0); ctx.lineTo(dx, dy); ctx.stroke();
+            ctx.shadowBlur = 0;
+
+            // Hinge
+            ctx.fillStyle = '#f8fafc';
+            ctx.beginPath(); ctx.arc(0, 0, 10, 0, Math.PI*2); ctx.fill();
+            
+            // Door Handle
+            ctx.fillStyle = '#fbbf24';
+            ctx.beginPath(); ctx.arc(dx - Math.cos(-rad)*15, dy - Math.sin(-rad)*15, 6, 0, Math.PI*2); ctx.fill();
+
+            ctx.restore();
+
+            // Logic classification
+            let type = "Acute (< 90°)";
+            let color = "#c084fc";
+            if (M.angles.deg === 90) { type = "Right (90°)"; color = "#4ade80"; }
+            else if (M.angles.deg > 90 && M.angles.deg < 180) { type = "Obtuse (> 90°)"; color = "#facc15"; }
+            else if (M.angles.deg === 180) { type = "Straight (180°)"; color = "#60a5fa"; }
+            else if (M.angles.deg === 0) { type = "Zero (0°)"; color = "#94a3b8"; }
+
+            document.getElementById('hud-label-1').innerText = "Angle Measurement";
+            document.getElementById('hud-val-1').innerText = `${M.angles.deg}°`;
+            document.getElementById('hud-val-1').style.color = "#ffffff";
+            document.getElementById('hud-label-2').innerText = "Angle Classification";
+            document.getElementById('hud-val-2').innerText = type;
+            document.getElementById('hud-val-2').style.color = color;
+        }
+
+        // --- 3D UPDATE FUNCTIONS ---
+        function update3D() {
+            if (currentMode === 'graphs') {
+                createBlockStack(M.graphs.a, blocksA, matA, -3);
+                createBlockStack(M.graphs.b, blocksB, matB, 0);
+                createBlockStack(M.graphs.c, blocksC, matC, 3);
+                
+                document.getElementById('hud-label-1').innerText = "Total Data Blocks";
+                document.getElementById('hud-val-1').innerText = M.graphs.a + M.graphs.b + M.graphs.c;
+                document.getElementById('hud-val-1').style.color = "#ef4444";
+                document.getElementById('hud-label-2').innerText = "Visual Format";
+                document.getElementById('hud-val-2').innerText = "3D Pictograph";
+                
+            } else if (currentMode === 'nets') {
+                // Fold math
+                const foldAmount = M.nets.fold / 100;
+                // 90 degrees is Math.PI/2
+                const ang = foldAmount * (Math.PI / 2);
+                
+                hingeRight.rotation.y = -ang; // Folds UP
+                hingeLeft.rotation.y = ang;   // Folds UP
+                hingeTop.rotation.x = -ang;   // Folds UP
+                hingeBottom.rotation.x = ang; // Folds UP
+                hingeLid.rotation.x = -ang;   // Folds one extra time relative to top flap
+
+                document.getElementById('hud-label-1').innerText = "Fold Completion";
+                document.getElementById('hud-val-1').innerText = M.nets.fold + "%";
+                document.getElementById('hud-val-1').style.color = "#22d3ee";
+                document.getElementById('hud-label-2').innerText = "Geometry State";
+                document.getElementById('hud-val-2').innerText = M.nets.fold === 100 ? "3D Solid Cube" : (M.nets.fold === 0 ? "2D Flat Net" : "Folding...");
+            }
+            
+            controls.update();
+            renderer.render(scene, camera);
+        }
+
+        // --- MASTER RENDER LOOP ---
+        let lastTime = 0;
+        function renderLoop(timestamp) {
+            const dt = (timestamp - lastTime) / 1000 || 0.016;
+            lastTime = timestamp;
+            time += dt;
+
+            if (currentMode === 'tessellation' || currentMode === 'angles') {
+                // 2D Mode
+                canvas2D.style.display = 'block';
+                container3D.style.display = 'none';
+                
+                if (currentMode === 'tessellation') drawTessellations();
+                if (currentMode === 'angles') drawAngles();
+            } else {
+                // 3D Mode
+                canvas2D.style.display = 'none';
+                container3D.style.display = 'block';
+                update3D();
+            }
+
+            requestAnimationFrame(renderLoop);
+        }
+        
+        // --- TAB SWITCHING LOGIC ---
+        const tabs = document.querySelectorAll('.tab-btn');
+        tabs.forEach(btn => {
+            btn.addEventListener('click', (e) => {
+                tabs.forEach(t => t.classList.remove('active', 'bg-white', 'text-gray-900'));
+                tabs.forEach(t => t.classList.add('text-gray-400'));
+                btn.classList.add('active', 'bg-white', 'text-gray-900');
+                
+                currentMode = btn.dataset.tab;
+
+                const info = {
+                    tessellation: { 
+                        title: "Geometric Tessellations", 
+                        desc: "Tessellations occur when geometric shapes fit together perfectly without any gaps or overlaps, much like designing a floor tile pattern. Hexagons are highly efficient for this!" 
+                    },
+                    graphs: { 
+                        title: "3D Pictographs & Arrays", 
+                        desc: "Watch numbers translate into physical volume. As the data inputs change, the stacks of 3D blocks dynamically grow or shrink, allowing you to easily compare quantities visually." 
+                    },
+                    angles: { 
+                        title: "Angles in Daily Life", 
+                        desc: "An angle measures the amount of turn between two lines meeting at a point. Open the virtual door to explore <b>Acute (< 90°)</b>, <b>Right (90°)</b>, and <b>Obtuse (> 90°)</b> angles." 
+                    },
+                    nets: { 
+                        title: "3D Nets & Folding", 
+                        desc: "A net is a flat 2D cardboard pattern that can be folded into a 3D solid. Scrub the slider to fold the 6 square faces into a perfect 3-dimensional cube!" 
+                    }
+                };
+                
+                document.getElementById('info-title').innerText = info[currentMode].title;
+                document.getElementById('info-desc').innerHTML = info[currentMode].desc;
+                
+                document.getElementById('controls-tessellation').classList.add('hidden');
+                document.getElementById('controls-graphs').classList.add('hidden');
+                document.getElementById('controls-angles').classList.add('hidden');
+                document.getElementById('controls-nets').classList.add('hidden');
+                
+                document.getElementById(`controls-${currentMode}`).classList.remove('hidden');
+
+                // Setup Camera for 3D modes
+                if (currentMode === 'graphs') {
+                    graphGroup.visible = true;
+                    netGroup.visible = false;
+                    camera.position.set(0, 8, 18);
+                    controls.target.set(0, 3, 0);
+                } else if (currentMode === 'nets') {
+                    graphGroup.visible = false;
+                    netGroup.visible = true;
+                    camera.position.set(0, 8, 12);
+                    controls.target.set(0, 1, 0);
+                } else if (currentMode === 'tessellation') {
+                    // reset time so animation restarts beautifully
+                    time = 0;
+                }
+            });
+        });
+
+        // Initialize and clear loading screen
+        setTimeout(() => {
+            const ls = document.getElementById('loading-screen');
+            ls.style.opacity = '0';
+            setTimeout(() => ls.style.display = 'none', 600);
+            
+            // Set initial state
+            graphGroup.visible = false;
+            netGroup.visible = false;
+            
+            requestAnimationFrame(renderLoop);
+        }, 1200);
+
+    </script>
+</body>
+</html>
+

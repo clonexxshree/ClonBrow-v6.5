@@ -1,0 +1,417 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Advanced Chromatography Simulator</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;700&family=Inter:wght@300;400;600;700&display=swap');
+
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: #0f172a;
+            color: #f1f5f9;
+        }
+
+        .font-mono { font-family: 'JetBrains Mono', monospace; }
+
+        /* Glass Visuals */
+        .beaker-glass {
+            fill: rgba(255, 255, 255, 0.02);
+            stroke: rgba(255, 255, 255, 0.2);
+            stroke-width: 3;
+        }
+
+        /* Solvent Animation */
+        #solvent-front-fill {
+            transition: height 0.1s linear;
+        }
+
+        /* Bands Animation */
+        .solute-band {
+            filter: blur(5px);
+            transition: transform 0.1s linear, opacity 0.5s ease;
+        }
+
+        /* UI Panels */
+        .glass-card {
+            background: rgba(30, 41, 59, 0.7);
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.5);
+        }
+
+        .digital-readout {
+            background: #020617;
+            color: #38bdf8;
+            text-shadow: 0 0 8px rgba(56, 189, 248, 0.5);
+            border: 1px solid #1e293b;
+        }
+
+        /* Interaction States */
+        .sample-option {
+            transition: all 0.2s ease;
+            cursor: pointer;
+        }
+        .sample-option:hover {
+            border-color: #38bdf8;
+            background: rgba(56, 189, 248, 0.1);
+        }
+        .sample-selected {
+            border-color: #38bdf8 !important;
+            background: rgba(56, 189, 248, 0.2) !important;
+            box-shadow: 0 0 15px rgba(56, 189, 248, 0.3);
+        }
+
+        @keyframes drip {
+            0% { transform: translateY(-20px); opacity: 0; }
+            50% { opacity: 1; }
+            100% { transform: translateY(0); opacity: 1; }
+        }
+        .animate-drip { animation: drip 0.5s ease-out forwards; }
+    </style>
+</head>
+<body class="min-h-screen p-4 md:p-8 flex items-center justify-center">
+
+    <div class="max-w-7xl w-full grid grid-cols-1 lg:grid-cols-12 gap-8 items-stretch">
+        
+        <!-- Simulation Stage -->
+        <div class="lg:col-span-7 flex flex-col gap-6">
+            <div class="glass-card rounded-3xl p-8 relative flex-grow min-h-[550px] flex items-center justify-center overflow-hidden border border-slate-700">
+                
+                <!-- Status Indicators -->
+                <div class="absolute top-6 left-8 flex items-center gap-3">
+                    <div id="status-dot" class="w-2.5 h-2.5 rounded-full bg-slate-500 shadow-[0_0_8px_rgba(100,116,139,0.5)]"></div>
+                    <span id="status-label" class="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Awaiting Sample</span>
+                </div>
+
+                <!-- Laboratory Apparatus -->
+                <svg viewBox="0 0 400 500" class="w-full max-w-sm h-auto relative z-10">
+                    <!-- Beaker -->
+                    <path d="M 80 50 L 80 430 Q 80 460 110 460 L 290 460 Q 320 460 320 430 L 320 50" class="beaker-glass" />
+                    
+                    <!-- Solvent Reservoir (Bottom) -->
+                    <path d="M 82 410 L 82 430 Q 82 458 110 458 L 290 458 Q 318 458 318 430 L 318 410 Z" fill="#0ea5e9" fill-opacity="0.2" />
+
+                    <!-- The Paper Strip -->
+                    <g id="chrom-strip" transform="translate(160, 40)">
+                        <rect width="80" height="400" rx="2" fill="#f8fafc" stroke="#e2e8f0" stroke-width="1" />
+                        
+                        <!-- Origin Line -->
+                        <line x1="5" y1="360" x2="75" y2="360" stroke="#94a3b8" stroke-width="1" stroke-dasharray="2 1" />
+                        <text x="40" y="375" fill="#94a3b8" font-size="8" text-anchor="middle" font-family="Inter" font-weight="bold">ORIGIN</text>
+
+                        <!-- Wet Solvent Area -->
+                        <rect id="solvent-front-fill" x="0" y="360" width="80" height="0" fill="#bae6fd" fill-opacity="0.4" />
+                        
+                        <!-- The "Initial Spot" (Before running) -->
+                        <circle id="initial-spot" cx="40" cy="360" r="6" fill="#1e293b" opacity="0" class="transition-opacity duration-300" />
+
+                        <!-- Moving Solutes (Container) -->
+                        <g id="bands-layer"></g>
+
+                        <!-- Solvent Front Line -->
+                        <line id="front-line" x1="0" y1="360" x2="80" y2="360" stroke="#0ea5e9" stroke-width="2" opacity="0" />
+                    </g>
+
+                    <!-- Beaker Rim Reflections -->
+                    <path d="M 85 60 L 85 380" stroke="white" stroke-width="1" opacity="0.05" />
+                    <path d="M 315 60 L 315 380" stroke="white" stroke-width="1" opacity="0.02" />
+                </svg>
+
+                <!-- Environment Tags -->
+                <div class="absolute bottom-6 left-8 flex flex-col gap-1">
+                    <span class="text-[9px] font-mono text-slate-500 uppercase">Stationary Phase: Cellulose Paper</span>
+                    <span class="text-[9px] font-mono text-slate-500 uppercase">Mobile Phase: Ethanol/H2O (80:20)</span>
+                </div>
+            </div>
+
+            <!-- Primary Actions -->
+            <div class="flex gap-4">
+                <button id="btn-run" disabled class="flex-1 bg-sky-600 hover:bg-sky-500 disabled:bg-slate-800 disabled:text-slate-500 text-white font-bold py-4 rounded-2xl shadow-xl transition-all active:scale-95 flex items-center justify-center gap-2">
+                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M14.752 11.168l-3.197-2.132A1 1 0 0010 9.87v4.263a1 1 0 001.555.832l3.197-2.132a1 1 0 000-1.664z"></path></svg>
+                    Start Run
+                </button>
+                <button id="btn-reset" class="px-8 py-4 bg-slate-800 hover:bg-slate-700 text-slate-300 font-bold rounded-2xl transition-all">
+                    Reset
+                </button>
+            </div>
+        </div>
+
+        <!-- Sidebar: Controls & Analytics -->
+        <div class="lg:col-span-5 flex flex-col gap-6">
+            
+            <!-- Sample Selection -->
+            <div class="glass-card p-6 rounded-3xl space-y-4">
+                <h3 class="text-xs font-bold text-slate-400 uppercase tracking-widest">Step 1: Select Sample</h3>
+                <div class="grid grid-cols-1 gap-2">
+                    <div class="sample-option p-4 rounded-xl border border-slate-700 flex items-center gap-4" data-sample="black">
+                        <div class="w-8 h-8 rounded-full bg-slate-900 border border-slate-600 flex items-center justify-center text-[10px] font-bold">K</div>
+                        <div>
+                            <div class="text-sm font-bold">Black Pigment Mixture</div>
+                            <div class="text-[10px] text-slate-500">Complex mix of multiple dyes</div>
+                        </div>
+                    </div>
+                    <div class="sample-option p-4 rounded-xl border border-slate-700 flex items-center gap-4" data-sample="green">
+                        <div class="w-8 h-8 rounded-full bg-emerald-600 border border-emerald-400 flex items-center justify-center text-[10px] font-bold">G</div>
+                        <div>
+                            <div class="text-sm font-bold">Plant Extract (Green)</div>
+                            <div class="text-[10px] text-slate-500">Chlorophyll-a and Xanthophyll</div>
+                        </div>
+                    </div>
+                    <div class="sample-option p-4 rounded-xl border border-slate-700 flex items-center gap-4" data-sample="unknown">
+                        <div class="w-8 h-8 rounded-full bg-indigo-600 border border-indigo-400 flex items-center justify-center text-[10px] font-bold text-white">?</div>
+                        <div>
+                            <div class="text-sm font-bold">Unknown Dye Mix</div>
+                            <div class="text-[10px] text-slate-500">Research sample #294</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Real-time Telemetry -->
+            <div class="digital-readout rounded-3xl p-6 space-y-6">
+                <div class="flex justify-between items-center border-b border-slate-800 pb-3">
+                    <span class="text-[10px] font-bold tracking-tighter opacity-60 uppercase">Chromatogram Analytics</span>
+                    <span id="timer" class="text-xs font-mono">00:00.0</span>
+                </div>
+
+                <div class="space-y-4">
+                    <div class="flex justify-between items-end">
+                        <div class="space-y-1">
+                            <label class="text-[9px] uppercase font-bold opacity-50">Solvent Migration</label>
+                            <div id="data-distance" class="text-3xl font-bold font-mono">0.0 mm</div>
+                        </div>
+                        <div class="text-right">
+                            <label class="text-[9px] uppercase font-bold opacity-50">Flow Rate</label>
+                            <div id="data-rate" class="text-sm font-bold font-mono">0.0 mm/s</div>
+                        </div>
+                    </div>
+
+                    <!-- Rf Output Table -->
+                    <div id="rf-table" class="pt-4 space-y-2 opacity-30 transition-opacity duration-500">
+                        <label class="text-[9px] uppercase font-bold opacity-50">Calculated Retention Factors (R<sub>f</sub>)</label>
+                        <div id="rf-list" class="space-y-1">
+                            <!-- Dynamic items -->
+                            <div class="text-[10px] font-mono text-slate-500 italic">Run simulation to view results...</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Method Info -->
+            <div class="glass-card p-6 rounded-3xl space-y-4 text-xs text-slate-400">
+                <h4 class="font-bold text-slate-200 uppercase tracking-widest flex items-center gap-2">
+                    <svg class="w-4 h-4 text-sky-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
+                    Understanding Separation
+                </h4>
+                <p>
+                    Solutes separate based on their differential partition between the <strong>Mobile Phase</strong> (solvent) and <strong>Stationary Phase</strong> (cellulose). 
+                </p>
+                <div class="bg-black/30 p-3 rounded-lg font-mono text-center text-sky-400 border border-slate-800">
+                    R<sub>f</sub> = Dist<sub>Solute</sub> / Dist<sub>Solvent</sub>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', () => {
+            const btnRun = document.getElementById('btn-run');
+            const btnReset = document.getElementById('btn-reset');
+            const statusDot = document.getElementById('status-dot');
+            const statusLabel = document.getElementById('status-label');
+            const initialSpot = document.getElementById('initial-spot');
+            const solventFill = document.getElementById('solvent-front-fill');
+            const frontLine = document.getElementById('front-line');
+            const bandsLayer = document.getElementById('bands-layer');
+            const rfList = document.getElementById('rf-list');
+            const rfTable = document.getElementById('rf-table');
+            
+            const dataDistance = document.getElementById('data-distance');
+            const dataRate = document.getElementById('data-rate');
+            const timerDisplay = document.getElementById('timer');
+
+            const samples = {
+                black: {
+                    color: '#0f172a',
+                    bands: [
+                        { color: '#3b82f6', rf: 0.82, label: 'Cyan-2' },
+                        { color: '#f43f5e', rf: 0.55, label: 'Magenta-A' },
+                        { color: '#eab308', rf: 0.28, label: 'Yellow-5' }
+                    ]
+                },
+                green: {
+                    color: '#065f46',
+                    bands: [
+                        { color: '#10b981', rf: 0.72, label: 'Chlorophyll-a' },
+                        { color: '#fbbf24', rf: 0.35, label: 'Xanthophyll' }
+                    ]
+                },
+                unknown: {
+                    color: '#4f46e5',
+                    bands: [
+                        { color: '#ec4899', rf: 0.91, label: 'Solvent Blue' },
+                        { color: '#8b5cf6', rf: 0.64, label: 'Unknown-X' },
+                        { color: '#14b8a6', rf: 0.42, label: 'Tracer-09' }
+                    ]
+                }
+            };
+
+            let currentSample = null;
+            let isRunning = false;
+            let startTime = null;
+            let requestId = null;
+
+            // Select Sample
+            document.querySelectorAll('.sample-option').forEach(opt => {
+                opt.addEventListener('click', () => {
+                    if (isRunning) return;
+                    
+                    document.querySelectorAll('.sample-option').forEach(o => o.classList.remove('sample-selected'));
+                    opt.classList.add('sample-selected');
+                    
+                    const key = opt.dataset.sample;
+                    currentSample = samples[key];
+                    
+                    // Update visual
+                    initialSpot.setAttribute('fill', currentSample.color);
+                    initialSpot.style.opacity = '1';
+                    initialSpot.classList.add('animate-drip');
+                    
+                    statusDot.className = "w-2.5 h-2.5 rounded-full bg-emerald-500 shadow-[0_0_10px_#10b981]";
+                    statusLabel.textContent = "Plate Ready";
+                    btnRun.disabled = false;
+                    
+                    resetRunState();
+                });
+            });
+
+            function resetRunState() {
+                solventFill.setAttribute('height', '0');
+                frontLine.style.opacity = '0';
+                frontLine.style.transform = `translateY(0)`;
+                bandsLayer.innerHTML = '';
+                rfTable.style.opacity = '0.3';
+                rfList.innerHTML = `<div class="text-[10px] font-mono text-slate-500 italic">Run simulation to view results...</div>`;
+                dataDistance.textContent = "0.0 mm";
+                dataRate.textContent = "0.0 mm/s";
+                timerDisplay.textContent = "00:00.0";
+            }
+
+            function startRun() {
+                if (!currentSample || isRunning) return;
+                
+                isRunning = true;
+                btnRun.disabled = true;
+                startTime = performance.now();
+                
+                statusDot.className = "w-2.5 h-2.5 rounded-full bg-blue-500 shadow-[0_0_10px_#3b82f6] animate-pulse";
+                statusLabel.textContent = "Running...";
+                initialSpot.style.opacity = '0.3'; // Dissolving effect
+                frontLine.style.opacity = '1';
+                rfTable.style.opacity = '1';
+                rfList.innerHTML = '';
+
+                // Create bands
+                currentSample.bands.forEach((b, i) => {
+                    const circle = document.createElementNS("http://www.w3.org/2000/svg", "ellipse");
+                    circle.setAttribute("cx", "40");
+                    circle.setAttribute("cy", "360");
+                    circle.setAttribute("rx", "12");
+                    circle.setAttribute("ry", "6");
+                    circle.setAttribute("fill", b.color);
+                    circle.setAttribute("class", "solute-band");
+                    circle.id = `band-${i}`;
+                    bandsLayer.appendChild(circle);
+                });
+
+                requestAnimationFrame(update);
+            }
+
+            function update(timestamp) {
+                const elapsed = (timestamp - startTime) / 1000;
+                const duration = 12; // 12 seconds run
+                const progress = Math.min(elapsed / duration, 1);
+                
+                // Physics: Solvent rise slows down slightly over time (wicking behavior)
+                // Using a square root curve for realistic capillary action
+                const easeOut = Math.sqrt(progress);
+                const maxRise = 320; // Max pixels to rise
+                const currentRise = easeOut * maxRise;
+                
+                // Update SVG
+                solventFill.setAttribute('height', currentRise);
+                solventFill.setAttribute('y', 360 - currentRise);
+                frontLine.style.transform = `translateY(${-currentRise}px)`;
+                
+                // Update Bands
+                currentSample.bands.forEach((b, i) => {
+                    const bandEl = document.getElementById(`band-${i}`);
+                    const bandRise = currentRise * b.rf;
+                    bandEl.style.transform = `translateY(${-bandRise}px)`;
+                    // Spread effect as it rises
+                    const spread = 6 + (bandRise / 50);
+                    bandEl.setAttribute('rx', 12 + (bandRise / 40));
+                    bandEl.setAttribute('ry', spread);
+                    bandEl.style.opacity = 0.8 - (progress * 0.2);
+                });
+
+                // Update Telemetry
+                const mmDistance = (currentRise / maxRise) * 50; // Map pixels to 50mm
+                dataDistance.textContent = `${mmDistance.toFixed(1)} mm`;
+                
+                const rate = elapsed > 0 ? (mmDistance / elapsed) : 0;
+                dataRate.textContent = `${rate.toFixed(2)} mm/s`;
+                
+                const secs = Math.floor(elapsed);
+                const ms = Math.floor((elapsed % 1) * 10);
+                timerDisplay.textContent = `00:${secs.toString().padStart(2, '0')}.${ms}`;
+
+                if (progress < 1) {
+                    requestId = requestAnimationFrame(update);
+                } else {
+                    finishRun();
+                }
+            }
+
+            function finishRun() {
+                isRunning = false;
+                statusDot.className = "w-2.5 h-2.5 rounded-full bg-sky-400 shadow-[0_0_10px_#38bdf8]";
+                statusLabel.textContent = "Analysis Complete";
+                
+                // Build Final Table
+                rfList.innerHTML = currentSample.bands.map(b => `
+                    <div class="flex justify-between items-center bg-white/5 p-2 rounded-lg border border-white/5 hover:border-sky-500/50 transition-colors group">
+                        <div class="flex items-center gap-2">
+                            <div class="w-2 h-2 rounded-full" style="background: ${b.color}"></div>
+                            <span class="text-[10px] font-bold text-slate-300">${b.label}</span>
+                        </div>
+                        <span class="text-xs font-mono font-bold text-sky-400">${b.rf.toFixed(2)}</span>
+                    </div>
+                `).join('');
+            }
+
+            function reset() {
+                cancelAnimationFrame(requestId);
+                isRunning = false;
+                currentSample = null;
+                
+                document.querySelectorAll('.sample-option').forEach(o => o.classList.remove('sample-selected'));
+                initialSpot.style.opacity = '0';
+                initialSpot.classList.remove('animate-drip');
+                
+                statusDot.className = "w-2.5 h-2.5 rounded-full bg-slate-500";
+                statusLabel.textContent = "Awaiting Sample";
+                btnRun.disabled = true;
+                
+                resetRunState();
+            }
+
+            btnRun.addEventListener('click', startRun);
+            btnReset.addEventListener('click', reset);
+        });
+    </script>
+</body>
+</html>

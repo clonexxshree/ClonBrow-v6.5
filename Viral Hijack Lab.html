@@ -1,0 +1,442 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Viral RNA Injection: Cell Hijack Sim</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;700;900&family=JetBrains+Mono:wght@500;800&display=swap');
+        
+        :root {
+            --virus-color: #22c55e;
+            --rna-color: #4ade80;
+            --cell-bg: #0f172a;
+            --ribosome-color: #38bdf8;
+            --accent: #ef4444;
+        }
+
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: #020617;
+            color: #f8fafc;
+            overflow: hidden;
+        }
+
+        .sidebar-glass {
+            background: rgba(15, 23, 42, 0.8);
+            backdrop-filter: blur(12px);
+            border-right: 1px solid rgba(255,255,255,0.1);
+        }
+
+        .cell-membrane {
+            fill: rgba(30, 41, 59, 0.5);
+            stroke: #334155;
+            stroke-width: 4;
+            stroke-dasharray: 8 4;
+        }
+
+        .nucleus {
+            fill: rgba(30, 41, 59, 0.8);
+            stroke: #1e3a8a;
+            stroke-width: 2;
+        }
+
+        #particleCanvas {
+            pointer-events: none;
+            z-index: 10;
+        }
+
+        .hijacked {
+            animation: pulse-red 2s infinite ease-in-out;
+        }
+
+        @keyframes pulse-red {
+            0%, 100% { filter: drop-shadow(0 0 5px rgba(239, 68, 68, 0.2)); }
+            50% { filter: drop-shadow(0 0 20px rgba(239, 68, 68, 0.6)); }
+        }
+
+        .data-card {
+            background: rgba(30, 41, 59, 0.6);
+            border: 1px solid rgba(255,255,255,0.05);
+            backdrop-filter: blur(4px);
+        }
+
+        .rna-strand {
+            stroke-dasharray: 1000;
+            stroke-dashoffset: 1000;
+            animation: draw 2s forwards;
+        }
+
+        @keyframes draw {
+            to { stroke-dashoffset: 0; }
+        }
+    </style>
+</head>
+<body class="flex h-screen">
+
+    <!-- Sidebar -->
+    <aside class="w-96 sidebar-glass p-8 flex flex-col gap-6 z-20">
+        <div>
+            <h1 class="text-3xl font-black tracking-tighter text-white mb-2">Cell Hijack Lab</h1>
+            <p class="text-slate-400 text-sm leading-relaxed">
+                Watch how a virus uses its surface proteins to "trick" the cell membrane into allowing entry for its genetic cargo.
+            </p>
+        </div>
+
+        <div class="space-y-4">
+            <button id="btnInfect" class="w-full py-4 bg-green-600 hover:bg-green-500 active:scale-95 text-white font-bold rounded-xl transition-all shadow-lg shadow-green-500/20 flex items-center justify-center gap-2">
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>
+                START INFECTION
+            </button>
+            
+            <button id="btnReset" class="w-full py-3 bg-slate-800 hover:bg-slate-700 text-slate-300 font-bold rounded-xl transition-all text-xs uppercase tracking-widest">
+                Reset Host Cell
+            </button>
+        </div>
+
+        <div class="space-y-4 mt-4">
+            <div class="data-card p-4 rounded-2xl">
+                <div class="flex justify-between items-center mb-2">
+                    <span class="text-[10px] font-bold text-slate-500 uppercase tracking-widest">Viral mRNA Copies</span>
+                    <span id="rnaCount" class="font-mono text-lg font-bold text-green-400">0</span>
+                </div>
+                <div class="h-1.5 bg-slate-800 rounded-full overflow-hidden">
+                    <div id="rnaProgress" class="h-full bg-green-500 transition-all duration-300" style="width: 0%"></div>
+                </div>
+            </div>
+
+            <div class="data-card p-4 rounded-2xl">
+                <div class="flex justify-between items-center mb-2">
+                    <span class="text-[10px] font-bold text-slate-500 uppercase tracking-widest">Host Vitality</span>
+                    <span id="vitalityVal" class="font-mono text-lg font-bold text-blue-400">100%</span>
+                </div>
+                <div class="h-1.5 bg-slate-800 rounded-full overflow-hidden">
+                    <div id="vitalityProgress" class="h-full bg-blue-500 transition-all duration-500" style="width: 100%"></div>
+                </div>
+            </div>
+        </div>
+
+        <div id="statusCard" class="mt-auto p-5 rounded-2xl border border-blue-500/20 bg-blue-500/5 transition-all">
+            <h3 id="statusTitle" class="text-blue-400 font-bold mb-1 text-sm uppercase tracking-wider">Status: Homeostasis</h3>
+            <p id="statusText" class="text-xs text-slate-400 leading-normal">
+                Cell membrane is secure. Ribosomes are translating healthy host proteins.
+            </p>
+        </div>
+    </aside>
+
+    <!-- Main Simulation Viewport -->
+    <main class="flex-1 relative flex items-center justify-center bg-[#020617]">
+        <!-- Labels -->
+        <div class="absolute top-10 left-10 flex flex-col gap-1 opacity-40">
+            <div class="flex items-center gap-2 text-[10px] font-bold tracking-tighter uppercase"><div class="w-2 h-2 rounded-full bg-blue-400"></div> Ribosome (Printer)</div>
+            <div class="flex items-center gap-2 text-[10px] font-bold tracking-tighter uppercase"><div class="w-2 h-2 rounded-full bg-green-400"></div> Viral mRNA</div>
+        </div>
+
+        <canvas id="particleCanvas" class="absolute inset-0 w-full h-full"></canvas>
+
+        <svg id="cellSvg" viewBox="0 0 800 800" class="w-[85vh] h-[85vh]">
+            <!-- Cytoplasm / Membrane -->
+            <path id="membrane" class="cell-membrane" d="M 400 50 C 150 50, 50 150, 50 400 C 50 650, 150 750, 400 750 C 650 750, 750 650, 750 400 C 750 150, 650 50, 400 50 Z" />
+            
+            <!-- Nucleus -->
+            <circle class="nucleus" cx="400" cy="400" r="100" />
+            <text x="400" y="405" text-anchor="middle" font-size="12" font-weight="900" fill="#1e40af" class="uppercase tracking-widest">Nucleus</text>
+
+            <!-- Ribosomes (Structural points) -->
+            <g id="ribosomesGroup"></g>
+
+            <!-- The Incoming Virus -->
+            <g id="virusGroup" transform="translate(400, -100)">
+                <circle r="30" fill="var(--virus-color)" stroke="#166534" stroke-width="2" />
+                <!-- Spikes -->
+                <path d="M 0 -30 L 0 -45 M 21 -21 L 32 -32 M 30 0 L 45 0 M 21 21 L 32 32 M 0 30 L 0 45 M -21 21 L -32 32 M -30 0 L -45 0 M -21 -21 L -32 -32" stroke="var(--virus-color)" stroke-width="4" stroke-linecap="round" />
+                <!-- Internal RNA squiggles inside virus -->
+                <path id="innerRna" d="M -10 -10 Q 0 0, 10 -10 Q 20 0, 10 10" fill="none" stroke="#fff" stroke-width="2" opacity="0.6" />
+            </g>
+        </svg>
+
+        <!-- Phase Info Overlay -->
+        <div id="phaseOverlay" class="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 text-center pointer-events-none opacity-0 transition-opacity duration-1000">
+            <h2 id="phaseTitle" class="text-5xl font-black italic text-green-500 uppercase tracking-tighter drop-shadow-2xl">HIJACKED</h2>
+        </div>
+    </main>
+
+    <script>
+        const btnInfect = document.getElementById('btnInfect');
+        const btnReset = document.getElementById('btnReset');
+        const virusGroup = document.getElementById('virusGroup');
+        const rnaCountEl = document.getElementById('rnaCount');
+        const rnaProgress = document.getElementById('rnaProgress');
+        const vitalityVal = document.getElementById('vitalityVal');
+        const vitalityProgress = document.getElementById('vitalityProgress');
+        const statusTitle = document.getElementById('statusTitle');
+        const statusText = document.getElementById('statusText');
+        const statusCard = document.getElementById('statusCard');
+        const ribosomesGroup = document.getElementById('ribosomesGroup');
+        const phaseOverlay = document.getElementById('phaseOverlay');
+        const phaseTitle = document.getElementById('phaseTitle');
+
+        const canvas = document.getElementById('particleCanvas');
+        const ctx = canvas.getContext('2d');
+
+        // State
+        let phase = 'idle'; // idle, attaching, injecting, replicating
+        let rnaStrands = [];
+        let ribosomes = [];
+        let newViruses = [];
+        let rnaCount = 0;
+        let vitality = 100;
+        const numRibosomes = 12;
+
+        function resize() {
+            canvas.width = canvas.offsetWidth;
+            canvas.height = canvas.offsetHeight;
+        }
+        window.addEventListener('resize', resize);
+        resize();
+
+        // Init Ribosomes
+        function initCell() {
+            ribosomesGroup.innerHTML = '';
+            ribosomes = [];
+            for (let i = 0; i < numRibosomes; i++) {
+                const angle = (i / numRibosomes) * Math.PI * 2;
+                const r = 220 + Math.random() * 40;
+                const x = 400 + Math.cos(angle) * r;
+                const y = 400 + Math.sin(angle) * r;
+
+                const g = document.createElementNS("http://www.w3.org/2000/svg", "circle");
+                g.setAttribute("cx", x);
+                g.setAttribute("cy", y);
+                g.setAttribute("r", "8");
+                g.setAttribute("fill", "var(--ribosome-color)");
+                g.setAttribute("opacity", "0.6");
+                ribosomesGroup.appendChild(g);
+
+                ribosomes.push({ x, y, el: g, state: 'healthy' });
+            }
+        }
+
+        class RNAStrand {
+            constructor(x, y, targetRibosome) {
+                this.x = x;
+                this.y = y;
+                this.target = targetRibosome;
+                this.points = [];
+                this.length = 0;
+                this.speed = 2;
+                this.finished = false;
+                for(let i=0; i<5; i++) this.points.push({x, y});
+            }
+            update() {
+                if (this.finished) return;
+                
+                const dx = this.target.x - this.x;
+                const dy = this.target.y - this.y;
+                const dist = Math.sqrt(dx*dx + dy*dy);
+
+                if (dist < 10) {
+                    this.finished = true;
+                    this.target.state = 'hijacked';
+                    this.target.el.setAttribute('fill', 'var(--virus-color)');
+                    this.target.el.setAttribute('opacity', '1');
+                    onRibosomeHijacked();
+                    return;
+                }
+
+                this.x += (dx / dist) * this.speed;
+                this.y += (dy / dist) * this.speed;
+
+                // Wavy motion
+                const time = Date.now() / 200;
+                const wx = Math.sin(time + this.y * 0.1) * 2;
+                const wy = Math.cos(time + this.x * 0.1) * 2;
+                
+                this.points.unshift({x: this.x + wx, y: this.y + wy});
+                if (this.points.length > 20) this.points.pop();
+            }
+            draw() {
+                if (this.finished) return;
+                ctx.beginPath();
+                ctx.moveTo(this.points[0].x, this.points[0].y);
+                for(let i=1; i<this.points.length; i++) {
+                    ctx.lineTo(this.points[i].x, this.points[i].y);
+                }
+                ctx.strokeStyle = 'var(--rna-color)';
+                ctx.lineWidth = 2;
+                ctx.stroke();
+            }
+        }
+
+        class NewVirus {
+            constructor(x, y) {
+                this.x = x;
+                this.y = y;
+                this.vx = (Math.random() - 0.5) * 4;
+                this.vy = (Math.random() - 0.5) * 4;
+                this.scale = 0.1;
+                this.alpha = 0;
+            }
+            update() {
+                this.x += this.vx;
+                this.y += this.vy;
+                if (this.scale < 0.6) this.scale += 0.01;
+                if (this.alpha < 1) this.alpha += 0.05;
+                
+                // Bounce off membrane (approx)
+                const dx = this.x - (canvas.width/2);
+                const dy = this.y - (canvas.height/2);
+                if (Math.sqrt(dx*dx + dy*dy) > 300) {
+                    this.vx *= -0.9;
+                    this.vy *= -0.9;
+                }
+            }
+            draw() {
+                ctx.save();
+                ctx.translate(this.x, this.y);
+                ctx.scale(this.scale, this.scale);
+                ctx.globalAlpha = this.alpha;
+                ctx.beginPath();
+                ctx.arc(0, 0, 30, 0, Math.PI * 2);
+                ctx.fillStyle = '#22c55e';
+                ctx.fill();
+                // simple spikes
+                for(let i=0; i<8; i++) {
+                    const ang = (i/8) * Math.PI * 2;
+                    ctx.moveTo(Math.cos(ang)*30, Math.sin(ang)*30);
+                    ctx.lineTo(Math.cos(ang)*45, Math.sin(ang)*45);
+                }
+                ctx.strokeStyle = '#22c55e';
+                ctx.lineWidth = 4;
+                ctx.stroke();
+                ctx.restore();
+            }
+        }
+
+        async function startInfection() {
+            if (phase !== 'idle') return;
+            btnInfect.disabled = true;
+
+            // Phase 1: Attachment
+            phase = 'attaching';
+            updateStatus("Attachment", "The virus identifies receptors on the cell surface and anchors itself.", "amber");
+            
+            // Animate virus to membrane
+            virusGroup.style.transition = "transform 2s cubic-bezier(0.4, 0, 0.2, 1)";
+            virusGroup.setAttribute('transform', 'translate(400, 50)');
+            
+            await wait(2200);
+
+            // Phase 2: Injection
+            phase = 'injecting';
+            updateStatus("Penetration", "Viral envelope fuses with the membrane. Genomic RNA is released into the cytoplasm.", "emerald");
+            document.getElementById('innerRna').style.opacity = '0';
+            
+            // Spawn RNA strands heading to ribosomes
+            ribosomes.forEach((r, i) => {
+                setTimeout(() => {
+                    // Map SVG 400, 50 to screen
+                    const rect = canvas.getBoundingClientRect();
+                    const startX = rect.width / 2;
+                    const startY = (50 / 800) * rect.height;
+                    rnaStrands.push(new RNAStrand(startX, startY, r));
+                }, i * 200);
+            });
+        }
+
+        function onRibosomeHijacked() {
+            rnaCount++;
+            rnaCountEl.textContent = rnaCount;
+            rnaProgress.style.width = (rnaCount / numRibosomes * 100) + "%";
+            
+            if (rnaCount === 1) {
+                updateStatus("Hijacking", "Viral RNA has reached the ribosomes. The 'printers' are now ignoring host DNA.", "red");
+                document.getElementById('membrane').classList.add('hijacked');
+            }
+
+            if (rnaCount === numRibosomes) {
+                phase = 'replicating';
+                showPhaseTitle("REPLICATING");
+            }
+        }
+
+        function updateStatus(title, text, color) {
+            statusTitle.textContent = "Status: " + title;
+            statusText.textContent = text;
+            statusTitle.className = `text-${color}-400 font-bold mb-1 text-sm uppercase tracking-wider`;
+            statusCard.className = `mt-auto p-5 rounded-2xl border border-${color}-500/20 bg-${color}-500/5 transition-all`;
+        }
+
+        function showPhaseTitle(txt) {
+            phaseTitle.textContent = txt;
+            phaseOverlay.style.opacity = "1";
+            setTimeout(() => phaseOverlay.style.opacity = "0", 3000);
+        }
+
+        function animate() {
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+            rnaStrands.forEach(s => {
+                s.update();
+                s.draw();
+            });
+
+            if (phase === 'replicating') {
+                // Decay vitality
+                if (vitality > 5) {
+                    vitality -= 0.05;
+                    vitalityVal.textContent = Math.floor(vitality) + "%";
+                    vitalityProgress.style.width = vitality + "%";
+                } else if (vitality <= 5 && vitality > 0) {
+                    updateStatus("Cell Lysis", "Host resources exhausted. Membrane integrity failing. New virions ready for release.", "red");
+                }
+
+                // Chance to spawn new virus
+                if (Math.random() < 0.05 && newViruses.length < 50) {
+                    const r = ribosomes[Math.floor(Math.random() * ribosomes.length)];
+                    newViruses.push(new NewVirus(r.x, r.y));
+                }
+            }
+
+            newViruses.forEach(v => {
+                v.update();
+                v.draw();
+            });
+
+            requestAnimationFrame(animate);
+        }
+
+        function reset() {
+            phase = 'idle';
+            rnaCount = 0;
+            vitality = 100;
+            rnaStrands = [];
+            newViruses = [];
+            
+            rnaCountEl.textContent = "0";
+            rnaProgress.style.width = "0%";
+            vitalityVal.textContent = "100%";
+            vitalityProgress.style.width = "100%";
+            btnInfect.disabled = false;
+            
+            virusGroup.style.transition = "none";
+            virusGroup.setAttribute('transform', 'translate(400, -100)');
+            document.getElementById('innerRna').style.opacity = '0.6';
+            document.getElementById('membrane').classList.remove('hijacked');
+            
+            updateStatus("Homeostasis", "Cell membrane is secure. Ribosomes are translating healthy host proteins.", "blue");
+            initCell();
+        }
+
+        const wait = ms => new Promise(r => setTimeout(r, ms));
+
+        btnInfect.addEventListener('click', startInfection);
+        btnReset.addEventListener('click', reset);
+
+        // Init
+        initCell();
+        animate();
+    </script>
+</body>
+</html>

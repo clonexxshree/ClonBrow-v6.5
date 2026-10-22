@@ -1,0 +1,628 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Radiation Physics: Inverse Square & Half-Life</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;700&family=Inter:wght@300;400;600;700&display=swap');
+
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: #020617; /* Slate 950 */
+            color: #f8fafc;
+            overflow-x: hidden;
+            user-select: none;
+            touch-action: none;
+        }
+
+        .font-mono { font-family: 'JetBrains Mono', monospace; }
+
+        .glass-card {
+            background: rgba(15, 23, 42, 0.85);
+            backdrop-filter: blur(20px);
+            border: 1px solid rgba(255, 255, 255, 0.08);
+            box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.5);
+        }
+
+        .digital-readout {
+            background: #061021;
+            color: #84cc16; /* Lime Green base */
+            text-shadow: 0 0 12px rgba(132, 204, 22, 0.5);
+            border: 1px solid #1e293b;
+            transition: all 0.3s ease;
+        }
+
+        .readout-warning {
+            color: #fbbf24 !important; /* Amber */
+            text-shadow: 0 0 15px rgba(251, 191, 36, 0.8) !important;
+            border-color: rgba(251, 191, 36, 0.5) !important;
+            background: rgba(251, 191, 36, 0.05) !important;
+        }
+
+        .readout-danger {
+            color: #f43f5e !important; /* Rose Red */
+            text-shadow: 0 0 15px rgba(244, 63, 94, 0.8) !important;
+            border-color: rgba(244, 63, 94, 0.5) !important;
+            background: rgba(244, 63, 94, 0.05) !important;
+        }
+
+        /* Equipment Styling */
+        .source-core {
+            fill: #84cc16;
+            filter: drop-shadow(0 0 15px #84cc16);
+            animation: pulse-glow 2s infinite alternate;
+        }
+        @keyframes pulse-glow {
+            0% { filter: drop-shadow(0 0 10px #84cc16); }
+            100% { filter: drop-shadow(0 0 25px #84cc16); }
+        }
+
+        .shield-casing {
+            fill: #334155;
+            stroke: #1e293b;
+            stroke-width: 3;
+        }
+
+        .gm-tube {
+            fill: #94a3b8;
+            stroke: #cbd5e1;
+            stroke-width: 2;
+        }
+
+        .optical-track {
+            fill: #0f172a;
+            stroke: #334155;
+            stroke-width: 2;
+        }
+        
+        .tick-mark {
+            stroke: #475569;
+            stroke-width: 2;
+        }
+
+        /* Geiger Tick LED */
+        .led-indicator {
+            width: 12px;
+            height: 12px;
+            border-radius: 50%;
+            background-color: #064e3b;
+            box-shadow: inset 0 2px 4px rgba(0,0,0,0.5);
+            transition: background-color 0.05s, box-shadow 0.05s;
+        }
+        .led-flash {
+            background-color: #84cc16 !important;
+            box-shadow: 0 0 10px #84cc16, inset 0 1px 2px rgba(255,255,255,0.8) !important;
+        }
+
+        /* Grid Background */
+        .lab-grid {
+            background-size: 50px 50px;
+            background-image: 
+                linear-gradient(to right, rgba(132, 204, 22, 0.03) 1px, transparent 1px),
+                linear-gradient(to bottom, rgba(132, 204, 22, 0.03) 1px, transparent 1px);
+        }
+
+        .scanline {
+            width: 100%;
+            height: 2px;
+            background: rgba(132, 204, 22, 0.05);
+            position: absolute;
+            z-index: 10;
+            animation: scan 8s linear infinite;
+        }
+        @keyframes scan { 0% { top: 0%; } 100% { top: 100%; } }
+
+        /* Draggable Target */
+        #detector-assembly {
+            cursor: grab;
+        }
+        #detector-assembly:active {
+            cursor: grabbing;
+        }
+        
+        .measurement-line {
+            stroke: #38bdf8;
+            stroke-width: 2;
+            stroke-dasharray: 4 4;
+        }
+
+        /* Custom Slider */
+        input[type=range] {
+            -webkit-appearance: none;
+            background: transparent;
+            cursor: pointer;
+        }
+        input[type=range]::-webkit-slider-runnable-track {
+            background: #1e293b;
+            height: 8px;
+            border-radius: 4px;
+            border: 1px solid rgba(255,255,255,0.1);
+        }
+        input[type=range]::-webkit-slider-thumb {
+            -webkit-appearance: none;
+            height: 20px;
+            width: 20px;
+            border-radius: 50%;
+            background: #84cc16;
+            border: 2px solid #0f172a;
+            margin-top: -7px;
+            box-shadow: 0 0 8px rgba(132, 204, 22, 0.5);
+            transition: transform 0.1s;
+        }
+        input[type=range]::-webkit-slider-thumb:active { transform: scale(1.2); }
+    </style>
+</head>
+<body class="min-h-screen p-4 md:p-8 flex items-center justify-center">
+
+    <div class="max-w-7xl w-full grid grid-cols-1 lg:grid-cols-12 gap-8 items-stretch">
+        
+        <!-- Simulation Viewport -->
+        <div class="lg:col-span-8 flex flex-col gap-6">
+            <div id="sim-viewport" class="glass-card rounded-3xl p-0 relative flex-grow min-h-[500px] flex flex-col overflow-hidden border border-slate-800 lab-grid">
+                <div class="scanline"></div>
+                
+                <!-- HUD Header -->
+                <div class="absolute top-6 left-8 flex items-center gap-3 z-30">
+                    <div id="status-dot" class="w-2.5 h-2.5 rounded-full bg-lime-500 shadow-[0_0_10px_#84cc16]"></div>
+                    <span class="text-[10px] font-bold text-slate-400 uppercase tracking-widest font-mono">Sensors: <span id="hud-mode" class="text-lime-400">ACTIVE DOSIMETRY</span></span>
+                </div>
+
+                <!-- Main Simulation Area -->
+                <div class="relative w-full h-full flex-grow flex items-center justify-center pt-10">
+                    
+                    <!-- SVG Optical Bench & Equipment -->
+                    <svg id="bench-svg" viewBox="0 0 800 400" class="w-full h-full absolute inset-0 z-10 overflow-visible">
+                        
+                        <!-- Optical Track -->
+                        <rect x="100" y="250" width="600" height="20" class="optical-track" rx="4" />
+                        
+                        <!-- Ruler Ticks -->
+                        <g id="ruler-ticks" transform="translate(100, 270)">
+                            <!-- Generated via JS -->
+                        </g>
+
+                        <!-- Radioactive Source Assembly -->
+                        <g id="source-assembly" transform="translate(100, 200)">
+                            <!-- Lead Casing Base -->
+                            <path d="M -20,50 L 20,50 L 20,20 L 10,-20 L -10,-20 L -20,20 Z" class="shield-casing" />
+                            <rect x="-30" y="50" width="60" height="10" fill="#1e293b" />
+                            <!-- Exposed Isotope Core -->
+                            <circle cx="0" cy="-20" r="8" class="source-core" id="source-core-visual" />
+                            <!-- Trefoil Symbol -->
+                            <path d="M 0,10 L -6,0 A 10 10 0 0 1 6,0 Z" fill="#fbbf24" opacity="0.6"/>
+                            <circle cx="0" cy="15" r="2" fill="#fbbf24" opacity="0.6" />
+                        </g>
+
+                        <!-- Measurement Overlay -->
+                        <g id="measurement-overlay">
+                            <line id="dist-line" x1="100" y1="130" x2="400" y2="130" class="measurement-line" />
+                            <path d="M 100,125 L 100,135 M 400,125 L 400,135" id="dist-markers" stroke="#38bdf8" stroke-width="2" />
+                            <rect id="dist-bg" x="220" y="115" width="60" height="20" fill="#020617" rx="4" stroke="#0f172a" />
+                            <text id="dist-text" x="250" y="128" fill="#38bdf8" font-size="12" font-family="monospace" font-weight="bold" text-anchor="middle" dominant-baseline="middle">30 cm</text>
+                        </g>
+
+                        <!-- Draggable Geiger Counter Assembly -->
+                        <g id="detector-assembly" transform="translate(400, 200)">
+                            <!-- Mounting Bracket -->
+                            <rect x="-15" y="10" width="30" height="40" fill="#334155" stroke="#0f172a" stroke-width="2" />
+                            <rect x="-25" y="50" width="50" height="10" fill="#1e293b" />
+                            
+                            <!-- Geiger-Muller Tube -->
+                            <rect x="-10" y="-30" width="20" height="60" rx="10" class="gm-tube" />
+                            <!-- Mica Window -->
+                            <ellipse cx="-10" cy="0" rx="3" ry="15" fill="#e2e8f0" stroke="#94a3b8" />
+                            
+                            <!-- Wire -->
+                            <path d="M 0,30 Q 50,80 150,150" fill="none" stroke="#1e293b" stroke-width="4" stroke-linecap="round" />
+                        </g>
+
+                    </svg>
+
+                    <!-- Canvas for High-Speed Radiation Particles -->
+                    <canvas id="radiation-canvas" class="absolute inset-0 w-full h-full z-0 pointer-events-none opacity-80"></canvas>
+
+                </div>
+
+                <!-- Footer Labels -->
+                <div class="absolute bottom-6 left-8 flex flex-col gap-1 z-30 pointer-events-none">
+                    <span class="text-[9px] font-mono text-slate-500 uppercase">Interactive: Drag Detector on X-Axis</span>
+                    <span class="text-[9px] font-mono text-slate-500 uppercase">Isotope: Cesium-137 (Half-Life: 30.17 Years)</span>
+                </div>
+            </div>
+
+            <!-- Environmental Controls -->
+            <div class="glass-card p-6 rounded-3xl flex flex-col gap-4">
+                <div class="flex justify-between items-end mb-2">
+                    <div>
+                        <div class="text-xs font-bold text-slate-200 uppercase tracking-widest flex items-center gap-2">
+                            <svg class="w-4 h-4 text-lime-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
+                            Time Accelerator (Decay)
+                        </div>
+                        <div id="time-desc" class="text-[10px] text-slate-400 font-mono mt-1">Accelerate time to observe exponential activity decay.</div>
+                    </div>
+                    <div class="text-right">
+                        <div id="time-val" class="text-3xl font-bold font-mono text-lime-400 leading-none">Year 0</div>
+                    </div>
+                </div>
+                
+                <input type="range" id="time-slider" min="0" max="150" value="0" step="1" class="w-full mt-2">
+                <div class="flex justify-between text-[9px] font-mono font-bold uppercase mt-1 text-slate-500">
+                    <span>Present Day</span>
+                    <span>1 Half-Life (30yr)</span>
+                    <span>150 Years</span>
+                </div>
+            </div>
+        </div>
+
+        <!-- Sidebar: Analytics & Data -->
+        <div class="lg:col-span-4 flex flex-col gap-6">
+            
+            <!-- Digital Readout -->
+            <div id="telemetry-panel" class="digital-readout rounded-3xl p-6 space-y-6 flex-grow">
+                <div class="flex justify-between items-center border-b border-current pb-3 opacity-60">
+                    <span class="text-[10px] font-bold tracking-tighter uppercase">Dosimetry Telemetry</span>
+                    <div class="flex items-center gap-2">
+                        <span class="text-[9px] font-mono text-slate-400">PULSE DETECT</span>
+                        <div id="tick-led" class="led-indicator"></div>
+                    </div>
+                </div>
+
+                <div class="space-y-6">
+                    <!-- CPM Count -->
+                    <div class="space-y-1">
+                        <label class="text-[10px] uppercase font-bold opacity-60">Detected Radiation Intensity ($I$)</label>
+                        <div class="flex items-baseline gap-2">
+                            <div id="data-cpm" class="text-6xl font-bold font-mono">0</div>
+                            <span class="text-xl font-mono font-bold opacity-60">CPM</span>
+                        </div>
+                    </div>
+
+                    <div class="grid grid-cols-2 gap-4 pt-4 border-t border-current opacity-80">
+                        <div class="space-y-1">
+                            <label class="text-[9px] uppercase font-bold text-current">Distance ($r$)</label>
+                            <div id="data-distance" class="text-xl font-bold font-mono">30.0 cm</div>
+                        </div>
+                        <div class="space-y-1 text-right">
+                            <label class="text-[9px] uppercase font-bold text-current">Source Activity ($A_0$)</label>
+                            <div id="data-activity" class="text-xl font-bold font-mono">1.00 MBq</div>
+                        </div>
+                    </div>
+
+                    <!-- Live Inverse Square Graph -->
+                    <div class="p-4 bg-black/40 rounded-xl border border-current space-y-2 relative h-32 flex flex-col">
+                        <div class="flex justify-between items-center mb-1">
+                            <label class="text-[9px] uppercase font-bold text-current">Intensity vs Distance ($1/r^2$)</label>
+                        </div>
+                        <div class="relative flex-grow border-l border-b border-slate-700">
+                            <!-- Graph Canvas -->
+                            <canvas id="graph-canvas" class="absolute inset-0 w-full h-full"></canvas>
+                            <!-- Axis Labels -->
+                            <div class="absolute -left-2 top-0 text-[8px] text-slate-500 font-mono -translate-x-full">I</div>
+                            <div class="absolute right-0 -bottom-2 text-[8px] text-slate-500 font-mono translate-y-full">r</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Pathophysiology Card -->
+            <div class="glass-card p-6 rounded-3xl space-y-4 flex-grow flex flex-col">
+                <h3 class="text-xs font-bold text-slate-400 uppercase tracking-widest flex items-center gap-2">
+                    <svg class="w-4 h-4 text-sky-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z"></path></svg>
+                    Radiation Mechanics
+                </h3>
+                
+                <div class="space-y-3 text-[11px] text-slate-300 leading-relaxed overflow-y-auto">
+                    <div class="p-3 bg-slate-900/50 rounded-xl border border-slate-800">
+                        <strong class="text-sky-400 block mb-1">Inverse Square Law ($I = I_0 / r^2$)</strong>
+                        Because radiation is emitted isotropically (in all directions) like a sphere, the surface area it covers grows with the square of the distance. Therefore, moving twice as far away reduces exposure to <strong>1/4th</strong>.
+                    </div>
+
+                    <div class="p-3 bg-slate-900/50 rounded-xl border border-slate-800">
+                        <strong class="text-lime-400 block mb-1">Radioactive Decay ($t_{1/2}$)</strong>
+                        Isotopes are unstable. Cesium-137 has a half-life of ~30 years. Every 30 years, half of the remaining atoms decay into stable Barium, permanently reducing the source activity $A_0$.
+                    </div>
+                </div>
+
+                <button id="btn-reset" class="mt-auto w-full py-3 bg-slate-800 hover:bg-slate-700 text-slate-400 rounded-xl text-[10px] font-bold uppercase tracking-widest border border-slate-700 transition-all shadow-inner">
+                    Reset Laboratory
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', () => {
+            const radCanvas = document.getElementById('radiation-canvas');
+            const rCtx = radCanvas.getContext('2d');
+            const graphCanvas = document.getElementById('graph-canvas');
+            const gCtx = graphCanvas.getContext('2d');
+            
+            const timeSlider = document.getElementById('time-slider');
+            const timeVal = document.getElementById('time-val');
+            const btnReset = document.getElementById('btn-reset');
+            const detectorAssembly = document.getElementById('detector-assembly');
+            const viewport = document.getElementById('sim-viewport');
+            
+            const dataCpm = document.getElementById('data-cpm');
+            const dataDistance = document.getElementById('data-distance');
+            const dataActivity = document.getElementById('data-activity');
+            const telemetryPanel = document.getElementById('telemetry-panel');
+            const tickLed = document.getElementById('tick-led');
+            const sourceVisual = document.getElementById('source-core-visual');
+            
+            const distLine = document.getElementById('dist-line');
+            const distMarkers = document.getElementById('dist-markers');
+            const distBg = document.getElementById('dist-bg');
+            const distText = document.getElementById('dist-text');
+
+            // --- Physics State ---
+            const SOURCE_X = 100; // SVG coordinates
+            const MIN_X = 120;
+            const MAX_X = 650;
+            const PIXELS_PER_CM = 5.5; // Scale factor
+            
+            const BASE_ACTIVITY_MBQ = 1.0;
+            const HALF_LIFE_YEARS = 30.17; // Cs-137
+            const K_CONSTANT = 80000; // Arbitrary constant for CPM calculation at 1cm
+            const BACKGROUND_CPM = 45;
+
+            let currentX = 400; // Detector position
+            let elapsedYears = 0;
+            let currentCPM = 0;
+            let currentActivity = BASE_ACTIVITY_MBQ;
+            let distanceCm = 0;
+
+            let particles = [];
+            let isDragging = false;
+
+            // --- Setup ---
+            function initRuler() {
+                const ruler = document.getElementById('ruler-ticks');
+                for (let i = 0; i <= (MAX_X - SOURCE_X); i += (PIXELS_PER_CM * 10)) { // Mark every 10cm
+                    const line = document.createElementNS('http://www.w3.org/2000/svg', 'line');
+                    line.setAttribute('x1', i);
+                    line.setAttribute('y1', 0);
+                    line.setAttribute('x2', i);
+                    line.setAttribute('y2', 8);
+                    line.setAttribute('class', 'tick-mark');
+                    ruler.appendChild(line);
+                }
+            }
+            initRuler();
+
+            function resize() {
+                radCanvas.width = radCanvas.parentElement.clientWidth;
+                radCanvas.height = radCanvas.parentElement.clientHeight;
+                
+                const gRect = graphCanvas.parentElement.getBoundingClientRect();
+                graphCanvas.width = gRect.width;
+                graphCanvas.height = gRect.height;
+            }
+            window.addEventListener('resize', resize);
+            resize();
+
+            // --- Math & Update Logic ---
+            function updatePhysics() {
+                // 1. Distance Calculation
+                const dx = currentX - SOURCE_X;
+                distanceCm = dx / PIXELS_PER_CM;
+                
+                // 2. Decay Calculation
+                // A(t) = A0 * (0.5)^(t/t_half)
+                currentActivity = BASE_ACTIVITY_MBQ * Math.pow(0.5, elapsedYears / HALF_LIFE_YEARS);
+                
+                // 3. Inverse Square Law
+                // I = (k * Activity) / r^2
+                // We add a tiny constant to r to prevent infinity at r=0, though physical limit prevents it
+                const rawCPM = (K_CONSTANT * currentActivity) / Math.pow(distanceCm, 2);
+                currentCPM = Math.round(rawCPM + BACKGROUND_CPM);
+
+                updateUI();
+                drawGraph();
+            }
+
+            function updateUI() {
+                dataDistance.textContent = `${distanceCm.toFixed(1)} cm`;
+                dataActivity.textContent = `${currentActivity.toFixed(2)} MBq`;
+                dataCpm.textContent = currentCPM.toLocaleString();
+
+                // Update Measurement Overlay in SVG
+                distLine.setAttribute('x2', currentX);
+                distMarkers.setAttribute('d', `M 100,125 L 100,135 M ${currentX},125 L ${currentX},135`);
+                const midX = SOURCE_X + (currentX - SOURCE_X) / 2;
+                distBg.setAttribute('x', midX - 30);
+                distText.setAttribute('x', midX);
+                distText.textContent = `${distanceCm.toFixed(1)} cm`;
+
+                // Visual Status/Danger Themes
+                telemetryPanel.classList.remove('readout-danger', 'readout-warning');
+                sourceVisual.style.opacity = currentActivity; // Source physically dims over time
+
+                if (currentCPM > 10000) {
+                    telemetryPanel.classList.add('readout-danger');
+                    distText.setAttribute('fill', '#f43f5e');
+                    distLine.setAttribute('stroke', '#f43f5e');
+                    distMarkers.setAttribute('stroke', '#f43f5e');
+                } else if (currentCPM > 2000) {
+                    telemetryPanel.classList.add('readout-warning');
+                    distText.setAttribute('fill', '#fbbf24');
+                    distLine.setAttribute('stroke', '#fbbf24');
+                    distMarkers.setAttribute('stroke', '#fbbf24');
+                } else {
+                    distText.setAttribute('fill', '#38bdf8');
+                    distLine.setAttribute('stroke', '#38bdf8');
+                    distMarkers.setAttribute('stroke', '#38bdf8');
+                }
+            }
+
+            // --- Particle Engine ---
+            class RadiationParticle {
+                constructor() {
+                    this.reset();
+                    // Randomize initial position so they don't all burst at once
+                    this.progress = Math.random(); 
+                }
+                reset() {
+                    // Source position on canvas (approximate mapping)
+                    const svgW = 800; const svgH = 400;
+                    this.startX = (SOURCE_X / svgW) * radCanvas.width;
+                    this.startY = (180 / svgH) * radCanvas.height;
+                    
+                    // Emitted isotropically (right hemisphere mostly for visuals)
+                    const angle = (Math.random() - 0.5) * Math.PI; 
+                    const speed = 5 + Math.random() * 5;
+                    this.vx = Math.cos(angle) * speed;
+                    this.vy = Math.sin(angle) * speed;
+                    
+                    this.x = this.startX;
+                    this.y = this.startY;
+                    this.life = 1.0;
+                    this.active = Math.random() < currentActivity; // Less particles if decayed
+                }
+                update() {
+                    if (!this.active) return;
+                    this.x += this.vx;
+                    this.y += this.vy;
+                    this.life -= 0.01;
+                    if (this.life <= 0 || this.x > radCanvas.width || this.y < 0 || this.y > radCanvas.height) {
+                        this.reset();
+                    }
+                }
+                draw() {
+                    if (!this.active) return;
+                    rCtx.beginPath();
+                    rCtx.moveTo(this.x, this.y);
+                    rCtx.lineTo(this.x - this.vx*2, this.y - this.vy*2); // Trail
+                    rCtx.strokeStyle = `rgba(132, 204, 22, ${this.life * 0.5})`;
+                    rCtx.lineWidth = 2;
+                    rCtx.stroke();
+                }
+            }
+
+            for(let i=0; i<150; i++) particles.push(new RadiationParticle());
+
+            // --- Graphing ---
+            function drawGraph() {
+                gCtx.clearRect(0, 0, graphCanvas.width, graphCanvas.height);
+                const w = graphCanvas.width;
+                const h = graphCanvas.height;
+
+                // Max distance ~100cm. Min distance ~3cm.
+                const maxDist = (MAX_X - SOURCE_X) / PIXELS_PER_CM;
+                const maxCPM = (K_CONSTANT * BASE_ACTIVITY_MBQ) / Math.pow(MIN_X / PIXELS_PER_CM, 2);
+
+                // Draw the ideal curve for current activity
+                gCtx.beginPath();
+                gCtx.strokeStyle = 'rgba(132, 204, 22, 0.4)';
+                gCtx.lineWidth = 2;
+                
+                for (let x = 0; x < w; x++) {
+                    const simDist = Math.max(1, (x / w) * maxDist); // x=0 represents 1cm to avoid inf
+                    const simCPM = (K_CONSTANT * currentActivity) / Math.pow(simDist, 2);
+                    const y = h - (simCPM / maxCPM) * h;
+                    
+                    if (x === 0) gCtx.moveTo(x, Math.min(h, y));
+                    else gCtx.lineTo(x, Math.min(h, y));
+                }
+                gCtx.stroke();
+
+                // Draw the current point
+                const ptX = (distanceCm / maxDist) * w;
+                const ptY = h - (currentCPM / maxCPM) * h;
+                
+                gCtx.beginPath();
+                gCtx.arc(ptX, Math.max(0, Math.min(h, ptY)), 4, 0, Math.PI*2);
+                gCtx.fillStyle = '#84cc16';
+                gCtx.shadowBlur = 8;
+                gCtx.shadowColor = '#84cc16';
+                gCtx.fill();
+                gCtx.shadowBlur = 0;
+            }
+
+            // --- Simulation Loop & Geiger Ticks ---
+            let tickAccumulator = 0;
+
+            function animate() {
+                // Render Particles
+                rCtx.clearRect(0, 0, radCanvas.width, radCanvas.height);
+                particles.forEach(p => {
+                    p.update();
+                    p.draw();
+                });
+
+                // Simulate Geiger Clicks (Poisson-like stochastic process)
+                // 60fps = 3600 frames per minute. 
+                // Probability of a click per frame = CPM / 3600.
+                const probPerFrame = currentCPM / 3600;
+                
+                // If prob is > 1 (e.g. 10000 CPM), we need multiple clicks per frame.
+                // Instead of playing sound, we flash the LED.
+                tickAccumulator += probPerFrame;
+                if (tickAccumulator >= 1) {
+                    // Flash LED
+                    tickLed.classList.add('led-flash');
+                    setTimeout(() => tickLed.classList.remove('led-flash'), 30);
+                    tickAccumulator -= Math.floor(tickAccumulator); // keep remainder
+                } else if (Math.random() < tickAccumulator) {
+                    tickLed.classList.add('led-flash');
+                    setTimeout(() => tickLed.classList.remove('led-flash'), 30);
+                    tickAccumulator = 0;
+                }
+
+                requestAnimationFrame(animate);
+            }
+
+            // --- Drag Interaction ---
+            function getMouseX(e) {
+                const rect = document.getElementById('bench-svg').getBoundingClientRect();
+                const clientX = e.touches ? e.touches[0].clientX : e.clientX;
+                return (clientX - rect.left) * (800 / rect.width);
+            }
+
+            const startDrag = (e) => { isDragging = true; };
+            const stopDrag = () => { isDragging = false; };
+            const doDrag = (e) => {
+                if (!isDragging) return;
+                let x = getMouseX(e);
+                currentX = Math.max(MIN_X, Math.min(MAX_X, x));
+                detectorAssembly.setAttribute('transform', `translate(${currentX}, 200)`);
+                updatePhysics();
+            };
+
+            detectorAssembly.addEventListener('mousedown', startDrag);
+            detectorAssembly.addEventListener('touchstart', startDrag);
+            window.addEventListener('mousemove', doDrag);
+            window.addEventListener('touchmove', doDrag);
+            window.addEventListener('mouseup', stopDrag);
+            window.addEventListener('touchend', stopDrag);
+
+            // --- Controls ---
+            timeSlider.addEventListener('input', (e) => {
+                elapsedYears = parseInt(e.target.value);
+                timeVal.textContent = elapsedYears === 0 ? "Year 0" : `Year ${elapsedYears}`;
+                
+                // Refresh particles count based on activity
+                particles.forEach(p => p.active = Math.random() < (BASE_ACTIVITY_MBQ * Math.pow(0.5, elapsedYears / HALF_LIFE_YEARS)));
+                
+                updatePhysics();
+            });
+
+            btnReset.addEventListener('click', () => {
+                currentX = 400;
+                elapsedYears = 0;
+                timeSlider.value = 0;
+                timeVal.textContent = "Year 0";
+                detectorAssembly.setAttribute('transform', `translate(${currentX}, 200)`);
+                particles.forEach(p => p.reset());
+                updatePhysics();
+            });
+
+            // Initialize
+            updatePhysics();
+            animate();
+        });
+    </script>
+</body>
+</html>

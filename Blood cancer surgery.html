@@ -1,0 +1,1326 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Stem Cell Donation Procedures</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: #0f172a;
+            color: #f8fafc;
+            overflow: hidden;
+            margin: 0;
+            padding: 0;
+        }
+        
+        ::-webkit-scrollbar { width: 4px; }
+        ::-webkit-scrollbar-track { background: transparent; }
+        ::-webkit-scrollbar-thumb { background: #475569; border-radius: 4px; }
+
+        .pulse-glow {
+            animation: pulseGlow 2s infinite alternate;
+        }
+        @keyframes pulseGlow {
+            0% { box-shadow: 0 0 15px rgba(56, 189, 248, 0.2); }
+            100% { box-shadow: 0 0 25px rgba(56, 189, 248, 0.6); }
+        }
+
+        #narrative-container {
+            overflow-y: auto;
+            max-height: 260px;
+        }
+    </style>
+</head>
+<body class="h-screen w-screen flex flex-col lg:flex-row p-4 lg:p-6 gap-6 box-border">
+
+    <!-- Animation Canvas Area -->
+    <div class="flex-grow h-[50vh] lg:h-full rounded-2xl shadow-[0_20px_50px_rgb(0,0,0,0.5)] relative overflow-hidden bg-black group flex flex-col border border-slate-700/50">
+        <!-- Legend -->
+        <div id="legend-box" class="absolute top-6 left-6 z-10 space-y-2 pointer-events-none opacity-90 text-xs bg-slate-900/80 backdrop-blur-md p-3 rounded-xl border border-slate-700 shadow-xl">
+            <div class="flex items-center gap-2 text-slate-300"><span class="w-3 h-3 rounded-full bg-[#ff4757] inline-block shadow-sm"></span> Red Blood Cells</div>
+            <div class="flex items-center gap-2 text-slate-300"><span class="w-3 h-3 rounded-full bg-[#0abde3] inline-block shadow-sm"></span> White Blood Cells</div>
+            <div class="flex items-center gap-2 text-slate-300"><span class="w-3 h-3 rounded-full bg-[#feca57] inline-block shadow-sm"></span> Platelets</div>
+            <div class="flex items-center gap-2 text-slate-300"><span class="w-3 h-3 rounded-full bg-[#f8efba] inline-block shadow-[0_0_8px_#f8efba]"></span> Stem Cells</div>
+            <div id="legend-car" class="flex items-center gap-2 text-slate-300 hidden"><span class="w-3 h-3 rounded-full bg-[#a29bfe] inline-block shadow-[0_0_8px_#a29bfe]"></span> CAR-T Cells</div>
+            <div id="legend-cancer" class="flex items-center gap-2 text-slate-300 hidden"><span class="w-3 h-3 rounded-full bg-[#5f27cd] inline-block shadow-sm"></span> Cancer Cells</div>
+            <div id="legend-hunter" class="flex items-center gap-2 text-slate-300 hidden"><span class="w-3 h-3 rounded-full bg-[#fd79a8] inline-block shadow-[0_0_8px_#fd79a8]"></span> Hunting CAR-T</div>
+        </div>
+
+        <!-- Action Prompt -->
+        <div id="action-prompt" class="absolute top-6 right-6 z-10 px-4 py-2 bg-sky-500/20 text-sky-300 border border-sky-500/50 rounded-lg text-sm font-semibold backdrop-blur-md pulse-glow transition-opacity duration-300 opacity-0 pointer-events-none">
+            Action Prompt Here
+        </div>
+
+        <canvas id="medicalCanvas" class="w-full h-full cursor-crosshair"></canvas>
+    </div>
+
+    <!-- UI Controls & Narrative -->
+    <div class="w-full lg:w-[420px] flex flex-col justify-between h-[45vh] lg:h-full py-2 bg-slate-800 rounded-2xl shadow-xl border border-slate-700 p-6">
+        
+        <div class="space-y-4">
+            <!-- Header -->
+            <div>
+                <h1 id="main-title" class="text-3xl font-bold tracking-tight text-white mb-1">Stem Cell Harvest</h1>
+                <p id="sub-title" class="text-xs text-sky-400 uppercase tracking-[0.2em] font-semibold">Donation Procedures</p>
+            </div>
+
+            <!-- Stage Indicators — 12 dots -->
+            <div class="flex gap-1 mb-2">
+                <div class="h-1.5 flex-1 rounded-full bg-sky-500 transition-all duration-300" id="dot-0"></div>
+                <div class="h-1.5 flex-1 rounded-full bg-slate-600 transition-all duration-300" id="dot-1"></div>
+                <div class="h-1.5 flex-1 rounded-full bg-slate-600 transition-all duration-300" id="dot-2"></div>
+                <div class="h-1.5 flex-1 rounded-full bg-slate-600 transition-all duration-300" id="dot-3"></div>
+                <div class="h-1.5 flex-1 rounded-full bg-slate-600 transition-all duration-300" id="dot-4"></div>
+                <div class="h-1.5 flex-1 rounded-full bg-slate-600 transition-all duration-300" id="dot-5"></div>
+                <div class="h-1.5 flex-1 rounded-full bg-slate-600 transition-all duration-300" id="dot-6"></div>
+                <div class="h-1.5 flex-1 rounded-full bg-slate-600 transition-all duration-300" id="dot-7"></div>
+                <div class="h-1.5 flex-1 rounded-full bg-slate-600 transition-all duration-300" id="dot-8"></div>
+                <div class="h-1.5 flex-1 rounded-full bg-slate-600 transition-all duration-300" id="dot-9"></div>
+                <div class="h-1.5 flex-1 rounded-full bg-slate-600 transition-all duration-300" id="dot-10"></div>
+                <div class="h-1.5 flex-1 rounded-full bg-slate-600 transition-all duration-300" id="dot-11"></div>
+            </div>
+
+            <!-- Dynamic Content Area -->
+            <div id="narrative-container" class="min-h-[200px]">
+                <h2 id="stage-title" class="text-xl font-semibold text-white mb-3 transition-all duration-300">1. PBSC: Mobilization</h2>
+                <p id="stage-desc" class="text-slate-400 leading-relaxed text-sm transition-all duration-300 mb-4">
+                    For a Peripheral Blood Stem Cell (PBSC) donation, the donor first takes medication (like G-CSF) for several days. This signals the bone marrow to release precious stem cells directly into the bloodstream.
+                </p>
+                <!-- Task Checklist -->
+                <div class="bg-slate-900/50 rounded-lg p-3 border border-slate-700/50">
+                    <h4 class="text-xs font-bold text-slate-300 uppercase tracking-wider mb-2">Required Action</h4>
+                    <div class="flex items-center gap-3">
+                        <div id="task-checkbox" class="w-5 h-5 rounded-md border-2 border-slate-500 flex items-center justify-center transition-colors flex-shrink-0">
+                            <svg id="task-check" class="w-3 h-3 text-white opacity-0 transition-opacity" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="3" d="M5 13l4 4L19 7"></path></svg>
+                        </div>
+                        <span id="task-text" class="text-sm font-medium text-sky-200">Drag syringe to Muscle layer & hold to inject medication.</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Navigation -->
+        <div class="flex items-center justify-between mt-auto pt-4 border-t border-slate-700">
+            <button id="btn-prev" class="px-5 py-2.5 rounded-xl text-sm font-semibold text-slate-400 hover:text-white hover:bg-slate-700 transition-colors disabled:opacity-30 disabled:cursor-not-allowed">
+                Previous
+            </button>
+            <span class="text-xs font-bold text-slate-500 tracking-widest"><span id="stage-counter" class="text-slate-300">1</span> / 12</span>
+            <button id="btn-next" disabled class="px-5 py-2.5 rounded-xl text-sm font-bold text-white bg-sky-600 hover:bg-sky-500 active:scale-95 transition-all shadow-md shadow-sky-900/50 disabled:opacity-30 disabled:cursor-not-allowed disabled:active:scale-100 flex items-center gap-2">
+                Continue <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"></path></svg>
+            </button>
+        </div>
+    </div>
+
+    <script>
+        // --- DATA & NARRATIVE ---
+        const stages = [
+            {
+                title: "1. PBSC: Mobilization",
+                desc: "For a Peripheral Blood Stem Cell (PBSC) donation, the donor first takes medication (like G-CSF) for several days. This signals the bone marrow to release precious stem cells directly into the bloodstream.",
+                task: "Drag syringe to Muscle layer & hold to inject medication.",
+                tool: "syringe_meds",
+                headerTitle: "Stem Cell Harvest",
+                headerSub: "Donation Procedures"
+            },
+            {
+                title: "2. PBSC: Apheresis",
+                desc: "Once stem cells are in the blood, an apheresis machine is connected. It draws blood, centrifuges it to separate and extract the stem cells, and returns the remaining blood back to the donor.",
+                task: "Drag the Apheresis Catheter into the blood vessel to filter cells.",
+                tool: "apheresis",
+                headerTitle: "Stem Cell Harvest",
+                headerSub: "Donation Procedures"
+            },
+            {
+                title: "3. Bone Marrow: Preparation",
+                desc: "Alternatively, liquid marrow can be drawn directly from the pelvic bone. Because this involves a thick needle entering the bone, local or general anesthesia is required first to numb the area.",
+                task: "Inject Anesthesia deep into the tissue near the bone.",
+                tool: "syringe_anes",
+                headerTitle: "Stem Cell Harvest",
+                headerSub: "Donation Procedures"
+            },
+            {
+                title: "4. Bone Marrow: Harvest",
+                desc: "A specialized, hollow Jamshidi needle is pushed through the skin and muscle, piercing the hard bone. The plunger is pulled back to extract the thick, spongy, stem-cell-rich red marrow.",
+                task: "Insert Jamshidi Needle into Spongy Bone & hold to extract marrow.",
+                tool: "bone_needle",
+                headerTitle: "Stem Cell Harvest",
+                headerSub: "Donation Procedures"
+            },
+            {
+                title: "5. Patient: Conditioning Phase",
+                desc: "This is the most intense phase. The patient receives very high doses of chemotherapy and radiation to kill every cancerous blood cell and 'delete' their current immune system, making room for the transplant.",
+                task: "Drag Chemo IV into the blood vessel & hold to obliterate existing cells.",
+                tool: "chemo_iv",
+                headerTitle: "Patient Transplant",
+                headerSub: "Conditioning Phase"
+            },
+            // NEW STAGE 6
+            {
+                title: "6. Infusion: The Install",
+                desc: "The healthy stem cells are now infused into the patient's bloodstream through a central line (IV). The process looks just like a blood transfusion. Remarkably, the stem cells naturally know how to navigate from the bloodstream and find their way back to the bone marrow — a process called homing.",
+                task: "Drag the Infusion IV into the blood vessel & hold to deliver stem cells.",
+                tool: "infusion_iv",
+                headerTitle: "Patient Transplant",
+                headerSub: "Stem Cell Infusion"
+            },
+            // NEW STAGE 7
+            {
+                title: "7. Engraftment: The Reboot",
+                desc: "The patient waits in a sterile environment for 2–4 weeks. The new stem cells begin to grow and produce healthy white blood cells, red blood cells, and platelets. Once blood counts reach a safe level, the 'reboot' is considered successful and the immune system is reborn.",
+                task: "Hold over the bone marrow to stimulate engraftment & cell growth.",
+                tool: "engraft_wand",
+                headerTitle: "Patient Recovery",
+                headerSub: "Engraftment Phase"
+            },
+            // NEW STAGE 8
+            {
+                title: "CAR-T Step 1: Leukapheresis",
+                desc: "For CAR-T Cell Therapy, blood is drawn from the patient and passed through a machine that separates the T-cells — the 'soldiers' of the immune system. The rest of the blood is returned to the body. These T-cells will be genetically reprogrammed into precision cancer-killers.",
+                task: "Drag the Leukapheresis Catheter into the vessel to extract T-cells.",
+                tool: "leuka_apheresis",
+                headerTitle: "CAR-T Cell Therapy",
+                headerSub: "Leukapheresis — Extraction"
+            },
+            // NEW STAGE 9
+            {
+                title: "CAR-T Step 2: The Genetic Hack",
+                desc: "The T-cells are sent to a lab where scientists use a viral vector (a deactivated virus) as a delivery vehicle to insert new genetic instructions. The cells are reprogrammed to grow a Chimeric Antigen Receptor (CAR) on their surface — designed to lock onto a protein found only on cancer cells.",
+                task: "Drag the Viral Vector over T-cells to reprogram them into CAR-T cells.",
+                tool: "viral_vector",
+                headerTitle: "CAR-T Cell Therapy",
+                headerSub: "Genetic Reprogramming"
+            },
+            // NEW STAGE 10
+            {
+                title: "CAR-T Step 3: Expansion",
+                desc: "The newly upgraded CAR-T cells are placed in a laboratory incubator and grown in large batches. Scientists carefully cultivate them until there are millions of powerful, precision-programmed hunter cells — enough for a full therapeutic dose.",
+                task: "Hold the Growth Stimulator over CAR-T cells to expand the colony.",
+                tool: "incubator_wand",
+                headerTitle: "CAR-T Cell Therapy",
+                headerSub: "Lab Expansion — Scaling"
+            },
+            // NEW STAGE 11
+            {
+                title: "CAR-T Step 4: Lymphodepletion",
+                desc: "Before re-infusion, the patient receives a few days of low-dose chemotherapy. This reduces their existing white blood cell count and 'clears the lane' — making room and freeing up resources so the incoming CAR-T cells have the space they need to work effectively.",
+                task: "Drag the Low-Dose Chemo IV into the vessel to clear white blood cells.",
+                tool: "lympho_chemo",
+                headerTitle: "CAR-T Cell Therapy",
+                headerSub: "Lymphodepletion — Preparation"
+            },
+            // NEW STAGE 12
+            {
+                title: "CAR-T Step 5: Re-Infusion & The Attack",
+                desc: "The upgraded hunter cells are dripped back into the patient's veins. These living drugs roam the entire body. When a CAR-T cell finds a cancer cell, its receptor locks on and destroys it immediately. Because they are living cells, they can continue to multiply and guard the body for years.",
+                task: "Move over cancer cells to watch CAR-T hunters lock on & destroy them.",
+                tool: "car_attack",
+                headerTitle: "CAR-T Cell Therapy",
+                headerSub: "Re-Infusion & Attack"
+            }
+        ];
+
+        let currentStageIndex = 0;
+        let taskCompleted = false;
+
+        // --- CANVAS & STATE SETUP ---
+        const canvas = document.getElementById('medicalCanvas');
+        const ctx = canvas.getContext('2d', { alpha: false }); 
+        
+        let width, height;
+        let vTop, vBottom;
+        let cells = [];
+        let particles = [];
+        let globalTime = 0;
+        let mouseX = -100, mouseY = -100;
+        let isMouseDown = false;
+        
+        let toolProgress = 0;
+        let collectedStemCells = 0;
+        let anesthesiaSpread = 0;
+        let engraftProgress = 0;
+        let cartCellsCollected = 0;
+        let expansionCount = 0;  // stage 10: how many CAR-T cells multiplied
+        let attackKills = 0;     // stage 12: cancer cells destroyed
+
+        function resize() {
+            const dpr = window.devicePixelRatio || 1;
+            const rect = canvas.parentElement.getBoundingClientRect();
+            width = rect.width;
+            height = rect.height;
+            canvas.width = width * dpr;
+            canvas.height = height * dpr;
+            ctx.scale(dpr, dpr);
+            vTop = height * 0.28;    
+            vBottom = height * 0.72; 
+        }
+        
+        window.addEventListener('resize', resize);
+        resize();
+
+        // --- CELL CLASSES ---
+        class Cell {
+            constructor(x, y) {
+                this.x = x;
+                this.z = Math.random(); 
+                this.radius = 0;     
+                this.vx = (Math.random() * 0.8 + 0.4) * (0.5 + this.z * 0.7); 
+                this.vy = (Math.random() - 0.5) * 0.6; 
+                this.rotation = Math.random() * Math.PI * 2;
+                this.rotationSpeed = (Math.random() - 0.5) * 0.04; 
+                this.markedForDeletion = false;
+            }
+
+            initSafeY() {
+                const safePad = this.radius + 15;
+                this.y = vTop + safePad + Math.random() * (vBottom - vTop - safePad * 2);
+            }
+
+            update(flowModifier) {
+                this.x += this.vx * flowModifier;
+                this.y += this.vy * flowModifier;
+                this.rotation += this.rotationSpeed;
+                this.vy += (Math.random() - 0.5) * 0.05;
+                this.vy *= 0.98;
+                const safePad = this.radius + 12;
+                if (this.y < vTop + safePad) this.vy += 0.08; 
+                if (this.y > vBottom - safePad) this.vy -= 0.08; 
+            }
+
+            drawDepthWash(ctx) {
+                if (this.z < 0.6) {
+                    ctx.beginPath();
+                    ctx.arc(0, 0, this.radius + 1, 0, Math.PI * 2);
+                    ctx.fillStyle = `rgba(50, 0, 0, ${0.7 - this.z})`; 
+                    ctx.fill();
+                }
+            }
+        }
+
+        class RBC extends Cell {
+            constructor(x, y) {
+                super(x, y);
+                this.radius = (Math.random() * 2 + 12) * (0.5 + this.z * 0.5); 
+                if(y === undefined) this.initSafeY(); else this.y = y;
+            }
+            draw(ctx) {
+                ctx.save();
+                ctx.translate(this.x, this.y);
+                ctx.rotate(this.rotation);
+                const grad = ctx.createRadialGradient(-this.radius*0.2, -this.radius*0.2, this.radius*0.1, 0, 0, this.radius);
+                grad.addColorStop(0, '#ff9e9e'); grad.addColorStop(0.4, '#ff4757'); 
+                grad.addColorStop(0.9, '#b31222'); grad.addColorStop(1, '#66050f');   
+                ctx.beginPath(); ctx.arc(0, 0, this.radius, 0, Math.PI * 2); ctx.fillStyle = grad; ctx.fill();
+                const innerGrad = ctx.createRadialGradient(0, 0, 0, 0, 0, this.radius * 0.55);
+                innerGrad.addColorStop(0, '#7a0b16'); innerGrad.addColorStop(1, 'rgba(255, 71, 87, 0)');
+                ctx.beginPath(); ctx.arc(0, 0, this.radius * 0.55, 0, Math.PI * 2); ctx.fillStyle = innerGrad; ctx.fill();
+                ctx.beginPath(); ctx.arc(0, 0, this.radius * 0.7, Math.PI * 0.9, Math.PI * 1.4);
+                ctx.strokeStyle = `rgba(255, 200, 200, ${0.2 + this.z * 0.3})`; ctx.lineWidth = this.radius * 0.15; ctx.lineCap = 'round'; ctx.stroke();
+                this.drawDepthWash(ctx); ctx.restore();
+            }
+        }
+
+        class WBC extends Cell {
+            constructor(x, y) {
+                super(x, y);
+                this.radius = (Math.random() * 3 + 16) * (0.5 + this.z * 0.5);
+                if(y === undefined) this.initSafeY(); else this.y = y;
+            }
+            draw(ctx) {
+                ctx.save(); ctx.translate(this.x, this.y); ctx.rotate(this.rotation);
+                const bodyGrad = ctx.createRadialGradient(-this.radius*0.2, -this.radius*0.2, this.radius*0.2, 0, 0, this.radius);
+                bodyGrad.addColorStop(0, 'rgba(255, 255, 255, 0.95)'); bodyGrad.addColorStop(0.5, 'rgba(200, 230, 255, 0.6)'); bodyGrad.addColorStop(1, 'rgba(150, 200, 240, 0.3)');
+                ctx.beginPath(); ctx.arc(0, 0, this.radius, 0, Math.PI * 2); ctx.fillStyle = bodyGrad; ctx.fill();
+                ctx.lineWidth = 1; ctx.strokeStyle = 'rgba(255,255,255,0.7)'; ctx.stroke();
+                const nucGrad = ctx.createRadialGradient(0, 0, 0, 0, 0, this.radius*0.6);
+                nucGrad.addColorStop(0, '#74b9ff'); nucGrad.addColorStop(1, '#0984e3');
+                ctx.fillStyle = nucGrad; ctx.beginPath();
+                ctx.arc(-this.radius*0.2, -this.radius*0.2, this.radius*0.3, 0, Math.PI*2); ctx.arc(this.radius*0.25, this.radius*0.1, this.radius*0.35, 0, Math.PI*2); ctx.arc(this.radius*0.05, this.radius*0.3, this.radius*0.25, 0, Math.PI*2);
+                ctx.fill(); this.drawDepthWash(ctx); ctx.restore();
+            }
+        }
+
+        class Platelet extends Cell {
+            constructor(x, y) {
+                super(x, y);
+                this.radius = (Math.random() * 2 + 5) * (0.5 + this.z * 0.5);
+                this.vx *= 1.4; 
+                if(y === undefined) this.initSafeY(); else this.y = y;
+            }
+            draw(ctx) {
+                ctx.save(); ctx.translate(this.x, this.y); ctx.rotate(this.rotation);
+                const grad = ctx.createRadialGradient(0, 0, 0, 0, 0, this.radius);
+                grad.addColorStop(0, '#feca57'); grad.addColorStop(1, '#e17055');
+                ctx.beginPath(); ctx.moveTo(this.radius, 0);
+                for(let i=1; i<7; i++) { let angle = (i * 2 * Math.PI) / 7; let rad = i % 2 === 0 ? this.radius : this.radius * 0.5; ctx.lineTo(Math.cos(angle) * rad, Math.sin(angle) * rad); }
+                ctx.closePath(); ctx.fillStyle = grad; ctx.fill();
+                this.drawDepthWash(ctx); ctx.restore();
+            }
+        }
+
+        class StemCell extends Cell {
+            constructor(x, y, migratingFromBone = false) {
+                super(x, y);
+                this.radius = (Math.random() * 3 + 14) * (0.5 + this.z * 0.5);
+                this.pulse = Math.random() * Math.PI;
+                this.isMigrating = migratingFromBone;
+                if (migratingFromBone) {
+                    this.y = height - (Math.random() * (height - vBottom) * 0.5);
+                    this.vy = -1.5 - Math.random();
+                    this.vx = (Math.random() - 0.5) * 0.5;
+                } else if (y === undefined) {
+                    this.initSafeY();
+                } else {
+                    this.y = y;
+                }
+            }
+            update(flowModifier) {
+                if (this.isMigrating) {
+                    this.y += this.vy;
+                    this.x += this.vx;
+                    if (this.y < vBottom - this.radius - 10) {
+                        this.isMigrating = false;
+                        this.vy = (Math.random() - 0.5) * 0.6;
+                        this.vx = (Math.random() * 0.8 + 0.4) * (0.5 + this.z * 0.7); 
+                    }
+                } else {
+                    super.update(flowModifier);
+                }
+            }
+            draw(ctx) {
+                ctx.save(); ctx.translate(this.x, this.y); ctx.rotate(this.rotation);
+                this.pulse += 0.05;
+                ctx.shadowColor = '#f8efba';
+                ctx.shadowBlur = 15 + Math.sin(this.pulse) * 5;
+                const grad = ctx.createRadialGradient(-this.radius*0.2, -this.radius*0.2, this.radius*0.1, 0, 0, this.radius);
+                grad.addColorStop(0, '#ffffff'); 
+                grad.addColorStop(0.5, '#f8efba'); 
+                grad.addColorStop(1, '#e1b12c'); 
+                ctx.beginPath(); ctx.arc(0, 0, this.radius, 0, Math.PI * 2); ctx.fillStyle = grad; ctx.fill();
+                ctx.shadowBlur = 0;
+                ctx.fillStyle = 'rgba(210, 160, 40, 0.6)';
+                ctx.beginPath(); ctx.arc(0, 0, this.radius * 0.6, 0, Math.PI * 2); ctx.fill();
+                ctx.restore();
+            }
+        }
+
+        class CancerCell extends Cell {
+            constructor(x, y) {
+                super(x, y);
+                this.radius = (Math.random() * 5 + 18) * (0.5 + this.z * 0.5); 
+                this.pulse = Math.random() * Math.PI;
+                this.vx *= 0.6; 
+                if(y === undefined) this.initSafeY(); else this.y = y;
+            }
+            draw(ctx) {
+                ctx.save(); ctx.translate(this.x, this.y); ctx.rotate(this.rotation);
+                this.pulse += 0.05;
+                let pulseMod = Math.sin(this.pulse) * (2 * this.z);
+                const grad = ctx.createRadialGradient(-this.radius*0.2, -this.radius*0.2, this.radius*0.1, 0, 0, this.radius + 2);
+                grad.addColorStop(0, '#b2bec3'); grad.addColorStop(0.3, '#5f27cd'); grad.addColorStop(0.8, '#341f97'); grad.addColorStop(1, '#110934');
+                ctx.beginPath();
+                let spikes = 14;
+                for(let i = 0; i < spikes; i++) {
+                    let angle = (i * 2 * Math.PI) / spikes;
+                    let rad = this.radius + pulseMod + (Math.sin(angle * 5 + this.pulse) * (3 * this.z));
+                    if(i === 0) ctx.moveTo(rad, 0); else ctx.lineTo(Math.cos(angle) * rad, Math.sin(angle) * rad);
+                }
+                ctx.closePath(); ctx.fillStyle = grad; ctx.fill();
+                const nucGrad = ctx.createRadialGradient(0, 0, 0, 0, 0, this.radius*0.7);
+                nucGrad.addColorStop(0, '#ff4757'); nucGrad.addColorStop(1, '#833471');
+                ctx.beginPath(); ctx.ellipse(0, 0, this.radius * 0.7, this.radius * 0.5, this.pulse*0.4, 0, Math.PI * 2); ctx.fillStyle = nucGrad; ctx.fill();
+                this.drawDepthWash(ctx); ctx.restore();
+            }
+        }
+
+        // NEW: T-Cell (blue, star-shaped, ready to reprogram)
+        class TCell extends Cell {
+            constructor(x, y) {
+                super(x, y);
+                this.radius = (Math.random() * 3 + 13) * (0.5 + this.z * 0.5);
+                this.pulse = Math.random() * Math.PI;
+                if(y === undefined) this.initSafeY(); else this.y = y;
+                this.isCAR = false; // will become CAR-T when reprogrammed
+            }
+            draw(ctx) {
+                ctx.save(); ctx.translate(this.x, this.y); ctx.rotate(this.rotation);
+                this.pulse += 0.04;
+
+                const col = this.isCAR ? '#a29bfe' : '#74b9ff';
+                const col2 = this.isCAR ? '#6c5ce7' : '#0984e3';
+                const glowCol = this.isCAR ? 'rgba(162,155,254,0.7)' : 'rgba(116,185,255,0.4)';
+
+                ctx.shadowColor = glowCol;
+                ctx.shadowBlur = this.isCAR ? 18 + Math.sin(this.pulse) * 6 : 8;
+
+                const grad = ctx.createRadialGradient(-this.radius*0.2, -this.radius*0.2, this.radius*0.1, 0, 0, this.radius);
+                grad.addColorStop(0, '#ffffff');
+                grad.addColorStop(0.4, col);
+                grad.addColorStop(1, col2);
+
+                // Irregular T-cell shape
+                ctx.beginPath();
+                let pts = 8;
+                for(let i = 0; i < pts; i++) {
+                    let angle = (i * 2 * Math.PI) / pts;
+                    let rad = this.radius * (0.75 + 0.25 * Math.sin(angle * 3 + this.pulse * 0.5));
+                    if(i === 0) ctx.moveTo(Math.cos(angle)*rad, Math.sin(angle)*rad);
+                    else ctx.lineTo(Math.cos(angle)*rad, Math.sin(angle)*rad);
+                }
+                ctx.closePath();
+                ctx.fillStyle = grad; ctx.fill();
+
+                if (this.isCAR) {
+                    // Draw tiny receptor spikes
+                    ctx.shadowBlur = 0;
+                    ctx.strokeStyle = '#fd79a8'; ctx.lineWidth = 1.5;
+                    for(let i=0; i<6; i++) {
+                        let a = (i/6)*Math.PI*2;
+                        ctx.beginPath();
+                        ctx.moveTo(Math.cos(a)*this.radius*0.9, Math.sin(a)*this.radius*0.9);
+                        ctx.lineTo(Math.cos(a)*(this.radius+6), Math.sin(a)*(this.radius+6));
+                        ctx.stroke();
+                    }
+                }
+
+                ctx.shadowBlur = 0;
+                ctx.restore();
+            }
+        }
+
+        function spawnCell(x, rates) {
+            const rand = Math.random() * 100;
+            let sum = rates.rbc || 0; if (rand <= sum) return new RBC(x);
+            sum += rates.wbc || 0; if (rand <= sum) return new WBC(x);
+            sum += rates.platelet || 0; if (rand <= sum) return new Platelet(x);
+            sum += rates.cancer || 0; if (rand <= sum) return new CancerCell(x);
+            sum += rates.tcell || 0; if (rand <= sum) return new TCell(x);
+            return new StemCell(x);
+        }
+
+        function initPopulation() {
+            cells = [];
+            for(let i = 0; i < 150; i++) {
+                cells.push(spawnCell((width / 150) * i, { rbc: 85, wbc: 5, platelet: 10, cancer: 0 }));
+            }
+        }
+
+        // --- ANATOMY DRAWING ---
+        function drawAnatomy() {
+            let t_skin = vTop * 0.15, t_fat = vTop * 0.45, t_muscle = vTop * 0.75, t_bone = vTop;
+            let h_bot = height - vBottom;
+            let b_bone = vBottom + h_bot * 0.25, b_muscle = vBottom + h_bot * 0.55, b_fat = vBottom + h_bot * 0.85, b_skin = height;
+
+            ctx.fillStyle = '#dfaf9b'; ctx.fillRect(0, 0, width, t_skin * 0.3);
+            const tDermis = ctx.createLinearGradient(0, t_skin*0.3, 0, t_skin); tDermis.addColorStop(0, '#d18b6b'); tDermis.addColorStop(1, '#a85b3b');
+            ctx.fillStyle = tDermis; ctx.fillRect(0, t_skin*0.3, width, t_skin*0.7);
+            const bDermis = ctx.createLinearGradient(0, b_fat, 0, b_skin - (h_bot*0.15*0.3)); bDermis.addColorStop(0, '#a85b3b'); bDermis.addColorStop(1, '#d18b6b');
+            ctx.fillStyle = bDermis; ctx.fillRect(0, b_fat, width, b_skin - b_fat);
+            ctx.fillStyle = '#dfaf9b'; ctx.fillRect(0, b_skin - (h_bot*0.15*0.3), width, h_bot*0.15*0.3);
+
+            ctx.fillStyle = '#8a4b35'; ctx.fillRect(0, t_skin, width, t_fat - t_skin); ctx.fillRect(0, b_muscle, width, b_fat - b_muscle);
+            function drawFat(startY, endY) {
+                for(let y = startY; y <= endY + 10; y += 18) {
+                    for(let x = -10; x <= width + 20; x += 22) {
+                        if (y > endY) continue; 
+                        let jitterX = Math.sin(y * 12.1) * 8, r = 10 + Math.abs(Math.sin(x * 3.3 + y * 7.7)) * 8;
+                        const fatGrad = ctx.createRadialGradient(x + jitterX - r*0.3, y - r*0.3, r*0.1, x + jitterX, y, r);
+                        fatGrad.addColorStop(0, '#ffe8a1'); fatGrad.addColorStop(0.6, '#f3c754'); fatGrad.addColorStop(1, '#c28b25');
+                        ctx.beginPath(); ctx.arc(x + jitterX, y, r, 0, Math.PI*2); ctx.fillStyle = fatGrad; ctx.fill();
+                        ctx.strokeStyle = 'rgba(150, 80, 40, 0.4)'; ctx.lineWidth = 1; ctx.stroke();
+                    }
+                }
+            }
+            drawFat(t_skin, t_fat); drawFat(b_muscle, b_fat);
+
+            function drawMuscle(startY, endY, isTop) {
+                ctx.fillStyle = '#e8e4e6'; let fasciaY = isTop ? startY : endY - 3; ctx.fillRect(0, fasciaY, width, 3);
+                ctx.fillStyle = 'rgba(200, 190, 195, 0.6)'; ctx.fillRect(0, isTop ? fasciaY + 3 : fasciaY - 2, width, 2);
+                let mStartY = isTop ? startY + 5 : startY, mEndY = isTop ? endY : endY - 5;
+                ctx.fillStyle = '#3a0c10'; ctx.fillRect(0, mStartY, width, mEndY - mStartY);
+                ctx.lineWidth = 1.5;
+                for(let y = mStartY + 4; y <= mEndY - 2; y += 4) {
+                    ctx.beginPath(); ctx.moveTo(0, y);
+                    for(let x = 0; x <= width; x += 30) { ctx.lineTo(x, y + Math.sin(x * 0.04 + y * 0.2) * 3 + Math.sin(x * 0.1) * 1.5); }
+                    ctx.strokeStyle = `rgba(${60 + Math.abs(Math.sin(y*22))*60}, 15, 22, ${0.2 + Math.abs(Math.sin(y*11))*0.5})`; ctx.stroke();
+                }
+            }
+            drawMuscle(t_fat, t_muscle, true); drawMuscle(b_bone, b_muscle, false);
+
+            function drawBone(startY, endY, isTop) {
+                ctx.fillStyle = '#8f8883'; let perioY = isTop ? startY : endY - 3; ctx.fillRect(0, perioY, width, 3);
+                let bStartY = isTop ? startY + 3 : startY, bEndY = isTop ? endY : endY - 3;
+                const boneGrad = ctx.createLinearGradient(0, bStartY, 0, bEndY);
+                if (isTop) { boneGrad.addColorStop(0, '#e3dcd3'); boneGrad.addColorStop(1, '#a37a74'); } 
+                else { boneGrad.addColorStop(0, '#a37a74'); boneGrad.addColorStop(1, '#e3dcd3'); }
+                ctx.fillStyle = boneGrad; ctx.fillRect(0, bStartY, width, bEndY - bStartY);
+                ctx.fillStyle = 'rgba(90, 50, 40, 0.4)';
+                for(let y = bStartY + 5; y < bEndY; y += 10) {
+                    for(let x = 0; x < width; x += 12) {
+                        if (Math.sin(x * 54.3 + y * 12.1) > 0.2) {
+                            let distToVessel = isTop ? (bEndY - y) : (y - bStartY);
+                            let ratio = 1 - (distToVessel / (bEndY - bStartY)); 
+                            if (Math.random() < ratio + 0.2) {
+                                ctx.beginPath(); ctx.arc(x + Math.sin(y)*5, y + Math.cos(x)*5, (Math.abs(Math.sin(x*y)) * 3 + 1) * (1 + ratio), 0, Math.PI*2); ctx.fill();
+                            }
+                        }
+                    }
+                }
+            }
+            drawBone(t_muscle, t_bone, true); drawBone(vBottom, b_bone, false);
+
+            // Vessel
+            const vesselGrad = ctx.createLinearGradient(0, vTop, 0, vBottom);
+            vesselGrad.addColorStop(0, '#140101'); vesselGrad.addColorStop(0.15, '#5c0505'); vesselGrad.addColorStop(0.5, '#ad0000'); vesselGrad.addColorStop(0.85, '#5c0505'); vesselGrad.addColorStop(1, '#140101');
+            ctx.fillStyle = vesselGrad; ctx.fillRect(0, vTop, width, vBottom - vTop);
+            
+            let pulseOffset = Math.sin(globalTime * 2) * 1.5;
+            ctx.lineWidth = 6; ctx.beginPath();
+            for(let x = 0; x <= width; x += 15) { let roughY = vTop + Math.sin(x * 0.05) * 5 + pulseOffset; if(x===0) ctx.moveTo(x, roughY); else ctx.lineTo(x, roughY); }
+            ctx.strokeStyle = '#4a0d0d'; ctx.stroke(); ctx.lineWidth = 2; ctx.strokeStyle = 'rgba(255, 120, 120, 0.35)'; ctx.stroke();
+            
+            ctx.lineWidth = 6; ctx.beginPath();
+            for(let x = 0; x <= width; x += 15) { let roughY = vBottom + Math.sin(x * 0.06 + 2) * 5 - pulseOffset; if(x===0) ctx.moveTo(x, roughY); else ctx.lineTo(x, roughY); }
+            ctx.strokeStyle = '#300505'; ctx.stroke(); ctx.lineWidth = 2; ctx.strokeStyle = 'rgba(255, 100, 100, 0.25)'; ctx.stroke();
+            
+            // Anesthesia effect
+            if (anesthesiaSpread > 0) {
+                const anesGrad = ctx.createRadialGradient(width/2, height*0.9, 0, width/2, height*0.9, width * anesthesiaSpread);
+                anesGrad.addColorStop(0, 'rgba(56, 189, 248, 0.4)');
+                anesGrad.addColorStop(1, 'rgba(56, 189, 248, 0)');
+                ctx.fillStyle = anesGrad;
+                ctx.fillRect(0, vBottom, width, height - vBottom);
+            }
+
+            // Engraftment glow in bone marrow (stage 7)
+            if (currentStageIndex === 6 && engraftProgress > 0) {
+                const engGrad = ctx.createRadialGradient(width/2, vBottom + (height-vBottom)*0.5, 0, width/2, vBottom + (height-vBottom)*0.5, width * 0.6 * engraftProgress);
+                engGrad.addColorStop(0, `rgba(248, 239, 186, ${0.5 * engraftProgress})`);
+                engGrad.addColorStop(0.5, `rgba(225, 177, 44, ${0.3 * engraftProgress})`);
+                engGrad.addColorStop(1, 'rgba(225, 177, 44, 0)');
+                ctx.fillStyle = engGrad;
+                ctx.fillRect(0, vBottom, width, height - vBottom);
+            }
+        }
+
+        function drawFluidWaves() {
+            const vHeight = vBottom - vTop;
+            ctx.fillStyle = 'rgba(120, 0, 0, 0.2)'; ctx.beginPath();
+            for(let x = 0; x <= width + 20; x += 30) { let y = vTop + vHeight*0.35 + Math.sin(x*0.003 + globalTime*0.8)*35; if(x===0) ctx.moveTo(x, y); else ctx.lineTo(x, y); }
+            ctx.lineTo(width, vBottom); ctx.lineTo(0, vBottom); ctx.fill();
+            
+            ctx.fillStyle = 'rgba(180, 15, 15, 0.15)'; ctx.beginPath();
+            for(let x = 0; x <= width + 20; x += 30) { let y = vTop + vHeight*0.5 + Math.sin(x*0.005 - globalTime*1.2)*25 + Math.cos(x*0.01 + globalTime*0.5)*15; if(x===0) ctx.moveTo(x, y); else ctx.lineTo(x, y); }
+            ctx.lineTo(width, vBottom); ctx.lineTo(0, vBottom); ctx.fill();
+
+            ctx.fillStyle = 'rgba(230, 30, 30, 0.08)'; ctx.beginPath();
+            for(let x = 0; x <= width + 20; x += 30) { let y = vTop + vHeight*0.65 + Math.sin(x*0.008 + globalTime*1.8)*20; if(x===0) ctx.moveTo(x, y); else ctx.lineTo(x, y); }
+            ctx.lineTo(width, vBottom); ctx.lineTo(0, vBottom); ctx.fill();
+        }
+
+        // --- TOOL DRAWING ---
+        function drawSyringe(ctx, x, y, progress, color) {
+            ctx.save(); ctx.translate(x, y); ctx.rotate(-Math.PI / 6); 
+            ctx.fillStyle = '#cbd5e1'; ctx.fillRect(-1, 0, 2, -40);
+            let bH = 100, bW = 24;
+            ctx.fillStyle = 'rgba(255,255,255,0.1)'; ctx.fillRect(-bW/2, -40 - bH, bW, bH);
+            let fR = 1 - progress; 
+            if(fR > 0) { ctx.fillStyle = color; ctx.fillRect(-bW/2 + 2, -40 - bH + (1-fR)*bH, bW - 4, bH * fR); }
+            let pY = -40 - bH + (1-fR)*bH;
+            ctx.fillStyle = '#1e293b'; ctx.fillRect(-bW/2 + 1, pY - 8, bW - 2, 8);
+            ctx.fillStyle = '#f1f5f9'; ctx.fillRect(-4, pY - 60, 8, 60); ctx.fillRect(-bW, pY - 60, bW*2, 6);
+            ctx.strokeStyle = 'rgba(255,255,255,0.6)'; ctx.lineWidth = 2; ctx.strokeRect(-bW/2, -40 - bH, bW, bH);
+            ctx.fillStyle = 'rgba(255,255,255,0.4)'; ctx.fillRect(-bW/2 + 2, -40 - bH + 2, 4, bH - 4);
+            ctx.restore();
+        }
+
+        function drawApheresisCatheter(ctx, x, y) {
+            ctx.save(); ctx.translate(x, y);
+            ctx.beginPath(); ctx.moveTo(0,-20); ctx.quadraticCurveTo(50, -100, width, -200);
+            ctx.strokeStyle = 'rgba(255, 255, 255, 0.4)'; ctx.lineWidth = 14; ctx.stroke();
+            ctx.strokeStyle = 'rgba(200, 30, 30, 0.6)'; ctx.lineWidth = 8; ctx.stroke();
+            ctx.fillStyle = '#0ea5e9'; ctx.fillRect(-12, -40, 24, 20);
+            ctx.fillStyle = '#cbd5e1'; ctx.beginPath(); ctx.moveTo(-3,-20); ctx.lineTo(3,-20); ctx.lineTo(0,0); ctx.fill();
+            if(isMouseDown) {
+                ctx.beginPath(); ctx.arc(0, 10, 40, 0, Math.PI*2);
+                const suckGrad = ctx.createRadialGradient(0,0,0, 0,10,40);
+                suckGrad.addColorStop(0, 'rgba(255,255,255,0.8)'); suckGrad.addColorStop(1, 'rgba(255,255,255,0)');
+                ctx.fillStyle = suckGrad; ctx.fill();
+            }
+            ctx.restore();
+        }
+
+        function drawJamshidiNeedle(ctx, x, y, progress) {
+            ctx.save(); ctx.translate(x, y);
+            ctx.fillStyle = '#94a3b8'; ctx.fillRect(-4, 0, 8, -120);
+            ctx.fillStyle = '#e2e8f0'; ctx.fillRect(-1, 0, 2, -120);
+            ctx.fillStyle = '#0f172a'; ctx.fillRect(-30, -120, 60, 20);
+            if(progress > 0) {
+                ctx.fillStyle = 'rgba(255,255,255,0.2)'; ctx.fillRect(-10, -160, 20, 40);
+                ctx.fillStyle = '#991b1b'; ctx.fillRect(-8, -120 - (40*progress), 16, 40*progress);
+            }
+            ctx.restore();
+        }
+
+        function drawChemoIV(ctx, x, y) {
+            ctx.save(); ctx.translate(x, y);
+            ctx.beginPath(); ctx.moveTo(0,-20); ctx.quadraticCurveTo(20, -100, -50, -200);
+            ctx.strokeStyle = 'rgba(255, 255, 255, 0.4)'; ctx.lineWidth = 6; ctx.stroke();
+            ctx.strokeStyle = 'rgba(16, 185, 129, 0.6)'; ctx.lineWidth = 3; ctx.stroke();
+            ctx.fillStyle = '#cbd5e1'; ctx.fillRect(-2, -20, 4, 20);
+            ctx.fillStyle = '#10b981'; ctx.fillRect(-4, -25, 8, 5);
+            if(isMouseDown) {
+                ctx.beginPath(); ctx.moveTo(-2, 0); 
+                ctx.lineTo(-60, 180); ctx.arc(0, 180, 60, Math.PI, 0, true); ctx.lineTo(2, 0);
+                const sprayGrad = ctx.createRadialGradient(0,0,0, 0,0,180);
+                sprayGrad.addColorStop(0, 'rgba(16, 185, 129, 0.8)'); 
+                sprayGrad.addColorStop(1, 'rgba(16, 185, 129, 0)');
+                ctx.fillStyle = sprayGrad; ctx.fill();
+            }
+            ctx.restore();
+        }
+
+        // NEW: Infusion IV — golden/warm tone for stem cells
+        function drawInfusionIV(ctx, x, y) {
+            ctx.save(); ctx.translate(x, y);
+            ctx.beginPath(); ctx.moveTo(0,-20); ctx.quadraticCurveTo(-30, -120, 60, -220);
+            ctx.strokeStyle = 'rgba(255, 255, 255, 0.35)'; ctx.lineWidth = 7; ctx.stroke();
+            ctx.strokeStyle = 'rgba(225, 177, 44, 0.7)'; ctx.lineWidth = 4; ctx.stroke();
+            // Catheter tip
+            ctx.fillStyle = '#e2e8f0'; ctx.fillRect(-2, -20, 4, 20);
+            ctx.fillStyle = '#f8efba'; ctx.fillRect(-5, -25, 10, 5);
+            if(isMouseDown) {
+                // Golden spray into vessel
+                const flowGrad = ctx.createRadialGradient(0,0,0, 0,40,80);
+                flowGrad.addColorStop(0, 'rgba(248,239,186,0.9)');
+                flowGrad.addColorStop(1, 'rgba(248,239,186,0)');
+                ctx.beginPath(); ctx.arc(0, 0, 70, 0, Math.PI*2);
+                ctx.fillStyle = flowGrad; ctx.fill();
+            }
+            ctx.restore();
+        }
+
+        // NEW: Engraftment Wand — glowing pulsing orb
+        function drawEngraftWand(ctx, x, y) {
+            ctx.save(); ctx.translate(x, y);
+            let pulse = Math.sin(globalTime * 4) * 0.5 + 0.5;
+            ctx.shadowColor = '#f8efba';
+            ctx.shadowBlur = 30 + pulse * 20;
+            const wandGrad = ctx.createRadialGradient(0, 0, 0, 0, 0, 28 + pulse * 8);
+            wandGrad.addColorStop(0, '#ffffff');
+            wandGrad.addColorStop(0.4, '#f8efba');
+            wandGrad.addColorStop(1, 'rgba(225,177,44,0)');
+            ctx.beginPath(); ctx.arc(0, 0, 28 + pulse * 8, 0, Math.PI*2);
+            ctx.fillStyle = wandGrad; ctx.fill();
+            ctx.shadowBlur = 0;
+            // Handle
+            ctx.fillStyle = '#94a3b8'; ctx.fillRect(-3, 10, 6, 60);
+            ctx.fillStyle = '#cbd5e1'; ctx.fillRect(-2, 11, 2, 58);
+            ctx.restore();
+        }
+
+        // NEW: Leukapheresis catheter — blue T-cell collector
+        function drawLeukaCatheter(ctx, x, y) {
+            ctx.save(); ctx.translate(x, y);
+            ctx.beginPath(); ctx.moveTo(0,-20); ctx.quadraticCurveTo(60, -80, width, -180);
+            ctx.strokeStyle = 'rgba(255, 255, 255, 0.35)'; ctx.lineWidth = 14; ctx.stroke();
+            ctx.strokeStyle = 'rgba(116, 185, 255, 0.7)'; ctx.lineWidth = 8; ctx.stroke();
+            ctx.fillStyle = '#3b82f6'; ctx.fillRect(-12, -40, 24, 20);
+            ctx.fillStyle = '#bfdbfe'; ctx.beginPath(); ctx.moveTo(-3,-20); ctx.lineTo(3,-20); ctx.lineTo(0,0); ctx.fill();
+            if(isMouseDown) {
+                ctx.beginPath(); ctx.arc(0, 10, 50, 0, Math.PI*2);
+                const suckGrad = ctx.createRadialGradient(0,0,0, 0,10,50);
+                suckGrad.addColorStop(0, 'rgba(116,185,255,0.8)'); suckGrad.addColorStop(1, 'rgba(116,185,255,0)');
+                ctx.fillStyle = suckGrad; ctx.fill();
+            }
+            ctx.restore();
+        }
+
+        // NEW: Viral Vector tool — green glowing orb with DNA helix particles
+        function drawViralVector(ctx, x, y) {
+            ctx.save(); ctx.translate(x, y);
+            let pulse = Math.sin(globalTime * 5) * 0.5 + 0.5;
+            ctx.shadowColor = '#00b894';
+            ctx.shadowBlur = 20 + pulse * 15;
+            const vGrad = ctx.createRadialGradient(0,0,0, 0,0, 22 + pulse*6);
+            vGrad.addColorStop(0, '#ffffff');
+            vGrad.addColorStop(0.3, '#55efc4');
+            vGrad.addColorStop(0.8, '#00b894');
+            vGrad.addColorStop(1, 'rgba(0,184,148,0)');
+            ctx.beginPath(); ctx.arc(0, 0, 22 + pulse*6, 0, Math.PI*2);
+            ctx.fillStyle = vGrad; ctx.fill();
+            ctx.shadowBlur = 0;
+            // Spike proteins
+            ctx.strokeStyle = `rgba(85,239,196,${0.5 + pulse*0.5})`; ctx.lineWidth = 1.5;
+            for(let i=0; i<8; i++) {
+                let a = (i/8)*Math.PI*2 + globalTime;
+                ctx.beginPath();
+                ctx.moveTo(Math.cos(a)*18, Math.sin(a)*18);
+                ctx.lineTo(Math.cos(a)*26, Math.sin(a)*26);
+                ctx.stroke();
+            }
+            if(isMouseDown) {
+                ctx.beginPath(); ctx.arc(0, 0, 90, 0, Math.PI*2);
+                const repGrad = ctx.createRadialGradient(0,0,0, 0,0,90);
+                repGrad.addColorStop(0, 'rgba(85,239,196,0.4)');
+                repGrad.addColorStop(1, 'rgba(85,239,196,0)');
+                ctx.fillStyle = repGrad; ctx.fill();
+            }
+            ctx.restore();
+        }
+
+        // NEW: Incubator Wand — pulsing purple/violet orb for CAR-T expansion
+        function drawIncubatorWand(ctx, x, y) {
+            ctx.save(); ctx.translate(x, y);
+            let pulse = Math.sin(globalTime * 3) * 0.5 + 0.5;
+            ctx.shadowColor = '#a29bfe';
+            ctx.shadowBlur = 25 + pulse * 20;
+
+            const iGrad = ctx.createRadialGradient(0,0,0, 0,0, 30 + pulse*10);
+            iGrad.addColorStop(0, '#ffffff');
+            iGrad.addColorStop(0.3, '#a29bfe');
+            iGrad.addColorStop(0.7, '#6c5ce7');
+            iGrad.addColorStop(1, 'rgba(108,92,231,0)');
+            ctx.beginPath(); ctx.arc(0, 0, 30 + pulse*10, 0, Math.PI*2);
+            ctx.fillStyle = iGrad; ctx.fill();
+
+            // Orbiting dots
+            ctx.shadowBlur = 0;
+            for(let i = 0; i < 4; i++) {
+                let a = (i/4)*Math.PI*2 + globalTime * 2;
+                let ox = Math.cos(a) * (22 + pulse*5), oy = Math.sin(a) * (22 + pulse*5);
+                ctx.beginPath(); ctx.arc(ox, oy, 4, 0, Math.PI*2);
+                ctx.fillStyle = '#fd79a8'; ctx.fill();
+            }
+
+            if(isMouseDown) {
+                ctx.beginPath(); ctx.arc(0, 0, 100, 0, Math.PI*2);
+                const expGrad = ctx.createRadialGradient(0,0,0, 0,0,100);
+                expGrad.addColorStop(0, 'rgba(162,155,254,0.35)');
+                expGrad.addColorStop(1, 'rgba(162,155,254,0)');
+                ctx.fillStyle = expGrad; ctx.fill();
+            }
+            // Handle
+            ctx.fillStyle = '#64748b'; ctx.fillRect(-3, 12, 6, 55);
+            ctx.fillStyle = '#94a3b8'; ctx.fillRect(-2, 13, 2, 53);
+            ctx.restore();
+        }
+
+        // NEW: Low-dose chemo IV — teal/cyan, narrower spread than full chemo
+        function drawLymphoChemo(ctx, x, y) {
+            ctx.save(); ctx.translate(x, y);
+            ctx.beginPath(); ctx.moveTo(0,-20); ctx.quadraticCurveTo(30, -90, -30, -210);
+            ctx.strokeStyle = 'rgba(255,255,255,0.35)'; ctx.lineWidth = 5; ctx.stroke();
+            ctx.strokeStyle = 'rgba(6,182,212,0.7)'; ctx.lineWidth = 3; ctx.stroke();
+            ctx.fillStyle = '#e2e8f0'; ctx.fillRect(-2, -20, 4, 20);
+            ctx.fillStyle = '#06b6d4'; ctx.fillRect(-5, -25, 10, 5);
+            if(isMouseDown) {
+                ctx.beginPath(); ctx.moveTo(-2, 0);
+                ctx.lineTo(-40, 130); ctx.arc(0, 130, 40, Math.PI, 0, true); ctx.lineTo(2, 0);
+                const spGrad = ctx.createRadialGradient(0,0,0, 0,0,140);
+                spGrad.addColorStop(0, 'rgba(6,182,212,0.7)');
+                spGrad.addColorStop(1, 'rgba(6,182,212,0)');
+                ctx.fillStyle = spGrad; ctx.fill();
+            }
+            ctx.restore();
+        }
+
+        // NEW: CAR Attack pointer — targeting reticle showing attack mode
+        function drawCARPointer(ctx, x, y) {
+            ctx.save(); ctx.translate(x, y);
+            let pulse = Math.sin(globalTime * 6) * 0.5 + 0.5;
+            ctx.strokeStyle = `rgba(253,121,168,${0.5 + pulse*0.5})`;
+            ctx.lineWidth = 1.5;
+            // Outer ring
+            ctx.beginPath(); ctx.arc(0, 0, 40 + pulse*5, 0, Math.PI*2);
+            ctx.setLineDash([6, 6]); ctx.stroke(); ctx.setLineDash([]);
+            // Crosshairs
+            ctx.beginPath(); ctx.moveTo(-50,0); ctx.lineTo(-15,0);
+            ctx.moveTo(15,0); ctx.lineTo(50,0);
+            ctx.moveTo(0,-50); ctx.lineTo(0,-15);
+            ctx.moveTo(0,15); ctx.lineTo(0,50);
+            ctx.strokeStyle = `rgba(253,121,168,${0.4 + pulse*0.4})`; ctx.lineWidth=1; ctx.stroke();
+            // Center dot
+            ctx.shadowColor = '#fd79a8'; ctx.shadowBlur = 10 + pulse*8;
+            ctx.beginPath(); ctx.arc(0, 0, 4, 0, Math.PI*2);
+            ctx.fillStyle = '#fd79a8'; ctx.fill();
+            ctx.restore();
+        }
+        let animationId;
+        function animate() {
+            ctx.fillStyle = '#000000'; ctx.fillRect(0, 0, width, height);
+            globalTime += 0.015;
+
+            drawAnatomy();
+            drawFluidWaves();
+
+            // Cell composition per stage
+            let stemCellRates = { rbc: 85, wbc: 5, platelet: 10, cancer: 0 };
+            if(currentStageIndex === 1) stemCellRates = { rbc: 50, wbc: 3, platelet: 7, stem: 40 }; 
+            if(currentStageIndex === 4) stemCellRates = { rbc: 15, wbc: 2, platelet: 3, cancer: 80 }; 
+            if(currentStageIndex === 5) stemCellRates = { rbc: 60, wbc: 10, platelet: 10, stem: 20 }; // after chemo, infusing stem cells
+            if(currentStageIndex === 6) stemCellRates = { rbc: 40, wbc: 20, platelet: 20, stem: 20 }; // engraftment — healthy blood returning
+            if(currentStageIndex === 7) stemCellRates = { rbc: 40, wbc: 10, platelet: 10, tcell: 40 }; // T-cells prominent
+            if(currentStageIndex === 8) stemCellRates = { rbc: 20, wbc: 5, platelet: 5, tcell: 70 }; // mostly T-cells to reprogram
+            if(currentStageIndex === 9) stemCellRates = { rbc: 5, wbc: 2, platelet: 3, tcell: 90 };  // stage 10: pure CAR-T expansion
+            if(currentStageIndex === 10) stemCellRates = { rbc: 30, wbc: 30, platelet: 10, tcell: 30 }; // stage 11: lymphodepletion
+            if(currentStageIndex === 11) stemCellRates = { rbc: 20, wbc: 5, platelet: 5, tcell: 40, cancer: 30 }; // stage 12: CAR-T vs cancer
+            
+            for (let i = cells.length - 1; i >= 0; i--) {
+                let cell = cells[i];
+                cell.update(1.2);
+                
+                // Stage 2: Apheresis Collection
+                if(currentStageIndex === 1 && isMouseDown) {
+                    let dx = mouseX - cell.x; let dy = mouseY - cell.y;
+                    let dist = Math.sqrt(dx*dx + dy*dy);
+                    if(dist < 100) {
+                        if(cell instanceof StemCell) {
+                            cell.x += dx * 0.05; cell.y += dy * 0.05;
+                            if(dist < 20) {
+                                cell.markedForDeletion = true;
+                                collectedStemCells++;
+                                if(collectedStemCells >= 15 && !taskCompleted) completeTask();
+                            }
+                        } else { cell.y += (Math.random()-0.5)*2; }
+                    }
+                }
+
+                // Stage 5: Chemo Obliteration
+                if(currentStageIndex === 4 && isMouseDown && mouseX > 0 && mouseY > vTop && mouseY < vBottom) {
+                    let dx = mouseX - cell.x; let dy = mouseY - cell.y;
+                    if(Math.sqrt(dx*dx + dy*dy) < 180) {
+                        cell.radius *= 0.94;
+                        if(cell.radius < 2) cell.markedForDeletion = true;
+                    }
+                }
+
+                // Stage 6: Infusion — stem cells get drawn toward bone marrow
+                if(currentStageIndex === 5 && isMouseDown && mouseY > vTop && mouseY < vBottom) {
+                    if(cell instanceof StemCell) {
+                        // Attract toward bottom bone
+                        let targetY = vBottom + (height - vBottom) * 0.3;
+                        let dy = targetY - cell.y;
+                        cell.vy += dy * 0.003;
+                    }
+                }
+
+                // Stage 8: Leukapheresis — collect T-cells
+                if(currentStageIndex === 7 && isMouseDown) {
+                    let dx = mouseX - cell.x; let dy = mouseY - cell.y;
+                    let dist = Math.sqrt(dx*dx + dy*dy);
+                    if(dist < 100 && cell instanceof TCell) {
+                        cell.x += dx * 0.05; cell.y += dy * 0.05;
+                        if(dist < 20) {
+                            cell.markedForDeletion = true;
+                            cartCellsCollected++;
+                            if(cartCellsCollected >= 12 && !taskCompleted) completeTask();
+                        }
+                    }
+                }
+
+                // Stage 9: Viral Vector — reprogram T-cells
+                if(currentStageIndex === 8 && isMouseDown) {
+                    let dx = mouseX - cell.x; let dy = mouseY - cell.y;
+                    let dist = Math.sqrt(dx*dx + dy*dy);
+                    if(dist < 90 && cell instanceof TCell && !cell.isCAR) {
+                        cell.isCAR = true;
+                        cartCellsCollected++;
+                        if(cartCellsCollected >= 10 && !taskCompleted) completeTask();
+                    }
+                }
+
+                // Stage 10: Expansion — grow more CAR-T cells near wand
+                if(currentStageIndex === 9 && isMouseDown) {
+                    let dx = mouseX - cell.x; let dy = mouseY - cell.y;
+                    let dist = Math.sqrt(dx*dx + dy*dy);
+                    if(dist < 80 && cell instanceof TCell && cell.isCAR) {
+                        // Boost their movement energy
+                        cell.vx = (Math.random() - 0.5) * 3;
+                        cell.vy = (Math.random() - 0.5) * 3;
+                    }
+                }
+
+                // Stage 11: Lymphodepletion — chemo kills WBCs
+                if(currentStageIndex === 10 && isMouseDown && mouseY > vTop && mouseY < vBottom) {
+                    let dx = mouseX - cell.x; let dy = mouseY - cell.y;
+                    if(Math.sqrt(dx*dx + dy*dy) < 150 && cell instanceof WBC) {
+                        cell.radius *= 0.92;
+                        if(cell.radius < 2) cell.markedForDeletion = true;
+                    }
+                }
+
+                // Stage 12: CAR-T cells auto-hunt cancer cells (passive, no tool needed)
+                if(currentStageIndex === 11 && cell instanceof TCell && cell.isCAR) {
+                    // Find nearest cancer cell and steer toward it
+                    let nearestCancer = null, nearestDist = Infinity;
+                    for(let other of cells) {
+                        if(other instanceof CancerCell) {
+                            let dx = other.x - cell.x, dy = other.y - cell.y;
+                            let d = Math.sqrt(dx*dx + dy*dy);
+                            if(d < nearestDist) { nearestDist = d; nearestCancer = other; }
+                        }
+                    }
+                    if(nearestCancer) {
+                        let dx = nearestCancer.x - cell.x, dy = nearestCancer.y - cell.y;
+                        cell.vx += dx * 0.002; cell.vy += dy * 0.002;
+                        cell.vx = Math.max(-3, Math.min(3, cell.vx));
+                        cell.vy = Math.max(-3, Math.min(3, cell.vy));
+                        if(nearestDist < cell.radius + nearestCancer.radius - 4) {
+                            nearestCancer.markedForDeletion = true;
+                            cell.markedForDeletion = true; // martyrdom — cell used up
+                            attackKills++;
+                            // Explosion particle burst
+                            for(let p=0; p<8; p++) {
+                                particles.push({
+                                    x: nearestCancer.x, y: nearestCancer.y,
+                                    vx: (Math.random()-0.5)*5, vy: (Math.random()-0.5)*5,
+                                    life: 1, color: '253,121,168', hasVx: true, r: 4
+                                });
+                            }
+                            if(attackKills >= 8 && !taskCompleted) completeTask();
+                        }
+                    }
+                }
+
+                if (cell.x - cell.radius > width || cell.markedForDeletion) { cells.splice(i, 1); }
+            }
+
+            // Spawn stream
+            let targetCount = 150;
+            if (currentStageIndex === 1) targetCount = 250;
+            if (currentStageIndex === 4) targetCount = Math.max(20, 200 * (1 - toolProgress));
+            if (currentStageIndex === 7 || currentStageIndex === 8) targetCount = 200;
+            if (currentStageIndex === 9) targetCount = Math.min(350, 80 + expansionCount * 2); // grow over time
+            if (currentStageIndex === 10) targetCount = Math.max(30, 180 * (1 - toolProgress)); // shrink WBCs
+            if (currentStageIndex === 11) targetCount = 220;
+
+            if (targetCount - cells.length > 0 && Math.random() < 0.2) {
+                cells.push(spawnCell(-50, stemCellRates));
+            }
+
+            // Particles for marrow extraction
+            if(currentStageIndex === 3 && isMouseDown && mouseY > vBottom + 20) {
+                if(Math.random() < 0.5) {
+                    particles.push({x: mouseX + (Math.random()-0.5)*10, y: mouseY, vy: -2 - Math.random()*2, life: 1, color: '153,27,27'});
+                }
+            }
+            // Stage 6 infusion particles
+            if(currentStageIndex === 5 && isMouseDown && mouseY > vTop && mouseY < vBottom) {
+                if(Math.random() < 0.4) {
+                    particles.push({x: mouseX + (Math.random()-0.5)*20, y: mouseY, vy: 1.5 + Math.random()*1.5, life: 1, color: '248,239,186'});
+                }
+            }
+            // Stage 7 engraftment sparkles
+            if(currentStageIndex === 6 && isMouseDown) {
+                if(Math.random() < 0.6) {
+                    particles.push({
+                        x: Math.random() * width,
+                        y: vBottom + Math.random() * (height - vBottom),
+                        vy: -1 - Math.random(), vx: 0,
+                        life: 1, color: '248,239,186', hasVx: false, r: 3
+                    });
+                }
+            }
+            // Stage 10: expansion glow sparks near wand
+            if(currentStageIndex === 9 && isMouseDown) {
+                if(Math.random() < 0.5) {
+                    particles.push({
+                        x: mouseX + (Math.random()-0.5)*60, y: mouseY + (Math.random()-0.5)*60,
+                        vy: -0.5 - Math.random(), vx: (Math.random()-0.5)*2,
+                        life: 1, color: '162,155,254', hasVx: true, r: 3
+                    });
+                }
+                expansionCount = Math.min(130, expansionCount + 0.5);
+            }
+            // Stage 11: chemo sparks in vessel
+            if(currentStageIndex === 10 && isMouseDown && mouseY > vTop && mouseY < vBottom) {
+                if(Math.random() < 0.4) {
+                    particles.push({
+                        x: mouseX + (Math.random()-0.5)*30, y: mouseY + (Math.random()-0.5)*20,
+                        vy: (Math.random()-0.5)*3, vx: (Math.random()-0.5)*3,
+                        life: 1, color: '16,185,129', hasVx: true, r: 2
+                    });
+                }
+            }
+
+            for(let i = particles.length - 1; i>=0; i--) {
+                let p = particles[i]; 
+                p.y += p.vy; 
+                if(p.hasVx) p.x += p.vx;
+                p.life -= 0.04;
+                ctx.fillStyle = `rgba(${p.color}, ${p.life})`;
+                ctx.beginPath(); ctx.arc(p.x, p.y, p.r || 3, 0, Math.PI*2); ctx.fill();
+                if(p.life <= 0) particles.splice(i,1);
+            }
+
+            // Render cells
+            cells.sort((a, b) => a.z - b.z);
+            for (let cell of cells) cell.draw(ctx);
+
+            // Render tool
+            const stage = stages[currentStageIndex];
+            if(mouseX > 0) {
+                if(stage.tool === 'syringe_meds') drawSyringe(ctx, mouseX, mouseY, toolProgress, 'rgba(255,255,255,0.8)');
+                else if(stage.tool === 'apheresis') drawApheresisCatheter(ctx, mouseX, mouseY);
+                else if(stage.tool === 'syringe_anes') drawSyringe(ctx, mouseX, mouseY, toolProgress, 'rgba(56, 189, 248, 0.8)');
+                else if(stage.tool === 'bone_needle') drawJamshidiNeedle(ctx, mouseX, mouseY, toolProgress);
+                else if(stage.tool === 'chemo_iv') drawChemoIV(ctx, mouseX, mouseY);
+                else if(stage.tool === 'infusion_iv') drawInfusionIV(ctx, mouseX, mouseY);
+                else if(stage.tool === 'engraft_wand') drawEngraftWand(ctx, mouseX, mouseY);
+                else if(stage.tool === 'leuka_apheresis') drawLeukaCatheter(ctx, mouseX, mouseY);
+                else if(stage.tool === 'viral_vector') drawViralVector(ctx, mouseX, mouseY);
+                else if(stage.tool === 'incubator_wand') drawIncubatorWand(ctx, mouseX, mouseY);
+                else if(stage.tool === 'lympho_chemo') drawLymphoChemo(ctx, mouseX, mouseY);
+                else if(stage.tool === 'car_attack') drawCARPointer(ctx, mouseX, mouseY);
+            }
+
+            // Vignette
+            const vignette = ctx.createLinearGradient(0, 0, width, 0);
+            vignette.addColorStop(0, 'rgba(0,0,0,0.6)'); vignette.addColorStop(0.15, 'rgba(0,0,0,0)'); vignette.addColorStop(0.85, 'rgba(0,0,0,0)'); vignette.addColorStop(1, 'rgba(0,0,0,0.6)');
+            ctx.fillStyle = vignette; ctx.fillRect(0, 0, width, height);
+
+            handleToolLogic();
+            animationId = requestAnimationFrame(animate);
+        }
+
+        // --- TOOL LOGIC ---
+        function handleToolLogic() {
+            if(!isMouseDown || taskCompleted) return;
+            const stage = stages[currentStageIndex];
+            
+            if(stage.tool === 'syringe_meds') {
+                if(mouseY > vTop * 0.45 && mouseY < vTop) {
+                    toolProgress += 0.01;
+                    if(toolProgress >= 1) {
+                        toolProgress = 1; completeTask();
+                        for(let i=0; i<20; i++) setTimeout(() => cells.push(new StemCell(Math.random()*width, undefined, true)), i*200);
+                    }
+                }
+            } 
+            else if(stage.tool === 'syringe_anes') {
+                if(mouseY > vBottom && mouseY < height * 0.9) {
+                    toolProgress += 0.01;
+                    anesthesiaSpread += 0.005;
+                    if(toolProgress >= 1) { toolProgress = 1; completeTask(); }
+                }
+            }
+            else if(stage.tool === 'bone_needle') {
+                if(mouseY > vBottom + (height-vBottom)*0.25) {
+                    toolProgress += 0.005;
+                    if(toolProgress >= 1) { toolProgress = 1; completeTask(); }
+                }
+            }
+            else if(stage.tool === 'chemo_iv') {
+                if(mouseY > vTop && mouseY < vBottom) {
+                    toolProgress += 0.003;
+                    if(toolProgress >= 1) { toolProgress = 1; completeTask(); }
+                }
+            }
+            else if(stage.tool === 'infusion_iv') {
+                // Must be inside the blood vessel
+                if(mouseY > vTop && mouseY < vBottom) {
+                    toolProgress += 0.004;
+                    if(toolProgress >= 1) { toolProgress = 1; completeTask(); }
+                }
+            }
+            else if(stage.tool === 'engraft_wand') {
+                if(mouseY > vBottom) {
+                    engraftProgress = Math.min(1, engraftProgress + 0.005);
+                    toolProgress += 0.004;
+                    if(Math.random() < 0.05) cells.push(new StemCell(Math.random()*width, undefined, true));
+                    if(toolProgress >= 1) { toolProgress = 1; completeTask(); }
+                }
+            }
+            else if(stage.tool === 'incubator_wand') {
+                // Hover anywhere in the vessel to multiply CAR-T cells
+                if(mouseY > vTop && mouseY < vBottom) {
+                    toolProgress += 0.003;
+                    // Occasionally clone a nearby CAR-T cell
+                    if(Math.random() < 0.04 && expansionCount < 130) {
+                        let carTs = cells.filter(c => c instanceof TCell && c.isCAR);
+                        if(carTs.length > 0) {
+                            let src = carTs[Math.floor(Math.random()*carTs.length)];
+                            let clone = new TCell(src.x + (Math.random()-0.5)*30);
+                            clone.isCAR = true; clone.y = src.y + (Math.random()-0.5)*30;
+                            cells.push(clone);
+                            expansionCount++;
+                        }
+                    }
+                    if(toolProgress >= 1) { toolProgress = 1; completeTask(); }
+                }
+            }
+            else if(stage.tool === 'lympho_chemo') {
+                if(mouseY > vTop && mouseY < vBottom) {
+                    toolProgress += 0.004;
+                    if(toolProgress >= 1) { toolProgress = 1; completeTask(); }
+                }
+            }
+            else if(stage.tool === 'car_attack') {
+                // CAR-T cells auto-hunt; just watch — completeTask triggered by attackKills in cell loop
+                // Also: hovering speeds up nearby CAR-T cells
+                if(mouseX > 0) {
+                    for(let cell of cells) {
+                        if(cell instanceof TCell && cell.isCAR) {
+                            let dx = mouseX - cell.x, dy = mouseY - cell.y;
+                            if(Math.sqrt(dx*dx+dy*dy) < 120) {
+                                cell.vx += dx * 0.001; cell.vy += dy * 0.001;
+                            }
+                        }
+                    }
+                }
+            }
+        }
+
+        function completeTask() {
+            taskCompleted = true;
+            document.getElementById('task-check').classList.remove('opacity-0');
+            document.getElementById('task-checkbox').classList.add('bg-sky-500', 'border-sky-500');
+            document.getElementById('task-text').classList.add('line-through', 'opacity-50');
+            document.getElementById('btn-next').disabled = false;
+        }
+
+        function resetTask() {
+            taskCompleted = false;
+            toolProgress = 0;
+            collectedStemCells = 0;
+            cartCellsCollected = 0;
+            expansionCount = 0;
+            attackKills = 0;
+            document.getElementById('task-check').classList.add('opacity-0');
+            document.getElementById('task-checkbox').classList.remove('bg-sky-500', 'border-sky-500');
+            document.getElementById('task-text').classList.remove('line-through', 'opacity-50');
+            document.getElementById('btn-next').disabled = true;
+            document.getElementById('task-text').innerText = stages[currentStageIndex].task;
+            let prompt = document.getElementById('action-prompt');
+            prompt.innerText = stages[currentStageIndex].task;
+            prompt.classList.remove('opacity-0');
+            setTimeout(() => prompt.classList.add('opacity-0'), 4000);
+        }
+
+        // Event Listeners
+        canvas.addEventListener('mousedown', () => { isMouseDown = true; });
+        canvas.addEventListener('mouseup', () => { isMouseDown = false; });
+        canvas.addEventListener('mousemove', (e) => {
+            const rect = canvas.getBoundingClientRect();
+            mouseX = e.clientX - rect.left; mouseY = e.clientY - rect.top;
+        });
+        canvas.addEventListener('mouseleave', () => { mouseX = -100; isMouseDown = false; });
+
+        canvas.addEventListener('touchstart', (e) => {
+            e.preventDefault(); isMouseDown = true;
+            const rect = canvas.getBoundingClientRect();
+            mouseX = e.touches[0].clientX - rect.left; mouseY = e.touches[0].clientY - rect.top;
+        }, { passive: false });
+        canvas.addEventListener('touchmove', (e) => {
+            e.preventDefault();
+            const rect = canvas.getBoundingClientRect();
+            mouseX = e.touches[0].clientX - rect.left; mouseY = e.touches[0].clientY - rect.top;
+        }, { passive: false });
+        canvas.addEventListener('touchend', () => { isMouseDown = false; });
+
+        // --- UI NAVIGATION ---
+        const btnPrev = document.getElementById('btn-prev');
+        const btnNext = document.getElementById('btn-next');
+        const titleEl = document.getElementById('stage-title');
+        const descEl = document.getElementById('stage-desc');
+        const counterEl = document.getElementById('stage-counter');
+
+        function updateUI() {
+            btnPrev.disabled = currentStageIndex === 0;
+
+            for(let i = 0; i < stages.length; i++) {
+                const dot = document.getElementById(`dot-${i}`);
+                if(dot) {
+                    if(i <= currentStageIndex) { dot.classList.remove('bg-slate-600'); dot.classList.add('bg-sky-500'); } 
+                    else { dot.classList.remove('bg-sky-500'); dot.classList.add('bg-slate-600'); }
+                }
+            }
+
+            titleEl.style.opacity = 0; descEl.style.opacity = 0;
+            setTimeout(() => {
+                const s = stages[currentStageIndex];
+                titleEl.innerText = s.title;
+                descEl.innerText = s.desc;
+                counterEl.innerText = currentStageIndex + 1;
+                titleEl.style.opacity = 1; descEl.style.opacity = 1;
+
+                document.getElementById('main-title').innerText = s.headerTitle;
+                document.getElementById('sub-title').innerText = s.headerSub;
+
+                // Legend toggles
+                document.getElementById('legend-car').classList.toggle('hidden', currentStageIndex < 8);
+                document.getElementById('legend-cancer').classList.toggle('hidden', currentStageIndex !== 4 && currentStageIndex !== 11);
+                document.getElementById('legend-hunter').classList.toggle('hidden', currentStageIndex !== 11);
+            }, 200);
+
+            resetTask();
+            
+            // Population resets per stage
+            if (currentStageIndex === 4) {
+                cells = [];
+                for(let i=0; i<200; i++) cells.push(spawnCell(Math.random()*width, { rbc: 15, wbc: 2, platelet: 3, cancer: 80 }));
+            } else if (currentStageIndex === 5) {
+                // After chemo: sparse, nearly empty — will fill with stem cells via infusion tool
+                cells = [];
+                for(let i=0; i<30; i++) cells.push(spawnCell(Math.random()*width, { rbc: 60, wbc: 10, platelet: 10, stem: 20 }));
+                anesthesiaSpread = 0;
+            } else if (currentStageIndex === 6) {
+                // Post-infusion: blood recovering
+                cells = [];
+                engraftProgress = 0;
+                for(let i=0; i<80; i++) cells.push(spawnCell(Math.random()*width, { rbc: 40, wbc: 20, platelet: 20, stem: 20 }));
+            } else if (currentStageIndex === 7) {
+                // Leukapheresis: T-cells
+                cells = [];
+                for(let i=0; i<180; i++) cells.push(spawnCell(Math.random()*width, { rbc: 40, wbc: 10, platelet: 10, tcell: 40 }));
+            } else if (currentStageIndex === 8) {
+                // Reprogramming: mostly T-cells ready to become CAR-T
+                cells = [];
+                for(let i=0; i<160; i++) cells.push(spawnCell(Math.random()*width, { rbc: 15, wbc: 5, platelet: 5, tcell: 75 }));
+            } else if (currentStageIndex === 9) {
+                // Stage 10: Expansion — start with moderate CAR-T cells, let incubator wand multiply them
+                cells = [];
+                for(let i=0; i<80; i++) {
+                    let t = new TCell(Math.random()*width);
+                    t.isCAR = true; t.initSafeY();
+                    cells.push(t);
+                }
+            } else if (currentStageIndex === 10) {
+                // Stage 11: Lymphodepletion — plenty of WBCs to clear
+                cells = [];
+                for(let i=0; i<180; i++) cells.push(spawnCell(Math.random()*width, { rbc: 30, wbc: 50, platelet: 10, tcell: 10 }));
+            } else if (currentStageIndex === 11) {
+                // Stage 12: Re-Infusion Attack — mix of CAR-T cells and cancer cells
+                cells = [];
+                for(let i=0; i<80; i++) {
+                    let t = new TCell(Math.random()*width);
+                    t.isCAR = true; t.initSafeY();
+                    cells.push(t);
+                }
+                for(let i=0; i<60; i++) cells.push(new CancerCell(Math.random()*width));
+                for(let i=0; i<40; i++) cells.push(spawnCell(Math.random()*width, { rbc: 100 }));
+            } else if (currentStageIndex === 3 && cells.length < 50) {
+                initPopulation();
+            } else if (currentStageIndex < 4 && cells.length < 50) {
+                initPopulation();
+            }
+        }
+
+        btnPrev.addEventListener('click', () => {
+            if (currentStageIndex > 0) { currentStageIndex--; updateUI(); }
+        });
+
+        btnNext.addEventListener('click', () => {
+            if (currentStageIndex < stages.length - 1) { currentStageIndex++; updateUI(); }
+        });
+
+        initPopulation();
+        updateUI();
+        animate();
+
+    </script>
+</body>
+</html>

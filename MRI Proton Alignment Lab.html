@@ -1,0 +1,494 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>MRI Physics: Proton Alignment & Precession</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;700&family=Inter:wght@300;400;600;700&display=swap');
+
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: #020617; /* Slate 950 */
+            color: #f8fafc;
+            overflow-x: hidden;
+            user-select: none;
+        }
+
+        .font-mono { font-family: 'JetBrains Mono', monospace; }
+
+        /* UI Panels */
+        .glass-card {
+            background: rgba(15, 23, 42, 0.75);
+            backdrop-filter: blur(16px);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.5);
+        }
+
+        .digital-readout {
+            background: #020617;
+            color: #8b5cf6; /* Violet 500 */
+            text-shadow: 0 0 10px rgba(139, 92, 246, 0.5);
+            border: 1px solid #1e293b;
+            transition: all 0.3s ease;
+        }
+
+        .magnet-active {
+            color: #22d3ee !important; /* Cyan 400 */
+            text-shadow: 0 0 12px rgba(34, 211, 238, 0.6) !important;
+            border-color: rgba(34, 211, 238, 0.3) !important;
+            background: rgba(8, 145, 178, 0.05) !important;
+        }
+
+        /* SVG Styles */
+        .proton-core {
+            fill: #e2e8f0;
+            stroke: #94a3b8;
+            stroke-width: 2;
+        }
+
+        .proton-vector {
+            stroke: #ef4444; /* Red for North pole / vector */
+            stroke-width: 3;
+            stroke-linecap: round;
+            transition: transform 1s cubic-bezier(0.4, 0, 0.2, 1);
+            transform-origin: 20px 20px;
+        }
+
+        .proton-vector.aligned-up { stroke: #22d3ee; }
+        .proton-vector.aligned-down { stroke: #a855f7; }
+
+        .b-field-line {
+            stroke: #22d3ee;
+            stroke-width: 2;
+            fill: none;
+            opacity: 0;
+            stroke-dasharray: 10 10;
+            animation: flow-up 2s linear infinite;
+            transition: opacity 0.5s ease;
+        }
+
+        .coil-gradient {
+            fill: url(#coilGrad);
+            opacity: 0.8;
+        }
+
+        /* Animations */
+        @keyframes flow-up {
+            from { stroke-dashoffset: 20; }
+            to { stroke-dashoffset: 0; }
+        }
+
+        /* Precession Animation */
+        @keyframes precess {
+            0% { transform: rotate(calc(var(--base-angle) - 15deg)) scaleX(1); }
+            50% { transform: rotate(calc(var(--base-angle) + 15deg)) scaleX(0.5); }
+            100% { transform: rotate(calc(var(--base-angle) - 15deg)) scaleX(1); }
+        }
+
+        .is-precessing {
+            animation: precess var(--w-speed) ease-in-out infinite;
+        }
+
+        /* Random tumble when B0 = 0 */
+        @keyframes tumble {
+            0% { transform: rotate(var(--start-rot)); }
+            100% { transform: rotate(calc(var(--start-rot) + 360deg)); }
+        }
+
+        .is-tumbling {
+            animation: tumble var(--tumble-speed) linear infinite;
+        }
+
+        /* Scanline Background */
+        .physics-grid {
+            background-size: 50px 50px;
+            background-image: 
+                linear-gradient(to right, rgba(139, 92, 246, 0.05) 1px, transparent 1px),
+                linear-gradient(to bottom, rgba(139, 92, 246, 0.05) 1px, transparent 1px);
+        }
+
+        input[type=range] { accent-color: #22d3ee; }
+    </style>
+</head>
+<body class="min-h-screen p-4 md:p-8 flex items-center justify-center">
+
+    <div class="max-w-7xl w-full grid grid-cols-1 lg:grid-cols-12 gap-8 items-stretch">
+        
+        <!-- Simulation Viewport -->
+        <div class="lg:col-span-8 flex flex-col gap-6">
+            <div class="glass-card rounded-3xl p-0 relative flex-grow min-h-[500px] flex flex-col overflow-hidden border border-slate-800 physics-grid">
+                
+                <!-- HUD Header -->
+                <div class="absolute top-6 left-8 flex items-center gap-3 z-30">
+                    <div id="status-dot" class="w-2.5 h-2.5 rounded-full bg-slate-500 shadow-[0_0_10px_#64748b]"></div>
+                    <span id="status-text" class="text-[10px] font-bold text-slate-400 uppercase tracking-widest font-mono">B₀ Field: <span id="hud-b0" class="text-slate-300">0.0 T (Off)</span></span>
+                </div>
+
+                <!-- Simulation Area (SVG) -->
+                <div class="relative w-full flex-grow flex items-center justify-center">
+                    
+                    <svg id="mri-svg" viewBox="0 0 800 500" class="w-full h-full relative z-10 overflow-hidden">
+                        <defs>
+                            <linearGradient id="coilGrad" x1="0%" y1="0%" x2="100%" y2="0%">
+                                <stop offset="0%" stop-color="#0f172a" />
+                                <stop offset="50%" stop-color="#1e293b" />
+                                <stop offset="100%" stop-color="#0f172a" />
+                            </linearGradient>
+                            
+                            <marker id="arrow" markerWidth="6" markerHeight="6" refX="3" refY="3" orient="auto">
+                                <path d="M0,0 L6,3 L0,6 Z" fill="currentColor" />
+                            </marker>
+                            
+                            <!-- B0 Field Arrow Marker -->
+                            <marker id="b0-arrow" markerWidth="10" markerHeight="10" refX="5" refY="5" orient="auto-start-reverse">
+                                <path d="M0,0 L10,5 L0,10 Z" fill="#22d3ee" />
+                            </marker>
+                        </defs>
+
+                        <!-- Superconducting Magnet Coils (Background) -->
+                        <rect x="-50" y="0" width="150" height="500" class="coil-gradient" stroke="#334155" stroke-width="4"/>
+                        <rect x="700" y="0" width="150" height="500" class="coil-gradient" stroke="#334155" stroke-width="4"/>
+                        
+                        <!-- Coil wire details -->
+                        <g stroke="#475569" stroke-width="2" opacity="0.3">
+                            <line x1="100" y1="50" x2="100" y2="450" />
+                            <line x1="700" y1="50" x2="700" y2="450" />
+                        </g>
+
+                        <!-- Magnetic Field Lines (Visible when B0 > 0) -->
+                        <g id="b-field-lines">
+                            <!-- Generated in JS -->
+                        </g>
+
+                        <!-- Tissue Sample / Voxel Area -->
+                        <circle cx="400" cy="250" r="180" fill="#020617" stroke="#1e293b" stroke-width="2" stroke-dasharray="10 5"/>
+                        <text x="400" y="80" fill="#475569" font-family="monospace" font-size="10" text-anchor="middle" letter-spacing="2">HYDROGEN NUCLEI (¹H)</text>
+
+                        <!-- Protons Container -->
+                        <g id="protons-layer">
+                            <!-- Generated in JS -->
+                        </g>
+
+                        <!-- B0 Vector Indicator -->
+                        <g id="b0-indicator" opacity="0" transform="translate(70, 250)">
+                            <line x1="0" y1="80" x2="0" y2="-80" stroke="#22d3ee" stroke-width="6" marker-end="url(#b0-arrow)" />
+                            <text x="15" y="0" fill="#22d3ee" font-family="JetBrains Mono" font-weight="bold" font-size="16">B₀</text>
+                        </g>
+                    </svg>
+
+                </div>
+
+                <!-- Tags -->
+                <div class="absolute bottom-6 left-8 flex flex-col gap-1 z-20">
+                    <span class="text-[9px] font-mono text-slate-500 uppercase">Gyromagnetic Ratio (γ): 42.58 MHz/T</span>
+                    <span class="text-[9px] font-mono text-slate-500 uppercase">Equation: ω₀ = γB₀ (Larmor Frequency)</span>
+                </div>
+            </div>
+
+            <!-- Controls -->
+            <div class="grid grid-cols-1 gap-4">
+                
+                <div class="glass-card p-6 rounded-2xl space-y-4">
+                    <div class="flex justify-between items-center">
+                        <label class="text-[10px] font-bold text-slate-400 uppercase tracking-widest flex items-center gap-2">
+                            <svg class="w-4 h-4 text-cyan-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"></path></svg>
+                            Main Magnetic Field (B₀)
+                        </label>
+                        <span id="b0-display" class="text-sm font-bold font-mono text-slate-400">0.0 Tesla</span>
+                    </div>
+                    <!-- 0 to 3.0 Tesla -->
+                    <input type="range" id="b0-slider" min="0" max="3.0" step="0.1" value="0" class="w-full h-2 bg-slate-800 rounded-lg appearance-none cursor-pointer">
+                    <div class="flex justify-between text-[9px] text-slate-500 uppercase font-mono">
+                        <span>0T (Off)</span>
+                        <span>1.5T (Standard)</span>
+                        <span>3.0T (Clinical Max)</span>
+                    </div>
+                </div>
+
+            </div>
+        </div>
+
+        <!-- Sidebar: Analytics & Data -->
+        <div class="lg:col-span-4 flex flex-col gap-6">
+            
+            <!-- Digital Readout -->
+            <div id="telemetry-panel" class="digital-readout rounded-3xl p-6 space-y-6">
+                <div class="flex justify-between items-center border-b border-current pb-3 opacity-60">
+                    <span class="text-[10px] font-bold tracking-tighter uppercase">Quantum Telemetry</span>
+                    <span class="text-xs font-mono" id="sim-status">INACTIVE</span>
+                </div>
+
+                <div class="space-y-5">
+                    
+                    <!-- Larmor Frequency -->
+                    <div class="space-y-1">
+                        <label class="text-[9px] uppercase font-bold opacity-60">Precessional Frequency (ω₀)</label>
+                        <div class="flex items-baseline gap-2">
+                            <div id="data-larmor" class="text-4xl font-bold font-mono">0.00</div>
+                            <span class="text-sm font-mono opacity-60">MHz</span>
+                        </div>
+                    </div>
+
+                    <div class="grid grid-cols-2 gap-4 pt-4 border-t border-current opacity-80">
+                        <!-- Parallel State -->
+                        <div class="space-y-1">
+                            <label class="text-[9px] uppercase font-bold text-cyan-400">Low Energy (↑)</label>
+                            <div id="data-parallel" class="text-xl font-bold font-mono">50%</div>
+                        </div>
+                        <!-- Anti-Parallel State -->
+                        <div class="space-y-1">
+                            <label class="text-[9px] uppercase font-bold text-violet-400">High Energy (↓)</label>
+                            <div id="data-anti" class="text-xl font-bold font-mono">50%</div>
+                        </div>
+                    </div>
+
+                    <!-- Net Magnetization Vector -->
+                    <div class="p-4 bg-black/30 rounded-xl border border-current space-y-2 mt-2">
+                        <div class="flex justify-between items-center">
+                            <label class="text-[9px] uppercase font-bold text-current">Net Magnetization (M<sub>z</sub>)</label>
+                            <span class="text-[8px] opacity-70 font-mono">Longitudinal</span>
+                        </div>
+                        <div class="relative h-4 w-full bg-slate-900 rounded border border-slate-700 flex items-center justify-center overflow-hidden">
+                            <!-- Indicator Bar -->
+                            <div id="mz-bar" class="absolute left-1/2 h-full bg-cyan-400 transition-all duration-500" style="width: 0%; transform-origin: left;"></div>
+                            <span id="mz-val" class="relative z-10 text-[10px] font-bold font-mono">0.0</span>
+                        </div>
+                        <p class="text-[8px] opacity-60 leading-tight mt-2 italic">
+                            Excess protons in the low-energy state create a measurable magnetic vector aligned with B₀.
+                        </p>
+                    </div>
+
+                </div>
+            </div>
+
+            <!-- Physics Logic Card -->
+            <div class="glass-card p-6 rounded-3xl space-y-4 flex-grow flex flex-col">
+                <h3 class="text-xs font-bold text-slate-400 uppercase tracking-widest flex items-center gap-2">
+                    <svg class="w-4 h-4 text-violet-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M14.05 2H9.95l-1 5H5v4h2.2l1.6 8h6.4l1.6-8H19V7h-3.95l-1-5zM12 14a2 2 0 110-4 2 2 0 010 4z"></path></svg>
+                    Zeeman Effect & Resonance
+                </h3>
+                
+                <div class="bg-slate-900/50 p-3 rounded-xl border border-slate-800 flex-grow space-y-3">
+                    <p class="text-[10px] text-slate-300 leading-relaxed">
+                        Without an external magnetic field, hydrogen protons spin on random axes. Their magnetic fields cancel out ($M_z = 0$).
+                    </p>
+                    <p class="text-[10px] text-slate-300 leading-relaxed">
+                        When exposed to a strong $B_0$ field, quantum mechanics dictates they split into two distinct energy states: <strong>Parallel (Spin-Up)</strong> or <strong>Anti-Parallel (Spin-Down)</strong>.
+                    </p>
+                    <div class="p-2 border-l-2 border-cyan-500 bg-cyan-500/10 text-[9px] text-cyan-200/80">
+                        Slightly more protons align in the lower-energy parallel state. This tiny excess builds the Net Magnetization Vector ($M_z$) used to generate MRI images.
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', () => {
+            const b0Slider = document.getElementById('b0-slider');
+            const b0Display = document.getElementById('b0-display');
+            const hudB0 = document.getElementById('hud-b0');
+            const statusDot = document.getElementById('status-dot');
+            const telePanel = document.getElementById('telemetry-panel');
+            const simStatus = document.getElementById('sim-status');
+            
+            const bFieldLinesGroup = document.getElementById('b-field-lines');
+            const protonsLayer = document.getElementById('protons-layer');
+            const b0Indicator = document.getElementById('b0-indicator');
+            
+            const dataLarmor = document.getElementById('data-larmor');
+            const dataParallel = document.getElementById('data-parallel');
+            const dataAnti = document.getElementById('data-anti');
+            const mzBar = document.getElementById('mz-bar');
+            const mzVal = document.getElementById('mz-val');
+
+            const NUM_PROTONS = 45;
+            const GAMMA = 42.58; // MHz/Tesla for Hydrogen
+            
+            let protons = [];
+            let currentB0 = 0.0;
+
+            // Initialize B-field lines
+            function initFieldLines() {
+                for(let i=150; i<=650; i+=50) {
+                    const line = document.createElementNS('http://www.w3.org/2000/svg', 'line');
+                    line.setAttribute('x1', i);
+                    line.setAttribute('y1', 500);
+                    line.setAttribute('x2', i);
+                    line.setAttribute('y2', 0);
+                    line.setAttribute('class', 'b-field-line');
+                    line.style.animationDelay = `-${Math.random() * 2}s`;
+                    bFieldLinesGroup.appendChild(line);
+                }
+            }
+
+            // Initialize Protons
+            function initProtons() {
+                const centerX = 400;
+                const centerY = 250;
+                const radiusLimit = 160;
+
+                for (let i = 0; i < NUM_PROTONS; i++) {
+                    // Random position within the circular sample area
+                    const angle = Math.random() * Math.PI * 2;
+                    const r = Math.sqrt(Math.random()) * radiusLimit; // uniform distribution
+                    const x = centerX + Math.cos(angle) * r;
+                    const y = centerY + Math.sin(angle) * r;
+
+                    const group = document.createElementNS('http://www.w3.org/2000/svg', 'g');
+                    group.setAttribute('transform', `translate(${x - 20}, ${y - 20})`); // center the 40x40 box
+
+                    // The Core
+                    const core = document.createElementNS('http://www.w3.org/2000/svg', 'circle');
+                    core.setAttribute('cx', 20);
+                    core.setAttribute('cy', 20);
+                    core.setAttribute('r', 8);
+                    core.setAttribute('class', 'proton-core');
+
+                    // The Vector Arrow
+                    const vector = document.createElementNS('http://www.w3.org/2000/svg', 'line');
+                    vector.setAttribute('x1', 20);
+                    vector.setAttribute('y1', 20);
+                    vector.setAttribute('x2', 20);
+                    vector.setAttribute('y2', 2);
+                    vector.setAttribute('class', 'proton-vector is-tumbling');
+                    
+                    // Assign random starting properties
+                    const startRot = Math.random() * 360;
+                    const tumbleSpeed = 2 + Math.random() * 3;
+                    vector.style.setProperty('--start-rot', `${startRot}deg`);
+                    vector.style.setProperty('--tumble-speed', `${tumbleSpeed}s`);
+
+                    group.appendChild(core);
+                    group.appendChild(vector);
+                    protonsLayer.appendChild(group);
+
+                    protons.push({
+                        element: vector,
+                        state: 'random', // 'random', 'up', 'down'
+                        baseAngle: startRot
+                    });
+                }
+            }
+
+            function updatePhysics() {
+                currentB0 = parseFloat(b0Slider.value);
+                
+                // --- Update UI Text ---
+                b0Display.textContent = `${currentB0.toFixed(1)} Tesla`;
+                
+                if (currentB0 === 0) {
+                    hudB0.textContent = `0.0 T (Off)`;
+                    hudB0.className = "text-slate-400";
+                    b0Display.className = "text-sm font-bold font-mono text-slate-400";
+                    statusDot.className = "w-2.5 h-2.5 rounded-full bg-slate-500 shadow-[0_0_10px_#64748b]";
+                    
+                    telePanel.classList.remove('magnet-active');
+                    simStatus.textContent = "INACTIVE";
+                    b0Indicator.setAttribute('opacity', '0');
+                } else {
+                    hudB0.textContent = `${currentB0.toFixed(1)} T`;
+                    hudB0.className = "text-cyan-400";
+                    b0Display.className = "text-sm font-bold font-mono text-cyan-400";
+                    statusDot.className = "w-2.5 h-2.5 rounded-full bg-cyan-500 shadow-[0_0_10px_#22d3ee] animate-pulse";
+                    
+                    telePanel.classList.add('magnet-active');
+                    simStatus.textContent = "ALIGNED & PRECESSING";
+                    b0Indicator.setAttribute('opacity', '1');
+                }
+
+                // Calculate Larmor Frequency
+                const larmorFreq = currentB0 * GAMMA;
+                dataLarmor.textContent = larmorFreq.toFixed(2);
+
+                // --- Update Field Lines ---
+                const lines = document.querySelectorAll('.b-field-line');
+                lines.forEach(line => {
+                    line.style.opacity = currentB0 / 3.0; // Max opacity at 3.0T
+                    line.style.animationDuration = `${Math.max(0.2, 2.0 - (currentB0 * 0.5))}s`;
+                });
+
+                // --- Update Protons ---
+                let numUp = 0;
+                let numDown = 0;
+
+                protons.forEach(p => {
+                    if (currentB0 === 0) {
+                        // Return to random tumbling
+                        p.element.classList.remove('is-precessing', 'aligned-up', 'aligned-down');
+                        p.element.classList.add('is-tumbling');
+                        p.element.style.transform = ``; // Reset to animation control
+                        p.state = 'random';
+                        numUp += 0.5; // statistically 50/50
+                        numDown += 0.5;
+                    } else {
+                        // Align with B0
+                        p.element.classList.remove('is-tumbling');
+                        p.element.classList.add('is-precessing');
+                        
+                        // Decide state if not already decided, or force alignment
+                        if (p.state === 'random') {
+                            // Statistically, more align UP (low energy)
+                            // Exaggerated probability for visual effect (e.g. 60% up)
+                            p.state = Math.random() > 0.4 ? 'up' : 'down'; 
+                        }
+
+                        // Precession speed (wobble rate) scales with B0
+                        const wSpeed = Math.max(0.2, 1.5 - (currentB0 * 0.3));
+                        p.element.style.setProperty('--w-speed', `${wSpeed}s`);
+
+                        if (p.state === 'up') {
+                            p.element.classList.add('aligned-up');
+                            p.element.classList.remove('aligned-down');
+                            // Point generally UP (0 deg), with a wobble phase offset
+                            p.element.style.setProperty('--base-angle', `0deg`);
+                            p.element.style.animationDelay = `-${Math.random() * 2}s`;
+                            numUp++;
+                        } else {
+                            p.element.classList.add('aligned-down');
+                            p.element.classList.remove('aligned-up');
+                            // Point generally DOWN (180 deg)
+                            p.element.style.setProperty('--base-angle', `180deg`);
+                            p.element.style.animationDelay = `-${Math.random() * 2}s`;
+                            numDown++;
+                        }
+                    }
+                });
+
+                // --- Update Telemetry UI ---
+                if (currentB0 === 0) {
+                    dataParallel.textContent = `~50%`;
+                    dataAnti.textContent = `~50%`;
+                    
+                    mzBar.style.width = `0%`;
+                    mzVal.textContent = `0.0`;
+                } else {
+                    const pctUp = (numUp / NUM_PROTONS) * 100;
+                    const pctDown = (numDown / NUM_PROTONS) * 100;
+                    
+                    dataParallel.textContent = `${Math.round(pctUp)}%`;
+                    dataAnti.textContent = `${Math.round(pctDown)}%`;
+
+                    // Mz is the net difference
+                    // If 60% up and 40% down, Mz is 20% of max
+                    const netMz = ((numUp - numDown) / NUM_PROTONS) * 100;
+                    
+                    // Visual bar mapping (0 to 100% width)
+                    mzBar.style.width = `${Math.max(0, netMz)}%`;
+                    mzVal.textContent = `+${Math.max(0, netMz).toFixed(1)}`;
+                }
+            }
+
+            // Events
+            b0Slider.addEventListener('input', updatePhysics);
+
+            // Init
+            initFieldLines();
+            initProtons();
+            updatePhysics();
+        });
+    </script>
+</body>
+</html>

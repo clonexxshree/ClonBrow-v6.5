@@ -1,0 +1,506 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ClonMed - AI Medical Dashboard</title>
+    
+    <!-- Tailwind CSS for rapid UI styling -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    
+    <!-- Lucide Icons -->
+    <script src="https://unpkg.com/lucide@latest"></script>
+
+    <!-- Custom styling for animations and scrollbar -->
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Fredoka+One&family=Nunito:wght@400;700;900&display=swap');
+
+        body {
+            font-family: 'Nunito', sans-serif;
+            background-color: #0ea5e9; /* Sky blue matching the screenshot */
+            color: #ffffff;
+            cursor: none; /* Hide default cursor for gooey effect */
+            overflow: hidden;
+            /* Dotted background pattern */
+            background-image: radial-gradient(circle at 2px 2px, rgba(255,255,255,0.2) 1px, transparent 0);
+            background-size: 40px 40px;
+        }
+
+        /* Ensure links/buttons hide native cursor */
+        a, button, input {
+            cursor: none !important;
+        }
+
+        /* Custom Brutalist Scrollbar */
+        ::-webkit-scrollbar {
+            width: 12px;
+        }
+        ::-webkit-scrollbar-track {
+            background: #ffffff;
+            border-left: 4px solid #000;
+        }
+        ::-webkit-scrollbar-thumb {
+            background: #000000;
+            border-left: 4px solid #000;
+        }
+        ::-webkit-scrollbar-thumb:hover {
+            background: #333333;
+        }
+
+        /* Animations */
+        .fade-in-up {
+            animation: fadeInUp 0.4s ease-out forwards;
+            opacity: 0;
+            transform: translateY(15px);
+        }
+
+        @keyframes fadeInUp {
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        /* Brutalist Card Base */
+        .brutalist-card {
+            background: #ffffff;
+            border: 4px solid #000000;
+            border-radius: 24px;
+            box-shadow: 6px 6px 0px #000000;
+            transition: all 0.15s ease-out;
+            will-change: transform, box-shadow;
+        }
+
+        .category-btn {
+            border: 4px solid transparent;
+            transition: all 0.15s ease;
+        }
+        .category-btn:hover {
+            background-color: #f1f5f9;
+            border-color: #000;
+            color: #000;
+            transform: translate(-2px, -2px);
+            box-shadow: 4px 4px 0px #000;
+        }
+        .category-btn.active {
+            background-color: #FBBF24;
+            color: #000 !important;
+            border-color: #000;
+            box-shadow: 4px 4px 0px #000;
+            transform: translate(-2px, -2px);
+        }
+        
+        .title-shadow {
+            text-shadow: 0 4px 0 #0369a1;
+        }
+
+    </style>
+</head>
+<body class="flex h-screen selection:bg-[#FBBF24] selection:text-black">
+
+    <!-- SVG Filter for the Fluid Cursor (Gooey Effect) -->
+    <svg style="width:0; height:0; position:absolute;">
+        <defs>
+            <filter id="goo">
+                <feGaussianBlur in="SourceGraphic" stdDeviation="8" result="blur" />
+                <feColorMatrix in="blur" mode="matrix" values="
+                    1 0 0 0 0  
+                    0 1 0 0 0  
+                    0 0 1 0 0  
+                    0 0 0 18 -7" result="goo" />
+                <feBlend in="SourceGraphic" in2="goo" />
+            </filter>
+        </defs>
+    </svg>
+
+    <!-- Liquid Ink Cursor Container -->
+    <!-- Removed glow shadow, made it solid black for brutalist feel -->
+    <div id="fluid-cursor" class="fixed inset-0 pointer-events-none z-[9999]" style="filter: url(#goo);">
+        <!-- Trailing droplets will be dynamically injected here by JS -->
+    </div>
+
+    <!-- Sidebar Navigation -->
+    <aside class="w-80 h-full border-r-4 border-black bg-white flex flex-col z-20 shadow-[10px_0_0px_rgba(0,0,0,0.1)] relative overflow-hidden">
+        
+        <div class="p-8 pb-4 relative z-10">
+            <div class="flex items-center gap-3 mb-2">
+                <i data-lucide="activity" class="text-black w-10 h-10 stroke-[3px]" id="brand-icon"></i>
+                <h1 class="text-4xl font-['Fredoka_One'] tracking-tight text-black drop-shadow-[0_3px_0_#ccc]">CLONMED</h1>
+            </div>
+            <p class="text-sm text-black uppercase tracking-widest font-black ml-12 border-b-4 border-black inline-block pb-1">OS Command</p>
+        </div>
+
+        <nav id="sidebar-nav" class="flex-1 overflow-y-auto px-6 py-4 space-y-4 mt-2 relative z-10">
+            <!-- Categories injected by JS -->
+        </nav>
+
+        <div class="p-6 border-t-4 border-black relative z-10 bg-gray-100">
+            <div class="flex items-center gap-4 text-black hover:scale-105 transition cursor-pointer font-bold">
+                <div class="w-14 h-14 rounded-full bg-[#FBBF24] flex items-center justify-center border-4 border-black shadow-[4px_4px_0_#000]">
+                    <i data-lucide="user" class="w-6 h-6 stroke-[3px] text-black"></i>
+                </div>
+                <div>
+                    <p class="text-md font-black uppercase font-['Fredoka_One'] tracking-wide">Dr. Agent</p>
+                    <p class="text-xs font-black text-gray-500 uppercase tracking-widest">Sys Admin</p>
+                </div>
+            </div>
+        </div>
+    </aside>
+
+    <!-- Main Content Area -->
+    <main class="flex-1 h-full relative overflow-hidden flex flex-col z-10">
+        
+        <!-- Header -->
+        <header class="px-10 pt-10 pb-6 flex items-center justify-between relative z-10">
+            <div>
+                <h2 id="current-category-title" class="text-5xl font-['Fredoka_One'] text-white tracking-wide title-shadow uppercase">SELECT A MODULE</h2>
+                <p id="current-category-desc" class="text-white font-bold mt-2 text-lg max-w-2xl drop-shadow-md">Initialize an agent protocol from the sidebar to begin.</p>
+            </div>
+            <div class="hidden lg:flex items-center gap-3 bg-white rounded-full px-5 py-3 border-4 border-black shadow-[6px_6px_0_#000]">
+                <i data-lucide="search" class="w-6 h-6 text-black stroke-[3px]"></i>
+                <input id="search-input" type="text" placeholder="Search protocols..." class="bg-transparent border-none outline-none text-lg font-bold text-black placeholder-gray-400 w-56">
+            </div>
+        </header>
+
+        <!-- Dynamic Grid Container -->
+        <div class="flex-1 overflow-y-auto p-10 relative z-10">
+            <div id="grid-container" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-8 pb-20">
+                <!-- Cards injected here -->
+            </div>
+        </div>
+    </main>
+
+    <!-- In-App Module Viewer Modal -->
+    <div id="module-modal" class="fixed inset-0 z-[500] bg-black/80 backdrop-blur-sm flex items-center justify-center p-4 sm:p-8 opacity-0 pointer-events-none transition-opacity duration-300">
+        <div id="module-modal-content" class="w-full max-w-7xl h-full bg-white border-4 border-black rounded-[2rem] flex flex-col overflow-hidden shadow-[16px_16px_0px_#000] transform translate-y-10 transition-transform duration-300 relative">
+            <!-- Modal Header -->
+            <div class="px-6 py-4 border-b-4 border-black flex items-center justify-between bg-gray-100 relative z-20">
+                <div class="flex items-center gap-6">
+                    <!-- Brutalist Button styling based on the screenshot -->
+                    <button onclick="closeModule()" class="flex items-center gap-2 bg-[#FBBF24] text-black border-4 border-black px-6 py-2 rounded-[30px] text-lg font-['Fredoka_One'] shadow-[0_6px_0_#D97706] hover:bg-[#fcd34d] active:translate-y-[6px] active:shadow-none transition-all uppercase tracking-wide">
+                        <i data-lucide="arrow-left" class="w-6 h-6 stroke-[3px]"></i> BACK
+                    </button>
+                    
+                    <h3 id="modal-title" class="text-3xl font-['Fredoka_One'] text-black tracking-tight uppercase ml-4">Module Name</h3>
+                    
+                    <div class="bg-black text-[12px] font-black uppercase tracking-widest px-3 py-1.5 rounded-lg flex items-center gap-2 text-white border-2 border-transparent shadow-[4px_4px_0_#ccc]">
+                        <div class="w-2.5 h-2.5 rounded-full bg-green-500"></div>
+                        Live Connect
+                    </div>
+                </div>
+            </div>
+            <!-- Modal Body (Iframe) -->
+            <div class="flex-1 relative bg-gray-50 overflow-hidden">
+                <!-- Loading Spinner behind iframe -->
+                <div class="absolute inset-0 flex flex-col items-center justify-center pointer-events-none z-0">
+                    <i data-lucide="loader-2" class="w-16 h-16 text-black animate-spin stroke-[3px]"></i>
+                    <p class="mt-4 font-['Fredoka_One'] text-xl text-black uppercase">Loading Module...</p>
+                </div>
+                <iframe id="module-iframe" class="w-full h-full relative z-10 border-none bg-transparent" allow="autoplay; fullscreen" src=""></iframe>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Data Structure
+        const database = [
+            {
+                id: 'diagnostics',
+                name: 'Diagnostics & Lab',
+                description: 'The Agents & Sensors. Tools an AI agent will call to gather data, run scans, or process a sample.',
+                imageUrl: 'https://res.cloudinary.com/ds93qby5a/image/upload/v1777378479/36676f90-1dae-4ccc-a72b-836277945992-Photoroom_az0fu2.png',
+                files: [
+                    "../html-prototypes/Audiology Lab.html", "../html-prototypes/Breathalyzer Simulation.html", "../html-prototypes/Centrifuge Separation Lab.html", 
+                    "../html-prototypes/Chromatography Lab.html", "Digital hospital.html", "../html-prototypes/EEG Wave Superposition Lab.html", 
+                    "../html-prototypes/ELISA Microplate Simulator.html", "../html-prototypes/Endoscopy Fiber Optics Lab.html", "../html-prototypes/MRI Proton Alignment Lab.html", 
+                    "../html-prototypes/PCR Thermal Cycling.html", "../html-prototypes/Pulse Oximetry Lab.html", "Radio-Isotope Mapping.html", 
+                    "../html-prototypes/Spectrophotometer Simulation.html", "../html-prototypes/Telemedicine Latency Lab.html", "../html-prototypes/Ultrasound Echo Lab.html", 
+                    "../html-prototypes/Urinalysis Dipstick Simulation.html", "../html-prototypes/X-Ray Density Map Lab.html"
+                ]
+            },
+            {
+                id: 'surgical',
+                name: 'Surgical & Fixes',
+                description: 'The Fixes. Precision protocols to physically alter, patch, or repair the human system.',
+                imageUrl: 'https://res.cloudinary.com/ds93qby5a/image/upload/v1777378608/7f900cb6-55c8-4779-a8af-12fd67c634fd-Photoroom_ldxk25.png',
+                files: [
+                    "../html-prototypes/3D Bioprinting Lab.html", "../html-prototypes/3D Surgery Simulator.html", "../html-prototypes/Blood cancer surgery.html", 
+                    "Blood system reboot recovery.html", "../html-prototypes/Clinical Protocol Bariatric Resection Gastric Sleeve.html", 
+                    "../html-prototypes/CRISPR Gene Splicer.html", "../html-prototypes/Cryopreservation Lab.html", "../html-prototypes/Cryosurgery Lab.html", 
+                    "../html-prototypes/Defibrillator Lab.html", "../html-prototypes/IV Titration Engine.html", "../html-prototypes/Laparoscopic Precision Lab.html", 
+                    "Nanorobot Targeted Delivery.html", "../html-prototypes/Neural Resection Simulator.html", "../html-prototypes/Radioactive Seed Implant Lab.html", 
+                    "../html-prototypes/Sustained-Release Tablet.html", "../html-prototypes/Suture Tension Lab.html", "../html-prototypes/Tourniquet Pressure Lab.html", 
+                    "../html-prototypes/Vascular Embolization Simulator.html"
+                ]
+            },
+            {
+                id: 'pathologies',
+                name: 'Pathologies',
+                description: 'The Diseases & Conditions. Problem models to simulate what goes wrong during an attack on the system.',
+                imageUrl: 'https://res.cloudinary.com/ds93qby5a/image/upload/v1777378479/44183b8d-17bb-464b-a11c-d2248134a1d0-Photoroom_shps6k.png',
+                files: [
+                    "../html-prototypes/Advanced PM2.5 Deposition Lab.html", "../html-prototypes/Antibiotic Resistance Lab.html", "../html-prototypes/Antivenom Simulator.html", 
+                    "../html-prototypes/Asthma Airflow Lab.html", "../html-prototypes/Burn Degree Estimator.html", "../html-prototypes/Carbon Monoxide Binding Simulation.html", 
+                    "../html-prototypes/Cataract Light Scattering.html", "../html-prototypes/Color Blindness Lab.html", "../html-prototypes/Concussion Momentum Lab.html", 
+                    "../html-prototypes/Cyanide Blockade Simulation.html", "../html-prototypes/Heatstroke Evaporation Lab.html", "../html-prototypes/Heavy Metal Chelation.html", 
+                    "../html-prototypes/Histamine Response Simulation.html", "../html-prototypes/Hypothermia Core Temp Lab.html", "../html-prototypes/Lead Poisoning Lab.html", 
+                    "../html-prototypes/Spinal Compression Simulator.html", "../html-prototypes/Thermal Fever Mapping Lab.html", "../html-prototypes/UV Mutation Lab.html", 
+                    "../html-prototypes/Viral Hijack Lab.html"
+                ]
+            },
+            {
+                id: 'biophysics',
+                name: 'Biophysics OS',
+                description: 'Human OS Logic. The massive physics engine of the body simulating mechanics and biological logic.',
+                imageUrl: 'https://res.cloudinary.com/ds93qby5a/image/upload/v1777378480/fb9dedff-e9ee-41fc-8048-912d35a0e039-Photoroom_dp8el4.png',
+                files: [
+                    "../html-prototypes/Active Transport Pump Diagram.html", "../html-prototypes/Antacid Neutralization.html", "../html-prototypes/Antigen-Antibody Fit Lab.html", 
+                    "../html-prototypes/Antioxidant Simulation.html", "../html-prototypes/Bicep Torque Calculator.html", "../html-prototypes/Biofeedback Loop.html", 
+                    "../html-prototypes/Bionic Eye Lab.html", "../html-prototypes/Blood Agglutination Simulation.html", "../html-prototypes/Blood Buffer Equilibrium.html", 
+                    "../html-prototypes/Blood-Brain Barrier Diagram.html", "../html-prototypes/Bohr Effect & Hemoglobin.html", "../html-prototypes/Bone Density Lab.html", 
+                    "../html-prototypes/Capillary Action Lab.html", "../html-prototypes/Cell Membrane Simulation.html", "../html-prototypes/Cerebrospinal Fluid Pressure Lab.html", 
+                    "../html-prototypes/Clotting Cascade Simulation.html", "../html-prototypes/Cortisol Stress Lab.html", "../html-prototypes/Cybernetic Haptic Lab.html", 
+                    "../html-prototypes/Cytochrome P450 Lab.html", "../html-prototypes/Dopamine Reward Lab.html", "../html-prototypes/Gait Pendulum Lab.html", 
+                    "../html-prototypes/Gastric Absorption Engine.html", "../html-prototypes/Gene Drive Evolution.html", "../html-prototypes/Glomerular Sieve Lab.html", 
+                    "../html-prototypes/Half-Life Visualizer.html", "../html-prototypes/Kidney Filtration.html", "../html-prototypes/Ligament Elasticity Lab.html", 
+                    "../html-prototypes/Lock & Key Visualizer.html", "../html-prototypes/Lymph Node Filtration Lab.html", "../html-prototypes/Melanin Photoprotection Lab.html", 
+                    "Metabolism Lab.html", "../html-prototypes/Muscle Fatigue & Lactic Acid.html", "../html-prototypes/Myelin Insulation Lab.html", 
+                    "../html-prototypes/Na K Action Potential.html", "../html-prototypes/Neural Resistance Lab.html", "../html-prototypes/Neuroplasticity Lab.html", 
+                    "../html-prototypes/Organ Compatibility Lab.html", "../html-prototypes/Phagocytosis Lab.html", "../html-prototypes/Poiseuille's Law Lab.html", 
+                    "../html-prototypes/Prosthetic Force Multiplier.html", "../html-prototypes/Protein Synthesis Factory.html", "../html-prototypes/Punnett Square Sim.html", 
+                    "../html-prototypes/Radiation Physics Lab.html", "../html-prototypes/Reflex Arc Timer Lab.html", "../html-prototypes/Refractive Optics Lab.html", 
+                    "../html-prototypes/Serotonin Level Balancer.html", "../html-prototypes/Spirometry & Boyle's Law Lab.html", "../html-prototypes/Stability & COG Lab.html", 
+                    "../html-prototypes/Surface Tension & Alveoli Lab.html", "../html-prototypes/Synaptic Delay Lab.html", "../html-prototypes/Telomere Aging Lab.html", 
+                    "../html-prototypes/Vaccine Memory Lab.html"
+                ]
+            },
+            {
+                id: 'mathematics',
+                name: 'Mathematics',
+                description: 'Core Mathematical models and algorithms for bio-computation.',
+                imageUrl: 'https://res.cloudinary.com/ds93qby5a/image/upload/v1777378470/9582d258-65f9-4018-b04f-ae0b3357f802-Photoroom_liem65.png',
+                files: [
+                    "../html-prototypes/Math Lab Dashboard.html"
+                ]
+            },
+            {
+                id: 'physics',
+                name: 'Physics Engine',
+                description: 'Fundamental physics models affecting biological environments.',
+                imageUrl: 'https://res.cloudinary.com/ds93qby5a/image/upload/v1777378460/85dddf79-e658-4a15-99a5-a39cc46733a1-Photoroom_xqjkpr.png',
+                files: [
+                    "../html-prototypes/Physics Lab Dashboard.html"
+                ]
+            }
+        ];
+
+        function formatDisplayName(filename) {
+            return filename.replace('.html', '');
+        }
+
+        const navContainer = document.getElementById('sidebar-nav');
+        const gridContainer = document.getElementById('grid-container');
+        const titleEl = document.getElementById('current-category-title');
+        const descEl = document.getElementById('current-category-desc');
+
+        function initSidebar() {
+            database.forEach((category, index) => {
+                const btn = document.createElement('button');
+                btn.className = `category-btn w-full text-left px-5 py-4 rounded-2xl mb-4 flex items-center gap-4 text-md font-black text-gray-600 uppercase tracking-wide group`;
+                btn.innerHTML = `
+                    <img src="${category.imageUrl}" alt="${category.name} icon" class="w-10 h-10 object-contain drop-shadow-[0_4px_0_rgba(0,0,0,0.2)] group-hover:scale-110 transition-transform">
+                    ${category.name}
+                `;
+                btn.onclick = () => selectCategory(category.id, btn);
+                navContainer.appendChild(btn);
+
+                if (index === 0) selectCategory(category.id, btn);
+            });
+            lucide.createIcons();
+        }
+
+        function selectCategory(categoryId, btnElement) {
+            const category = database.find(c => c.id === categoryId);
+
+            document.querySelectorAll('.category-btn').forEach(btn => {
+                btn.classList.remove('active');
+            });
+            
+            if(btnElement) {
+                btnElement.classList.add('active');
+            }
+            
+            titleEl.textContent = category.name;
+            descEl.textContent = category.description;
+            gridContainer.innerHTML = '';
+
+            // Reset search when switching categories
+            const searchInput = document.getElementById('search-input');
+            if(searchInput) searchInput.value = '';
+
+            category.files.forEach((file, index) => {
+                const displayName = formatDisplayName(file);
+                const delay = (index % 12) * 0.05;
+
+                // Alternate facing logic for the asset
+                const facingClass = index % 2 !== 0 ? 'scale-x-[-1]' : '';
+
+                const card = document.createElement('div');
+                card.onclick = () => openModule(file, displayName);
+                // Replaced glassmorphism with Brutalist classes
+                card.className = `brutalist-card h-[300px] flex flex-col group no-underline fade-in-up relative overflow-hidden cursor-pointer`;
+                card.style.animationDelay = `${delay}s`;
+
+                // Replaced inner HTML to match Brutalist style (flat colors, thick borders)
+                card.innerHTML = `
+                    <!-- Thumbnail Area -->
+                    <div class="h-[65%] w-full relative overflow-hidden flex justify-center items-end border-b-4 border-black pt-4 bg-[#f8fafc]">
+                        <img src="${category.imageUrl}" alt="Category Symbol" class="z-10 w-[65%] h-full object-contain object-bottom drop-shadow-[0_8px_0_rgba(0,0,0,0.6)] transition-transform duration-200 ease-out group-hover:scale-110 ${facingClass}">
+
+                        <!-- Brutalist Badge -->
+                        <div class="absolute top-4 right-4 bg-black border-2 border-white text-[12px] font-black uppercase tracking-widest px-3 py-1.5 rounded-lg z-20 flex items-center gap-2 shadow-[2px_2px_0_#fff] text-white">
+                            <div class="w-2.5 h-2.5 rounded-full bg-green-500"></div>
+                            READY
+                        </div>
+                    </div>
+
+                    <!-- Info Area -->
+                    <div class="h-[35%] w-full p-5 flex flex-col justify-center relative bg-white">
+                        <h3 class="text-[18px] font-['Fredoka_One'] text-black line-clamp-2 leading-tight uppercase relative z-10">${displayName}</h3>
+                        <p class="text-sm font-black text-gray-500 mt-2 flex items-center gap-1 uppercase tracking-wider relative z-10 group-hover:text-black transition-colors">
+                            <i data-lucide="play" class="w-5 h-5 text-black fill-current"></i> Launch Module
+                        </p>
+                    </div>
+                `;
+                
+                // Active Hover Physics - Swapped 3D rotation for a Brutalist push/pop
+                card.addEventListener('mousemove', () => {
+                    card.style.transform = `translate(-4px, -4px)`;
+                    card.style.boxShadow = `12px 12px 0px #000000`;
+                });
+
+                card.addEventListener('mouseleave', () => {
+                    card.style.transform = `translate(0, 0)`;
+                    card.style.boxShadow = `6px 6px 0px #000000`;
+                });
+
+                gridContainer.appendChild(card);
+            });
+
+            lucide.createIcons();
+        }
+
+        document.addEventListener('DOMContentLoaded', initSidebar);
+
+        /* -----------------------------------------------------
+           Module Viewer Logic (In-App Modal)
+           ----------------------------------------------------- */
+        const modal = document.getElementById('module-modal');
+        const modalContent = document.getElementById('module-modal-content');
+        const modalIframe = document.getElementById('module-iframe');
+        const modalTitle = document.getElementById('modal-title');
+
+        function openModule(file, name) {
+            modalTitle.textContent = name;
+            modalIframe.src = file;
+            
+            modal.classList.remove('opacity-0', 'pointer-events-none');
+            modalContent.classList.remove('translate-y-10');
+            modalContent.classList.add('translate-y-0');
+        }
+
+        function closeModule() {
+            modal.classList.add('opacity-0', 'pointer-events-none');
+            modalContent.classList.add('translate-y-10');
+            modalContent.classList.remove('translate-y-0');
+            
+            // Wait for slide animation before clearing src to prevent visual pop
+            setTimeout(() => {
+                modalIframe.src = '';
+            }, 300); 
+        }
+
+        /* -----------------------------------------------------
+           Search Functionality
+           ----------------------------------------------------- */
+        const searchInputBox = document.getElementById('search-input');
+        searchInputBox.addEventListener('input', (e) => {
+            const term = e.target.value.toLowerCase();
+            const cards = gridContainer.querySelectorAll('.brutalist-card');
+            
+            cards.forEach(card => {
+                const title = card.querySelector('h3').textContent.toLowerCase();
+                if (title.includes(term)) {
+                    card.style.display = 'flex';
+                } else {
+                    card.style.display = 'none';
+                }
+            });
+        });
+
+        /* -----------------------------------------------------
+           Fluid "Ink" Cursor Logic (Gooey SVG Tracker)
+           ----------------------------------------------------- */
+        const fluidContainer = document.getElementById('fluid-cursor');
+        
+        // Configuration
+        const NUM_TRAIL_DOTS = 12; // Number of tracking ink droplets
+        const trailDots = [];
+        
+        let targetMouseX = window.innerWidth / 2;
+        let targetMouseY = window.innerHeight / 2;
+
+        // Build the physical DOM elements for the fluid trail
+        for (let i = 0; i < NUM_TRAIL_DOTS; i++) {
+            let dot = document.createElement('div');
+            // Brutalist twist: make the drops solid black ink
+            let size = i === 0 ? 'w-6 h-6' : 'w-5 h-5';
+            dot.className = `absolute ${size} bg-black rounded-full left-0 top-0 -ml-3 -mt-3 will-change-transform`;
+            fluidContainer.appendChild(dot);
+            trailDots.push({ el: dot, x: targetMouseX, y: targetMouseY });
+        }
+
+        // Track literal mouse position
+        window.addEventListener('mousemove', (e) => {
+            targetMouseX = e.clientX;
+            targetMouseY = e.clientY;
+        });
+
+        // Animation loop for fluid drag physics
+        function animateFluidCursor() {
+            trailDots.forEach((dot, index) => {
+                let chaseX = index === 0 ? targetMouseX : trailDots[index - 1].x;
+                let chaseY = index === 0 ? targetMouseY : trailDots[index - 1].y;
+                
+                let spring = index === 0 ? 0.5 : 0.3;
+                
+                dot.x += (chaseX - dot.x) * spring;
+                dot.y += (chaseY - dot.y) * spring;
+                
+                let scale = 1 - (index / NUM_TRAIL_DOTS) * 0.6;
+                
+                dot.el.style.transform = `translate(${dot.x}px, ${dot.y}px) scale(${scale})`;
+            });
+
+            requestAnimationFrame(animateFluidCursor);
+        }
+        
+        animateFluidCursor();
+
+        // Interactive cursor state for buttons and cards
+        document.addEventListener('mouseover', (e) => {
+            if (e.target.closest('.brutalist-card, button, input')) {
+                trailDots[0].el.classList.replace('bg-black', 'bg-[#FBBF24]'); // Turns yellow on hover
+                trailDots[0].el.classList.add('scale-150');
+            }
+        });
+        document.addEventListener('mouseout', (e) => {
+            if (e.target.closest('.brutalist-card, button, input')) {
+                trailDots[0].el.classList.replace('bg-[#FBBF24]', 'bg-black');
+                trailDots[0].el.classList.remove('scale-150');
+            }
+        });
+
+    </script>
+</body>
+</html>

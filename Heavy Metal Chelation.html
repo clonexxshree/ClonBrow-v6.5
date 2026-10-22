@@ -1,0 +1,362 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Molecular Dynamics: Heavy Metal Chelation</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        body {
+            background-color: #020617; /* slate-950 */
+            color: #f8fafc;
+            margin: 0;
+            overflow: hidden;
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+            touch-action: none;
+        }
+
+        .sci-panel {
+            background: rgba(15, 23, 42, 0.8);
+            backdrop-filter: blur(20px);
+            -webkit-backdrop-filter: blur(20px);
+            border: 1px solid rgba(255, 255, 255, 0.08);
+            box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.5);
+        }
+
+        /* Chelator Arm Animations */
+        .chelator-arm {
+            transition: transform 0.4s cubic-bezier(0.34, 1.56, 0.64, 1);
+            transform-origin: center;
+        }
+
+        .clamped .chelator-arm-1 { transform: rotate(45deg) scale(0.9); }
+        .clamped .chelator-arm-2 { transform: rotate(-45deg) scale(0.9); }
+        .clamped .chelator-arm-3 { transform: rotate(135deg) scale(0.9); }
+        .clamped .chelator-arm-4 { transform: rotate(-135deg) scale(0.9); }
+
+        /* Draggable cursor */
+        #chelator-group {
+            cursor: grab;
+        }
+        #chelator-group:active {
+            cursor: grabbing;
+        }
+
+        /* Ambient floating for ions */
+        @keyframes float-ion {
+            0%, 100% { transform: translate(0, 0); }
+            50% { transform: translate(10px, -15px); }
+        }
+        .ion-float {
+            animation: float-ion 6s ease-in-out infinite;
+        }
+
+        /* Glow effects */
+        .neutralized-glow {
+            filter: drop-shadow(0 0 15px #10b981);
+        }
+
+        .snap-transition {
+            transition: transform 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+        }
+    </style>
+</head>
+<body class="w-screen h-screen flex flex-col md:flex-row relative bg-[radial-gradient(circle_at_top_right,_var(--tw-gradient-stops))] from-slate-900 via-slate-950 to-black">
+
+    <!-- Clinical HUD -->
+    <div class="absolute top-0 left-0 w-full p-6 md:p-10 z-20 pointer-events-none flex flex-col md:flex-row justify-between items-start gap-6">
+        <div class="sci-panel p-8 rounded-2xl max-w-lg pointer-events-auto">
+            <div class="flex items-center gap-3 mb-3">
+                <div class="h-[1px] w-10 bg-emerald-500"></div>
+                <span class="text-emerald-400 font-mono text-[10px] tracking-widest uppercase">Toxicology & Pharmacology</span>
+            </div>
+            <h1 class="text-3xl font-extrabold text-white mb-2 tracking-tight">
+                Chelation <span class="text-transparent bg-clip-text bg-gradient-to-r from-emerald-400 to-cyan-400">Therapy</span>
+            </h1>
+            <p class="text-slate-400 text-xs leading-relaxed mb-6 font-light">
+                Drag the chelating agent (EDTA) over the heavy metal ions ($Pb^{2+}$). The hexadentate ligand will "claw" around the metal, forming a stable ring structure that prevents the toxin from reacting with cellular proteins.
+            </p>
+            
+            <div class="space-y-4">
+                <div class="bg-black/40 p-4 rounded-xl border border-slate-800">
+                    <div class="flex justify-between items-center mb-1">
+                        <span class="text-[10px] text-slate-500 uppercase tracking-widest">Toxic Load</span>
+                        <span id="load-pct" class="text-xs font-mono text-rose-400">100%</span>
+                    </div>
+                    <div class="h-1 w-full bg-slate-800 rounded-full overflow-hidden">
+                        <div id="load-bar" class="h-full bg-rose-500 w-full transition-all duration-500"></div>
+                    </div>
+                </div>
+
+                <div class="grid grid-cols-2 gap-3">
+                    <div class="p-3 bg-black/40 rounded-lg border border-slate-800">
+                        <span class="text-[9px] text-slate-500 uppercase block mb-1">Complex Stability</span>
+                        <span class="text-sm font-bold text-emerald-400">K <sub class="text-[8px]">f</sub> = 10 <sup class="text-[8px]">18</sup></span>
+                    </div>
+                    <div class="p-3 bg-black/40 rounded-lg border border-slate-800">
+                        <span class="text-[9px] text-slate-500 uppercase block mb-1">Renal Status</span>
+                        <span class="text-sm font-bold text-cyan-400">CLEARING</span>
+                    </div>
+                </div>
+            </div>
+            
+            <button onclick="resetSimulation()" class="mt-6 w-full py-2 bg-slate-800 hover:bg-slate-700 text-slate-400 text-[10px] font-bold rounded-lg uppercase tracking-widest transition pointer-events-auto">Reset Patient Bio-markers</button>
+        </div>
+
+        <!-- Legend -->
+        <div class="sci-panel p-5 rounded-xl pointer-events-auto hidden lg:block border-l-2 border-l-emerald-500">
+            <h3 class="text-[10px] font-mono text-slate-500 uppercase tracking-widest mb-4">Molecular Key</h3>
+            <div class="space-y-4">
+                <div class="flex items-center gap-3">
+                    <div class="w-4 h-4 bg-emerald-500/50 border border-emerald-400 rounded-sm rotate-45"></div>
+                    <span class="text-[10px] text-slate-300">EDTA (Chelator)</span>
+                </div>
+                <div class="flex items-center gap-3">
+                    <div class="w-4 h-4 bg-slate-700 rounded-full shadow-[inset_0_0_5px_rgba(0,0,0,1)]"></div>
+                    <span class="text-[10px] text-slate-300">Heavy Metal ($Pb^{2+}$)</span>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Simulation Stage -->
+    <div class="w-full h-full flex items-center justify-center p-4 relative" id="stage">
+        <svg id="chelation-canvas" viewBox="0 0 1000 800" class="w-full h-full">
+            <defs>
+                <!-- Heavy Metal Texture -->
+                <radialGradient id="metalGrad" cx="40%" cy="40%" r="60%">
+                    <stop offset="0%" stop-color="#64748b" />
+                    <stop offset="100%" stop-color="#0f172a" />
+                </radialGradient>
+                
+                <filter id="inner-shadow">
+                    <feOffset dx="2" dy="2"/>
+                    <feGaussianBlur stdDeviation="3" result="offset-blur"/>
+                    <feComposite operator="out" in="SourceGraphic" in2="offset-blur" result="inverse"/>
+                    <feFlood flood-color="black" flood-opacity="0.8" result="color"/>
+                    <feComposite operator="in" in="color" in2="inverse" result="shadow"/>
+                    <feComposite operator="over" in="shadow" in2="SourceGraphic"/>
+                </filter>
+
+                <filter id="emerald-glow">
+                    <feGaussianBlur stdDeviation="8" result="blur" />
+                    <feComposite in="SourceGraphic" in2="blur" operator="over" />
+                </filter>
+
+                <!-- Arm Piece -->
+                <g id="claw-arm">
+                    <path d="M 0,0 C 0,-20 30,-50 60,-50 L 70,-40 C 40,-40 20,-10 20,0 Z" fill="currentColor" />
+                    <circle cx="65" cy="-45" r="5" fill="white" opacity="0.8" /> <!-- Coordination Site -->
+                </g>
+            </defs>
+
+            <!-- Background Environmental Particles (Organic debris) -->
+            <g opacity="0.1">
+                <circle cx="100" cy="200" r="40" fill="#1e293b" />
+                <circle cx="800" cy="600" r="60" fill="#1e293b" />
+                <path d="M 200,500 Q 250,550 300,500" stroke="#1e293b" stroke-width="10" fill="none" />
+            </g>
+
+            <!-- Metal Ions Layer -->
+            <g id="ions-container"></g>
+
+            <!-- Chelator Molecule (The Draggable Claw) -->
+            <g id="chelator-group" transform="translate(500, 400)">
+                <!-- Molecular Body -->
+                <circle cx="0" cy="0" r="25" fill="#065f46" stroke="#10b981" stroke-width="2" />
+                <circle cx="0" cy="0" r="15" fill="#10b981" opacity="0.3" filter="url(#emerald-glow)" />
+
+                <!-- 4 Claws (EDTA has multiple coordination sites) -->
+                <g class="chelator-arm chelator-arm-1 text-emerald-500" transform="rotate(0)">
+                    <use href="#claw-arm" />
+                </g>
+                <g class="chelator-arm chelator-arm-2 text-emerald-500" transform="rotate(90)">
+                    <use href="#claw-arm" />
+                </g>
+                <g class="chelator-arm chelator-arm-3 text-emerald-500" transform="rotate(180)">
+                    <use href="#claw-arm" />
+                </g>
+                <g class="chelator-arm chelator-arm-4 text-emerald-500" transform="rotate(270)">
+                    <use href="#claw-arm" />
+                </g>
+
+                <!-- Ligand labels -->
+                <g font-size="8" font-family="monospace" fill="#34d399" opacity="0.6" text-anchor="middle">
+                    <text x="0" y="-35">N</text>
+                    <text x="35" y="0">O-</text>
+                    <text x="0" y="35">N</text>
+                    <text x="-35" y="0">O-</text>
+                </g>
+            </g>
+        </svg>
+    </div>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', () => {
+            const svg = document.getElementById('chelation-canvas');
+            const chelatorGroup = document.getElementById('chelator-group');
+            const ionsContainer = document.getElementById('ions-container');
+            const loadBar = document.getElementById('load-bar');
+            const loadPctText = document.getElementById('load-pct');
+
+            let isDragging = false;
+            let currentPos = { x: 500, y: 400 };
+            let dragOffset = { x: 0, y: 0 };
+            let ions = [];
+            const TOTAL_IONS = 8;
+            let capturedIon = null;
+
+            function createIons() {
+                ionsContainer.innerHTML = '';
+                ions = [];
+                for (let i = 0; i < TOTAL_IONS; i++) {
+                    const x = 100 + Math.random() * 800;
+                    const y = 100 + Math.random() * 600;
+                    
+                    const group = document.createElementNS('http://www.w3.org/2000/svg', 'g');
+                    group.setAttribute('class', 'ion-float');
+                    group.style.animationDelay = `${-Math.random() * 5}s`;
+                    
+                    const circle = document.createElementNS('http://www.w3.org/2000/svg', 'circle');
+                    circle.setAttribute('cx', x);
+                    circle.setAttribute('cy', y);
+                    circle.setAttribute('r', 18);
+                    circle.setAttribute('fill', 'url(#metalGrad)');
+                    circle.setAttribute('filter', 'url(#inner-shadow)');
+                    circle.setAttribute('stroke', '#334155');
+                    circle.setAttribute('stroke-width', '1');
+                    
+                    group.appendChild(circle);
+                    ionsContainer.appendChild(group);
+                    
+                    ions.push({
+                        element: group,
+                        circle: circle,
+                        x: x,
+                        y: y,
+                        captured: false
+                    });
+                }
+            }
+
+            function getMousePosition(evt) {
+                const CTM = svg.getScreenCTM();
+                if (evt.touches && evt.touches.length > 0) {
+                    return {
+                        x: (evt.touches[0].clientX - CTM.e) / CTM.a,
+                        y: (evt.touches[0].clientY - CTM.f) / CTM.d
+                    };
+                }
+                return {
+                    x: (evt.clientX - CTM.e) / CTM.a,
+                    y: (evt.clientY - CTM.f) / CTM.d
+                };
+            }
+
+            function updateChelatorPosition() {
+                chelatorGroup.setAttribute('transform', `translate(${currentPos.x}, ${currentPos.y})`);
+                
+                if (capturedIon) {
+                    // Ion stays locked inside the claw center
+                    capturedIon.circle.setAttribute('cx', currentPos.x);
+                    capturedIon.circle.setAttribute('cy', currentPos.y);
+                }
+            }
+
+            function checkProximity() {
+                if (capturedIon) return; // Only capture one at a time
+
+                ions.forEach(ion => {
+                    if (ion.captured) return;
+
+                    const dx = currentPos.x - ion.x;
+                    const dy = currentPos.y - ion.y;
+                    const distance = Math.sqrt(dx*dx + dy*dy);
+
+                    if (distance < 50) {
+                        capture(ion);
+                    }
+                });
+            }
+
+            function capture(ion) {
+                capturedIon = ion;
+                ion.captured = true;
+                ion.element.classList.remove('ion-float');
+                
+                // Trigger claw animation
+                chelatorGroup.classList.add('clamped', 'neutralized-glow');
+                
+                // Visual "snap"
+                ion.circle.classList.add('snap-transition');
+                
+                setTimeout(() => {
+                    // Start removal animation (Clearing from body)
+                    ion.element.style.transition = 'all 1s ease-in';
+                    ion.element.style.opacity = '0';
+                    ion.element.style.transform = 'scale(0) translateY(-100px)';
+                    
+                    setTimeout(() => {
+                        ion.element.remove();
+                        ions = ions.filter(i => i !== ion);
+                        capturedIon = null;
+                        chelatorGroup.classList.remove('clamped', 'neutralized-glow');
+                        updateProgress();
+                    }, 1000);
+                }, 500);
+            }
+
+            function updateProgress() {
+                const remaining = ions.length;
+                const pct = Math.round((remaining / TOTAL_IONS) * 100);
+                loadPctText.textContent = `${pct}%`;
+                loadBar.style.width = `${pct}%`;
+
+                if (remaining === 0) {
+                    loadPctText.textContent = "DETOXIFIED";
+                    loadPctText.classList.remove('text-rose-400');
+                    loadPctText.classList.add('text-emerald-400');
+                }
+            }
+
+            window.resetSimulation = () => {
+                createIons();
+                updateProgress();
+                loadPctText.classList.add('text-rose-400');
+                loadPctText.classList.remove('text-emerald-400');
+            };
+
+            function onStart(evt) {
+                isDragging = true;
+                const pos = getMousePosition(evt);
+                dragOffset.x = pos.x - currentPos.x;
+                dragOffset.y = pos.y - currentPos.y;
+            }
+
+            function onMove(evt) {
+                if (!isDragging) return;
+                const pos = getMousePosition(evt);
+                currentPos.x = pos.x - dragOffset.x;
+                currentPos.y = pos.y - dragOffset.y;
+                
+                updateChelatorPosition();
+                checkProximity();
+            }
+
+            function onEnd() {
+                isDragging = false;
+            }
+
+            chelatorGroup.addEventListener('mousedown', onStart);
+            window.addEventListener('mousemove', onMove);
+            window.addEventListener('mouseup', onEnd);
+
+            chelatorGroup.addEventListener('touchstart', onStart, {passive: false});
+            window.addEventListener('touchmove', onMove, {passive: false});
+            window.addEventListener('touchend', onEnd);
+
+            createIons();
+        });
+    </script>
+</body>
+</html>

@@ -1,0 +1,594 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Football Master</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Black+Ops+One&family=Nunito:wght@700;900&display=swap');
+
+        body { 
+            margin: 0; overflow: hidden; background-color: #0f172a; 
+            font-family: 'Nunito', sans-serif; user-select: none;
+            display: flex; flex-direction: column; align-items: center; justify-content: center;
+            height: 100vh; color: white; touch-action: none;
+        }
+
+        /* --- UI OVERLAYS --- */
+        #game-ui {
+            position: absolute; top: 0; left: 0; width: 100%; padding: 20px;
+            display: flex; justify-content: space-between; align-items: center;
+            pointer-events: none; z-index: 10; box-sizing: border-box;
+        }
+
+        .score-board {
+            background: rgba(15, 23, 42, 0.85); backdrop-filter: blur(8px);
+            border: 4px solid #334155; border-radius: 16px; padding: 10px 30px;
+            display: flex; align-items: center; gap: 30px; box-shadow: 0 10px 30px rgba(0,0,0,0.5);
+        }
+
+        .score-num { font-family: 'Black Ops One'; font-size: 48px; min-width: 60px; text-align: center; }
+        .score-blue { color: #38bdf8; text-shadow: 0 4px 0 #0284c7; }
+        .score-red { color: #f87171; text-shadow: 0 4px 0 #b91c1c; }
+        
+        .timer-box {
+            font-family: 'Black Ops One'; font-size: 32px; color: #facc15;
+            background: rgba(0,0,0,0.5); padding: 5px 20px; border-radius: 8px; border: 2px solid #eab308;
+        }
+
+        #game-canvas {
+            display: block; box-shadow: 0 20px 50px rgba(0,0,0,0.8);
+            border-radius: 12px; border: 8px solid #cbd5e1;
+            max-width: 95vw; max-height: 80vh; background: #16a34a;
+        }
+
+        /* Modals */
+        .modal {
+            position: absolute; top: 0; left: 0; width: 100vw; height: 100vh;
+            background: rgba(0,0,0,0.8); display: flex; flex-direction: column;
+            align-items: center; justify-content: center; z-index: 50; backdrop-filter: blur(4px);
+        }
+
+        .modal-box {
+            background: #1e293b; padding: 40px 60px; border-radius: 24px; text-align: center;
+            border: 4px solid #38bdf8; box-shadow: 0 20px 50px rgba(0,0,0,0.8);
+        }
+
+        .btn-action {
+            background: #38bdf8; color: #0f172a; border: none; padding: 15px 40px; font-size: 24px;
+            font-family: 'Black Ops One'; border-radius: 12px; cursor: pointer; transition: 0.1s;
+            box-shadow: 0 6px 0 #0284c7; margin-top: 20px;
+        }
+        .btn-action:active { transform: translateY(6px); box-shadow: 0 0 0 #0284c7; }
+
+        #announcement {
+            position: absolute; top: 30%; left: 50%; transform: translate(-50%, -50%);
+            font-family: 'Black Ops One'; font-size: 80px; color: white; text-shadow: 0 8px 0 #000;
+            pointer-events: none; opacity: 0; transition: 0.2s; z-index: 20; white-space: nowrap;
+        }
+
+        .controls-hint {
+            position: absolute; bottom: 20px; left: 50%; transform: translateX(-50%);
+            color: #94a3b8; font-size: 18px; text-align: center; pointer-events: none;
+            background: rgba(0,0,0,0.6); padding: 10px 20px; border-radius: 12px;
+        }
+        .key { background: #334155; padding: 4px 8px; border-radius: 4px; color: white; font-family: 'Black Ops One'; font-size: 14px;}
+
+    </style>
+</head>
+<body>
+
+    <!-- START MENU -->
+    <div id="start-menu" class="modal">
+        <div class="modal-box" style="border-color: #facc15;">
+            <h1 style="font-family: 'Black Ops One'; font-size: 64px; margin: 0; color: #facc15; text-shadow: 0 6px 0 #ca8a04;">FOOTBALL MASTER</h1>
+            <p style="color: #94a3b8; font-size: 20px; margin-bottom: 30px;">First to 5 goals or highest score in 3 minutes wins!</p>
+            <button class="btn-action" style="background: #facc15; box-shadow: 0 6px 0 #ca8a04;" onclick="startGame()">PLAY MATCH</button>
+        </div>
+    </div>
+
+    <!-- GAME OVER -->
+    <div id="game-over" class="modal" style="display: none;">
+        <div class="modal-box">
+            <h1 id="win-title" style="font-family: 'Black Ops One'; font-size: 64px; margin: 0; color: white; text-shadow: 0 6px 0 #000;">BLUE WINS!</h1>
+            <button class="btn-action" onclick="resetMatch()">PLAY AGAIN</button>
+        </div>
+    </div>
+
+    <!-- UI LAYER -->
+    <div id="game-ui">
+        <div class="score-board">
+            <div class="score-num score-blue" id="score-p1">0</div>
+            <div style="font-family: 'Black Ops One'; font-size: 24px; color: #64748b;">VS</div>
+            <div class="score-num score-red" id="score-p2">0</div>
+        </div>
+        <div class="timer-box" id="timer">3:00</div>
+    </div>
+
+    <div id="announcement">GOAL!</div>
+    
+    <div class="controls-hint" id="hints">
+        <span class="key">W A S D</span> or <span class="key">ARROWS</span> to Move &nbsp;|&nbsp; <span class="key">SPACE</span> or <span class="key">CLICK</span> to Kick
+    </div>
+
+    <canvas id="game-canvas"></canvas>
+
+    <script>
+        // --- AUDIO ENGINE ---
+        const AudioContext = window.AudioContext || window.webkitAudioContext;
+        let audioCtx;
+        function initAudio() { if(!audioCtx) audioCtx = new AudioContext(); }
+        
+        function playSound(type, intensity = 1.0) {
+            if(!audioCtx) return;
+            const t = audioCtx.currentTime;
+            const osc = audioCtx.createOscillator();
+            const gain = audioCtx.createGain();
+            
+            if (type === 'kick') {
+                osc.type = 'triangle'; osc.frequency.setValueAtTime(150, t); osc.frequency.exponentialRampToValueAtTime(50, t + 0.1);
+                gain.gain.setValueAtTime(0.8 * intensity, t); gain.gain.exponentialRampToValueAtTime(0.01, t + 0.1);
+            } else if (type === 'bounce') {
+                osc.type = 'sine'; osc.frequency.setValueAtTime(300, t); osc.frequency.exponentialRampToValueAtTime(100, t + 0.1);
+                gain.gain.setValueAtTime(0.3 * intensity, t); gain.gain.exponentialRampToValueAtTime(0.01, t + 0.1);
+            } else if (type === 'whistle') {
+                osc.type = 'square'; osc.frequency.setValueAtTime(1200, t); osc.frequency.setValueAtTime(1400, t+0.1); osc.frequency.setValueAtTime(1200, t+0.3);
+                gain.gain.setValueAtTime(0.5, t); gain.gain.linearRampToValueAtTime(0.01, t + 0.6);
+            }
+            
+            osc.connect(gain); gain.connect(audioCtx.destination);
+            osc.start(t); osc.stop(t + 0.6);
+        }
+
+        // --- CANVAS & GAME SETUP ---
+        const canvas = document.getElementById('game-canvas');
+        const ctx = canvas.getContext('2d');
+        
+        // Logical Dimensions (Physics runs on this, scales to screen)
+        const GW = 1000;
+        const GH = 600;
+
+        function resize() {
+            const aspect = GW / GH;
+            let w = window.innerWidth * 0.95;
+            let h = window.innerHeight * 0.8;
+            
+            if (w / h > aspect) w = h * aspect;
+            else h = w / aspect;
+            
+            canvas.style.width = `${w}px`;
+            canvas.style.height = `${h}px`;
+            canvas.width = GW;
+            canvas.height = GH;
+        }
+        window.addEventListener('resize', resize);
+        resize();
+
+        // --- CONSTANTS ---
+        const GOAL_WIDTH = 160;
+        const GOAL_DEPTH = 40;
+        const GOAL_TOP = GH/2 - GOAL_WIDTH/2;
+        const GOAL_BOTTOM = GH/2 + GOAL_WIDTH/2;
+        
+        const BALL_RADIUS = 12;
+        const PLAYER_RADIUS = 25;
+        
+        const FRICTION = 0.98;
+        const PLAYER_FRICTION = 0.90;
+        const RESTITUTION = 0.8; // Bounciness
+
+        // --- GAME STATE ---
+        let state = {
+            running: false,
+            paused: false,
+            score1: 0,
+            score2: 0,
+            timeLeft: 180,
+            lastTime: 0
+        };
+
+        const keys = { w:false, a:false, s:false, d:false, space:false, up:false, down:false, left:false, right:false };
+        let pointer = { active: false, x: 0, y: 0, justClicked: false };
+
+        // --- PHYSICS ENTITIES ---
+        class Entity {
+            constructor(x, y, radius, mass, color) {
+                this.x = x; this.y = y;
+                this.vx = 0; this.vy = 0;
+                this.radius = radius;
+                this.mass = mass;
+                this.color = color;
+            }
+        }
+
+        let ball = new Entity(GW/2, GH/2, BALL_RADIUS, 1, '#ffffff');
+        let p1 = new Entity(GW/4, GH/2, PLAYER_RADIUS, 3, '#38bdf8'); // Blue (Player)
+        let p2 = new Entity(GW*3/4, GH/2, PLAYER_RADIUS, 3, '#f87171'); // Red (AI)
+
+        // --- INPUT HANDLING ---
+        window.addEventListener('keydown', e => {
+            if(e.code === 'KeyW') keys.w = true; if(e.code === 'KeyA') keys.a = true;
+            if(e.code === 'KeyS') keys.s = true; if(e.code === 'KeyD') keys.d = true;
+            if(e.code === 'ArrowUp') keys.up = true; if(e.code === 'ArrowLeft') keys.left = true;
+            if(e.code === 'ArrowDown') keys.down = true; if(e.code === 'ArrowRight') keys.right = true;
+            if(e.code === 'Space') { if(!keys.space) kick(p1); keys.space = true; }
+        });
+        window.addEventListener('keyup', e => {
+            if(e.code === 'KeyW') keys.w = false; if(e.code === 'KeyA') keys.a = false;
+            if(e.code === 'KeyS') keys.s = false; if(e.code === 'KeyD') keys.d = false;
+            if(e.code === 'ArrowUp') keys.up = false; if(e.code === 'ArrowLeft') keys.left = false;
+            if(e.code === 'ArrowDown') keys.down = false; if(e.code === 'ArrowRight') keys.right = false;
+            if(e.code === 'Space') keys.space = false;
+        });
+
+        // Mouse/Touch controls
+        function getCanvasPos(e) {
+            const rect = canvas.getBoundingClientRect();
+            const clientX = e.touches ? e.touches[0].clientX : e.clientX;
+            const clientY = e.touches ? e.touches[0].clientY : e.clientY;
+            return {
+                x: (clientX - rect.left) * (GW / rect.width),
+                y: (clientY - rect.top) * (GH / rect.height)
+            };
+        }
+        canvas.addEventListener('mousedown', e => { initAudio(); pointer.active = true; const p = getCanvasPos(e); pointer.x = p.x; pointer.y = p.y; kick(p1); });
+        canvas.addEventListener('mousemove', e => { if(pointer.active) { const p = getCanvasPos(e); pointer.x = p.x; pointer.y = p.y; }});
+        canvas.addEventListener('mouseup', () => { pointer.active = false; });
+        canvas.addEventListener('touchstart', e => { initAudio(); e.preventDefault(); pointer.active = true; const p = getCanvasPos(e); pointer.x = p.x; pointer.y = p.y; kick(p1); }, {passive: false});
+        canvas.addEventListener('touchmove', e => { e.preventDefault(); if(pointer.active) { const p = getCanvasPos(e); pointer.x = p.x; pointer.y = p.y; } }, {passive: false});
+        canvas.addEventListener('touchend', e => { e.preventDefault(); pointer.active = false; }, {passive: false});
+
+        // --- GAME LOGIC ---
+
+        function startGame() {
+            initAudio();
+            document.getElementById('start-menu').style.display = 'none';
+            document.getElementById('game-over').style.display = 'none';
+            resetMatch();
+        }
+
+        function resetMatch() {
+            state.score1 = 0; state.score2 = 0;
+            state.timeLeft = 180;
+            updateUI();
+            resetPositions();
+            state.running = true;
+            state.paused = false;
+            playSound('whistle');
+            announce("KICK OFF!");
+            requestAnimationFrame(gameLoop);
+        }
+
+        function resetPositions() {
+            ball.x = GW/2; ball.y = GH/2; ball.vx = 0; ball.vy = 0;
+            p1.x = GW/4; p1.y = GH/2; p1.vx = 0; p1.vy = 0;
+            p2.x = GW*3/4; p2.y = GH/2; p2.vx = 0; p2.vy = 0;
+        }
+
+        function announce(text) {
+            const el = document.getElementById('announcement');
+            el.innerText = text;
+            el.style.opacity = 1;
+            el.style.transform = "translate(-50%, -50%) scale(1.2)";
+            setTimeout(() => { el.style.opacity = 0; el.style.transform = "translate(-50%, -50%) scale(1)"; }, 1500);
+        }
+
+        function updateUI() {
+            document.getElementById('score-p1').innerText = state.score1;
+            document.getElementById('score-p2').innerText = state.score2;
+            const m = Math.floor(state.timeLeft / 60);
+            const s = Math.floor(state.timeLeft % 60).toString().padStart(2, '0');
+            document.getElementById('timer').innerText = `${m}:${s}`;
+        }
+
+        function goalScored(player) {
+            state.paused = true;
+            playSound('whistle');
+            if(player === 1) state.score1++; else state.score2++;
+            updateUI();
+            announce(`GOAL!`);
+            
+            setTimeout(() => {
+                if (state.score1 >= 5 || state.score2 >= 5) endGame();
+                else { resetPositions(); state.paused = false; playSound('whistle'); }
+            }, 2000);
+        }
+
+        function endGame() {
+            state.running = false;
+            playSound('whistle');
+            setTimeout(() => playSound('whistle'), 400);
+            setTimeout(() => playSound('whistle'), 800);
+            
+            document.getElementById('game-over').style.display = 'flex';
+            const title = document.getElementById('win-title');
+            if (state.score1 > state.score2) { title.innerText = "BLUE WINS!"; title.style.color = "#38bdf8"; title.style.textShadow = "0 6px 0 #0284c7"; }
+            else if (state.score2 > state.score1) { title.innerText = "RED WINS!"; title.style.color = "#f87171"; title.style.textShadow = "0 6px 0 #b91c1c"; }
+            else { title.innerText = "DRAW!"; title.style.color = "#cbd5e1"; title.style.textShadow = "0 6px 0 #64748b"; }
+        }
+
+        function kick(player) {
+            if(state.paused) return;
+            const dx = ball.x - player.x;
+            const dy = ball.y - player.y;
+            const dist = Math.hypot(dx, dy);
+            
+            // Kick radius slightly larger than physical collision
+            if (dist < player.radius + ball.radius + 15) {
+                const nx = dx / dist; const ny = dy / dist;
+                const power = 15;
+                ball.vx += nx * power;
+                ball.vy += ny * power;
+                playSound('kick', 1.0);
+                
+                // Visual kick recoil on player
+                player.vx -= nx * 2;
+                player.vy -= ny * 2;
+            }
+        }
+
+        // --- PHYSICS UPDATE ---
+
+        function update() {
+            if (state.paused) return;
+
+            // Player 1 Input
+            const accel = 1.2;
+            let p1dx = 0, p1dy = 0;
+            if (keys.w || keys.up) p1dy -= accel;
+            if (keys.s || keys.down) p1dy += accel;
+            if (keys.a || keys.left) p1dx -= accel;
+            if (keys.d || keys.right) p1dx += accel;
+            
+            // Mouse/Touch follows
+            if (pointer.active && p1dx===0 && p1dy===0) {
+                const mx = pointer.x - p1.x; const my = pointer.y - p1.y;
+                const md = Math.hypot(mx, my);
+                if (md > 10) { p1dx = (mx/md)*accel; p1dy = (my/md)*accel; }
+            }
+
+            p1.vx += p1dx; p1.vy += p1dy;
+
+            // AI Logic (Player 2)
+            let aidx = 0, aidy = 0;
+            // Determine target: If ball is near our goal, chase aggressively. If ball is near player, defend.
+            const distToBall = Math.hypot(ball.x - p2.x, ball.y - p2.y);
+            let targetX = ball.x;
+            let targetY = ball.y;
+
+            if (ball.x < GW/2) {
+                // Ball is on player's side, AI defends its half
+                targetX = GW*3/4;
+                targetY = ball.y; 
+            }
+
+            const bx = targetX - p2.x; const by = targetY - p2.y;
+            const bd = Math.hypot(bx, by);
+            if (bd > 10) { aidx = (bx/bd)*accel*0.8; aidy = (by/bd)*accel*0.8; } // AI slightly slower than max speed
+
+            p2.vx += aidx; p2.vy += aidy;
+
+            // AI Auto-kick
+            if (distToBall < p2.radius + ball.radius + 15 && ball.x > p2.x) {
+                if(Math.random() < 0.1) kick(p2); // Kick towards left goal
+            }
+
+            // Apply Velocities & Friction
+            [ball, p1, p2].forEach(e => {
+                e.x += e.vx; e.y += e.vy;
+                e.vx *= (e === ball ? FRICTION : PLAYER_FRICTION);
+                e.vy *= (e === ball ? FRICTION : PLAYER_FRICTION);
+            });
+
+            // Circle Collisions (P1 vs Ball, P2 vs Ball, P1 vs P2)
+            resolveCircleCollision(p1, ball);
+            resolveCircleCollision(p2, ball);
+            resolveCircleCollision(p1, p2);
+
+            // Wall Collisions
+            checkBoundaries(ball, true);
+            checkBoundaries(p1, false);
+            checkBoundaries(p2, false);
+        }
+
+        function resolveCircleCollision(a, b) {
+            let dx = b.x - a.x; let dy = b.y - a.y;
+            let dist = Math.hypot(dx, dy);
+            let min_dist = a.radius + b.radius;
+
+            if (dist < min_dist) {
+                let overlap = min_dist - dist;
+                let nx = dx / dist; let ny = dy / dist;
+
+                // Push apart
+                const totalMass = a.mass + b.mass;
+                const ratioA = b.mass / totalMass;
+                const ratioB = a.mass / totalMass;
+
+                a.x -= nx * overlap * ratioA; a.y -= ny * overlap * ratioA;
+                b.x += nx * overlap * ratioB; b.y += ny * overlap * ratioB;
+
+                // Elastic collision velocity change
+                let kx = a.vx - b.vx; let ky = a.vy - b.vy;
+                let p = 2.0 * (nx * kx + ny * ky) / totalMass;
+                
+                if (p > 0) { // Only apply if moving towards each other
+                    p *= RESTITUTION;
+                    a.vx -= p * b.mass * nx; a.vy -= p * b.mass * ny;
+                    b.vx += p * a.mass * nx; b.vy += p * a.mass * ny;
+                    
+                    if (b === ball && Math.abs(p) > 2) playSound('bounce', Math.abs(p)/10);
+                }
+            }
+        }
+
+        function checkBoundaries(e, isBall) {
+            let bounce = false;
+            let inGoalY = e.y > GOAL_TOP && e.y < GOAL_BOTTOM;
+
+            // Left Wall
+            if (e.x - e.radius < 0) {
+                if (isBall && inGoalY) {
+                    // Ball entered left goal (Red scores)
+                    if (e.x < -e.radius) goalScored(2);
+                } else {
+                    e.x = e.radius; e.vx *= -RESTITUTION; bounce = true;
+                }
+            }
+            // Right Wall
+            else if (e.x + e.radius > GW) {
+                if (isBall && inGoalY) {
+                    // Ball entered right goal (Blue scores)
+                    if (e.x > GW + e.radius) goalScored(1);
+                } else {
+                    e.x = GW - e.radius; e.vx *= -RESTITUTION; bounce = true;
+                }
+            }
+
+            // Top Wall
+            if (e.y - e.radius < 0) { e.y = e.radius; e.vy *= -RESTITUTION; bounce = true; }
+            // Bottom Wall
+            else if (e.y + e.radius > GH) { e.y = GH - e.radius; e.vy *= -RESTITUTION; bounce = true; }
+
+            // Goal Posts (Pillars)
+            if (isBall) {
+                const posts = [
+                    {x: 0, y: GOAL_TOP}, {x: 0, y: GOAL_BOTTOM},
+                    {x: GW, y: GOAL_TOP}, {x: GW, y: GOAL_BOTTOM}
+                ];
+                posts.forEach(post => {
+                    let pdx = e.x - post.x; let pdy = e.y - post.y;
+                    let pdist = Math.hypot(pdx, pdy);
+                    if (pdist < e.radius + 5) { // Post radius is 5
+                        let nx = pdx / pdist; let ny = pdy / pdist;
+                        e.x = post.x + nx * (e.radius + 5); e.y = post.y + ny * (e.radius + 5);
+                        let p = 2 * (nx * e.vx + ny * e.vy);
+                        if (p < 0) { e.vx -= p * nx; e.vy -= p * ny; bounce = true; }
+                    }
+                });
+            }
+
+            if (bounce && isBall && Math.hypot(e.vx, e.vy) > 2) playSound('bounce', Math.hypot(e.vx, e.vy)/15);
+        }
+
+        // --- DRAWING ---
+
+        function drawPitch() {
+            // Grass stripes
+            ctx.fillStyle = '#16a34a';
+            ctx.fillRect(0, 0, GW, GH);
+            ctx.fillStyle = '#15803d';
+            for(let i=0; i<GW; i+=100) { if((i/100)%2===0) ctx.fillRect(i, 0, 100, GH); }
+
+            // Pitch Lines
+            ctx.strokeStyle = 'rgba(255, 255, 255, 0.8)';
+            ctx.lineWidth = 4;
+            
+            // Outer Border
+            ctx.strokeRect(0, 0, GW, GH);
+            
+            // Center Line
+            ctx.beginPath(); ctx.moveTo(GW/2, 0); ctx.lineTo(GW/2, GH); ctx.stroke();
+            // Center Circle
+            ctx.beginPath(); ctx.arc(GW/2, GH/2, 80, 0, Math.PI*2); ctx.stroke();
+            ctx.beginPath(); ctx.arc(GW/2, GH/2, 6, 0, Math.PI*2); ctx.fillStyle = 'rgba(255,255,255,0.8)'; ctx.fill();
+
+            // Penalty Areas
+            ctx.strokeRect(0, GH/2 - 120, 150, 240); // Left
+            ctx.strokeRect(GW - 150, GH/2 - 120, 150, 240); // Right
+
+            // Goal Areas
+            ctx.strokeRect(0, GH/2 - 60, 50, 120); // Left
+            ctx.strokeRect(GW - 50, GH/2 - 60, 50, 120); // Right
+
+            // Goals
+            ctx.fillStyle = 'rgba(0,0,0,0.3)';
+            ctx.fillRect(-GOAL_DEPTH, GOAL_TOP, GOAL_DEPTH, GOAL_WIDTH);
+            ctx.fillRect(GW, GOAL_TOP, GOAL_DEPTH, GOAL_WIDTH);
+            
+            // Goal nets (crosshatch)
+            ctx.strokeStyle = 'rgba(255,255,255,0.4)';
+            ctx.lineWidth = 1;
+            ctx.beginPath();
+            for(let i=0; i<=GOAL_WIDTH; i+=10) {
+                ctx.moveTo(-GOAL_DEPTH, GOAL_TOP + i); ctx.lineTo(0, GOAL_TOP + i);
+                ctx.moveTo(GW, GOAL_TOP + i); ctx.lineTo(GW + GOAL_DEPTH, GOAL_TOP + i);
+            }
+            for(let i=0; i<=GOAL_DEPTH; i+=10) {
+                ctx.moveTo(-i, GOAL_TOP); ctx.lineTo(-i, GOAL_BOTTOM);
+                ctx.moveTo(GW + i, GOAL_TOP); ctx.lineTo(GW + i, GOAL_BOTTOM);
+            }
+            ctx.stroke();
+
+            // Goal Posts
+            ctx.fillStyle = 'white';
+            const posts = [[0, GOAL_TOP], [0, GOAL_BOTTOM], [GW, GOAL_TOP], [GW, GOAL_BOTTOM]];
+            posts.forEach(p => {
+                ctx.beginPath(); ctx.arc(p[0], p[1], 5, 0, Math.PI*2); ctx.fill();
+            });
+        }
+
+        function drawEntity(e) {
+            // Shadow
+            ctx.beginPath(); ctx.arc(e.x + 3, e.y + 5, e.radius, 0, Math.PI*2);
+            ctx.fillStyle = 'rgba(0,0,0,0.3)'; ctx.fill();
+
+            // Body
+            ctx.beginPath(); ctx.arc(e.x, e.y, e.radius, 0, Math.PI*2);
+            ctx.fillStyle = e.color; ctx.fill();
+
+            // Outline / Detail
+            ctx.lineWidth = 3; ctx.strokeStyle = '#000'; ctx.stroke();
+            
+            if(e === ball) {
+                // Ball pattern (simple pentagon lines)
+                ctx.strokeStyle = '#000'; ctx.lineWidth = 2;
+                ctx.beginPath();
+                ctx.moveTo(e.x - 4, e.y - 4); ctx.lineTo(e.x + 4, e.y - 4);
+                ctx.lineTo(e.x + 6, e.y + 2); ctx.lineTo(e.x, e.y + 6);
+                ctx.lineTo(e.x - 6, e.y + 2); ctx.closePath(); ctx.stroke();
+            } else {
+                // Player detail (inner ring)
+                ctx.beginPath(); ctx.arc(e.x, e.y, e.radius * 0.5, 0, Math.PI*2);
+                ctx.fillStyle = 'rgba(255,255,255,0.3)'; ctx.fill();
+            }
+        }
+
+        // --- MAIN LOOP ---
+
+        function gameLoop(timestamp) {
+            if(!state.running) return;
+
+            // Timer Logic
+            if (!state.paused) {
+                if (!state.lastTime) state.lastTime = timestamp;
+                const dt = (timestamp - state.lastTime) / 1000;
+                state.lastTime = timestamp;
+                
+                state.timeLeft -= dt;
+                if (state.timeLeft <= 0) {
+                    state.timeLeft = 0;
+                    endGame();
+                } else {
+                    updateUI(); // optimize this later to run only on second change
+                }
+            } else {
+                state.lastTime = timestamp; // Prevent time jump after pause
+            }
+
+            update();
+
+            // Render
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+            drawPitch();
+            drawEntity(p1);
+            drawEntity(p2);
+            drawEntity(ball);
+
+            requestAnimationFrame(gameLoop);
+        }
+
+    </script>
+</body>
+</html>

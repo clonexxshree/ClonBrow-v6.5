@@ -1,0 +1,650 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Ludo Master</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Fredoka+One&family=Nunito:wght@700&display=swap');
+
+        body { 
+            margin: 0; overflow: hidden; background-color: #0f172a; 
+            font-family: 'Nunito', sans-serif; user-select: none;
+            -webkit-font-smoothing: antialiased; display: flex;
+        }
+
+        /* --- UI LAYOUT --- */
+        #game-container {
+            flex: 1; display: flex; align-items: center; justify-content: center;
+            background: radial-gradient(circle, #1e293b 0%, #0f172a 100%);
+            position: relative;
+        }
+
+        canvas {
+            box-shadow: 0 20px 50px rgba(0,0,0,0.5);
+            border-radius: 12px; background: white;
+            max-width: 95vmin; max-height: 95vmin;
+        }
+
+        #sidebar {
+            width: 350px; background: #1e293b; border-left: 2px solid #334155;
+            display: flex; flex-direction: column; padding: 20px; box-shadow: -10px 0 30px rgba(0,0,0,0.5);
+            z-index: 10;
+        }
+
+        h1 { font-family: 'Fredoka One', cursive; color: #f8fafc; font-size: 36px; text-align: center; margin-bottom: 20px; text-shadow: 0 4px 0 #000; letter-spacing: 1px;}
+
+        /* Player Turn Indicator */
+        .player-card {
+            background: #334155; border-radius: 12px; padding: 15px; margin-bottom: 10px;
+            display: flex; align-items: center; gap: 15px; border: 3px solid transparent;
+            transition: 0.3s; opacity: 0.5;
+        }
+        .player-card.active {
+            opacity: 1; border-color: #f8fafc; transform: scale(1.05);
+            box-shadow: 0 10px 20px rgba(0,0,0,0.3);
+        }
+        .color-dot { width: 30px; height: 30px; border-radius: 50%; border: 3px solid rgba(255,255,255,0.8); box-shadow: inset 0 -4px 0 rgba(0,0,0,0.2); }
+        .player-name { font-family: 'Fredoka One'; font-size: 20px; color: white; }
+
+        /* Dice Area */
+        #dice-area {
+            margin-top: 30px; background: #0f172a; border-radius: 16px; padding: 30px 20px;
+            display: flex; flex-direction: column; align-items: center; border: 2px solid #334155;
+        }
+
+        #dice {
+            width: 80px; height: 80px; background: white; border-radius: 16px;
+            display: flex; align-items: center; justify-content: center;
+            font-size: 48px; font-weight: bold; color: #0f172a; font-family: 'Fredoka One';
+            box-shadow: 0 8px 0 #cbd5e1, 0 15px 20px rgba(0,0,0,0.4);
+            cursor: pointer; transition: 0.1s; user-select: none; margin-bottom: 20px;
+        }
+        #dice:active { transform: translateY(8px); box-shadow: 0 0 0 #cbd5e1, 0 5px 10px rgba(0,0,0,0.4); }
+        #dice.rolling { animation: shake 0.4s infinite; pointer-events: none; }
+        #dice.disabled { opacity: 0.5; pointer-events: none; }
+
+        @keyframes shake {
+            0% { transform: translate(1px, 1px) rotate(0deg); }
+            10% { transform: translate(-1px, -2px) rotate(-5deg); }
+            20% { transform: translate(-3px, 0px) rotate(5deg); }
+            30% { transform: translate(3px, 2px) rotate(0deg); }
+            40% { transform: translate(1px, -1px) rotate(5deg); }
+            50% { transform: translate(-1px, 2px) rotate(-5deg); }
+            60% { transform: translate(-3px, 1px) rotate(0deg); }
+            70% { transform: translate(3px, 1px) rotate(-5deg); }
+            80% { transform: translate(-1px, -1px) rotate(5deg); }
+            90% { transform: translate(1px, 2px) rotate(0deg); }
+            100% { transform: translate(1px, -2px) rotate(-5deg); }
+        }
+
+        #info-text {
+            color: #94a3b8; font-size: 16px; text-align: center; height: 40px;
+        }
+
+        /* Modal */
+        #win-modal {
+            position: absolute; top: 0; left: 0; width: 100vw; height: 100vh;
+            background: rgba(0,0,0,0.8); display: none; align-items: center; justify-content: center; z-index: 100;
+        }
+        .modal-box {
+            background: #1e293b; padding: 40px; border-radius: 20px; text-align: center;
+            border: 4px solid #f8fafc; box-shadow: 0 20px 50px rgba(0,0,0,0.8);
+        }
+        .btn-restart {
+            background: #3b82f6; color: white; border: none; padding: 12px 30px; font-size: 20px;
+            font-family: 'Fredoka One'; border-radius: 12px; cursor: pointer; box-shadow: 0 6px 0 #1e3a8a;
+            margin-top: 20px;
+        }
+        .btn-restart:active { transform: translateY(6px); box-shadow: 0 0 0 #1e3a8a; }
+
+        @media (max-width: 800px) {
+            body { flex-direction: column; }
+            #sidebar { width: 100%; border-left: none; border-top: 2px solid #334155; padding: 10px; flex-direction: row; align-items: center; justify-content: space-around; box-shadow: 0 -10px 20px rgba(0,0,0,0.5);}
+            h1 { display: none; }
+            .player-card { margin-bottom: 0; padding: 10px; }
+            .player-name { display: none; }
+            #dice-area { margin-top: 0; padding: 10px; flex-direction: row; gap: 20px; border: none;}
+            #dice { margin-bottom: 0; width: 60px; height: 60px; font-size: 32px; box-shadow: 0 6px 0 #cbd5e1; }
+            #dice:active { transform: translateY(6px); box-shadow: 0 0 0 #cbd5e1; }
+            #info-text { max-width: 150px; font-size: 14px; height: auto;}
+            canvas { max-width: 95vw; max-height: 70vh; }
+        }
+
+    </style>
+</head>
+<body>
+
+    <div id="win-modal">
+        <div class="modal-box">
+            <h2 id="win-title" style="font-family: 'Fredoka One'; font-size: 48px; color: white; margin: 0 0 10px 0;">RED WINS!</h2>
+            <p style="color: #94a3b8; font-size: 18px;">All 4 tokens reached home.</p>
+            <button class="btn-restart" onclick="location.reload()">PLAY AGAIN</button>
+        </div>
+    </div>
+
+    <div id="game-container">
+        <canvas id="ludo-canvas"></canvas>
+    </div>
+
+    <div id="sidebar">
+        <h1>LUDO MASTER</h1>
+        
+        <div id="players-list">
+            <div class="player-card active" id="card-0">
+                <div class="color-dot" style="background: #ef4444;"></div>
+                <div class="player-name">Red Player</div>
+            </div>
+            <div class="player-card" id="card-1">
+                <div class="color-dot" style="background: #22c55e;"></div>
+                <div class="player-name">Green Player</div>
+            </div>
+            <div class="player-card" id="card-2">
+                <div class="color-dot" style="background: #eab308;"></div>
+                <div class="player-name">Yellow Player</div>
+            </div>
+            <div class="player-card" id="card-3">
+                <div class="color-dot" style="background: #3b82f6;"></div>
+                <div class="player-name">Blue Player</div>
+            </div>
+        </div>
+
+        <div id="dice-area">
+            <div id="dice" onclick="rollDice()">🎲</div>
+            <div id="info-text">Roll the dice to start!</div>
+        </div>
+    </div>
+
+    <script>
+        // --- AUDIO ENGINE ---
+        const AudioContext = window.AudioContext || window.webkitAudioContext;
+        let audioCtx;
+        function initAudio() { if(!audioCtx) audioCtx = new AudioContext(); }
+        function playSound(type) {
+            if(!audioCtx) return;
+            const t = audioCtx.currentTime;
+            const osc = audioCtx.createOscillator(); const gain = audioCtx.createGain();
+            if(type === 'roll') {
+                osc.type = 'triangle'; osc.frequency.setValueAtTime(400, t); osc.frequency.linearRampToValueAtTime(800, t+0.1);
+                gain.gain.setValueAtTime(0.5, t); gain.gain.exponentialRampToValueAtTime(0.01, t+0.2);
+            } else if(type === 'move') {
+                osc.type = 'sine'; osc.frequency.setValueAtTime(600, t); osc.frequency.exponentialRampToValueAtTime(300, t+0.1);
+                gain.gain.setValueAtTime(0.3, t); gain.gain.exponentialRampToValueAtTime(0.01, t+0.1);
+            } else if(type === 'capture') {
+                osc.type = 'square'; osc.frequency.setValueAtTime(200, t); osc.frequency.linearRampToValueAtTime(100, t+0.2);
+                gain.gain.setValueAtTime(0.5, t); gain.gain.exponentialRampToValueAtTime(0.01, t+0.3);
+            } else if(type === 'win') {
+                osc.type = 'sine'; osc.frequency.setValueAtTime(400, t); osc.frequency.setValueAtTime(600, t+0.2); osc.frequency.setValueAtTime(800, t+0.4);
+                gain.gain.setValueAtTime(0.5, t); gain.gain.exponentialRampToValueAtTime(0.01, t+0.8);
+            }
+            osc.connect(gain); gain.connect(audioCtx.destination);
+            osc.start(t); osc.stop(t + 1);
+        }
+
+        // --- CONSTANTS & DATA ---
+        const canvas = document.getElementById('ludo-canvas');
+        const ctx = canvas.getContext('2d');
+        let size, ts; // size = canvas dimension, ts = tile size
+
+        const COLORS = {
+            red: '#ef4444', green: '#22c55e', yellow: '#eab308', blue: '#3b82f6',
+            board: '#ffffff', path: '#f8fafc', border: '#cbd5e1', safe: '#94a3b8'
+        };
+
+        const PLAYERS = ['red', 'green', 'yellow', 'blue'];
+        const SAFE_SQUARES = [1, 9, 14, 22, 27, 35, 40, 48];
+        const START_INDEX = { 0: 1, 1: 14, 2: 27, 3: 40 };
+        const END_INDEX = { 0: 50, 1: 11, 2: 24, 3: 37 };
+
+        // 52 Step Main Path mapping to Grid (x, y) coordinates
+        const MAIN_PATH = [
+            [0,6], [1,6], [2,6], [3,6], [4,6], [5,6], // 0-5
+            [6,5], [6,4], [6,3], [6,2], [6,1], [6,0], // 6-11
+            [7,0], [8,0], [8,1], [8,2], [8,3], [8,4], [8,5], // 12-18
+            [9,6], [10,6], [11,6], [12,6], [13,6], [14,6], // 19-24
+            [14,7], [14,8], [13,8], [12,8], [11,8], [10,8], [9,8], // 25-31
+            [8,9], [8,10], [8,11], [8,12], [8,13], [8,14], // 32-37
+            [7,14], [6,14], [6,13], [6,12], [6,11], [6,10], [6,9], // 38-44
+            [5,8], [4,8], [3,8], [2,8], [1,8], [0,8], // 45-50
+            [0,7] // 51
+        ];
+
+        // Home Paths (Length 5)
+        const HOME_PATHS = {
+            0: [[1,7], [2,7], [3,7], [4,7], [5,7]], // Red
+            1: [[7,1], [7,2], [7,3], [7,4], [7,5]], // Green
+            2: [[13,7], [12,7], [11,7], [10,7], [9,7]], // Yellow
+            3: [[7,13], [7,12], [7,11], [7,10], [7,9]] // Blue
+        };
+
+        // Bases centers (x, y)
+        const BASES = {
+            0: { x: 3, y: 3 }, 1: { x: 12, y: 3 }, 
+            2: { x: 12, y: 12 }, 3: { x: 3, y: 12 }
+        };
+
+        // Token initial offsets within base
+        const BASE_OFFSETS = [ [-1,-1], [1,-1], [-1,1], [1,1] ];
+
+        // --- GAME STATE ---
+        let state = {
+            turn: 0, // 0-3
+            diceValue: null,
+            canRoll: true,
+            tokens: [],
+            animating: false
+        };
+
+        // Initialize tokens
+        for(let p=0; p<4; p++) {
+            for(let t=0; t<4; t++) {
+                state.tokens.push({
+                    player: p, id: t,
+                    status: 'base', // 'base', 'main', 'home', 'won'
+                    pos: -1, // index in path
+                    x: 0, y: 0, // visual current pos
+                    tx: 0, ty: 0 // visual target pos
+                });
+            }
+        }
+
+        // --- DRAWING FUNCTIONS ---
+
+        function resize() {
+            const minDim = Math.min(window.innerWidth - (window.innerWidth > 800 ? 350 : 0), window.innerHeight) * 0.95;
+            size = Math.floor(minDim);
+            canvas.width = size * window.devicePixelRatio;
+            canvas.height = size * window.devicePixelRatio;
+            canvas.style.width = size + 'px';
+            canvas.style.height = size + 'px';
+            ctx.scale(window.devicePixelRatio, window.devicePixelRatio);
+            ts = size / 15;
+            snapTokensToTargets();
+        }
+
+        function drawBoard() {
+            ctx.fillStyle = COLORS.board;
+            ctx.fillRect(0, 0, size, size);
+
+            // Draw 4 Bases
+            const bSize = ts * 6;
+            ctx.fillStyle = COLORS.red; ctx.fillRect(0, 0, bSize, bSize);
+            ctx.fillStyle = COLORS.green; ctx.fillRect(size - bSize, 0, bSize, bSize);
+            ctx.fillStyle = COLORS.yellow; ctx.fillRect(size - bSize, size - bSize, bSize, bSize);
+            ctx.fillStyle = COLORS.blue; ctx.fillRect(0, size - bSize, bSize, bSize);
+
+            // Draw Base Inner White Squares
+            ctx.fillStyle = 'white';
+            const innerOff = ts * 0.8; const innerSize = bSize - innerOff * 2;
+            ctx.fillRect(innerOff, innerOff, innerSize, innerSize);
+            ctx.fillRect(size - bSize + innerOff, innerOff, innerSize, innerSize);
+            ctx.fillRect(size - bSize + innerOff, size - bSize + innerOff, innerSize, innerSize);
+            ctx.fillRect(innerOff, size - bSize + innerOff, innerSize, innerSize);
+
+            // Draw Base Token Circles
+            for(let p=0; p<4; p++) {
+                ctx.fillStyle = COLORS[PLAYERS[p]];
+                for(let t=0; t<4; t++) {
+                    const bx = BASES[p].x + BASE_OFFSETS[t][0]*1.2;
+                    const by = BASES[p].y + BASE_OFFSETS[t][1]*1.2;
+                    ctx.beginPath(); ctx.arc(bx * ts, by * ts, ts*0.6, 0, Math.PI*2); ctx.fill();
+                    ctx.fillStyle = 'white'; ctx.beginPath(); ctx.arc(bx * ts, by * ts, ts*0.4, 0, Math.PI*2); ctx.fill();
+                    ctx.fillStyle = COLORS[PLAYERS[p]];
+                }
+            }
+
+            // Draw Path Grid
+            ctx.strokeStyle = COLORS.border; ctx.lineWidth = 1;
+            const drawTile = (x, y, color) => {
+                ctx.fillStyle = color; ctx.fillRect(x*ts, y*ts, ts, ts);
+                ctx.strokeRect(x*ts, y*ts, ts, ts);
+            };
+
+            // Main Path
+            MAIN_PATH.forEach((pt, i) => {
+                let color = COLORS.path;
+                if (SAFE_SQUARES.includes(i)) color = COLORS.safe;
+                if (i === START_INDEX[0]) color = COLORS.red;
+                if (i === START_INDEX[1]) color = COLORS.green;
+                if (i === START_INDEX[2]) color = COLORS.yellow;
+                if (i === START_INDEX[3]) color = COLORS.blue;
+                drawTile(pt[0], pt[1], color);
+                
+                // Draw Star on Safe squares
+                if (SAFE_SQUARES.includes(i)) drawStar(pt[0]*ts + ts/2, pt[1]*ts + ts/2, 5, ts*0.35, ts*0.15, 'white');
+            });
+
+            // Home Paths
+            for(let p=0; p<4; p++) {
+                HOME_PATHS[p].forEach(pt => drawTile(pt[0], pt[1], COLORS[PLAYERS[p]]));
+            }
+
+            // Center Triangle Goal
+            ctx.fillStyle = COLORS.red; ctx.beginPath(); ctx.moveTo(6*ts, 6*ts); ctx.lineTo(9*ts, 6*ts); ctx.lineTo(7.5*ts, 7.5*ts); ctx.fill(); ctx.stroke();
+            ctx.fillStyle = COLORS.green; ctx.beginPath(); ctx.moveTo(9*ts, 6*ts); ctx.lineTo(9*ts, 9*ts); ctx.lineTo(7.5*ts, 7.5*ts); ctx.fill(); ctx.stroke();
+            ctx.fillStyle = COLORS.yellow; ctx.beginPath(); ctx.moveTo(9*ts, 9*ts); ctx.lineTo(6*ts, 9*ts); ctx.lineTo(7.5*ts, 7.5*ts); ctx.fill(); ctx.stroke();
+            ctx.fillStyle = COLORS.blue; ctx.beginPath(); ctx.moveTo(6*ts, 9*ts); ctx.lineTo(6*ts, 6*ts); ctx.lineTo(7.5*ts, 7.5*ts); ctx.fill(); ctx.stroke();
+        }
+
+        function drawStar(cx, cy, spikes, outerRadius, innerRadius, color) {
+            let rot = Math.PI / 2 * 3; let x = cx, y = cy; let step = Math.PI / spikes;
+            ctx.beginPath(); ctx.moveTo(cx, cy - outerRadius);
+            for (let i = 0; i < spikes; i++) {
+                x = cx + Math.cos(rot) * outerRadius; y = cy + Math.sin(rot) * outerRadius; ctx.lineTo(x, y); rot += step;
+                x = cx + Math.cos(rot) * innerRadius; y = cy + Math.sin(rot) * innerRadius; ctx.lineTo(x, y); rot += step;
+            }
+            ctx.lineTo(cx, cy - outerRadius); ctx.closePath();
+            ctx.fillStyle = color; ctx.fill();
+        }
+
+        function drawTokens() {
+            // Group tokens by logical position to handle stacking
+            const stacks = {};
+            state.tokens.forEach(tok => {
+                const key = `${tok.status}_${tok.pos}`;
+                if(!stacks[key]) stacks[key] = [];
+                stacks[key].push(tok);
+            });
+
+            // Calculate targets
+            for(let key in stacks) {
+                const arr = stacks[key];
+                const count = arr.length;
+                
+                arr.forEach((tok, i) => {
+                    let tx, ty;
+                    if (tok.status === 'base') {
+                        tx = (BASES[tok.player].x + BASE_OFFSETS[tok.id][0]*1.2) * ts;
+                        ty = (BASES[tok.player].y + BASE_OFFSETS[tok.id][1]*1.2) * ts;
+                    } 
+                    else if (tok.status === 'main') {
+                        const pt = MAIN_PATH[tok.pos];
+                        tx = pt[0] * ts + ts/2; ty = pt[1] * ts + ts/2;
+                    } 
+                    else if (tok.status === 'home') {
+                        const pt = HOME_PATHS[tok.player][tok.pos];
+                        tx = pt[0] * ts + ts/2; ty = pt[1] * ts + ts/2;
+                    }
+                    else if (tok.status === 'won') {
+                        tx = 7.5 * ts; ty = 7.5 * ts; // Center
+                    }
+
+                    // Adjust for stacking on path
+                    if (tok.status !== 'base' && tok.status !== 'won' && count > 1) {
+                        const offsets = [ [-1,-1], [1,-1], [-1,1], [1,1], [0,-1], [-1,0], [1,0], [0,1] ];
+                        const off = offsets[i % offsets.length];
+                        tx += off[0] * (ts*0.2); ty += off[1] * (ts*0.2);
+                    }
+
+                    tok.tx = tx; tok.ty = ty;
+
+                    // Initialize actual position if newly snapped
+                    if (tok.x === 0 && tok.y === 0) { tok.x = tx; tok.y = ty; }
+                });
+            }
+
+            // Draw each token
+            const time = Date.now() / 150;
+            state.tokens.forEach(tok => {
+                if(tok.status === 'won') return; // Don't draw won tokens
+
+                // Move towards target
+                tok.x += (tok.tx - tok.x) * 0.2;
+                tok.y += (tok.ty - tok.y) * 0.2;
+
+                const isMovable = !state.animating && !state.canRoll && tok.player === state.turn && canMoveToken(tok, state.diceValue);
+                
+                let renderRadius = ts * 0.35;
+                if(tok.status !== 'base' && stacks[`${tok.status}_${tok.pos}`].length > 1) renderRadius = ts*0.25;
+
+                // Pulsate if movable
+                if (isMovable) renderRadius += Math.sin(time) * 2;
+
+                // Shadow
+                ctx.beginPath(); ctx.arc(tok.x, tok.y + 4, renderRadius, 0, Math.PI*2);
+                ctx.fillStyle = 'rgba(0,0,0,0.3)'; ctx.fill();
+
+                // Token Body
+                ctx.beginPath(); ctx.arc(tok.x, tok.y, renderRadius, 0, Math.PI*2);
+                ctx.fillStyle = COLORS[PLAYERS[tok.player]]; ctx.fill();
+                ctx.lineWidth = 2; ctx.strokeStyle = 'white'; ctx.stroke();
+                
+                // Highlight
+                ctx.beginPath(); ctx.arc(tok.x - renderRadius*0.3, tok.y - renderRadius*0.3, renderRadius*0.2, 0, Math.PI*2);
+                ctx.fillStyle = 'rgba(255,255,255,0.5)'; ctx.fill();
+            });
+        }
+
+        function snapTokensToTargets() {
+            state.tokens.forEach(tok => { tok.x = tok.tx; tok.y = tok.ty; });
+        }
+
+        // --- GAME LOGIC ---
+
+        function rollDice() {
+            if(!state.canRoll || state.animating) return;
+            initAudio();
+            playSound('roll');
+            
+            state.canRoll = false;
+            const diceEl = document.getElementById('dice');
+            diceEl.classList.add('rolling');
+            
+            let rolls = 0;
+            const rollAnim = setInterval(() => {
+                diceEl.innerText = Math.floor(Math.random() * 6) + 1;
+                rolls++;
+                if(rolls > 15) {
+                    clearInterval(rollAnim);
+                    diceEl.classList.remove('rolling');
+                    
+                    // Final Roll
+                    state.diceValue = Math.floor(Math.random() * 6) + 1;
+                    diceEl.innerText = state.diceValue;
+                    
+                    handlePostRoll();
+                }
+            }, 50);
+        }
+
+        function handlePostRoll() {
+            // Check if player has any valid moves
+            const validMoves = state.tokens.filter(t => t.player === state.turn && canMoveToken(t, state.diceValue));
+            
+            if (validMoves.length === 0) {
+                setInfo("No valid moves. Next turn.");
+                setTimeout(() => nextTurn(), 1000);
+            } else if (validMoves.length === 1 && validMoves[0].status !== 'base') {
+                // Auto move if only 1 option (and not in base to prevent annoying auto-exits if user wanted to move something else... wait if it's the ONLY move, auto is fine)
+                setTimeout(() => executeMove(validMoves[0]), 300);
+            } else {
+                setInfo("Select a piece to move.");
+                document.getElementById('dice').classList.add('disabled');
+            }
+        }
+
+        function canMoveToken(tok, roll) {
+            if (tok.status === 'won') return false;
+            if (tok.status === 'base') return roll === 6;
+            
+            if (tok.status === 'main') {
+                const sIdx = START_INDEX[tok.player];
+                const eIdx = END_INDEX[tok.player];
+                // Check if moving goes into home path
+                // Calculate distance traveled on main path
+                let distTraveled = (tok.pos - sIdx);
+                if(distTraveled < 0) distTraveled += 52;
+
+                if (distTraveled + roll > 50) {
+                    const homePos = distTraveled + roll - 51;
+                    return homePos <= 5; // Can reach exact home (5) or lower
+                }
+                return true;
+            }
+            if (tok.status === 'home') {
+                return tok.pos + roll <= 5;
+            }
+            return false;
+        }
+
+        function executeMove(tok) {
+            if(state.animating) return;
+            state.animating = true;
+            playSound('move');
+
+            const roll = state.diceValue;
+            let steps = [];
+            let currStatus = tok.status;
+            let currPos = tok.pos;
+
+            if (currStatus === 'base') {
+                steps.push({ status: 'main', pos: START_INDEX[tok.player] });
+            } else {
+                const sIdx = START_INDEX[tok.player];
+                for(let i=1; i<=roll; i++) {
+                    if (currStatus === 'main') {
+                        let distTraveled = (currPos - sIdx);
+                        if(distTraveled < 0) distTraveled += 52;
+                        
+                        if (distTraveled >= 50) {
+                            currStatus = 'home';
+                            currPos = 0;
+                        } else {
+                            currPos = (currPos + 1) % 52;
+                        }
+                    } else if (currStatus === 'home') {
+                        currPos++;
+                    }
+                    steps.push({ status: currStatus, pos: currPos });
+                }
+            }
+
+            // Animate steps
+            let stepIdx = 0;
+            const moveInterval = setInterval(() => {
+                if (stepIdx < steps.length) {
+                    tok.status = steps[stepIdx].status;
+                    tok.pos = steps[stepIdx].pos;
+                    playSound('move');
+                    stepIdx++;
+                } else {
+                    clearInterval(moveInterval);
+                    finalizeMove(tok);
+                }
+            }, 250);
+        }
+
+        function finalizeMove(tok) {
+            let getAnotherTurn = state.diceValue === 6;
+            
+            if (tok.status === 'home' && tok.pos === 5) {
+                tok.status = 'won';
+                getAnotherTurn = true;
+                playSound('win');
+                checkWin(tok.player);
+            }
+
+            // Check Captures
+            if (tok.status === 'main' && !SAFE_SQUARES.includes(tok.pos)) {
+                state.tokens.forEach(other => {
+                    if (other.player !== tok.player && other.status === 'main' && other.pos === tok.pos) {
+                        // Capture!
+                        other.status = 'base';
+                        other.pos = -1;
+                        getAnotherTurn = true;
+                        playSound('capture');
+                        setInfo("Capture! Extra turn!");
+                    }
+                });
+            }
+
+            state.animating = false;
+
+            if (getAnotherTurn) {
+                state.canRoll = true;
+                document.getElementById('dice').classList.remove('disabled');
+                setInfo("Bonus Turn! Roll again.");
+            } else {
+                nextTurn();
+            }
+        }
+
+        function checkWin(pIdx) {
+            const wonTokens = state.tokens.filter(t => t.player === pIdx && t.status === 'won').length;
+            if (wonTokens === 4) {
+                document.getElementById('win-title').innerText = `${PLAYERS[pIdx].toUpperCase()} WINS!`;
+                document.getElementById('win-title').style.color = COLORS[PLAYERS[pIdx]];
+                document.getElementById('win-modal').style.display = 'flex';
+            }
+        }
+
+        function nextTurn() {
+            state.turn = (state.turn + 1) % 4;
+            state.canRoll = true;
+            state.diceValue = null;
+            document.getElementById('dice').innerText = '🎲';
+            document.getElementById('dice').classList.remove('disabled');
+            updateSidebar();
+        }
+
+        // --- INTERACTION ---
+
+        canvas.addEventListener('mousedown', (e) => {
+            if (state.canRoll || state.animating) return;
+            
+            const rect = canvas.getBoundingClientRect();
+            // Handle retina scaling
+            const scaleX = canvas.width / rect.width / window.devicePixelRatio;
+            const scaleY = canvas.height / rect.height / window.devicePixelRatio;
+            
+            const mx = (e.clientX - rect.left) * scaleX;
+            const my = (e.clientY - rect.top) * scaleY;
+
+            // Find clicked token (reverse order to get top one)
+            for(let i=state.tokens.length-1; i>=0; i--) {
+                const tok = state.tokens[i];
+                if (tok.player !== state.turn) continue;
+                
+                const dx = tok.x - mx;
+                const dy = tok.y - my;
+                if (Math.sqrt(dx*dx + dy*dy) < ts*0.5) {
+                    if (canMoveToken(tok, state.diceValue)) {
+                        executeMove(tok);
+                        break;
+                    }
+                }
+            }
+        });
+
+        // --- RENDER LOOP ---
+
+        function updateSidebar() {
+            for(let i=0; i<4; i++) {
+                const card = document.getElementById(`card-${i}`);
+                if (i === state.turn) card.classList.add('active');
+                else card.classList.remove('active');
+            }
+            const name = PLAYERS[state.turn].charAt(0).toUpperCase() + PLAYERS[state.turn].slice(1);
+            setInfo(`${name}'s turn to roll.`);
+        }
+
+        function setInfo(msg) {
+            document.getElementById('info-text').innerText = msg;
+        }
+
+        function render() {
+            requestAnimationFrame(render);
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+            drawBoard();
+            drawTokens();
+        }
+
+        // Init
+        resize();
+        updateSidebar();
+        render();
+
+    </script>
+</body>
+</html>

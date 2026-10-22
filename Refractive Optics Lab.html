@@ -1,0 +1,554 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Refractive Error & Laser Surgery Lab</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;700&family=Inter:wght@300;400;600;700&display=swap');
+
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: #020617;
+            color: #f1f5f9;
+            overflow-x: hidden;
+        }
+
+        .font-mono { font-family: 'JetBrains Mono', monospace; }
+
+        .glass-card {
+            background: rgba(15, 23, 42, 0.7);
+            backdrop-filter: blur(12px);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.5);
+        }
+
+        .digital-readout {
+            background: #061021;
+            color: #10b981; /* Emerald */
+            text-shadow: 0 0 8px rgba(16, 185, 129, 0.4);
+            border: 1px solid #1e293b;
+            transition: all 0.3s ease;
+        }
+        .digital-readout.error { color: #f43f5e; text-shadow: 0 0 8px rgba(244, 63, 94, 0.4); }
+        .digital-readout.laser { color: #06b6d4; text-shadow: 0 0 8px rgba(6, 182, 212, 0.4); }
+
+        /* Optics Styles */
+        .light-ray {
+            fill: none;
+            stroke: #fbbf24;
+            stroke-width: 2;
+            opacity: 0.7;
+            transition: d 0.5s cubic-bezier(0.4, 0, 0.2, 1);
+            filter: drop-shadow(0 0 4px rgba(251, 191, 36, 0.6));
+        }
+
+        .eye-sclera { fill: #f8fafc; stroke: #94a3b8; stroke-width: 3; }
+        .eye-cornea { 
+            fill: #bae6fd; fill-opacity: 0.3; stroke: #38bdf8; stroke-width: 3; 
+            transition: d 0.5s ease;
+        }
+        .eye-lens { fill: #e0f2fe; fill-opacity: 0.6; stroke: #7dd3fc; stroke-width: 2; }
+        .eye-retina { fill: none; stroke: #f43f5e; stroke-width: 4; stroke-linecap: round; }
+
+        .glass-lens {
+            fill: #ecfeff;
+            fill-opacity: 0.4;
+            stroke: #06b6d4;
+            stroke-width: 2;
+            transition: opacity 0.3s ease, d 0.3s ease;
+        }
+
+        /* Red Hacker Laser Animation */
+        @keyframes laserPulse {
+            0% { opacity: 0; stroke-dashoffset: 20; }
+            50% { opacity: 1; stroke-dashoffset: 0; filter: drop-shadow(0 0 8px #ef4444); }
+            100% { opacity: 0; stroke-dashoffset: -20; }
+        }
+
+        .laser-beam {
+            stroke: #ef4444;
+            stroke-width: 3;
+            stroke-dasharray: 10 5;
+            animation: laserPulse 0.3s linear infinite;
+        }
+
+        @keyframes spark {
+            0% { transform: scale(0) translate(0, 0); opacity: 1; }
+            100% { transform: scale(1.5) translate(var(--tx), var(--ty)); opacity: 0; }
+        }
+
+        .laser-spark {
+            fill: #fca5a5;
+            animation: spark 0.4s ease-out forwards;
+        }
+
+        /* UI elements */
+        input[type=range] { accent-color: #38bdf8; }
+        .grid-bg {
+            background-size: 50px 50px;
+            background-image: 
+                linear-gradient(to right, rgba(255, 255, 255, 0.05) 1px, transparent 1px),
+                linear-gradient(to bottom, rgba(255, 255, 255, 0.05) 1px, transparent 1px);
+        }
+    </style>
+</head>
+<body class="min-h-screen p-4 md:p-8 flex items-center justify-center">
+
+    <div class="max-w-7xl w-full grid grid-cols-1 lg:grid-cols-12 gap-8 items-stretch">
+        
+        <!-- Simulation Viewport -->
+        <div class="lg:col-span-8 flex flex-col gap-6">
+            <div class="glass-card rounded-3xl p-0 relative flex-grow min-h-[450px] flex items-center justify-center overflow-hidden border border-slate-800 grid-bg">
+                
+                <!-- HUD Header -->
+                <div class="absolute top-6 left-8 flex items-center gap-3 z-20">
+                    <div id="status-dot" class="w-2.5 h-2.5 rounded-full bg-emerald-500 shadow-[0_0_10px_#10b981]"></div>
+                    <span id="status-text" class="text-[10px] font-bold text-slate-400 uppercase tracking-widest font-mono">Optical Bench Ready</span>
+                </div>
+
+                <!-- SVG Layer: Optics Bench -->
+                <svg id="optics-svg" viewBox="0 0 800 400" class="w-full h-full relative z-10">
+                    <!-- Optical Axis -->
+                    <line x1="0" y1="200" x2="800" y2="200" stroke="#334155" stroke-width="1" stroke-dasharray="10 5" />
+                    <text x="750" y="190" fill="#64748b" font-size="10" font-family="monospace">OPTICAL AXIS</text>
+
+                    <!-- The Human Eye -->
+                    <g id="human-eye" transform="translate(450, 200)">
+                        <!-- Sclera (Eyeball base) -->
+                        <path d="M 0 -130 A 130 130 0 1 1 0 130 A 130 130 0 0 1 0 -130" class="eye-sclera" />
+                        
+                        <!-- Retina (Highlighted back arc) -->
+                        <path d="M 65 -112 A 130 130 0 0 1 65 112" class="eye-retina" />
+                        <text x="140" y="0" fill="#f43f5e" font-size="12" font-weight="bold" alignment-baseline="middle">RETINA</text>
+
+                        <!-- Sclera cutout for cornea -->
+                        <path d="M -90 -90 L -150 -90 L -150 90 L -90 90 Z" fill="#020617" />
+                        
+                        <!-- Cornea (Dynamic Path) -->
+                        <!-- Base: M -90 -90 Q -160 0 -90 90 -->
+                        <path id="cornea-path" d="M -90 -90 Q -150 0 -90 90" class="eye-cornea" />
+                        
+                        <!-- Crystalline Lens -->
+                        <ellipse cx="-70" cy="0" rx="15" ry="40" class="eye-lens" />
+                    </g>
+
+                    <!-- Corrective Glass Lens (Hidden by default) -->
+                    <!-- Positioned at X = 200 -->
+                    <path id="glass-lens" class="glass-lens" d="" opacity="0" />
+
+                    <!-- Light Rays -->
+                    <g id="light-rays">
+                        <path id="ray-1" class="light-ray" d="" />
+                        <path id="ray-2" class="light-ray" d="" />
+                        <path id="ray-3" class="light-ray" d="" />
+                        <path id="ray-4" class="light-ray" d="" />
+                        <path id="ray-5" class="light-ray" d="" />
+                    </g>
+
+                    <!-- Focal Point Indicator -->
+                    <circle id="focal-point-marker" cx="0" cy="200" r="4" fill="#ef4444" opacity="0" />
+
+                    <!-- Red Hacker Laser System (Hidden by default) -->
+                    <g id="laser-system" opacity="0">
+                        <!-- Emitter Machine -->
+                        <rect x="260" y="-10" width="80" height="50" rx="4" fill="#0f172a" stroke="#ef4444" stroke-width="2" />
+                        <polygon points="280,40 320,40 300,70" fill="#ef4444" />
+                        <text x="300" y="25" fill="#ef4444" font-size="12" font-weight="bold" text-anchor="middle" font-family="monospace">EXCIMER</text>
+                        
+                        <!-- Beams -->
+                        <g id="laser-beams"></g>
+                        <!-- Sparks -->
+                        <g id="laser-sparks"></g>
+                    </g>
+                </svg>
+
+                <!-- Tags -->
+                <div class="absolute bottom-6 left-8 flex flex-col gap-1">
+                    <span class="text-[9px] font-mono text-slate-500 uppercase">Input: Coherent Parallel Rays</span>
+                    <span class="text-[9px] font-mono text-slate-500 uppercase">Index of Refraction (Cornea): n = 1.376</span>
+                </div>
+            </div>
+
+            <!-- Controls -->
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div class="glass-card p-6 rounded-2xl space-y-4">
+                    <div class="flex justify-between items-center">
+                        <label class="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Refractive Condition</label>
+                        <span id="condition-display" class="text-xs font-mono text-emerald-400">Emmetropia (Normal)</span>
+                    </div>
+                    <input type="range" id="condition-slider" min="-5" max="5" step="1" value="0" class="w-full h-1.5 bg-slate-800 rounded-lg appearance-none cursor-pointer">
+                    <div class="flex justify-between text-[9px] text-slate-500 uppercase">
+                        <span>Myopia (Steep)</span>
+                        <span>0</span>
+                        <span>Hyperopia (Flat)</span>
+                    </div>
+                </div>
+                
+                <div class="glass-card p-6 rounded-2xl flex flex-col justify-center gap-3">
+                    <label class="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Corrective Interventions</label>
+                    <div class="flex gap-2">
+                        <button id="btn-glasses" class="flex-1 py-2 bg-slate-800 hover:bg-slate-700 text-slate-300 font-bold rounded-lg transition-all border border-slate-600 text-[10px] uppercase">
+                            Equip Lenses
+                        </button>
+                        <button id="btn-laser" class="flex-1 py-2 bg-rose-900/40 hover:bg-rose-900/60 text-rose-400 font-bold rounded-lg transition-all border border-rose-800 text-[10px] uppercase flex items-center justify-center gap-1">
+                            <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"></path></svg>
+                            "Red Hacker" Laser
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Sidebar: Analytics & Data -->
+        <div class="lg:col-span-4 flex flex-col gap-6">
+            
+            <!-- Digital Readout -->
+            <div id="telemetry-panel" class="digital-readout rounded-3xl p-6 space-y-6 transition-colors duration-500">
+                <div class="flex justify-between items-center border-b border-current pb-3 opacity-60">
+                    <span class="text-[10px] font-bold tracking-tighter uppercase">Optical Telemetry</span>
+                    <span class="text-xs font-mono" id="focus-status">FOCUSED</span>
+                </div>
+
+                <div class="space-y-4">
+                    <div class="space-y-1">
+                        <label class="text-[9px] uppercase font-bold opacity-60">Refractive Power (Diopters)</label>
+                        <div id="data-diopter" class="text-4xl font-bold font-mono">0.00 D</div>
+                    </div>
+
+                    <div class="grid grid-cols-2 gap-4 pt-2">
+                        <div class="space-y-1">
+                            <label class="text-[9px] uppercase font-bold opacity-60">Focal Offset</label>
+                            <div id="data-offset" class="text-xl font-bold font-mono">0.0 mm</div>
+                        </div>
+                        <div class="space-y-1">
+                            <label class="text-[9px] uppercase font-bold opacity-60">Corneal K-Value</label>
+                            <div id="data-k" class="text-xl font-bold font-mono">43.0 D</div>
+                        </div>
+                    </div>
+
+                    <div id="intervention-status" class="pt-4 border-t border-current opacity-80 space-y-1 hidden">
+                        <label class="text-[9px] uppercase font-bold text-current">Active Intervention</label>
+                        <div id="intervention-label" class="text-lg font-bold">Concave Lens (-3.00 D)</div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Physics Logic Card -->
+            <div class="glass-card p-6 rounded-3xl space-y-4 flex-grow">
+                <h3 class="text-xs font-bold text-slate-400 uppercase tracking-widest flex items-center gap-2">
+                    <svg class="w-4 h-4 text-sky-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"></path><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"></path></svg>
+                    Vision Correction Physics
+                </h3>
+                
+                <div class="space-y-3">
+                    <div class="bg-slate-900/50 p-3 rounded-xl border border-slate-800">
+                        <div class="text-[10px] font-bold text-sky-400 mb-1">Myopia (Nearsighted)</div>
+                        <p class="text-[10px] text-slate-400 leading-snug">
+                            Cornea is too steep. Light converges before the retina. Fixed with a <strong>diverging (concave)</strong> lens or by flattening the central cornea with a laser.
+                        </p>
+                    </div>
+                    
+                    <div class="bg-slate-900/50 p-3 rounded-xl border border-slate-800">
+                        <div class="text-[10px] font-bold text-rose-400 mb-1">Hyperopia (Farsighted)</div>
+                        <p class="text-[10px] text-slate-400 leading-snug">
+                            Cornea is too flat. Light converges behind the retina. Fixed with a <strong>converging (convex)</strong> lens or by steepening the central cornea with a laser.
+                        </p>
+                    </div>
+
+                    <div class="bg-rose-900/20 p-3 rounded-xl border border-rose-900/50">
+                        <div class="text-[10px] font-bold text-rose-400 mb-1">"Red Hacker" Excimer Laser (LASIK/PRK)</div>
+                        <p class="text-[10px] text-rose-200/70 leading-snug">
+                            Instead of an external lens, ultraviolet laser pulses (193nm) vaporize specific patterns of corneal tissue to permanently alter its refractive power.
+                        </p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', () => {
+            const conditionSlider = document.getElementById('condition-slider');
+            const conditionDisplay = document.getElementById('condition-display');
+            const btnGlasses = document.getElementById('btn-glasses');
+            const btnLaser = document.getElementById('btn-laser');
+            
+            const corneaPath = document.getElementById('cornea-path');
+            const glassLens = document.getElementById('glass-lens');
+            const focalMarker = document.getElementById('focal-point-marker');
+            
+            const laserSystem = document.getElementById('laser-system');
+            const laserBeams = document.getElementById('laser-beams');
+            const laserSparks = document.getElementById('laser-sparks');
+            
+            const telePanel = document.getElementById('telemetry-panel');
+            const dataDiopter = document.getElementById('data-diopter');
+            const dataOffset = document.getElementById('data-offset');
+            const dataK = document.getElementById('data-k');
+            const focusStatus = document.getElementById('focus-status');
+            
+            const intStatus = document.getElementById('intervention-status');
+            const intLabel = document.getElementById('intervention-label');
+
+            const statusDot = document.getElementById('status-dot');
+            const statusText = document.getElementById('status-text');
+
+            // Optics geometry coordinates
+            const RETINA_X = 580; // Absolute X of retina back wall
+            const EYE_X = 450;
+            const LENS_X = EYE_X - 70; // 380
+            const CORNEA_BASE_X = EYE_X - 90; // 360
+            const GLASSES_X = 200;
+            
+            // State
+            let severity = 0; // -5 (Myopia) to +5 (Hyperopia)
+            let correctionMode = 'none'; // 'none', 'glasses', 'laser'
+            let isAnimating = false;
+
+            // Base Rays: Array of Y offsets from center (200)
+            const rayOffsets = [-80, -40, 0, 40, 80];
+
+            function getCorneaCurve(sev) {
+                // Base: Q -150 0 -90 90 (Control point X is -150 relative to Eye_X)
+                // Myopia (negative sev) -> steeper -> more negative ctrlX
+                // Hyperopia (positive sev) -> flatter -> less negative ctrlX
+                const baseCtrlX = -150;
+                const ctrlX = baseCtrlX + (sev * 8); 
+                return `M -90 -90 Q ${ctrlX} 0 -90 90`;
+            }
+
+            function getGlassLensPath(sev) {
+                if (sev === 0) return "";
+                // Concave (for Myopia, sev < 0) -> thick edges, thin center
+                if (sev < 0) {
+                    const depth = Math.abs(sev) * 5;
+                    return `M 180 100 Q ${180 + depth} 200 180 300 L 220 300 Q ${220 - depth} 200 220 100 Z`;
+                }
+                // Convex (for Hyperopia, sev > 0) -> thin edges, thick center
+                else {
+                    const depth = sev * 5;
+                    return `M 200 100 Q ${200 - depth} 200 200 300 Q ${200 + depth} 200 200 100 Z`;
+                }
+            }
+
+            function updateOptics() {
+                if (isAnimating) return;
+                
+                severity = parseInt(conditionSlider.value);
+                
+                // Effective severity after correction
+                let effSeverity = severity;
+                if (correctionMode === 'glasses' || correctionMode === 'laser') {
+                    effSeverity = 0; // Perfectly corrected
+                }
+
+                // 1. Update UI Text
+                if (severity < 0) {
+                    conditionDisplay.textContent = `Myopia (${severity.toFixed(2)} D)`;
+                    conditionDisplay.className = "text-xs font-mono text-rose-400";
+                } else if (severity > 0) {
+                    conditionDisplay.textContent = `Hyperopia (+${severity.toFixed(2)} D)`;
+                    conditionDisplay.className = "text-xs font-mono text-blue-400";
+                } else {
+                    conditionDisplay.textContent = `Emmetropia (Normal)`;
+                    conditionDisplay.className = "text-xs font-mono text-emerald-400";
+                }
+
+                // 2. Cornea Shape
+                // If laser has run, cornea physically changes to offset the innate severity
+                let currentCorneaSev = severity;
+                if (correctionMode === 'laser') {
+                    currentCorneaSev = 0; // Physically fixed
+                }
+                corneaPath.setAttribute('d', getCorneaCurve(currentCorneaSev));
+
+                // 3. Glasses Shape
+                if (correctionMode === 'glasses' && severity !== 0) {
+                    glassLens.setAttribute('d', getGlassLensPath(severity));
+                    glassLens.setAttribute('opacity', '1');
+                } else {
+                    glassLens.setAttribute('opacity', '0');
+                }
+
+                // 4. Calculate Focal Point
+                // Normal focus is exactly on retina (X=580)
+                // Myopia (eff < 0) focus is IN FRONT (e.g., 580 - 40)
+                // Hyperopia (eff > 0) focus is BEHIND (e.g., 580 + 40)
+                const focusX = RETINA_X + (effSeverity * 15);
+                const focusY = 200;
+
+                focalMarker.setAttribute('cx', focusX);
+                // focalMarker.setAttribute('opacity', effSeverity === 0 ? '0' : '1');
+
+                // 5. Draw Rays
+                rayOffsets.forEach((offset, index) => {
+                    const ray = document.getElementById(`ray-${index + 1}`);
+                    const startY = 200 + offset;
+                    
+                    let path = `M 0 ${startY}`;
+
+                    if (correctionMode === 'glasses' && severity !== 0) {
+                        // Ray hits glasses and diverges/converges slightly before hitting lens
+                        path += ` L ${GLASSES_X} ${startY}`;
+                        
+                        // Deflection amount depends on severity and distance from center
+                        // Myopia (sev < 0) -> concave -> rays spread out (deflect away from center)
+                        // Hyperopia (sev > 0) -> convex -> rays converge (deflect toward center)
+                        const deflection = (severity * offset * 0.1); 
+                        const lensHitY = startY + deflection;
+                        
+                        path += ` L ${LENS_X} ${lensHitY}`;
+                        
+                        // From Lens to Focus point
+                        path += ` L ${focusX} ${focusY}`;
+                        
+                        // Extend if focus is before retina
+                        if (focusX < RETINA_X) {
+                            const extRatio = (RETINA_X - LENS_X) / (focusX - LENS_X);
+                            const finalY = 200 + ((lensHitY - 200) * -1 * (extRatio - 1));
+                            path += ` L ${RETINA_X} ${finalY}`;
+                        }
+                    } else {
+                        // No glasses
+                        path += ` L ${LENS_X} ${startY}`;
+                        path += ` L ${focusX} ${focusY}`;
+                        
+                        // Extend past focus point if myopia
+                        if (focusX < RETINA_X) {
+                            // Calculate where it hits the retina using similar triangles
+                            const slope = (focusY - startY) / (focusX - LENS_X);
+                            const finalY = focusY + slope * (RETINA_X - focusX);
+                            path += ` L ${RETINA_X} ${finalY}`;
+                        }
+                    }
+
+                    ray.setAttribute('d', path);
+                });
+
+                // 6. Update Telemetry
+                dataDiopter.textContent = `${severity > 0 ? '+' : ''}${severity.toFixed(2)} D`;
+                dataOffset.textContent = `${(effSeverity * 0.5).toFixed(1)} mm`;
+                // K value (normal 43). Steep = higher K. Flat = lower K.
+                const kValue = 43.0 - (currentCorneaSev * 0.5);
+                dataK.textContent = `${kValue.toFixed(1)} D`;
+
+                if (effSeverity === 0) {
+                    if (correctionMode === 'laser') {
+                        telePanel.className = "digital-readout laser rounded-3xl p-6 space-y-6 transition-colors duration-500";
+                        focusStatus.textContent = "SURGICAL FOCUS";
+                    } else {
+                        telePanel.className = "digital-readout rounded-3xl p-6 space-y-6 transition-colors duration-500";
+                        focusStatus.textContent = "PERFECT FOCUS";
+                    }
+                    
+                    statusDot.className = "w-2.5 h-2.5 rounded-full bg-emerald-500 shadow-[0_0_10px_#10b981]";
+                    statusText.textContent = "Optical Bench Ready";
+                } else {
+                    telePanel.className = "digital-readout error rounded-3xl p-6 space-y-6 transition-colors duration-500";
+                    focusStatus.textContent = "BLURRED VISION";
+                    
+                    statusDot.className = "w-2.5 h-2.5 rounded-full bg-rose-500 shadow-[0_0_10px_#f43f5e]";
+                    statusText.textContent = "Refractive Error Detected";
+                }
+
+                // Interventions Display
+                if (correctionMode === 'none') {
+                    intStatus.classList.add('hidden');
+                } else {
+                    intStatus.classList.remove('hidden');
+                    if (correctionMode === 'glasses') {
+                        intLabel.textContent = `${severity < 0 ? 'Concave' : 'Convex'} Lens (${severity > 0 ? '+' : ''}${severity.toFixed(2)} D)`;
+                        intLabel.className = "text-lg font-bold text-emerald-400";
+                    } else if (correctionMode === 'laser') {
+                        intLabel.textContent = `Excimer Ablation Profile Active`;
+                        intLabel.className = "text-lg font-bold text-cyan-400";
+                    }
+                }
+            }
+
+            function deployLaser() {
+                if (severity === 0 || isAnimating) return;
+                isAnimating = true;
+                
+                // Set UI state
+                correctionMode = 'laser';
+                btnLaser.disabled = true;
+                btnGlasses.disabled = true;
+                conditionSlider.disabled = true;
+                
+                telePanel.className = "digital-readout laser rounded-3xl p-6 space-y-6 transition-colors duration-500";
+                focusStatus.textContent = "SURGERY IN PROGRESS";
+                intStatus.classList.remove('hidden');
+                intLabel.textContent = "Ablating Tissue...";
+                intLabel.className = "text-lg font-bold text-rose-500 animate-pulse";
+
+                // Show Laser System
+                laserSystem.setAttribute('opacity', '1');
+                laserBeams.innerHTML = '';
+                laserSparks.innerHTML = '';
+
+                // Create laser beams dropping down onto cornea (X around 340-360)
+                for (let i = 0; i < 8; i++) {
+                    const x = 330 + Math.random() * 40;
+                    const delay = Math.random() * 0.5;
+                    
+                    const line = document.createElementNS("http://www.w3.org/2000/svg", "line");
+                    line.setAttribute('x1', x);
+                    line.setAttribute('y1', 70); // From machine
+                    line.setAttribute('x2', x);
+                    line.setAttribute('y2', 200 + (Math.random() * 60 - 30)); // To cornea
+                    line.setAttribute('class', 'laser-beam');
+                    line.style.animationDelay = `${delay}s`;
+                    laserBeams.appendChild(line);
+
+                    // Sparks
+                    const spark = document.createElementNS("http://www.w3.org/2000/svg", "circle");
+                    spark.setAttribute('cx', x);
+                    spark.setAttribute('cy', line.getAttribute('y2'));
+                    spark.setAttribute('r', '2');
+                    spark.setAttribute('class', 'laser-spark');
+                    spark.style.setProperty('--tx', `${(Math.random() - 0.5) * 40}px`);
+                    spark.style.setProperty('--ty', `${-20 - Math.random() * 20}px`);
+                    spark.style.animationDelay = `${delay + 0.1}s`;
+                    spark.style.animationIterationCount = 'infinite';
+                    laserSparks.appendChild(spark);
+                }
+
+                // Morph Cornea after a delay
+                setTimeout(() => {
+                    isAnimating = false; // Allow updateOptics to run
+                    updateOptics(); // This will flatten/steepen the cornea SVG and fix rays
+                    
+                    // Stop laser after another short delay
+                    setTimeout(() => {
+                        laserSystem.setAttribute('opacity', '0');
+                        btnLaser.disabled = false;
+                        btnGlasses.disabled = false;
+                        conditionSlider.disabled = false;
+                    }, 800);
+
+                }, 1500);
+            }
+
+            // Events
+            conditionSlider.addEventListener('input', () => {
+                correctionMode = 'none'; // reset correction if sliding
+                updateOptics();
+            });
+
+            btnGlasses.addEventListener('click', () => {
+                if (severity === 0) return;
+                correctionMode = correctionMode === 'glasses' ? 'none' : 'glasses';
+                updateOptics();
+            });
+
+            btnLaser.addEventListener('click', deployLaser);
+
+            // Init
+            updateOptics();
+        });
+    </script>
+</body>
+</html>

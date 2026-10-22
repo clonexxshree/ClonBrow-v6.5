@@ -1,0 +1,523 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Clotting Cascade: Hemostasis in Action</title>
+    <style>
+        :root {
+            --bg-color: #f8fafc;
+            --panel-bg: #ffffff;
+            --text-main: #0f172a;
+            --text-muted: #475569;
+            --accent: #ef4444; /* Blood Red */
+            --border-color: #e2e8f0;
+            --vessel-bg: #fff1f2;
+            --fibrin-color: #fde047;
+            --factor-color: #3b82f6;
+        }
+
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+
+        body {
+            background-color: var(--bg-color);
+            color: var(--text-main);
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            padding: 20px;
+        }
+
+        .app-container {
+            display: flex;
+            flex-direction: row;
+            background: var(--panel-bg);
+            border-radius: 16px;
+            box-shadow: 0 10px 40px -10px rgba(0, 0, 0, 0.1);
+            overflow: hidden;
+            width: 100%;
+            max-width: 1200px;
+            border: 1px solid var(--border-color);
+        }
+
+        /* Sidebar & UI */
+        .sidebar {
+            width: 380px;
+            padding: 32px;
+            background: #ffffff;
+            border-right: 1px solid var(--border-color);
+            display: flex;
+            flex-direction: column;
+            z-index: 10;
+        }
+
+        .sidebar h1 {
+            font-size: 22px;
+            font-weight: 700;
+            margin-bottom: 12px;
+            color: #1e293b;
+        }
+
+        .description {
+            font-size: 14px;
+            line-height: 1.6;
+            color: var(--text-muted);
+            margin-bottom: 24px;
+        }
+
+        .controls {
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+            margin-bottom: 24px;
+        }
+
+        button {
+            width: 100%;
+            padding: 12px 16px;
+            color: white;
+            border: none;
+            border-radius: 8px;
+            font-size: 14px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.2s;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            gap: 8px;
+        }
+
+        button:active:not(:disabled) { transform: scale(0.98); }
+        button:disabled {
+            background-color: #cbd5e1 !important;
+            cursor: not-allowed;
+            color: #64748b;
+        }
+
+        #btnInjury { background-color: #64748b; }
+        #btnInjury:hover:not(:disabled) { background-color: #475569; }
+
+        #btnCascade { background-color: var(--factor-color); }
+        #btnCascade:hover:not(:disabled) { background-color: #2563eb; }
+
+        #btnFibrin { background-color: #8b5cf6; }
+        #btnFibrin:hover:not(:disabled) { background-color: #7c3aed; }
+
+        .status-card {
+            background: #f1f5f9;
+            border-left: 4px solid var(--accent);
+            padding: 16px;
+            border-radius: 0 8px 8px 0;
+            margin-bottom: 24px;
+            min-height: 120px;
+            transition: all 0.3s ease;
+        }
+
+        .status-card h3 {
+            font-size: 13px;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            color: var(--accent);
+            margin-bottom: 8px;
+        }
+
+        .status-card p {
+            font-size: 14px;
+            line-height: 1.5;
+            color: #334155;
+            margin: 0;
+        }
+
+        .legend {
+            margin-top: auto;
+            border-top: 1px solid var(--border-color);
+            padding-top: 20px;
+        }
+
+        .legend-item {
+            display: flex;
+            align-items: center;
+            margin-bottom: 8px;
+            font-size: 13px;
+            color: #334155;
+        }
+
+        /* Canvas & SVG Stacking */
+        .simulation-area {
+            flex: 1;
+            position: relative;
+            background: var(--vessel-bg);
+            min-height: 600px;
+            overflow: hidden;
+        }
+
+        #bloodCanvas {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            z-index: 1;
+        }
+
+        .svg-container {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            z-index: 2;
+            pointer-events: none;
+        }
+
+        /* Flowchart Styles */
+        .factor-node {
+            fill: #ffffff;
+            stroke: var(--factor-color);
+            stroke-width: 2;
+            transition: all 0.5s;
+        }
+        .factor-node.active {
+            fill: var(--factor-color);
+            filter: drop-shadow(0 0 8px rgba(59, 130, 246, 0.6));
+        }
+        .factor-text {
+            font-size: 10px;
+            font-weight: bold;
+            fill: var(--factor-color);
+            text-anchor: middle;
+            pointer-events: none;
+            transition: fill 0.5s;
+        }
+        .factor-node.active + .factor-text {
+            fill: #ffffff;
+        }
+
+        .flow-line {
+            stroke: #94a3b8;
+            stroke-width: 2;
+            fill: none;
+            stroke-dasharray: 5;
+            animation: dash 1s linear infinite;
+            opacity: 0.3;
+        }
+        .flow-line.active {
+            stroke: var(--factor-color);
+            opacity: 1;
+        }
+
+        @keyframes dash {
+            to { stroke-dashoffset: -10; }
+        }
+
+        @media (max-width: 900px) {
+            .app-container { flex-direction: column; }
+            .sidebar { width: 100%; border-right: none; }
+            .simulation-area { min-height: 400px; }
+        }
+    </style>
+</head>
+<body>
+
+    <div class="app-container">
+        
+        <aside class="sidebar">
+            <h1>Clotting Cascade</h1>
+            <p class="description">
+                Hemostasis is a complex process where blood transforms from a liquid to a gel to stop bleeding. This "cascade" of factors acts like a domino track, ending in a web of fibrin.
+            </p>
+
+            <div class="controls">
+                <button id="btnInjury">
+                    1. Trigger Vessel Injury
+                </button>
+                <button id="btnCascade" disabled>
+                    2. Start Enzyme Cascade
+                </button>
+                <button id="btnFibrin" disabled>
+                    3. Form Fibrin Web
+                </button>
+            </div>
+
+            <div class="status-card" id="statusCard">
+                <h3 id="statusTitle">Status: Normal Flow</h3>
+                <p id="statusDesc">Blood is flowing smoothly through the vessel. No coagulation factors are active.</p>
+            </div>
+
+            <div class="legend">
+                <div class="legend-item">
+                    <div style="width:14px; height:14px; background:var(--accent); border-radius:50%; margin-right:10px;"></div>
+                    <span>Red Blood Cell (RBC)</span>
+                </div>
+                <div class="legend-item">
+                    <div style="width:14px; height:14px; background:var(--fibrin-color); border-radius:2px; margin-right:10px; border:1px solid #ca8a04;"></div>
+                    <span>Fibrin Strand (Web)</span>
+                </div>
+                <div class="legend-item">
+                    <div style="width:14px; height:14px; border:2px solid var(--factor-color); border-radius:2px; margin-right:10px;"></div>
+                    <span>Coagulation Factor</span>
+                </div>
+            </div>
+        </aside>
+
+        <main class="simulation-area">
+            <canvas id="bloodCanvas" width="800" height="600"></canvas>
+
+            <svg class="svg-container" viewBox="0 0 800 600">
+                <!-- Vessel Walls -->
+                <path d="M 0 50 Q 400 30 800 50" stroke="#fecaca" stroke-width="20" fill="none" opacity="0.5"/>
+                <path d="M 0 550 Q 400 570 800 550" stroke="#fecaca" stroke-width="20" fill="none" opacity="0.5"/>
+
+                <!-- Injury Site (Hidden initially) -->
+                <g id="injury-site" style="opacity: 0; transition: opacity 0.5s;">
+                    <path d="M 350 40 L 450 40 L 430 15 L 370 15 Z" fill="#b91c1c"/>
+                    <text x="400" y="75" text-anchor="middle" font-size="12" font-weight="bold" fill="#b91c1c">VASCULAR INJURY</text>
+                </g>
+
+                <!-- THE CASCADE FLOWCHART (DOMINO TRACK) -->
+                <g id="flowchart" style="opacity: 0.2; transition: opacity 0.5s;">
+                    <!-- Intrinsic Path -->
+                    <rect id="node-XII" x="50" y="100" width="40" height="40" rx="4" class="factor-node"/>
+                    <text x="70" y="125" class="factor-text">XII</text>
+                    
+                    <path id="line-1" d="M 90 120 L 120 120" class="flow-line"/>
+                    
+                    <rect id="node-XI" x="120" y="100" width="40" height="40" rx="4" class="factor-node"/>
+                    <text x="140" y="125" class="factor-text">XI</text>
+
+                    <path id="line-2" d="M 160 120 L 190 120" class="flow-line"/>
+
+                    <rect id="node-IX" x="190" y="100" width="40" height="40" rx="4" class="factor-node"/>
+                    <text x="210" y="125" class="factor-text">IX</text>
+
+                    <!-- Common Path Merger -->
+                    <path id="line-3" d="M 230 120 Q 280 120 300 170" class="flow-line"/>
+                    
+                    <rect id="node-X" x="280" y="170" width="40" height="40" rx="4" class="factor-node"/>
+                    <text x="300" y="195" class="factor-text">X</text>
+
+                    <!-- Prothrombin to Thrombin -->
+                    <path id="line-4" d="M 300 210 L 300 260" class="flow-line"/>
+
+                    <rect id="node-II" x="260" y="260" width="80" height="40" rx="4" class="factor-node"/>
+                    <text x="300" y="285" class="factor-text">Prothrombin</text>
+
+                    <path id="line-5" d="M 300 300 L 300 350" class="flow-line"/>
+
+                    <rect id="node-IIa" x="260" y="350" width="80" height="40" rx="4" class="factor-node"/>
+                    <text x="300" y="375" class="factor-text">THROMBIN</text>
+
+                    <!-- Fibrinogen to Fibrin -->
+                    <path id="line-6" d="M 300 390 L 300 440" class="flow-line"/>
+
+                    <rect id="node-I" x="250" y="440" width="100" height="40" rx="4" class="factor-node"/>
+                    <text x="300" y="465" class="factor-text">Fibrinogen</text>
+                    
+                    <path id="line-7" d="M 300 480 L 300 520" class="flow-line"/>
+                    <text x="300" y="540" text-anchor="middle" font-size="14" font-weight="bold" fill="#ca8a04">FIBRIN MESH</text>
+                </g>
+            </svg>
+        </main>
+    </div>
+
+    <script>
+        const btnInjury = document.getElementById('btnInjury');
+        const btnCascade = document.getElementById('btnCascade');
+        const btnFibrin = document.getElementById('btnFibrin');
+        const statusTitle = document.getElementById('statusTitle');
+        const statusDesc = document.getElementById('statusDesc');
+        const statusCard = document.getElementById('statusCard');
+
+        // Canvas Setup
+        const canvas = document.getElementById('bloodCanvas');
+        const ctx = canvas.getContext('2d');
+        
+        let rbcArray = [];
+        let fibrinStrands = [];
+        let simulationState = {
+            injury: false,
+            fibrinActive: false,
+            flowSpeed: 2
+        };
+
+        class RBC {
+            constructor() {
+                this.reset();
+                this.x = Math.random() * canvas.width;
+            }
+            reset() {
+                this.x = -20;
+                this.y = 100 + Math.random() * 400;
+                this.vx = 1.5 + Math.random() * 1.5;
+                this.vy = (Math.random() - 0.5) * 0.5;
+                this.radius = 8 + Math.random() * 4;
+                this.isTrapped = false;
+                this.rotation = Math.random() * Math.PI;
+            }
+            update() {
+                if (this.isTrapped) return;
+
+                // Move
+                this.x += this.vx * simulationState.flowSpeed;
+                this.y += this.vy;
+
+                // If injury active, pull RBCs slightly towards it if they are near
+                if (simulationState.injury && !simulationState.fibrinActive) {
+                    if (this.x > 300 && this.x < 500 && this.y < 150) {
+                        this.vy -= 0.1; // Pulling towards injury
+                    }
+                }
+
+                // Check for trap in fibrin mesh
+                if (simulationState.fibrinActive) {
+                    // Mesh exists mostly in the 300-500 x-range and 40-200 y-range
+                    if (this.x > 320 && this.x < 480 && this.y < 150) {
+                        if (Math.random() < 0.05) { // Probability of getting caught
+                            this.isTrapped = true;
+                        }
+                    }
+                }
+
+                if (this.x > canvas.width + 20) this.reset();
+            }
+            draw() {
+                ctx.save();
+                ctx.translate(this.x, this.y);
+                ctx.rotate(this.rotation);
+                
+                // RBC Biconcave look
+                ctx.beginPath();
+                ctx.ellipse(0, 0, this.radius, this.radius * 0.7, 0, 0, Math.PI * 2);
+                ctx.fillStyle = '#ef4444';
+                ctx.fill();
+                
+                // Inner dent
+                ctx.beginPath();
+                ctx.ellipse(0, 0, this.radius * 0.6, this.radius * 0.4, 0, 0, Math.PI * 2);
+                ctx.fillStyle = '#b91c1c';
+                ctx.fill();
+
+                ctx.restore();
+            }
+        }
+
+        // Initialize RBCs
+        for(let i=0; i<40; i++) rbcArray.push(new RBC());
+
+        function drawFibrin() {
+            if (!simulationState.fibrinActive) return;
+            
+            ctx.strokeStyle = 'rgba(253, 224, 71, 0.6)';
+            ctx.lineWidth = 2;
+            
+            // Draw randomized interlinking mesh at the injury site
+            for (let strand of fibrinStrands) {
+                ctx.beginPath();
+                ctx.moveTo(strand.x1, strand.y1);
+                ctx.lineTo(strand.x2, strand.y2);
+                ctx.stroke();
+            }
+        }
+
+        function animate() {
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+            
+            drawFibrin();
+            
+            for (let rbc of rbcArray) {
+                rbc.update();
+                rbc.draw();
+            }
+            
+            requestAnimationFrame(animate);
+        }
+        animate();
+
+        // --- INTERACTION LOGIC ---
+
+        const wait = ms => new Promise(r => setTimeout(r, ms));
+
+        function setStatus(title, desc, accent) {
+            statusTitle.textContent = title;
+            statusDesc.textContent = desc;
+            statusTitle.style.color = accent;
+            statusCard.style.borderLeftColor = accent;
+        }
+
+        // Step 1: Injury
+        btnInjury.addEventListener('click', () => {
+            btnInjury.disabled = true;
+            simulationState.injury = true;
+            document.getElementById('injury-site').style.opacity = '1';
+            document.getElementById('flowchart').style.opacity = '1';
+            
+            setStatus("Status: Hemorrhage", "Vascular injury detected! Blood is escaping. Platelets and damaged tissue are releasing triggers for the cascade.", "#b91c1c");
+            
+            setTimeout(() => {
+                btnCascade.disabled = false;
+            }, 1000);
+        });
+
+        // Step 2: Cascade Activation
+        btnCascade.addEventListener('click', async () => {
+            btnCascade.disabled = true;
+            setStatus("Status: Activating Cascade", "Factors are activating in a chain reaction (Domino Effect). Factor XII triggers XI, then IX, and finally Factor X.", "#3b82f6");
+
+            const sequence = [
+                {id: 'node-XII', line: 'line-1'},
+                {id: 'node-XI', line: 'line-2'},
+                {id: 'node-IX', line: 'line-3'},
+                {id: 'node-X', line: 'line-4'},
+                {id: 'node-II', line: 'line-5'},
+                {id: 'node-IIa', line: 'line-6'},
+                {id: 'node-I', line: 'line-7'}
+            ];
+
+            for (let step of sequence) {
+                document.getElementById(step.id).classList.add('active');
+                if (step.line) document.getElementById(step.line).classList.add('active');
+                
+                if (step.id === 'node-IIa') {
+                    setStatus("Status: Thrombin Burst", "Prothrombin has been converted to Thrombin, the central enzyme of the coagulation system.", "#8b5cf6");
+                }
+                
+                await wait(600);
+            }
+
+            setStatus("Status: Fibrinogen Activation", "Thrombin is now converting soluble Fibrinogen into insoluble Fibrin strands.", "#ca8a04");
+            btnFibrin.disabled = false;
+        });
+
+        // Step 3: Fibrin Web
+        btnFibrin.addEventListener('click', async () => {
+            btnFibrin.disabled = true;
+            simulationState.fibrinActive = true;
+            
+            // Create static mesh points
+            const centerX = 400;
+            const centerY = 60;
+            for (let i = 0; i < 50; i++) {
+                fibrinStrands.push({
+                    x1: centerX - 100 + Math.random() * 200,
+                    y1: centerY - 40 + Math.random() * 120,
+                    x2: centerX - 100 + Math.random() * 200,
+                    y2: centerY - 40 + Math.random() * 120
+                });
+            }
+
+            setStatus("Status: Clot Formation", "A sticky mesh of Fibrin is trapping RBCs and Platelets, creating a physical plug to seal the wound.", "#ca8a04");
+            
+            await wait(3000);
+            
+            setStatus("Status: Stable Homeostasis", "The clot is secure. Bleeding has stopped. The vessel can now begin the healing process.", "#10b981");
+        });
+    </script>
+</body>
+</html>

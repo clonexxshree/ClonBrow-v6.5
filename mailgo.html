@@ -1,0 +1,646 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>MailGo | Comprehensive Comms</title>
+    
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Nunito:wght@400;600;700;800;900&display=swap" rel="stylesheet">
+    
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    fontFamily: { sans: ['Nunito', 'sans-serif'] },
+                    colors: {
+                        duo: {
+                            dark: '#1e293b', blue: '#1cb0f6', green: '#58cc02', 
+                            red: '#ff4b4b', yellow: '#ffc800', purple: '#ce82ff', 
+                            gray: '#e5e7eb', bg: '#f8f9fa'
+                        }
+                    }
+                }
+            }
+        }
+    </script>
+
+    <style>
+        body { font-family: 'Nunito', sans-serif; background-color: #f8f9fa; overscroll-behavior-y: none; }
+        .bg-dots { background-image: radial-gradient(#cbd5e1 2px, transparent 2px); background-size: 24px 24px; }
+
+        .duo-card { background-color: white; border: 3px solid #1e293b; border-radius: 20px; box-shadow: 6px 6px 0px #1e293b; }
+        
+        .duo-btn {
+            border: 3px solid #1e293b; border-radius: 12px; font-weight: 800; transition: all 0.1s; cursor: pointer;
+            box-shadow: 0px 4px 0px #1e293b; display: inline-flex; align-items: center; justify-content: center;
+        }
+        .duo-btn:active { transform: translateY(4px); box-shadow: 0px 0px 0px #1e293b; }
+
+        .duo-input {
+            background-color: #f8fafc; border: 3px solid #cbd5e1; border-radius: 12px; padding: 12px;
+            font-weight: 700; color: #1e293b; outline: none; transition: all 0.2s;
+        }
+        .duo-input:focus { border-color: #1cb0f6; background-color: white; }
+
+        .mail-row { border-bottom: 2px solid #e5e7eb; cursor: pointer; transition: background 0.1s; }
+        .mail-row:hover { background-color: #f1f5f9; }
+        .mail-row.unread { background-color: #e0f2fe; border-left: 4px solid #1cb0f6; }
+
+        ::-webkit-scrollbar { width: 8px; height: 8px; }
+        ::-webkit-scrollbar-track { background: transparent; }
+        ::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 10px; border: 2px solid #f8f9fa; }
+        
+        .rt-btn { width: 36px; height: 36px; border-radius: 8px; background: white; border: 2px solid #e5e7eb; color: #64748b; font-weight: bold; transition: all 0.2s; display: flex; align-items: center; justify-content: center; }
+        .rt-btn:hover { background: #f1f5f9; color: #1e293b; border-color: #94a3b8; }
+        .rt-btn.active { background: #e2e8f0; color: #1cb0f6; border-color: #1cb0f6; }
+        
+        .editor-area[contenteditable]:empty:before { content: attr(placeholder); color: #94a3b8; pointer-events: none; display: block; }
+        .editor-area h1 { font-size: 1.5rem; font-weight: 900; margin-bottom: 0.5rem; }
+        .editor-area h2 { font-size: 1.25rem; font-weight: 800; margin-bottom: 0.5rem; }
+        .editor-area a { color: #1cb0f6; text-decoration: underline; }
+        .editor-area ul { list-style-type: disc; padding-left: 1.5rem; }
+        .editor-area ol { list-style-type: decimal; padding-left: 1.5rem; }
+
+        /* Fullscreen Expansion Classes */
+        .is-fullscreen {
+            position: fixed !important;
+            inset: 0 !important;
+            z-index: 100 !important;
+            border-radius: 0 !important;
+            max-width: 100% !important;
+        }
+    </style>
+</head>
+<body class="h-screen w-screen overflow-hidden flex flex-col text-duo-dark bg-dots">
+
+    <!-- Auth Modal -->
+    <div id="login-modal" class="fixed inset-0 bg-duo-dark/90 backdrop-blur-sm z-50 flex items-center justify-center p-4 transition-opacity duration-300">
+        <div class="duo-card max-w-md w-full p-8 text-center bg-white relative overflow-hidden">
+            <div class="w-20 h-20 bg-duo-blue rounded-2xl border-4 border-duo-dark mx-auto mb-6 flex items-center justify-center text-white text-4xl shadow-[4px_4px_0_#1e293b]">
+                <i class="fas fa-envelope-open-text"></i>
+            </div>
+            <h2 class="text-3xl font-black mb-2">MailGo Cloud</h2>
+            <p class="font-bold text-slate-500 mb-6">Connect to the comms network.</p>
+            
+            <div class="space-y-4 text-left">
+                <input type="text" id="login-name" class="duo-input w-full text-lg" placeholder="Full Name (e.g. John Doe)">
+                <input type="email" id="login-email" class="duo-input w-full text-lg" placeholder="Email (e.g. john@school.edu)" onkeypress="if(event.key === 'Enter') initApp()">
+                <button onclick="initApp()" class="duo-btn bg-duo-green text-white w-full py-4 text-xl mt-4 uppercase">
+                    Connect Inbox <i class="fas fa-cloud-download-alt ml-2"></i>
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Main App Container -->
+    <div id="app-container" class="hidden flex-1 w-full opacity-0 transition-opacity duration-500 flex-col overflow-hidden">
+        <!-- Header -->
+        <header class="h-16 bg-white border-b-[3px] border-duo-dark px-6 flex items-center justify-between shrink-0 shadow-sm z-20">
+            <div class="flex items-center gap-4">
+                <button onclick="window.location.href='../Presentations/schooler.html'" class="w-10 h-10 duo-btn bg-white flex items-center justify-center text-slate-500 hover:text-duo-dark">
+                    <i class="fas fa-arrow-left"></i>
+                </button>
+                <div class="flex items-center gap-2">
+                    <div class="w-8 h-8 bg-duo-blue rounded-lg border-2 border-duo-dark flex items-center justify-center text-white text-sm shadow-[2px_2px_0_#1e293b]">
+                        <i class="fas fa-paper-plane"></i>
+                    </div>
+                    <h1 class="text-xl font-black tracking-tight hidden sm:block">MailGo Cloud</h1>
+                    <span id="sync-status" class="ml-2 text-xs font-bold text-slate-400 bg-slate-100 px-2 py-1 rounded-md border border-slate-300 flex items-center">
+                        <i class="fas fa-circle text-duo-green text-[8px] mr-1 animate-pulse"></i> Live
+                    </span>
+                </div>
+            </div>
+            <div class="flex items-center gap-4">
+                <div class="hidden sm:flex flex-col items-end">
+                    <span id="header-user-name" class="font-black text-sm leading-tight">User</span>
+                    <span id="header-user-email" class="font-bold text-slate-400 text-xs">user@email.com</span>
+                </div>
+                <img id="header-avatar" src="" onclick="logout()" title="Logout" class="w-10 h-10 rounded-xl border-2 border-duo-dark bg-slate-100 shadow-[2px_2px_0_#1e293b] cursor-pointer hover:scale-105 transition-transform">
+            </div>
+        </header>
+
+        <div class="flex-1 flex overflow-hidden relative w-full h-full">
+            <!-- Sidebar -->
+            <aside class="w-64 bg-slate-50 border-r-[3px] border-duo-dark flex flex-col shrink-0 z-10 hidden md:flex h-full">
+                <div class="p-6 pb-2">
+                    <button onclick="showCompose()" class="duo-btn bg-duo-blue text-white w-full py-3 text-lg shadow-[4px_4px_0_#1e293b] uppercase tracking-wide">
+                        <i class="fas fa-pen mr-2"></i> Compose
+                    </button>
+                </div>
+                <nav class="flex-1 overflow-y-auto p-4 space-y-2 font-bold text-slate-600">
+                    <button onclick="switchFolder('inbox')" id="nav-inbox" class="w-full flex items-center justify-between p-3 rounded-xl hover:bg-slate-200 transition-colors bg-white border-2 border-duo-dark shadow-[2px_2px_0_#1e293b] text-duo-dark">
+                        <span class="flex items-center"><i class="fas fa-inbox w-6 text-duo-blue"></i> Inbox</span>
+                        <span id="badge-inbox" class="bg-duo-blue text-white text-xs px-2 py-0.5 rounded-full hidden">0</span>
+                    </button>
+                    <button onclick="switchFolder('starred')" id="nav-starred" class="w-full flex items-center justify-between p-3 rounded-xl hover:bg-slate-200 transition-colors border-2 border-transparent">
+                        <span class="flex items-center"><i class="fas fa-star w-6 text-duo-yellow"></i> Starred</span>
+                    </button>
+                    <button onclick="switchFolder('sent')" id="nav-sent" class="w-full flex items-center justify-between p-3 rounded-xl hover:bg-slate-200 transition-colors border-2 border-transparent">
+                        <span class="flex items-center"><i class="fas fa-paper-plane w-6 text-duo-green"></i> Sent</span>
+                    </button>
+                    <button onclick="switchFolder('trash')" id="nav-trash" class="w-full flex items-center justify-between p-3 rounded-xl hover:bg-slate-200 transition-colors border-2 border-transparent">
+                        <span class="flex items-center"><i class="fas fa-trash-alt w-6 text-duo-red"></i> Trash</span>
+                    </button>
+                </nav>
+            </aside>
+
+            <main class="flex-1 bg-white relative flex flex-col overflow-hidden h-full">
+                
+                <!-- List View (Default) -->
+                <div id="view-list" class="flex-1 flex flex-col overflow-hidden h-full w-full bg-white">
+                    <div class="p-4 border-b-2 border-slate-200 flex justify-between items-center bg-slate-50 shrink-0">
+                        <div class="flex items-center gap-3">
+                            <button onclick="showCompose()" class="md:hidden duo-btn bg-duo-blue text-white w-10 h-10 flex items-center justify-center"><i class="fas fa-pen"></i></button>
+                            <h2 id="folder-title" class="text-2xl font-black capitalize">Inbox</h2>
+                            <button onclick="fetchMails()" class="w-8 h-8 rounded-full bg-slate-200 text-slate-500 hover:bg-duo-blue hover:text-white transition-colors flex items-center justify-center"><i class="fas fa-sync-alt text-xs"></i></button>
+                        </div>
+                        <div class="relative">
+                            <i class="fas fa-search absolute left-3 top-1/2 -translate-y-1/2 text-slate-400"></i>
+                            <input type="text" id="mail-search" oninput="renderMailList()" placeholder="Search cloud..." class="bg-white border-2 border-slate-300 rounded-lg pl-9 pr-4 py-2 font-bold text-sm outline-none focus:border-duo-blue w-40 sm:w-64">
+                        </div>
+                    </div>
+                    <div id="mail-loading" class="flex flex-col items-center justify-center h-full text-slate-400 font-bold">
+                        <i class="fas fa-circle-notch fa-spin text-4xl text-duo-blue mb-4"></i> Syncing with Cloud...
+                    </div>
+                    <div id="mail-list" class="flex-1 overflow-y-auto hidden"></div>
+                </div>
+
+                <!-- Read View (Fullscreen capable) -->
+                <div id="view-read" class="absolute inset-0 bg-white z-20 flex-col hidden transition-all duration-300">
+                    <div class="p-4 border-b-2 border-slate-200 flex items-center gap-4 bg-slate-50 shrink-0">
+                        <button onclick="closeRead()" class="w-10 h-10 duo-btn bg-white text-slate-500 hover:text-duo-dark shadow-sm"><i class="fas fa-arrow-left"></i></button>
+                        <div class="flex-1"></div>
+                        <div class="flex gap-2">
+                            <button onclick="printMail()" class="w-10 h-10 duo-btn bg-white text-slate-500 hover:text-duo-dark shadow-sm" title="Print/Save as PDF"><i class="fas fa-print"></i></button>
+                            <div class="w-px h-10 bg-slate-300 mx-1"></div>
+                            <button onclick="replyMail()" class="w-10 h-10 duo-btn bg-white text-slate-500 hover:text-duo-blue shadow-sm" title="Reply"><i class="fas fa-reply"></i></button>
+                            <button onclick="forwardMail()" class="w-10 h-10 duo-btn bg-white text-slate-500 hover:text-duo-green shadow-sm" title="Forward"><i class="fas fa-share"></i></button>
+                            <button onclick="toggleStarRead()" id="btn-star-read" class="w-10 h-10 duo-btn bg-white text-slate-400 hover:text-duo-yellow shadow-sm"><i class="fas fa-star"></i></button>
+                            <button onclick="trashReadMail()" class="w-10 h-10 duo-btn bg-white text-duo-red shadow-sm"><i class="fas fa-trash"></i></button>
+                            <button onclick="toggleFullscreen('view-read')" class="w-10 h-10 duo-btn bg-slate-800 text-white shadow-sm ml-2 hidden md:flex" title="Toggle Fullscreen"><i class="fas fa-expand"></i></button>
+                        </div>
+                    </div>
+                    
+                    <div class="flex-1 overflow-y-auto p-6 md:p-12 flex flex-col w-full mx-auto" id="printable-area">
+                        <div class="max-w-4xl mx-auto w-full">
+                            <h2 class="text-3xl md:text-4xl font-black mb-8 text-duo-dark break-words leading-tight" id="read-subject">Subject</h2>
+                            
+                            <div class="flex items-start gap-4 mb-8 bg-slate-50 p-4 md:p-6 rounded-2xl border-2 border-slate-200">
+                                <img id="read-avatar" src="" class="w-16 h-16 rounded-full border-[3px] border-slate-300 bg-white mt-1">
+                                <div class="flex-1 min-w-0">
+                                    <div class="flex flex-col sm:flex-row sm:items-baseline justify-between mb-2">
+                                        <div class="flex items-baseline gap-2 truncate">
+                                            <h3 class="font-black text-xl truncate text-duo-dark" id="read-sender-name">Sender</h3>
+                                            <span class="text-sm font-bold text-slate-500 truncate" id="read-sender-email">&lt;email&gt;</span>
+                                        </div>
+                                        <div class="text-sm font-bold text-slate-400 shrink-0 mt-1 sm:mt-0" id="read-time">Time</div>
+                                    </div>
+                                    <div class="text-xs font-bold text-slate-500 flex flex-col gap-1 mt-3 bg-white p-3 rounded-lg border border-slate-200">
+                                        <div class="truncate"><span class="text-slate-400 w-8 inline-block">To:</span> <span id="read-to" class="text-duo-dark"></span></div>
+                                        <div id="read-cc-container" class="truncate hidden mt-1 border-t border-slate-100 pt-1"><span class="text-slate-400 w-8 inline-block">Cc:</span> <span id="read-cc" class="text-duo-dark"></span></div>
+                                    </div>
+                                </div>
+                            </div>
+                            
+                            <div id="read-body" class="text-lg leading-relaxed text-slate-800 whitespace-pre-wrap font-medium"></div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Comprehensive Compose View (Fullscreen capable) -->
+                <div id="view-compose" class="absolute inset-0 bg-white z-30 flex-col hidden transition-all duration-300">
+                    <div class="p-4 border-b-2 border-slate-200 flex items-center justify-between bg-slate-50 shrink-0">
+                        <div class="flex items-center gap-4">
+                            <button onclick="closeCompose()" class="w-10 h-10 duo-btn bg-white text-slate-500 hover:text-duo-dark shadow-sm"><i class="fas fa-times"></i></button>
+                            <h2 class="text-xl font-black hidden sm:block">New Message</h2>
+                        </div>
+                        <div class="flex items-center gap-3">
+                            <button onclick="toggleFullscreen('view-compose')" class="w-10 h-10 duo-btn bg-slate-200 text-slate-600 hover:bg-slate-300 shadow-sm hidden md:flex"><i class="fas fa-expand"></i></button>
+                            <button onclick="sendMail()" id="btn-send" class="duo-btn bg-duo-green text-white px-8 py-2.5 shadow-sm text-lg"><i class="fas fa-paper-plane mr-2"></i> Send</button>
+                        </div>
+                    </div>
+                    
+                    <div class="flex-1 flex flex-col overflow-hidden w-full mx-auto bg-white">
+                        <div class="max-w-5xl mx-auto w-full flex flex-col h-full shadow-[0_0_40px_rgba(0,0,0,0.05)] border-x border-slate-100">
+                            <!-- Headers -->
+                            <div class="px-6 md:px-10 py-3 border-b border-slate-200 flex items-center bg-white">
+                                <span class="text-slate-400 font-bold w-12 shrink-0">To</span>
+                                <input type="text" id="comp-to" class="flex-1 bg-transparent font-bold outline-none text-duo-dark py-2 text-lg" placeholder="recipient@school.edu">
+                                <button onclick="document.getElementById('comp-cc-row').classList.toggle('hidden')" class="text-xs font-bold text-slate-400 hover:text-duo-blue px-2 bg-slate-100 rounded-md py-1">Cc / Bcc</button>
+                            </div>
+                            
+                            <div id="comp-cc-row" class="hidden flex-col border-b border-slate-200 px-6 md:px-10 py-3 bg-slate-50">
+                                <div class="flex items-center mb-3">
+                                    <span class="text-slate-400 font-bold w-12 shrink-0">Cc</span>
+                                    <input type="text" id="comp-cc" class="flex-1 bg-transparent font-bold outline-none text-duo-dark">
+                                </div>
+                                <div class="flex items-center">
+                                    <span class="text-slate-400 font-bold w-12 shrink-0">Bcc</span>
+                                    <input type="text" id="comp-bcc" class="flex-1 bg-transparent font-bold outline-none text-duo-dark">
+                                </div>
+                            </div>
+                            
+                            <div class="px-6 md:px-10 py-3 border-b border-slate-200 flex items-center bg-white">
+                                <span class="text-slate-400 font-bold w-12 shrink-0">Subj</span>
+                                <input type="text" id="comp-subject" class="flex-1 bg-transparent font-black text-2xl outline-none text-duo-dark py-2" placeholder="What's this about?">
+                            </div>
+                            
+                            <!-- Comprehensive Rich Text Toolbar -->
+                            <div class="bg-slate-50 px-6 md:px-10 py-3 border-b border-slate-200 flex flex-wrap items-center gap-2 shrink-0">
+                                <button onclick="formatText('bold')" class="rt-btn" title="Bold"><i class="fas fa-bold"></i></button>
+                                <button onclick="formatText('italic')" class="rt-btn" title="Italic"><i class="fas fa-italic"></i></button>
+                                <button onclick="formatText('underline')" class="rt-btn" title="Underline"><i class="fas fa-underline"></i></button>
+                                <button onclick="formatText('strikeThrough')" class="rt-btn" title="Strikethrough"><i class="fas fa-strikethrough"></i></button>
+                                
+                                <div class="w-px h-6 bg-slate-300 mx-1"></div>
+                                
+                                <button onclick="formatText('formatBlock', 'H1')" class="rt-btn font-black text-sm" title="Heading 1">H1</button>
+                                <button onclick="formatText('formatBlock', 'H2')" class="rt-btn font-black text-sm" title="Heading 2">H2</button>
+                                <button onclick="formatText('formatBlock', 'P')" class="rt-btn font-bold text-sm" title="Paragraph">P</button>
+
+                                <div class="w-px h-6 bg-slate-300 mx-1"></div>
+                                
+                                <button onclick="formatText('justifyLeft')" class="rt-btn" title="Align Left"><i class="fas fa-align-left"></i></button>
+                                <button onclick="formatText('justifyCenter')" class="rt-btn" title="Align Center"><i class="fas fa-align-center"></i></button>
+                                <button onclick="formatText('justifyRight')" class="rt-btn" title="Align Right"><i class="fas fa-align-right"></i></button>
+                                
+                                <div class="w-px h-6 bg-slate-300 mx-1"></div>
+                                
+                                <button onclick="formatText('insertUnorderedList')" class="rt-btn" title="Bullet List"><i class="fas fa-list-ul"></i></button>
+                                <button onclick="formatText('insertOrderedList')" class="rt-btn" title="Numbered List"><i class="fas fa-list-ol"></i></button>
+                                
+                                <div class="w-px h-6 bg-slate-300 mx-1"></div>
+                                
+                                <button onclick="insertLink()" class="rt-btn" title="Insert Link"><i class="fas fa-link"></i></button>
+                            </div>
+                            
+                            <!-- Main Editor -->
+                            <div id="comp-body" contenteditable="true" class="editor-area flex-1 px-6 md:px-10 py-6 outline-none text-lg leading-relaxed text-slate-800 font-medium overflow-y-auto bg-white" placeholder="Type your message here..."></div>
+                            
+                            <!-- Mock Attachments Bar -->
+                            <div class="bg-slate-50 border-t border-slate-200 p-4 shrink-0 flex items-center justify-between">
+                                <div class="flex gap-2" id="attachment-pills">
+                                    <!-- Attachments will appear here -->
+                                </div>
+                                <button onclick="simulateAttachment()" class="text-slate-500 hover:text-duo-blue font-bold text-sm flex items-center gap-2">
+                                    <i class="fas fa-paperclip"></i> Attach File
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+            </main>
+        </div>
+    </div>
+
+    <script>
+        const CLOUD_API = 'https://clonexxshree.pythonanywhere.com/api';
+        let currentUser = {};
+        let cloudMails = [];
+        let currentFolder = 'inbox';
+        let openMailId = null;
+
+        // --- AUTH & INIT ---
+        function initApp() {
+            let stored = localStorage.getItem('clonbrow_active_user');
+            if(stored) {
+                currentUser = JSON.parse(stored);
+            } else {
+                const name = document.getElementById('login-name').value.trim();
+                const email = document.getElementById('login-email').value.trim();
+                if(!name || !email) return alert("Enter name and email.");
+                currentUser = { name, email, domain: email.split('@')[1] || 'demo.edu' };
+                localStorage.setItem('clonbrow_active_user', JSON.stringify(currentUser));
+            }
+
+            document.getElementById('login-modal').classList.add('hidden');
+            const app = document.getElementById('app-container');
+            app.classList.remove('hidden');
+            setTimeout(() => app.style.opacity = '1', 50);
+
+            document.getElementById('header-user-name').innerText = currentUser.name;
+            document.getElementById('header-user-email').innerText = currentUser.email;
+            document.getElementById('header-avatar').src = currentUser.avatar || `https://api.dicebear.com/7.x/bottts/svg?seed=${currentUser.email}`;
+
+            fetchMails();
+        }
+
+        function logout() {
+            localStorage.removeItem('clonbrow_active_user');
+            location.reload();
+        }
+
+        // --- CLOUD SYNC ---
+        async function fetchMails() {
+            document.getElementById('mail-list').classList.add('hidden');
+            document.getElementById('mail-loading').classList.remove('hidden');
+            
+            try {
+                const res = await fetch(`${CLOUD_API}/mails/sync?email=${encodeURIComponent(currentUser.email)}`);
+                if(!res.ok) throw new Error("Cloud offline");
+                cloudMails = await res.json();
+                renderMailList();
+            } catch(e) {
+                console.warn("Using offline fallback mode");
+                cloudMails = []; 
+                renderMailList();
+            }
+        }
+
+        // --- UI NAVIGATION ---
+        function switchFolder(folder) {
+            currentFolder = folder;
+            ['inbox', 'starred', 'sent', 'trash'].forEach(f => {
+                const btn = document.getElementById(`nav-${f}`);
+                if(f === folder) {
+                    btn.classList.add('bg-white', 'border-duo-dark', 'shadow-[2px_2px_0_#1e293b]', 'text-duo-dark');
+                    btn.classList.remove('border-transparent');
+                } else {
+                    btn.classList.remove('bg-white', 'border-duo-dark', 'shadow-[2px_2px_0_#1e293b]', 'text-duo-dark');
+                    btn.classList.add('border-transparent');
+                }
+            });
+            document.getElementById('folder-title').innerText = folder;
+            renderMailList();
+        }
+
+        // Extracts plain text from HTML safely for snippet preview
+        function extractSnippet(htmlStr) {
+            let tmp = document.createElement("DIV");
+            tmp.innerHTML = htmlStr;
+            return tmp.textContent || tmp.innerText || "";
+        }
+
+        function renderMailList() {
+            const list = document.getElementById('mail-list');
+            const search = document.getElementById('mail-search').value.toLowerCase();
+            document.getElementById('mail-loading').classList.add('hidden');
+            list.classList.remove('hidden');
+            list.innerHTML = '';
+
+            let filtered = cloudMails.filter(m => {
+                const matchSearch = m.subject.toLowerCase().includes(search) || m.sender_name.toLowerCase().includes(search) || m.sender_email.toLowerCase().includes(search) || extractSnippet(m.body).toLowerCase().includes(search);
+                if(!matchSearch) return false;
+
+                const isSender = m.sender_email === currentUser.email;
+                const isReceiver = m.receiver_email === currentUser.email || m.cc.includes(currentUser.email) || m.bcc.includes(currentUser.email);
+                
+                if (currentFolder === 'trash') {
+                    return (isSender && m.deleted_by_sender) || (isReceiver && m.deleted_by_receiver);
+                }
+
+                if ((isSender && m.deleted_by_sender) || (isReceiver && m.deleted_by_receiver)) return false;
+
+                if (currentFolder === 'inbox') return isReceiver;
+                if (currentFolder === 'sent') return isSender;
+                if (currentFolder === 'starred') return m.is_starred === 1;
+
+                return false;
+            });
+
+            const unreadCount = cloudMails.filter(m => m.receiver_email === currentUser.email && m.is_read === 0 && !m.deleted_by_receiver).length;
+            const badge = document.getElementById('badge-inbox');
+            if(unreadCount > 0) { badge.innerText = unreadCount; badge.classList.remove('hidden'); }
+            else { badge.classList.add('hidden'); }
+
+            if(filtered.length === 0) {
+                list.innerHTML = `<div class="p-12 text-center font-bold text-slate-400 flex flex-col items-center"><i class="fas fa-inbox text-4xl mb-4 opacity-50"></i> Nothing to see here.</div>`;
+                return;
+            }
+
+            filtered.forEach(m => {
+                const isUnread = currentFolder === 'inbox' && m.is_read === 0;
+                const avatar = `https://api.dicebear.com/7.x/bottts/svg?seed=${m.sender_email}`;
+                const snippet = extractSnippet(m.body).substring(0, 60) + '...';
+                
+                const el = document.createElement('div');
+                el.className = `mail-row p-5 flex items-center gap-4 ${isUnread ? 'unread' : ''}`;
+                el.onclick = () => openRead(m);
+
+                el.innerHTML = `
+                    <div class="flex-1 flex items-center gap-4 min-w-0">
+                        <img src="${avatar}" class="w-12 h-12 rounded-full border-[3px] border-slate-200 bg-white shrink-0">
+                        <div class="flex-1 min-w-0">
+                            <div class="flex items-baseline justify-between mb-1">
+                                <h3 class="font-black text-duo-dark truncate pr-4 text-lg ${isUnread ? '' : 'text-slate-600'}">${currentFolder === 'sent' ? 'To: ' + m.receiver_email : m.sender_name}</h3>
+                                <span class="text-xs font-bold ${isUnread ? 'text-duo-blue' : 'text-slate-400'} shrink-0">${m.timestamp}</span>
+                            </div>
+                            <div class="flex items-center gap-2">
+                                <h4 class="font-bold text-sm truncate w-1/3 shrink-0 ${isUnread ? 'text-duo-dark' : 'text-slate-600'}">${m.subject || '(No Subject)'}</h4>
+                                <span class="text-slate-400 font-medium text-sm truncate flex-1">— ${snippet}</span>
+                            </div>
+                        </div>
+                    </div>
+                `;
+                list.appendChild(el);
+            });
+        }
+
+        // --- READING EMAILS ---
+        function openRead(mail) {
+            openMailId = mail.id;
+            document.getElementById('view-list').classList.add('hidden');
+            document.getElementById('view-read').classList.remove('hidden');
+            document.getElementById('view-read').classList.add('flex');
+
+            document.getElementById('read-subject').innerText = mail.subject || '(No Subject)';
+            document.getElementById('read-sender-name').innerText = mail.sender_name;
+            document.getElementById('read-sender-email').innerText = `<${mail.sender_email}>`;
+            document.getElementById('read-time').innerText = mail.timestamp;
+            document.getElementById('read-to').innerText = mail.receiver_email;
+            document.getElementById('read-avatar').src = `https://api.dicebear.com/7.x/bottts/svg?seed=${mail.sender_email}`;
+            document.getElementById('read-body').innerHTML = mail.body;
+
+            if (mail.cc) {
+                document.getElementById('read-cc-container').classList.remove('hidden');
+                document.getElementById('read-cc').innerText = mail.cc;
+            } else {
+                document.getElementById('read-cc-container').classList.add('hidden');
+            }
+
+            const starBtn = document.getElementById('btn-star-read');
+            if(mail.is_starred) starBtn.classList.replace('text-slate-400', 'text-duo-yellow');
+            else starBtn.classList.replace('text-duo-yellow', 'text-slate-400');
+
+            if (mail.is_read === 0 && mail.receiver_email === currentUser.email) {
+                mail.is_read = 1;
+                fetch(`${CLOUD_API}/mails/action`, {
+                    method: 'POST', headers: {'Content-Type': 'application/json'},
+                    body: JSON.stringify({ action: 'read', id: mail.id, email: currentUser.email })
+                }).catch(e=>{});
+                renderMailList(); 
+            }
+        }
+
+        function closeRead() {
+            document.getElementById('view-read').classList.add('hidden');
+            document.getElementById('view-read').classList.remove('flex');
+            // Remove fullscreen if active
+            document.getElementById('view-read').classList.remove('is-fullscreen');
+            document.getElementById('view-list').classList.remove('hidden');
+            openMailId = null;
+        }
+
+        function printMail() {
+            // Very simple print mechanic
+            const printContent = document.getElementById('printable-area').innerHTML;
+            const originalContents = document.body.innerHTML;
+            
+            document.body.innerHTML = `<div class="p-10 font-sans">${printContent}</div>`;
+            window.print();
+            document.body.innerHTML = originalContents;
+            // Because body replacing destroys event listeners, we reload safely
+            location.reload(); 
+        }
+
+        // --- ACTIONS ---
+        async function toggleStarRead() {
+            const mail = cloudMails.find(m => m.id === openMailId);
+            if(!mail) return;
+            
+            mail.is_starred = mail.is_starred === 1 ? 0 : 1;
+            const starBtn = document.getElementById('btn-star-read');
+            if(mail.is_starred) starBtn.classList.replace('text-slate-400', 'text-duo-yellow');
+            else starBtn.classList.replace('text-duo-yellow', 'text-slate-400');
+
+            await fetch(`${CLOUD_API}/mails/action`, {
+                method: 'POST', headers: {'Content-Type': 'application/json'},
+                body: JSON.stringify({ action: 'star', id: mail.id, email: currentUser.email })
+            }).catch(e=>{});
+            renderMailList();
+        }
+
+        async function trashReadMail() {
+            const mail = cloudMails.find(m => m.id === openMailId);
+            if(!mail) return;
+
+            if(mail.sender_email === currentUser.email) mail.deleted_by_sender = 1;
+            if(mail.receiver_email === currentUser.email || mail.cc.includes(currentUser.email) || mail.bcc.includes(currentUser.email)) mail.deleted_by_receiver = 1;
+
+            closeRead();
+            await fetch(`${CLOUD_API}/mails/action`, {
+                method: 'POST', headers: {'Content-Type': 'application/json'},
+                body: JSON.stringify({ action: 'delete', id: mail.id, email: currentUser.email })
+            }).catch(e=>{});
+            renderMailList();
+        }
+
+        // --- COMPOSING & FULLSCREEN ---
+        function toggleFullscreen(elementId) {
+            const el = document.getElementById(elementId);
+            el.classList.toggle('is-fullscreen');
+            
+            // Adjust inner padding for aesthetics if needed
+            const inner = el.querySelector('.max-w-5xl') || el.querySelector('.max-w-4xl');
+            if(inner && el.classList.contains('is-fullscreen')) {
+                inner.classList.replace('max-w-5xl', 'max-w-full');
+                inner.classList.replace('max-w-4xl', 'max-w-full');
+            } else if (inner) {
+                inner.classList.replace('max-w-full', 'max-w-5xl'); // defaulting to 5xl safe
+            }
+        }
+
+        function showCompose(to='', subj='', body='') {
+            document.getElementById('comp-to').value = to;
+            document.getElementById('comp-cc').value = '';
+            document.getElementById('comp-bcc').value = '';
+            document.getElementById('comp-subject').value = subj;
+            document.getElementById('comp-body').innerHTML = body;
+            document.getElementById('comp-cc-row').classList.add('hidden');
+            document.getElementById('attachment-pills').innerHTML = '';
+            
+            document.getElementById('view-compose').classList.remove('hidden');
+            document.getElementById('view-compose').classList.add('flex');
+        }
+
+        function closeCompose() {
+            document.getElementById('view-compose').classList.add('hidden');
+            document.getElementById('view-compose').classList.remove('flex');
+            document.getElementById('view-compose').classList.remove('is-fullscreen');
+        }
+
+        function replyMail() {
+            const mail = cloudMails.find(m => m.id === openMailId);
+            if(!mail) return;
+            const subj = mail.subject.startsWith('Re:') ? mail.subject : `Re: ${mail.subject}`;
+            const body = `<br><br><div style="border-left:4px solid #cbd5e1; padding-left:15px; margin-left:5px; color:#475569;"><strong>On ${mail.timestamp}, ${mail.sender_name} wrote:</strong><br><br>${mail.body}</div>`;
+            closeRead();
+            showCompose(mail.sender_email, subj, body);
+        }
+
+        function forwardMail() {
+            const mail = cloudMails.find(m => m.id === openMailId);
+            if(!mail) return;
+            const subj = mail.subject.startsWith('Fwd:') ? mail.subject : `Fwd: ${mail.subject}`;
+            const body = `<br><br><div style="border-left:4px solid #cbd5e1; padding-left:15px; margin-left:5px; color:#475569;"><strong>-------- Forwarded Message --------</strong><br>From: ${mail.sender_name} &lt;${mail.sender_email}&gt;<br>Date: ${mail.timestamp}<br>Subject: ${mail.subject}<br>To: ${mail.receiver_email}<br><br>${mail.body}</div>`;
+            closeRead();
+            showCompose('', subj, body);
+        }
+
+        // --- RICH TEXT EDITOR LOGIC ---
+        function formatText(command, value = null) {
+            document.execCommand(command, false, value);
+            document.getElementById('comp-body').focus();
+        }
+
+        function insertLink() {
+            const url = prompt("Enter the URL link:");
+            if (url) {
+                document.execCommand('createLink', false, url);
+            }
+        }
+
+        function simulateAttachment() {
+            const input = prompt("File name to attach (Simulation):", "Project_Report.pdf");
+            if (input) {
+                const pill = document.createElement('div');
+                pill.className = "bg-white border-2 border-slate-300 text-slate-700 font-bold text-xs px-3 py-1.5 rounded-full flex items-center gap-2 shadow-sm";
+                pill.innerHTML = `<i class="fas fa-file-pdf text-duo-red"></i> ${input} <i class="fas fa-times cursor-pointer hover:text-duo-red ml-1" onclick="this.parentElement.remove()"></i>`;
+                document.getElementById('attachment-pills').appendChild(pill);
+            }
+        }
+
+        async function sendMail() {
+            const to = document.getElementById('comp-to').value.trim();
+            const cc = document.getElementById('comp-cc').value.trim();
+            const bcc = document.getElementById('comp-bcc').value.trim();
+            const subject = document.getElementById('comp-subject').value.trim() || '(No Subject)';
+            const body = document.getElementById('comp-body').innerHTML;
+
+            if(!to) return alert("Please enter a recipient.");
+
+            const btn = document.getElementById('btn-send');
+            const orig = btn.innerHTML;
+            btn.innerHTML = `<i class="fas fa-spinner fa-spin mr-2"></i> Sending...`;
+            btn.disabled = true;
+
+            const payload = {
+                sender_name: currentUser.name, sender_email: currentUser.email,
+                receiver_email: to, cc: cc, bcc: bcc, subject: subject, body: body
+            };
+
+            try {
+                await fetch(`${CLOUD_API}/mails/send`, {
+                    method: 'POST', headers: {'Content-Type': 'application/json'},
+                    body: JSON.stringify(payload)
+                });
+                closeCompose();
+                fetchMails(); // Refresh to see sent mail
+            } catch(e) {
+                // Mock success if offline for demo purposes
+                alert("Cloud offline. Simulating success.");
+                closeCompose();
+            }
+            btn.innerHTML = orig;
+            btn.disabled = false;
+        }
+
+        window.onload = () => {
+            if(localStorage.getItem('clonbrow_active_user')) initApp();
+        };
+    </script>
+</body>
+</html>

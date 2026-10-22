@@ -1,0 +1,615 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Telesurgery & Network Latency Lab</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;700&family=Inter:wght@300;400;600;700&display=swap');
+
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: #020617; /* Slate 950 */
+            color: #f8fafc;
+            overflow-x: hidden;
+            user-select: none;
+            touch-action: none; /* Prevent scrolling while operating */
+        }
+
+        .font-mono { font-family: 'JetBrains Mono', monospace; }
+
+        /* Unified Card Styling */
+        .glass-card {
+            background: rgba(15, 23, 42, 0.85);
+            backdrop-filter: blur(20px);
+            border: 1px solid rgba(255, 255, 255, 0.08);
+            box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.5);
+            border-radius: 1.5rem;
+        }
+
+        /* Digital Readout Screen */
+        .monitor-screen {
+            background: #020617;
+            border: 2px solid #1e293b;
+            border-radius: 1rem;
+            box-shadow: inset 0 0 20px rgba(0,0,0,0.8);
+            position: relative;
+            overflow: hidden;
+        }
+
+        /* Grid Background */
+        .lab-grid {
+            background-size: 40px 40px;
+            background-image: 
+                linear-gradient(to right, rgba(56, 189, 248, 0.03) 1px, transparent 1px),
+                linear-gradient(to bottom, rgba(56, 189, 248, 0.03) 1px, transparent 1px);
+        }
+
+        .scanline {
+            width: 100%;
+            height: 2px;
+            background: rgba(56, 189, 248, 0.1);
+            position: absolute;
+            z-index: 10;
+            animation: scan 6s linear infinite;
+            pointer-events: none;
+        }
+        @keyframes scan { 0% { top: 0%; } 100% { top: 100%; } }
+
+        /* Custom Sliders */
+        input[type=range] {
+            -webkit-appearance: none;
+            background: transparent;
+            cursor: pointer;
+            width: 100%;
+        }
+        input[type=range]::-webkit-slider-runnable-track {
+            height: 8px;
+            border-radius: 4px;
+            border: 1px solid rgba(255,255,255,0.1);
+        }
+        #latency-slider::-webkit-slider-runnable-track {
+            background: linear-gradient(to right, #10b981, #fbbf24, #f43f5e, #9f1239);
+        }
+        input[type=range]::-webkit-slider-thumb {
+            -webkit-appearance: none;
+            height: 24px;
+            width: 24px;
+            border-radius: 50%;
+            background: #0f172a;
+            border: 3px solid #38bdf8;
+            margin-top: -9px;
+            box-shadow: 0 0 10px rgba(56, 189, 248, 0.5);
+            transition: transform 0.1s;
+        }
+        input[type=range]::-webkit-slider-thumb:active { transform: scale(1.1); }
+
+        /* Status Themes */
+        .text-optimal { color: #10b981; text-shadow: 0 0 12px rgba(16,185,129,0.5); }
+        .text-warning { color: #fbbf24; text-shadow: 0 0 12px rgba(251,191,36,0.5); }
+        .text-critical { color: #f43f5e; text-shadow: 0 0 15px rgba(244,63,94,0.8); }
+
+        .bg-optimal { background-color: #10b981; box-shadow: 0 0 10px rgba(16,185,129,0.5); }
+        .bg-warning { background-color: #fbbf24; box-shadow: 0 0 10px rgba(251,191,36,0.5); }
+        .bg-critical { background-color: #f43f5e; box-shadow: 0 0 15px rgba(244,63,94,0.8); }
+
+        /* Canvas cursor hiding */
+        #surgical-canvas {
+            cursor: crosshair;
+        }
+        
+        .pulse-critical {
+            animation: pulse-red 1s infinite;
+        }
+        @keyframes pulse-red {
+            0% { box-shadow: inset 0 0 20px rgba(244, 63, 94, 0); }
+            50% { box-shadow: inset 0 0 50px rgba(244, 63, 94, 0.4); }
+            100% { box-shadow: inset 0 0 20px rgba(244, 63, 94, 0); }
+        }
+    </style>
+</head>
+<body class="min-h-screen p-4 lg:p-8 flex items-center justify-center">
+
+    <div class="max-w-7xl w-full grid grid-cols-1 lg:grid-cols-12 gap-6 lg:gap-8 items-stretch">
+        
+        <!-- Left Column: Surgical Field Simulation -->
+        <div class="lg:col-span-8 flex flex-col gap-6">
+            
+            <!-- Sensor Canvas Viewport -->
+            <div id="viewport-container" class="glass-card relative flex-grow min-h-[500px] flex flex-col overflow-hidden lab-grid">
+                <div class="scanline"></div>
+                
+                <div class="absolute top-6 left-6 z-20 pointer-events-none">
+                    <h2 class="text-xs font-bold text-slate-400 uppercase tracking-widest flex items-center gap-2">
+                        <svg class="w-4 h-4 text-sky-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"></path><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"></path></svg>
+                        Robotic End-Effector Camera
+                    </h2>
+                </div>
+
+                <div class="absolute top-6 right-6 z-20 pointer-events-none flex gap-1 items-end" id="network-bars">
+                    <!-- Network Signal Bars -->
+                    <div class="w-1.5 h-2 bg-emerald-500 rounded-sm"></div>
+                    <div class="w-1.5 h-3 bg-emerald-500 rounded-sm"></div>
+                    <div class="w-1.5 h-4 bg-emerald-500 rounded-sm"></div>
+                    <div class="w-1.5 h-5 bg-emerald-500 rounded-sm"></div>
+                </div>
+
+                <div class="relative w-full h-full flex-grow flex items-center justify-center">
+                    <!-- Surgical Canvas -->
+                    <canvas id="surgical-canvas" class="absolute inset-0 w-full h-full z-10 touch-none"></canvas>
+                </div>
+
+                <!-- Particle Legend -->
+                <div class="absolute bottom-4 left-6 z-30 pointer-events-none flex gap-4 bg-slate-900/80 p-2 rounded-lg border border-slate-700">
+                    <div class="flex items-center gap-2">
+                        <div class="w-3 h-3 rounded-full border-2 border-sky-400"></div>
+                        <span class="text-[9px] font-mono text-slate-300">Surgeon Input (Local)</span>
+                    </div>
+                    <div class="flex items-center gap-2">
+                        <div class="w-3 h-3 rounded-full bg-rose-500 shadow-[0_0_8px_#f43f5e]"></div>
+                        <span class="text-[9px] font-mono text-slate-300">Robotic Laser (Remote)</span>
+                    </div>
+                </div>
+
+                <!-- Instructions Overlay -->
+                <div id="instruction-overlay" class="absolute inset-0 z-40 bg-slate-950/80 flex flex-col items-center justify-center backdrop-blur-sm transition-opacity duration-300">
+                    <h1 class="text-2xl font-bold text-white mb-2 uppercase tracking-widest">Telesurgery Link Established</h1>
+                    <p class="text-sm text-slate-300 mb-6 font-mono text-center max-w-md">
+                        Hold click/touch to activate the laser.<br>
+                        Trace the center of the target vessel.<br>
+                        Straying into healthy tissue will cause damage.
+                    </p>
+                    <button id="btn-start" class="px-8 py-3 bg-sky-600 hover:bg-sky-500 text-white rounded-xl text-xs font-bold uppercase tracking-widest border border-sky-500 transition-all shadow-lg shadow-sky-900/50">
+                        Begin Operation
+                    </button>
+                </div>
+            </div>
+
+            <!-- Controls Panel -->
+            <div class="glass-card p-6">
+                <div class="space-y-4">
+                    <div class="flex justify-between items-end">
+                        <div class="text-xs font-bold text-slate-400 uppercase tracking-widest flex items-center gap-2">
+                            <svg class="w-4 h-4 text-emerald-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8.111 16.404a5.5 5.5 0 017.778 0M12 20h.01m-7.08-7.071c3.904-3.905 10.236-3.905 14.141 0M1.394 9.393c5.857-5.857 15.355-5.857 21.213 0"></path></svg>
+                            Network Transport Latency (RTT)
+                        </div>
+                        <div id="ctrl-latency-val" class="text-xl font-bold font-mono text-emerald-400">500 ms</div>
+                    </div>
+                    <input type="range" id="latency-slider" min="0" max="1000" value="500">
+                    <div class="flex justify-between text-[9px] font-mono text-slate-500 uppercase">
+                        <span class="text-emerald-400">Local LAN (0ms)</span>
+                        <span class="text-amber-400">Cellular (300ms)</span>
+                        <span class="text-rose-500">Satellite/Geo (1000ms)</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Right Column: Clinical Patient Monitor -->
+        <div class="lg:col-span-4 flex flex-col gap-6">
+            
+            <div id="monitor-panel" class="monitor-screen flex-grow flex flex-col p-6">
+                <div class="scanline"></div>
+                
+                <div class="flex justify-between items-center border-b border-slate-800 pb-3 mb-6 relative z-10">
+                    <span class="text-xs font-bold tracking-widest uppercase text-slate-500">Telemetry Link</span>
+                    <span id="monitor-status" class="text-[10px] font-mono font-bold px-2 py-1 rounded bg-emerald-900/30 text-emerald-400 border border-emerald-800/50">LINK STABLE</span>
+                </div>
+
+                <!-- Vital Signs -->
+                <div class="space-y-6 relative z-10">
+                    <div class="space-y-1">
+                        <label class="text-[10px] uppercase font-bold text-slate-400 tracking-widest">Network Ping (Lag)</label>
+                        <div class="flex items-baseline gap-2">
+                            <div id="readout-ping" class="text-6xl font-bold font-mono leading-none text-amber-400">500</div>
+                            <span class="text-xl font-mono text-slate-500 font-bold">ms</span>
+                        </div>
+                    </div>
+
+                    <div class="grid grid-cols-2 gap-4 pt-4 border-t border-slate-800">
+                        <div class="space-y-1">
+                            <label class="text-[9px] uppercase font-bold text-slate-500">Data Loss</label>
+                            <div id="readout-loss" class="text-lg font-bold font-mono text-emerald-400">0.0%</div>
+                        </div>
+                        <div class="space-y-1 text-right">
+                            <label class="text-[9px] uppercase font-bold text-slate-500">Robot Status</label>
+                            <div id="readout-robot" class="text-lg font-bold font-mono text-emerald-400">SYNCING</div>
+                        </div>
+                    </div>
+
+                    <!-- Live Tissue Damage Bar -->
+                    <div class="pt-6 mt-6 border-t border-slate-800 flex-grow flex flex-col justify-end relative">
+                        <div class="flex justify-between items-center mb-2">
+                            <span class="text-[10px] font-bold uppercase text-slate-400">Collateral Tissue Damage</span>
+                            <span id="damage-pct" class="text-[10px] font-mono font-bold text-emerald-400">0%</span>
+                        </div>
+                        <div class="h-6 w-full bg-slate-900 rounded-lg overflow-hidden border border-slate-700 p-1">
+                            <div id="damage-bar" class="h-full bg-emerald-500 rounded transition-all duration-100" style="width: 0%"></div>
+                        </div>
+                        <p class="text-[8px] text-slate-500 font-mono mt-3 text-center uppercase">
+                            Warning: Straying from the target vessel induces permanent necrosis.
+                        </p>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Theory Card -->
+            <div class="glass-card p-6 flex flex-col gap-3">
+                <h3 class="text-xs font-bold text-slate-400 uppercase tracking-widest flex items-center gap-2">
+                    <svg class="w-4 h-4 text-sky-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19.428 15.428a2 2 0 00-1.022-.547l-2.387-.477a6 6 0 00-3.86.517l-.318.158a6 6 0 01-3.86.517L6.05 15.21a2 2 0 00-1.806.547M8 4h8l-1 1v5.172a2 2 0 00.586 1.414l5 5c1.26 1.26.367 3.414-1.415 3.414H4.828c-1.782 0-2.674-2.154-1.414-3.414l5-5A2 2 0 009 10.172V5L8 4z"></path></svg>
+                    The Human-Machine Bottleneck
+                </h3>
+                <div class="text-[11px] text-slate-300 leading-relaxed space-y-3">
+                    <p>In telesurgery, the surgeon's physical movements are encoded, transmitted over a network, and executed by a remote robot.</p>
+                    
+                    <div class="p-3 bg-slate-900/50 rounded-xl border border-slate-800">
+                        <strong class="text-sky-400 block mb-1">Latency-Induced Oscillations</strong>
+                        When latency exceeds <strong class="text-amber-400">200ms</strong>, the visual feedback the surgeon sees is outdated. The surgeon moves to correct an error, but the robot is still executing the *previous* command. This leads to massive overcorrection and dangerous erratic cuts.
+                    </div>
+                </div>
+
+                <button id="btn-reset" class="mt-2 w-full py-3 bg-slate-800 hover:bg-slate-700 text-slate-400 rounded-xl text-[10px] font-bold uppercase tracking-widest border border-slate-700 transition-all shadow-inner">
+                    Reset Patient Simulation
+                </button>
+            </div>
+
+        </div>
+    </div>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', () => {
+            const canvas = document.getElementById('surgical-canvas');
+            const ctx = canvas.getContext('2d');
+            
+            const latencySlider = document.getElementById('latency-slider');
+            const ctrlLatencyVal = document.getElementById('ctrl-latency-val');
+            
+            const readoutPing = document.getElementById('readout-ping');
+            const readoutLoss = document.getElementById('readout-loss');
+            const monitorStatus = document.getElementById('monitor-status');
+            const networkBars = document.getElementById('network-bars');
+            const monitorPanel = document.getElementById('monitor-panel');
+            
+            const damagePct = document.getElementById('damage-pct');
+            const damageBar = document.getElementById('damage-bar');
+            
+            const btnStart = document.getElementById('btn-start');
+            const btnReset = document.getElementById('btn-reset');
+            const instructionOverlay = document.getElementById('instruction-overlay');
+
+            // --- State Variables ---
+            let latencyMs = 500;
+            let tissueDamage = 0;
+            const MAX_DAMAGE = 1000;
+            let isOperating = false;
+            let isSimulationActive = false;
+
+            // The Command Queue: Stores {x, y, isCutting, timestamp}
+            let commandQueue = [];
+            
+            // Current states
+            let localPos = { x: -100, y: -100, isCutting: false };
+            let robotPos = { x: -100, y: -100, isCutting: false };
+
+            // Paths and Visuals
+            let targetPath = new Path2D();
+            let bloodParticles = [];
+            let laserSparks = [];
+
+            // --- Setup & Resize ---
+            function resizeCanvas() {
+                canvas.width = canvas.parentElement.clientWidth;
+                canvas.height = canvas.parentElement.clientHeight;
+                generatePath();
+            }
+            window.addEventListener('resize', resizeCanvas);
+            
+            function generatePath() {
+                // Creates a winding "blood vessel" path centered on the canvas
+                const w = canvas.width;
+                const h = canvas.height;
+                
+                targetPath = new Path2D();
+                targetPath.moveTo(w * 0.1, h * 0.2);
+                targetPath.bezierCurveTo(w * 0.4, h * 0.1, w * 0.3, h * 0.8, w * 0.6, h * 0.7);
+                targetPath.bezierCurveTo(w * 0.8, h * 0.6, w * 0.8, h * 0.3, w * 0.9, h * 0.4);
+            }
+
+            // --- Input Handling (Local Surgeon) ---
+            function updateLocalMouse(e) {
+                if (!isSimulationActive) return;
+                const rect = canvas.getBoundingClientRect();
+                const clientX = e.touches ? e.touches[0].clientX : e.clientX;
+                const clientY = e.touches ? e.touches[0].clientY : e.clientY;
+                
+                localPos.x = clientX - rect.left;
+                localPos.y = clientY - rect.top;
+
+                // Push command to network queue
+                commandQueue.push({
+                    x: localPos.x,
+                    y: localPos.y,
+                    isCutting: localPos.isCutting,
+                    time: performance.now()
+                });
+            }
+
+            const startAction = (e) => {
+                if (!isSimulationActive) return;
+                e.preventDefault();
+                localPos.isCutting = true;
+                updateLocalMouse(e);
+            };
+
+            const stopAction = (e) => {
+                if (!isSimulationActive) return;
+                e.preventDefault();
+                localPos.isCutting = false;
+                
+                // Push stop command
+                commandQueue.push({
+                    x: localPos.x,
+                    y: localPos.y,
+                    isCutting: false,
+                    time: performance.now()
+                });
+            };
+
+            canvas.addEventListener('mousedown', startAction);
+            canvas.addEventListener('touchstart', startAction);
+            
+            window.addEventListener('mousemove', (e) => { if (localPos.isCutting || isSimulationActive) updateLocalMouse(e); });
+            window.addEventListener('touchmove', (e) => { if (localPos.isCutting || isSimulationActive) updateLocalMouse(e); }, {passive: false});
+            
+            window.addEventListener('mouseup', stopAction);
+            window.addEventListener('touchend', stopAction);
+
+            // --- Network & Robot Logic ---
+            function processNetworkQueue(now) {
+                const targetTime = now - latencyMs;
+
+                // Find the command that should be executed NOW based on latency
+                // Clean up commands older than targetTime (keeping at least the most recent past one for interpolation if needed)
+                while (commandQueue.length > 1 && commandQueue[1].time < targetTime) {
+                    commandQueue.shift();
+                }
+
+                if (commandQueue.length > 0) {
+                    // For pure latency, we just snap to the state of the command that passed the delay threshold
+                    const cmd = commandQueue[0];
+                    // Only update if the command actually reached its maturity
+                    if (cmd.time <= targetTime) {
+                        robotPos.x = cmd.x;
+                        robotPos.y = cmd.y;
+                        robotPos.isCutting = cmd.isCutting;
+                    }
+                }
+            }
+
+            function evaluateDamage() {
+                if (!robotPos.isCutting) return;
+
+                // Check if robotic laser is inside the safe path
+                // We stroke the path with a specific width to define the safe zone
+                ctx.lineWidth = 40; // Width of the safe vessel
+                const isSafe = ctx.isPointInStroke(targetPath, robotPos.x, robotPos.y);
+
+                if (!isSafe) {
+                    tissueDamage += 2; // Rapid damage buildup
+                    spawnBlood(robotPos.x, robotPos.y);
+                } else {
+                    spawnSparks(robotPos.x, robotPos.y);
+                }
+
+                tissueDamage = Math.min(tissueDamage, MAX_DAMAGE);
+                updateTelemetryUI();
+            }
+
+            // --- Particles ---
+            function spawnBlood(x, y) {
+                for(let i=0; i<3; i++) {
+                    bloodParticles.push({
+                        x: x + (Math.random()-0.5)*10,
+                        y: y + (Math.random()-0.5)*10,
+                        vx: (Math.random()-0.5)*2,
+                        vy: (Math.random()-0.5)*2,
+                        life: 1.0
+                    });
+                }
+            }
+
+            function spawnSparks(x, y) {
+                laserSparks.push({
+                    x: x + (Math.random()-0.5)*5,
+                    y: y + (Math.random()-0.5)*5,
+                    vx: (Math.random()-0.5)*4,
+                    vy: Math.random()*-4, // fly upwards
+                    life: 1.0
+                });
+            }
+
+            // --- Rendering ---
+            function render() {
+                const now = performance.now();
+                processNetworkQueue(now);
+
+                ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+                // 1. Draw Background Tissue/Vessel
+                ctx.beginPath();
+                ctx.lineCap = 'round';
+                ctx.lineJoin = 'round';
+                
+                // Outer danger boundary (visual)
+                ctx.lineWidth = 50;
+                ctx.strokeStyle = 'rgba(244, 63, 94, 0.1)'; // faint red
+                ctx.stroke(targetPath);
+
+                // Safe Vessel
+                ctx.lineWidth = 40;
+                ctx.strokeStyle = '#4c1d95'; // Dark purple vessel
+                ctx.stroke(targetPath);
+
+                // Target center line
+                ctx.lineWidth = 2;
+                ctx.setLineDash([10, 10]);
+                ctx.strokeStyle = 'rgba(56, 189, 248, 0.5)'; // Cyan dash
+                ctx.stroke(targetPath);
+                ctx.setLineDash([]); // reset
+
+                // 2. Evaluate Logic (Damage)
+                evaluateDamage();
+
+                // 3. Draw Particles
+                // Blood
+                bloodParticles.forEach((p, i) => {
+                    p.x += p.vx; p.y += p.vy; p.life -= 0.02;
+                    ctx.beginPath();
+                    ctx.arc(p.x, p.y, 3, 0, Math.PI*2);
+                    ctx.fillStyle = `rgba(225, 29, 72, ${p.life})`; // Crimson
+                    ctx.fill();
+                    if(p.life <= 0) bloodParticles.splice(i, 1);
+                });
+
+                // Sparks
+                laserSparks.forEach((p, i) => {
+                    p.x += p.vx; p.y += p.vy; p.life -= 0.05;
+                    ctx.beginPath();
+                    ctx.arc(p.x, p.y, 1.5, 0, Math.PI*2);
+                    ctx.fillStyle = `rgba(253, 224, 71, ${p.life})`; // Yellow
+                    ctx.fill();
+                    if(p.life <= 0) laserSparks.splice(i, 1);
+                });
+
+                // 4. Draw Cursors
+                // Local Surgeon Cursor (Faint cyan)
+                if (isSimulationActive) {
+                    ctx.beginPath();
+                    ctx.arc(localPos.x, localPos.y, 8, 0, Math.PI*2);
+                    ctx.strokeStyle = localPos.isCutting ? '#38bdf8' : 'rgba(56, 189, 248, 0.4)';
+                    ctx.lineWidth = 2;
+                    ctx.stroke();
+                    if (localPos.isCutting) {
+                        ctx.fillStyle = 'rgba(56, 189, 248, 0.2)';
+                        ctx.fill();
+                    }
+                }
+
+                // Remote Robotic Scalpel (Solid Red)
+                if (robotPos.x > 0) {
+                    ctx.beginPath();
+                    ctx.arc(robotPos.x, robotPos.y, 5, 0, Math.PI*2);
+                    ctx.fillStyle = '#f43f5e';
+                    ctx.shadowBlur = 10;
+                    ctx.shadowColor = '#f43f5e';
+                    ctx.fill();
+                    ctx.shadowBlur = 0;
+
+                    if (robotPos.isCutting) {
+                        // Laser beam effect
+                        ctx.beginPath();
+                        ctx.moveTo(robotPos.x, robotPos.y - 50); // coming from above
+                        ctx.lineTo(robotPos.x, robotPos.y);
+                        ctx.strokeStyle = '#f43f5e';
+                        ctx.lineWidth = 2;
+                        ctx.stroke();
+                    }
+                }
+
+                requestAnimationFrame(render);
+            }
+
+            // --- UI Updates ---
+            function updateTelemetryUI() {
+                // Latency and Signal Bars
+                ctrlLatencyVal.textContent = `${latencyMs} ms`;
+                readoutPing.textContent = latencyMs;
+
+                const bars = networkBars.children;
+                for(let i=0; i<4; i++) bars[i].className = `w-1.5 h-${i+2} rounded-sm bg-slate-700`; // reset to off
+
+                if (latencyMs < 100) {
+                    readoutPing.className = "text-6xl font-bold font-mono leading-none text-optimal";
+                    for(let i=0; i<4; i++) bars[i].classList.replace('bg-slate-700', 'bg-emerald-500');
+                    readoutLoss.textContent = "0.0%";
+                } else if (latencyMs < 400) {
+                    readoutPing.className = "text-6xl font-bold font-mono leading-none text-warning";
+                    for(let i=0; i<2; i++) bars[i].classList.replace('bg-slate-700', 'bg-amber-400');
+                    readoutLoss.textContent = "1.2%";
+                } else {
+                    readoutPing.className = "text-6xl font-bold font-mono leading-none text-critical";
+                    bars[0].classList.replace('bg-slate-700', 'bg-rose-500');
+                    readoutLoss.textContent = "8.5%";
+                }
+
+                // Damage Bar
+                const dmgPct = (tissueDamage / MAX_DAMAGE) * 100;
+                damagePct.textContent = `${Math.floor(dmgPct)}%`;
+                damageBar.style.width = `${dmgPct}%`;
+
+                if (dmgPct > 80) {
+                    damagePct.className = "text-[10px] font-mono font-bold text-rose-500";
+                    damageBar.className = "h-full rounded transition-all duration-100 bg-rose-500";
+                    monitorStatus.textContent = "CRITICAL DAMAGE";
+                    monitorStatus.className = "text-[10px] font-mono font-bold px-2 py-1 rounded bg-rose-900/30 text-rose-500 border border-rose-800/50";
+                    monitorPanel.classList.add('pulse-critical');
+                } else if (dmgPct > 30) {
+                    damagePct.className = "text-[10px] font-mono font-bold text-amber-400";
+                    damageBar.className = "h-full rounded transition-all duration-100 bg-amber-400";
+                    monitorStatus.textContent = "HEMORRHAGE DETECTED";
+                    monitorStatus.className = "text-[10px] font-mono font-bold px-2 py-1 rounded bg-amber-900/30 text-amber-400 border border-amber-800/50";
+                    monitorPanel.classList.remove('pulse-critical');
+                } else {
+                    damagePct.className = "text-[10px] font-mono font-bold text-emerald-400";
+                    damageBar.className = "h-full rounded transition-all duration-100 bg-emerald-500";
+                    monitorStatus.textContent = "LINK STABLE";
+                    monitorStatus.className = "text-[10px] font-mono font-bold px-2 py-1 rounded bg-emerald-900/30 text-emerald-400 border border-emerald-800/50";
+                    monitorPanel.classList.remove('pulse-critical');
+                }
+
+                if (tissueDamage >= MAX_DAMAGE) {
+                    endSimulation();
+                }
+            }
+
+            function endSimulation() {
+                isSimulationActive = false;
+                localPos.isCutting = false;
+                commandQueue = []; // flush queue
+                instructionOverlay.style.opacity = '1';
+                instructionOverlay.style.pointerEvents = 'auto';
+                instructionOverlay.querySelector('h1').textContent = "Patient Lost";
+                instructionOverlay.querySelector('h1').className = "text-2xl font-bold text-rose-500 mb-2 uppercase tracking-widest";
+                instructionOverlay.querySelector('p').textContent = "Lethal tissue necrosis due to erratic tele-manipulation.";
+                btnStart.textContent = "Acknowledge & Restart";
+            }
+
+            function startSimulation() {
+                instructionOverlay.style.opacity = '0';
+                instructionOverlay.style.pointerEvents = 'none';
+                tissueDamage = 0;
+                commandQueue = [];
+                bloodParticles = [];
+                laserSparks = [];
+                isSimulationActive = true;
+                updateTelemetryUI();
+            }
+
+            // --- Events ---
+            latencySlider.addEventListener('input', (e) => {
+                latencyMs = parseInt(e.target.value);
+                updateTelemetryUI();
+            });
+
+            btnStart.addEventListener('click', startSimulation);
+            btnReset.addEventListener('click', startSimulation);
+
+            // Init
+            resizeCanvas();
+            updateTelemetryUI();
+            render();
+        });
+    </script>
+</body>
+</html>

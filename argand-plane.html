@@ -1,0 +1,764 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Math Lab - Linear Algebra & Conics</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Fira+Code:wght@400;500&display=swap" rel="stylesheet">
+    <style>
+        body, html {
+            margin: 0; padding: 0; width: 100%; height: 100%; overflow: hidden;
+            background-color: #020617; font-family: 'Inter', sans-serif;
+            touch-action: none; user-select: none;
+        }
+
+        .main-shell { display: flex; width: 100%; height: 100%; }
+        
+        .workspace { 
+            flex-grow: 1; 
+            position: relative; 
+            overflow: hidden; 
+            background: radial-gradient(circle at center, #0f172a 0%, #020617 100%);
+        }
+        
+        #canvas-2d, #canvas-3d {
+            position: absolute; top: 0; left: 0; width: 100%; height: 100%;
+        }
+        #canvas-2d { z-index: 10; cursor: default; }
+        #canvas-3d { z-index: 5; }
+
+        .glass-panel {
+            background: linear-gradient(145deg, rgba(15, 23, 42, 0.9) 0%, rgba(2, 6, 23, 0.98) 100%);
+            backdrop-filter: blur(40px); -webkit-backdrop-filter: blur(40px);
+            border-right: 1px solid rgba(255, 255, 255, 0.1);
+            box-shadow: 20px 0 50px rgba(0, 0, 0, 0.5);
+            display: flex; flex-direction: column; padding: 2rem; z-index: 100; width: 380px;
+        }
+
+        @media (max-width: 1024px) {
+            .glass-panel { width: 100%; height: 42%; border-right: none; border-bottom: 1px solid rgba(255,255,255,0.1); padding: 1rem; }
+            .main-shell { flex-direction: column; }
+        }
+
+        .tab-btn { transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1); }
+        .tab-btn.active { background-color: #ffffff; color: #020617; box-shadow: 0 4px 12px rgba(0,0,0,0.4); }
+
+        input[type=range] { -webkit-appearance: none; width: 100%; background: transparent; }
+        input[type=range]::-webkit-slider-thumb {
+            -webkit-appearance: none; height: 20px; width: 20px; border-radius: 50%;
+            background: #ffffff; cursor: pointer; margin-top: -8px;
+            box-shadow: 0 4px 10px rgba(0,0,0,0.5); border: 1px solid rgba(255,255,255,0.2);
+            transition: transform 0.2s cubic-bezier(0.2, 0.8, 0.2, 1);
+        }
+        input[type=range]::-webkit-slider-thumb:hover { transform: scale(1.15); }
+        input[type=range]::-webkit-slider-runnable-track {
+            width: 100%; height: 4px; cursor: pointer; background: rgba(255, 255, 255, 0.15); border-radius: 2px;
+        }
+
+        .formula-box { font-family: 'Fira Code', monospace; }
+        .scroll-area::-webkit-scrollbar { width: 4px; }
+        .scroll-area::-webkit-scrollbar-thumb { background: rgba(255, 255, 255, 0.2); border-radius: 4px; }
+
+        #loading-screen {
+            position: absolute; inset: 0; background: #020617; display: flex; flex-direction: column;
+            align-items: center; justify-content: center; color: white; z-index: 150; transition: opacity 0.6s ease;
+        }
+    </style>
+    <!-- Import Maps for Three.js -->
+    <script type="importmap">
+        {
+            "imports": {
+                "three": "https://cdn.jsdelivr.net/npm/three@0.160.0/build/three.module.js",
+                "three/addons/": "https://cdn.jsdelivr.net/npm/three@0.160.0/examples/jsm/"
+            }
+        }
+    </script>
+</head>
+<body>
+
+    <div id="loading-screen">
+        <div class="flex flex-col items-center gap-5">
+            <svg class="animate-spin h-10 w-10 text-indigo-500" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="3"></circle><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path></svg>
+            <span class="text-xs font-bold tracking-widest text-gray-400 uppercase italic text-center">Initializing Dual Engine...</span>
+        </div>
+    </div>
+
+    <div class="main-shell">
+        <!-- UI Panel -->
+        <div class="glass-panel shrink-0">
+            <div class="mb-6 border-b border-white/10 pb-6 shrink-0 flex items-center justify-between">
+                <div>
+                    <h1 class="text-2xl font-bold tracking-tight text-white mb-1">Math Lab</h1>
+                    <p class="text-[11px] font-medium text-indigo-400 uppercase tracking-widest">Linear Algebra & Conics</p>
+                </div>
+                <div class="w-10 h-10 rounded-full bg-indigo-500/20 flex items-center justify-center text-indigo-400 shadow-[0_0_15px_rgba(99,102,241,0.3)]">
+                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M14 10l-2 1m0 0l-2-1m2 1v2.5M20 7l-2 1m2-1l-2-1m2 1v2.5M14 4l-2-1-2 1M4 7l2-1M4 7l2 1M4 7v2.5M12 21l-2-1m2 1l2-1m-2 1v-2.5M6 18l-2-1v-2.5M18 18l2-1v-2.5"></path></svg>
+                </div>
+            </div>
+
+            <!-- Tab Navigation (2x2 Grid) -->
+            <div class="grid grid-cols-2 p-1 bg-black/40 rounded-xl shadow-inner gap-1 mb-6 shrink-0 border border-white/5">
+                <button data-tab="vectors" class="tab-btn active py-2 text-[10px] font-bold uppercase tracking-wider rounded-lg text-gray-400">Dot/Cross (3D)</button>
+                <button data-tab="matrices" class="tab-btn py-2 text-[10px] font-bold uppercase tracking-wider rounded-lg text-gray-400">Matrices (2D)</button>
+                <button data-tab="conics" class="tab-btn py-2 text-[10px] font-bold uppercase tracking-wider rounded-lg text-gray-400">Conic Sections</button>
+                <button data-tab="complex" class="tab-btn py-2 text-[10px] font-bold uppercase tracking-wider rounded-lg text-gray-400">Argand Plane</button>
+            </div>
+
+            <div class="scroll-area overflow-y-auto pr-2 pb-2 flex-1 space-y-7">
+                
+                <div class="bg-black/30 p-4 rounded-xl border border-white/5 shadow-inner">
+                    <h2 id="info-title" class="text-sm font-bold text-white mb-2 italic">Vector Products</h2>
+                    <div id="formula-display" class="formula-box bg-white/5 p-2 rounded text-[11px] text-cyan-300 mb-3 border border-white/10 text-center">
+                        A·B = |A||B|cos(θ)
+                    </div>
+                    <p id="info-desc" class="text-xs text-gray-400 leading-relaxed">
+                        The <b>Dot Product</b> calculates the "shadow" one vector casts on another (a scalar). The <b>Cross Product</b> creates a brand new 3D vector perfectly perpendicular to both.
+                    </p>
+                </div>
+
+                <!-- 1. VECTORS CONTROLS (3D) -->
+                <div id="controls-vectors" class="space-y-6">
+                    <div class="flex p-1 bg-white/5 rounded-xl gap-1">
+                        <button id="vec-mode-dot" class="flex-1 py-1.5 text-[10px] font-bold uppercase rounded-lg bg-white text-slate-900 transition-all">Dot Product</button>
+                        <button id="vec-mode-cross" class="flex-1 py-1.5 text-[10px] font-bold uppercase rounded-lg text-gray-400 hover:text-white transition-all">Cross Product</button>
+                    </div>
+                    <div class="space-y-4">
+                        <div class="space-y-2">
+                            <div class="flex justify-between items-end">
+                                <label class="text-[11px] font-semibold text-blue-400 uppercase tracking-widest">Angle (θ)</label>
+                                <span id="vec-ang-disp" class="text-[11px] font-mono bg-blue-500/10 px-2 py-1 rounded text-blue-300">45°</span>
+                            </div>
+                            <input type="range" id="vec-ang" min="0" max="180" step="1" value="45" class="w-full" style="accent-color: #3b82f6;">
+                        </div>
+                        <div class="space-y-2">
+                            <div class="flex justify-between items-end">
+                                <label class="text-[11px] font-semibold text-red-400 uppercase tracking-widest">Magnitude |A|</label>
+                                <span id="vec-maga-disp" class="text-[11px] font-mono bg-red-500/10 px-2 py-1 rounded text-red-300">5.0</span>
+                            </div>
+                            <input type="range" id="vec-maga" min="1" max="10" step="0.5" value="5" class="w-full" style="accent-color: #ef4444;">
+                        </div>
+                        <div class="space-y-2">
+                            <div class="flex justify-between items-end">
+                                <label class="text-[11px] font-semibold text-green-400 uppercase tracking-widest">Magnitude |B|</label>
+                                <span id="vec-magb-disp" class="text-[11px] font-mono bg-green-500/10 px-2 py-1 rounded text-green-300">4.0</span>
+                            </div>
+                            <input type="range" id="vec-magb" min="1" max="10" step="0.5" value="4" class="w-full" style="accent-color: #10b981;">
+                        </div>
+                    </div>
+                </div>
+
+                <!-- 2. MATRICES CONTROLS (2D) -->
+                <div id="controls-matrices" class="space-y-5 hidden">
+                    <div class="space-y-4">
+                        <label class="text-[10px] font-bold uppercase tracking-widest text-gray-500">Transform Matrix</label>
+                        <div class="grid grid-cols-2 gap-4">
+                            <div class="space-y-2">
+                                <div class="flex justify-between"><span class="text-xs font-mono text-gray-300">[0,0] a</span><span id="mat-a-disp" class="text-xs font-bold text-white">1.0</span></div>
+                                <input type="range" id="mat-a" min="-3" max="3" step="0.1" value="1" style="accent-color: #f472b6;">
+                            </div>
+                            <div class="space-y-2">
+                                <div class="flex justify-between"><span class="text-xs font-mono text-gray-300">[0,1] b</span><span id="mat-b-disp" class="text-xs font-bold text-white">0.0</span></div>
+                                <input type="range" id="mat-b" min="-3" max="3" step="0.1" value="0" style="accent-color: #f472b6;">
+                            </div>
+                            <div class="space-y-2">
+                                <div class="flex justify-between"><span class="text-xs font-mono text-gray-300">[1,0] c</span><span id="mat-c-disp" class="text-xs font-bold text-white">0.0</span></div>
+                                <input type="range" id="mat-c" min="-3" max="3" step="0.1" value="0" style="accent-color: #f472b6;">
+                            </div>
+                            <div class="space-y-2">
+                                <div class="flex justify-between"><span class="text-xs font-mono text-gray-300">[1,1] d</span><span id="mat-d-disp" class="text-xs font-bold text-white">1.0</span></div>
+                                <input type="range" id="mat-d" min="-3" max="3" step="0.1" value="1" style="accent-color: #f472b6;">
+                            </div>
+                        </div>
+                        <div class="pt-2">
+                            <button id="btn-mat-reset" class="w-full py-2 bg-white/5 hover:bg-white/10 text-gray-300 text-[10px] font-bold uppercase tracking-widest rounded-xl transition-all border border-white/5">Reset Identity Matrix</button>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- 3. CONICS CONTROLS (3D) -->
+                <div id="controls-conics" class="space-y-6 hidden">
+                    <div class="space-y-4">
+                        <div class="space-y-2">
+                            <div class="flex justify-between items-end">
+                                <label class="text-[11px] font-semibold text-orange-400 uppercase tracking-widest">Slicing Plane Angle</label>
+                                <span id="conic-ang-disp" class="text-[11px] font-mono bg-orange-500/10 px-2 py-1 rounded text-orange-300">0°</span>
+                            </div>
+                            <input type="range" id="conic-ang" min="0" max="90" step="1" value="0" class="w-full" style="accent-color: #f97316;">
+                            <div class="flex justify-between px-1 text-[9px] font-bold text-gray-500 uppercase tracking-widest">
+                                <span>Horizontal</span>
+                                <span>Vertical</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- 4. COMPLEX NUMBERS CONTROLS (2D) -->
+                <div id="controls-complex" class="space-y-6 hidden">
+                    <div class="space-y-4">
+                        <div class="space-y-2">
+                            <div class="flex justify-between items-end">
+                                <label class="text-[11px] font-semibold text-emerald-400 uppercase tracking-widest">Real Part (a)</label>
+                                <span id="comp-real-disp" class="text-[11px] font-mono bg-emerald-500/10 px-2 py-1 rounded text-emerald-300">4.0</span>
+                            </div>
+                            <input type="range" id="comp-real" min="-8" max="8" step="0.5" value="4" class="w-full" style="accent-color: #10b981;">
+                        </div>
+                        <div class="space-y-2">
+                            <div class="flex justify-between items-end">
+                                <label class="text-[11px] font-semibold text-purple-400 uppercase tracking-widest">Imaginary Part (bi)</label>
+                                <span id="comp-imag-disp" class="text-[11px] font-mono bg-purple-500/10 px-2 py-1 rounded text-purple-300">3.0</span>
+                            </div>
+                            <input type="range" id="comp-imag" min="-8" max="8" step="0.5" value="3" class="w-full" style="accent-color: #c084fc;">
+                        </div>
+                        <div class="pt-4 border-t border-white/5">
+                            <button id="btn-comp-mult" class="w-full py-3 bg-indigo-600 hover:bg-indigo-500 text-white text-xs font-bold uppercase tracking-widest rounded-xl transition-all shadow-lg shadow-indigo-900/40">Multiply by 'i' (Rotate 90°)</button>
+                        </div>
+                    </div>
+                </div>
+
+            </div>
+            
+            <div class="pt-6 border-t border-white/5 text-[10px] text-gray-600 font-medium text-center shrink-0 mt-4 uppercase tracking-widest">
+                Dual 2D/3D Mathematics Engine
+            </div>
+        </div>
+
+        <!-- Simulation Workspace -->
+        <div class="workspace" id="workspace">
+            
+            <div id="canvas-3d"></div>
+            <canvas id="canvas-2d"></canvas>
+            
+            <!-- Contextual HUD -->
+            <div id="hud" class="absolute bottom-8 right-8 z-20 glass-panel !w-[280px] !p-5 !border !rounded-2xl pointer-events-none shadow-2xl transition-opacity duration-300">
+                <div class="text-[10px] font-bold uppercase tracking-widest text-gray-500 mb-3 border-b border-white/5 pb-1">Mathematical Result</div>
+                <div class="space-y-3">
+                    <div class="flex justify-between items-center">
+                        <span class="text-[12px] text-gray-400 font-medium" id="hud-label-1">Data 1</span>
+                        <span id="hud-val-1" class="text-base font-mono font-bold text-white">---</span>
+                    </div>
+                    <div class="flex justify-between items-center">
+                        <span class="text-[12px] text-gray-400 font-medium" id="hud-label-2">Data 2</span>
+                        <span id="hud-val-2" class="text-base font-mono font-bold text-white">---</span>
+                    </div>
+                    <div id="hud-status" class="pt-2 text-center text-[12px] font-bold tracking-widest text-indigo-400 hidden border-t border-white/5 font-mono">
+                        RESULT
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- MAIN ENGINE SCRIPT -->
+    <script type="module">
+        import * as THREE from 'three';
+        import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
+
+        // --- DOM Elements ---
+        const canvas2D = document.getElementById('canvas-2d');
+        const ctx = canvas2D.getContext('2d');
+        const container3D = document.getElementById('canvas-3d');
+        const workspace = document.getElementById('workspace');
+
+        // --- GLOBAL STATE ---
+        let currentMode = 'vectors'; 
+        let cx, cy, wsWidth, wsHeight;
+        let lastTime = 0;
+        let time = 0;
+
+        const M = {
+            vec: { mode: 'dot', ang: 45, magA: 5, magB: 4 },
+            mat: { a: 1, b: 0, c: 0, d: 1 },
+            conic: { ang: 0 },
+            comp: { r: 4, i: 3, rotAnim: 0, isRotating: false }
+        };
+
+        // --- 2D CANVAS SETUP ---
+        function resize2D() {
+            canvas2D.width = workspace.clientWidth;
+            canvas2D.height = workspace.clientHeight;
+            wsWidth = canvas2D.width;
+            wsHeight = canvas2D.height;
+            cx = wsWidth / 2;
+            cy = wsHeight / 2;
+        }
+        window.addEventListener('resize', resize2D);
+
+        // --- 3D SCENE SETUP ---
+        const scene = new THREE.Scene();
+        scene.background = new THREE.Color(0x020617);
+        
+        const camera = new THREE.PerspectiveCamera(45, workspace.clientWidth / workspace.clientHeight, 0.1, 500);
+        camera.position.set(20, 15, 25);
+
+        const renderer = new THREE.WebGLRenderer({ antialias: true, alpha: false });
+        renderer.setSize(workspace.clientWidth, workspace.clientHeight);
+        renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+        container3D.appendChild(renderer.domElement);
+
+        const controls = new OrbitControls(camera, renderer.domElement);
+        controls.enableDamping = true;
+        controls.dampingFactor = 0.05;
+
+        // Lights
+        const ambientLight = new THREE.AmbientLight(0xffffff, 0.4);
+        scene.add(ambientLight);
+        const dirLight = new THREE.DirectionalLight(0xffffff, 1.5);
+        dirLight.position.set(10, 20, 10);
+        scene.add(dirLight);
+
+        const gridHelper = new THREE.GridHelper(30, 30, 0x334155, 0x0f172a);
+        scene.add(gridHelper);
+
+        // --- 3D: VECTORS (Dot & Cross) ---
+        const vecGroup = new THREE.Group();
+        scene.add(vecGroup);
+
+        const arrowA = new THREE.ArrowHelper(new THREE.Vector3(1,0,0), new THREE.Vector3(0,0,0), 5, 0xef4444, 1, 0.5); // Red
+        const arrowB = new THREE.ArrowHelper(new THREE.Vector3(1,0,0), new THREE.Vector3(0,0,0), 4, 0x10b981, 1, 0.5); // Green
+        const arrowCross = new THREE.ArrowHelper(new THREE.Vector3(0,0,1), new THREE.Vector3(0,0,0), 1, 0x3b82f6, 1, 0.5); // Blue
+        
+        // Material for projection lines
+        const projMat = new THREE.LineDashedMaterial({ color: 0xffffff, dashSize: 0.2, gapSize: 0.2 });
+        const projLine = new THREE.Line(new THREE.BufferGeometry().setFromPoints([new THREE.Vector3(), new THREE.Vector3()]), projMat);
+        projLine.computeLineDistances();
+        
+        const shadowMat = new THREE.LineBasicMaterial({ color: 0xef4444, linewidth: 5 }); // Thick red for shadow
+        const shadowLine = new THREE.Line(new THREE.BufferGeometry().setFromPoints([new THREE.Vector3(), new THREE.Vector3()]), shadowMat);
+
+        vecGroup.add(arrowA, arrowB, arrowCross, projLine, shadowLine);
+
+        function updateVectors3D() {
+            const rad = M.vec.ang * Math.PI / 180;
+            
+            // Vector A lies strictly on X axis
+            arrowA.setLength(M.vec.magA, 1, 0.5);
+            
+            // Vector B rotates in XY plane
+            const dirB = new THREE.Vector3(Math.cos(rad), Math.sin(rad), 0);
+            arrowB.setDirection(dirB);
+            arrowB.setLength(M.vec.magB, 1, 0.5);
+
+            if (M.vec.mode === 'dot') {
+                arrowCross.visible = false;
+                projLine.visible = true;
+                shadowLine.visible = true;
+
+                // Projection of B onto A (A is along X)
+                const projX = M.vec.magB * Math.cos(rad);
+                
+                // Draw drop perpendicular line
+                const ptB = new THREE.Vector3(M.vec.magB * Math.cos(rad), M.vec.magB * Math.sin(rad), 0);
+                const ptProj = new THREE.Vector3(projX, 0, 0);
+                
+                projLine.geometry.setFromPoints([ptB, ptProj]);
+                projLine.computeLineDistances();
+
+                // Draw shadow (Dot Product scalar magnitude represented as a line on A)
+                shadowLine.geometry.setFromPoints([new THREE.Vector3(0,0,0), ptProj]);
+                shadowLine.material.color.setHex(projX >= 0 ? 0xef4444 : 0x64748b); // Red if pos, gray if neg
+
+                // Math HUD
+                const dotProd = M.vec.magA * M.vec.magB * Math.cos(rad);
+                document.getElementById('hud-label-1').innerText = "Dot Product (A·B)";
+                document.getElementById('hud-val-1').innerText = dotProd.toFixed(2);
+                document.getElementById('hud-val-1').style.color = "#ef4444";
+                document.getElementById('hud-label-2').innerText = "Projection Length";
+                document.getElementById('hud-val-2').innerText = projX.toFixed(2);
+
+            } else {
+                arrowCross.visible = true;
+                projLine.visible = false;
+                shadowLine.visible = false;
+
+                // Cross Product A x B
+                // A = (magA, 0, 0), B = (magB*cos, magB*sin, 0)
+                // Cross = (0, 0, magA * magB * sin)
+                const crossMag = M.vec.magA * M.vec.magB * Math.sin(rad);
+                
+                if (Math.abs(crossMag) > 0.01) {
+                    const crossDir = new THREE.Vector3(0, 0, Math.sign(crossMag));
+                    arrowCross.setDirection(crossDir);
+                    arrowCross.setLength(Math.abs(crossMag) * 0.3, 1, 0.5); // Scaled visually so it fits
+                } else {
+                    arrowCross.setLength(0.01, 0.01, 0.01);
+                }
+
+                document.getElementById('hud-label-1').innerText = "Cross Product |A×B|";
+                document.getElementById('hud-val-1').innerText = crossMag.toFixed(2);
+                document.getElementById('hud-val-1').style.color = "#3b82f6";
+                document.getElementById('hud-label-2').innerText = "Perpendicular Vector";
+                document.getElementById('hud-val-2').innerText = `(0, 0, ${crossMag.toFixed(1)})`;
+            }
+            
+            const st = document.getElementById('hud-status');
+            st.innerText = M.vec.mode === 'dot' ? "A·B is a Scalar (Shadow)" : "A×B is a New Vector (3D)";
+            st.classList.remove('hidden');
+        }
+
+        // --- 3D SCENE: CONIC SECTIONS ---
+        const conicsGroup = new THREE.Group();
+        scene.add(conicsGroup);
+        conicsGroup.visible = false;
+
+        // Double Cone (Glassy)
+        const coneGeo = new THREE.ConeGeometry(4, 8, 32);
+        const coneMat = new THREE.MeshPhysicalMaterial({
+            color: 0x38bdf8, metalness: 0.1, roughness: 0.1,
+            transmission: 0.9, transparent: true, opacity: 0.8, side: THREE.DoubleSide
+        });
+        
+        const coneTop = new THREE.Mesh(coneGeo, coneMat);
+        coneTop.position.y = 4;
+        const coneBot = new THREE.Mesh(coneGeo, coneMat);
+        coneBot.rotation.x = Math.PI;
+        coneBot.position.y = -4;
+        
+        // Slicing Plane
+        const planeGeo = new THREE.PlaneGeometry(12, 12);
+        const planeMat = new THREE.MeshStandardMaterial({ 
+            color: 0xf97316, side: THREE.DoubleSide, transparent: true, opacity: 0.8 
+        });
+        const slicePlane = new THREE.Mesh(planeGeo, planeMat);
+        
+        conicsGroup.add(coneTop, coneBot, slicePlane);
+
+        function updateConics3D() {
+            const rad = M.conic.ang * Math.PI / 180;
+            // The plane rotates around the X axis
+            slicePlane.rotation.x = -rad;
+            // Shift Y slightly up to avoid exact singularity at origin if horizontal
+            slicePlane.position.y = 1.0; 
+
+            // Cone half-angle is atan(4/8) = ~26.56 degrees
+            const coneAngle = Math.atan(4/8) * 180 / Math.PI;
+            
+            let conicType = "Circle";
+            let color = "#3b82f6";
+
+            if (M.conic.ang === 0) {
+                conicType = "Circle"; color = "#3b82f6";
+            } else if (M.conic.ang < 90 - coneAngle) {
+                conicType = "Ellipse"; color = "#a855f7";
+            } else if (Math.abs(M.conic.ang - (90 - coneAngle)) < 1) {
+                conicType = "Parabola"; color = "#10b981";
+            } else {
+                conicType = "Hyperbola"; color = "#ef4444";
+            }
+
+            slicePlane.material.color.set(color);
+
+            document.getElementById('hud-label-1').innerText = "Plane Angle";
+            document.getElementById('hud-val-1').innerText = M.conic.ang + "°";
+            document.getElementById('hud-val-1').style.color = "#f97316";
+            document.getElementById('hud-label-2').innerText = "Conic Section";
+            document.getElementById('hud-val-2').innerText = conicType;
+            document.getElementById('hud-val-2').style.color = color;
+            
+            const st = document.getElementById('hud-status');
+            st.innerText = "Slice a 3D Cone = 2D Curve";
+            st.classList.remove('hidden');
+        }
+
+        // --- 2D CANVAS: MATRICES ---
+        function drawMatrices2D() {
+            const gridScale = 40;
+            
+            ctx.save();
+            ctx.translate(cx, cy);
+
+            // 1. Draw Original Faint Grid
+            ctx.strokeStyle = 'rgba(255,255,255,0.05)'; ctx.lineWidth = 1;
+            ctx.beginPath();
+            for(let i = -15; i <= 15; i++) {
+                ctx.moveTo(i*gridScale, -600); ctx.lineTo(i*gridScale, 600);
+                ctx.moveTo(-600, i*gridScale); ctx.lineTo(600, i*gridScale);
+            }
+            ctx.stroke();
+
+            // 2. Apply Matrix Transformation!
+            // Canvas transform matrix: (a, b, c, d, e, f)
+            // Mathematical matrix: [a b]
+            //                      [c d]
+            // Maps to canvas: transform(a, c, b, d, 0, 0). (Note: Canvas Y is down, so we invert Y logic visually)
+            // To keep math standard (X right, Y up), we do custom line drawing.
+
+            const transform = (x, y) => {
+                // Vector [x, y]
+                // x' = ax + by
+                // y' = cx + dy
+                return {
+                    x: M.mat.a * x + M.mat.b * y,
+                    y: M.mat.c * x + M.mat.d * y
+                };
+            };
+
+            // Draw Transformed Grid
+            ctx.strokeStyle = 'rgba(56, 189, 248, 0.3)'; ctx.lineWidth = 2;
+            ctx.beginPath();
+            for(let i = -10; i <= 10; i++) {
+                // Vertical lines (x = i, y = -10 to 10)
+                let p1 = transform(i, -10); let p2 = transform(i, 10);
+                ctx.moveTo(p1.x * gridScale, -p1.y * gridScale); ctx.lineTo(p2.x * gridScale, -p2.y * gridScale);
+                
+                // Horizontal lines (x = -10 to 10, y = i)
+                p1 = transform(-10, i); p2 = transform(10, i);
+                ctx.moveTo(p1.x * gridScale, -p1.y * gridScale); ctx.lineTo(p2.x * gridScale, -p2.y * gridScale);
+            }
+            ctx.stroke();
+
+            // Draw Transformed Base Vectors (i-hat and j-hat)
+            const drawVec = (vx, vy, color) => {
+                const px = vx * gridScale;
+                const py = -vy * gridScale;
+                const angle = Math.atan2(py, px);
+                
+                ctx.strokeStyle = color; ctx.fillStyle = color; ctx.lineWidth = 4;
+                ctx.beginPath(); ctx.moveTo(0,0); ctx.lineTo(px, py); ctx.stroke();
+                ctx.beginPath();
+                ctx.moveTo(px, py);
+                ctx.lineTo(px - 12*Math.cos(angle - Math.PI/6), py - 12*Math.sin(angle - Math.PI/6));
+                ctx.lineTo(px - 12*Math.cos(angle + Math.PI/6), py - 12*Math.sin(angle + Math.PI/6));
+                ctx.fill();
+            };
+
+            // i-hat transforms to column 1: [a, c]
+            drawVec(M.mat.a, M.mat.c, '#ef4444'); // Red
+            // j-hat transforms to column 2: [b, d]
+            drawVec(M.mat.b, M.mat.d, '#10b981'); // Green
+
+            ctx.restore();
+
+            // HUD
+            const det = (M.mat.a * M.mat.d) - (M.mat.b * M.mat.c);
+            document.getElementById('hud-label-1').innerText = "Determinant (Area Scale)";
+            document.getElementById('hud-val-1').innerText = det.toFixed(2);
+            document.getElementById('hud-val-1').style.color = "#f472b6";
+            
+            document.getElementById('hud-label-2').innerText = "Space Status";
+            if (Math.abs(det) < 0.01) document.getElementById('hud-val-2').innerText = "Collapsed (1D/0D)";
+            else if (det < 0) document.getElementById('hud-val-2').innerText = "Flipped (Mirrored)";
+            else document.getElementById('hud-val-2').innerText = "Preserved Orientation";
+            document.getElementById('hud-val-2').style.color = "#ffffff";
+            
+            const st = document.getElementById('hud-status');
+            st.innerText = "Matrix = Space Distortion";
+            st.classList.remove('hidden');
+        }
+
+        // --- 2D CANVAS: COMPLEX NUMBERS (ARGAND PLANE) ---
+        function drawComplex2D(dt) {
+            const gridScale = 50;
+            
+            ctx.save();
+            ctx.translate(cx, cy);
+
+            // Axes
+            ctx.strokeStyle = 'rgba(255,255,255,0.1)'; ctx.lineWidth = 2;
+            ctx.beginPath(); ctx.moveTo(-600, 0); ctx.lineTo(600, 0); ctx.stroke(); // Real
+            ctx.beginPath(); ctx.moveTo(0, -600); ctx.lineTo(0, 600); ctx.stroke(); // Imaginary
+
+            ctx.fillStyle = '#64748b'; ctx.font = 'bold 12px Inter';
+            ctx.fillText("Real (Re)", 200, 20);
+            ctx.fillText("Imaginary (Im)", 10, -200);
+
+            // Animation Logic for multiplying by 'i'
+            if (M.comp.isRotating) {
+                M.comp.rotAnim += dt * 3.0; // Rotate speed
+                if (M.comp.rotAnim >= Math.PI / 2) {
+                    M.comp.rotAnim = 0;
+                    M.comp.isRotating = false;
+                    // Mathematically apply i: (a + bi)*i = -b + ai
+                    const newR = -M.comp.i;
+                    const newI = M.comp.r;
+                    M.comp.r = newR; M.comp.i = newI;
+                    // Update UI Sliders to match new state
+                    document.getElementById('comp-real').value = newR;
+                    document.getElementById('comp-real-disp').innerText = newR.toFixed(1);
+                    document.getElementById('comp-imag').value = newI;
+                    document.getElementById('comp-imag-disp').innerText = newI.toFixed(1);
+                }
+            }
+
+            // Target Vector
+            const px = M.comp.r * gridScale;
+            const py = -M.comp.i * gridScale; // Canvas Y inverted
+
+            ctx.save();
+            ctx.rotate(-M.comp.rotAnim); // Canvas rotation is clockwise, math is CCW, so negative
+
+            // Draw Vector
+            ctx.strokeStyle = '#22d3ee'; ctx.fillStyle = '#22d3ee'; ctx.lineWidth = 4;
+            ctx.beginPath(); ctx.moveTo(0,0); ctx.lineTo(px, py); ctx.stroke();
+            const angle = Math.atan2(py, px);
+            ctx.beginPath();
+            ctx.moveTo(px, py);
+            ctx.lineTo(px - 15*Math.cos(angle - Math.PI/6), py - 15*Math.sin(angle - Math.PI/6));
+            ctx.lineTo(px - 15*Math.cos(angle + Math.PI/6), py - 15*Math.sin(angle + Math.PI/6));
+            ctx.fill();
+
+            // Label
+            ctx.fillStyle = '#ffffff'; ctx.font = 'bold 16px Fira Code';
+            ctx.fillText(`z = ${M.comp.r.toFixed(1)} + ${M.comp.i.toFixed(1)}i`, px + 15, py - 15);
+
+            ctx.restore();
+
+            // If rotating, draw an arc showing the path
+            if (M.comp.isRotating) {
+                ctx.strokeStyle = 'rgba(255, 255, 255, 0.3)';
+                ctx.setLineDash([5, 5]);
+                ctx.beginPath();
+                const rMag = Math.sqrt(px*px + py*py);
+                const startAng = Math.atan2(py, px);
+                // Draw arc from startAng to startAng - rotAnim (CCW in math is negative in canvas Y)
+                ctx.arc(0, 0, rMag, startAng, startAng - M.comp.rotAnim, true);
+                ctx.stroke();
+                ctx.setLineDash([]);
+            }
+
+            ctx.restore();
+
+            // HUD
+            const mag = Math.sqrt(M.comp.r*M.comp.r + M.comp.i*M.comp.i);
+            let phase = Math.atan2(M.comp.i, M.comp.r) * 180 / Math.PI;
+            if (phase < 0) phase += 360;
+
+            document.getElementById('hud-label-1').innerText = "Magnitude |z|";
+            document.getElementById('hud-val-1').innerText = mag.toFixed(2);
+            document.getElementById('hud-val-1').style.color = "#22d3ee";
+            
+            document.getElementById('hud-label-2').innerText = "Phase Angle (θ)";
+            document.getElementById('hud-val-2').innerText = phase.toFixed(1) + "°";
+            document.getElementById('hud-val-2').style.color = "#ffffff";
+            
+            const st = document.getElementById('hud-status');
+            st.innerText = "Multiplying by 'i' rotates 90°";
+            st.classList.remove('hidden');
+        }
+
+        // --- MASTER RENDER LOOP ---
+        resize2D();
+
+        function renderLoop(timestamp) {
+            const dt = (timestamp - lastTime) / 1000 || 0.016;
+            lastTime = timestamp;
+            time += dt;
+
+            if (currentMode === 'vectors' || currentMode === 'conics') {
+                canvas2D.style.display = 'none';
+                container3D.style.display = 'block';
+                
+                if (currentMode === 'vectors') updateVectors3D();
+                if (currentMode === 'conics') updateConics3D();
+
+                controls.update();
+                renderer.render(scene, camera);
+            } else {
+                canvas2D.style.display = 'block';
+                container3D.style.display = 'none';
+                
+                ctx.fillStyle = '#020617';
+                ctx.fillRect(0, 0, wsWidth, wsHeight);
+
+                if (currentMode === 'matrices') drawMatrices2D();
+                if (currentMode === 'complex') drawComplex2D(dt);
+            }
+
+            requestAnimationFrame(renderLoop);
+        }
+
+        // --- UI BINDINGS & TAB SWITCHING ---
+        
+        // Vectors
+        document.getElementById('vec-mode-dot').onclick = () => { 
+            M.vec.mode = 'dot'; 
+            document.getElementById('vec-mode-dot').className = 'flex-1 py-1.5 text-[10px] font-bold uppercase rounded-lg bg-white text-slate-900 transition-all';
+            document.getElementById('vec-mode-cross').className = 'flex-1 py-1.5 text-[10px] font-bold uppercase rounded-lg text-gray-400 hover:text-white transition-all';
+            document.getElementById('formula-display').innerText = "A·B = |A||B|cos(θ)";
+        };
+        document.getElementById('vec-mode-cross').onclick = () => { 
+            M.vec.mode = 'cross'; 
+            document.getElementById('vec-mode-cross').className = 'flex-1 py-1.5 text-[10px] font-bold uppercase rounded-lg bg-white text-slate-900 transition-all';
+            document.getElementById('vec-mode-dot').className = 'flex-1 py-1.5 text-[10px] font-bold uppercase rounded-lg text-gray-400 hover:text-white transition-all';
+            document.getElementById('formula-display').innerText = "|A×B| = |A||B|sin(θ)";
+        };
+
+        const bindSlider = (id, obj, key, displayId, suffix="") => {
+            const el = document.getElementById(id);
+            if(!el) return;
+            el.addEventListener('input', (e) => {
+                obj[key] = parseFloat(e.target.value);
+                if(displayId) document.getElementById(displayId).innerText = obj[key].toFixed(el.step.includes('.') ? 1 : 0).replace('.0', '') + suffix;
+            });
+        };
+
+        bindSlider('vec-ang', M.vec, 'ang', 'vec-ang-disp', '°');
+        bindSlider('vec-maga', M.vec, 'magA', 'vec-maga-disp');
+        bindSlider('vec-magb', M.vec, 'magB', 'vec-magb-disp');
+
+        bindSlider('mat-a', M.mat, 'a', 'mat-a-disp');
+        bindSlider('mat-b', M.mat, 'b', 'mat-b-disp');
+        bindSlider('mat-c', M.mat, 'c', 'mat-c-disp');
+        bindSlider('mat-d', M.mat, 'd', 'mat-d-disp');
+        
+        document.getElementById('btn-mat-reset').onclick = () => {
+            M.mat = { a: 1, b: 0, c: 0, d: 1 };
+            document.getElementById('mat-a').value = 1; document.getElementById('mat-a-disp').innerText = "1.0";
+            document.getElementById('mat-b').value = 0; document.getElementById('mat-b-disp').innerText = "0.0";
+            document.getElementById('mat-c').value = 0; document.getElementById('mat-c-disp').innerText = "0.0";
+            document.getElementById('mat-d').value = 1; document.getElementById('mat-d-disp').innerText = "1.0";
+        };
+
+        bindSlider('conic-ang', M.conic, 'ang', 'conic-ang-disp', '°');
+        
+        bindSlider('comp-real', M.comp, 'r', 'comp-real-disp');
+        bindSlider('comp-imag', M.comp, 'i', 'comp-imag-disp');
+        document.getElementById('btn-comp-mult').onclick = () => { M.comp.isRotating = true; };
+
+        const tabs = document.querySelectorAll('.tab-btn');
+        tabs.forEach(btn => {
+            btn.addEventListener('click', (e) => {
+                tabs.forEach(t => t.classList.remove('active', 'bg-white', 'text-gray-900'));
+                tabs.forEach(t => t.classList.add('text-gray-400'));
+                btn.classList.add('active', 'bg-white', 'text-gray-900');
+                
+                currentMode = btn.dataset.tab;
+
+                const info = {
+                    vectors: { title: "Vector Products", formula: "A·B = |A||B|cos(θ)", desc: "The <b>Dot Product</b> calculates the shadow one vector casts on another (scalar). The <b>Cross Product</b> creates a new 3D vector perpendicular to both." },
+                    matrices: { title: "Matrices as Transformations", formula: "v' = Mv", desc: "A matrix mathematically stretches, squashes, and shears the 2D Cartesian plane. Watch how the base vectors (red and green) dictate the new grid shape." },
+                    conics: { title: "Conic Sections", formula: "Ax² + Bxy + Cy² + Dx + Ey + F = 0", desc: "By slicing a 3D double cone with a flat 2D plane at different angles, we reveal the fundamental geometric curves: Circles, Ellipses, Parabolas, and Hyperbolas." },
+                    complex: { title: "Argand Plane (Complex Numbers)", formula: "z = a + bi", desc: "Imaginary numbers exist on a 2D plane perpendicular to standard numbers. Multiplying by 'i' doesn't just change the value—it physically rotates the vector 90°!" }
+                };
+
+                document.getElementById('info-title').innerText = info[currentMode].title;
+                document.getElementById('info-desc').innerHTML = info[currentMode].desc;
+                if(currentMode !== 'vectors') document.getElementById('formula-display').innerText = info[currentMode].formula;
+                
+                ['vectors', 'matrices', 'conics', 'complex'].forEach(id => document.getElementById(`controls-${id}`).classList.add('hidden'));
+                document.getElementById(`controls-${currentMode}`).classList.remove('hidden');
+                
+                // 3D Scene State Management
+                if (currentMode === 'vectors') {
+                    vecGroup.visible = true; conicsGroup.visible = false;
+                    camera.position.set(10, 10, 15); controls.target.set(0, 0, 0);
+                } else if (currentMode === 'conics') {
+                    vecGroup.visible = false; conicsGroup.visible = true;
+                    camera.position.set(15, 5, 15); controls.target.set(0, 0, 0);
+                }
+                
+                document.getElementById('hud').style.opacity = '0'; 
+                setTimeout(() => document.getElementById('hud').style.opacity = '1', 100);
+            });
+        });
+
+        // Initialize
+        setTimeout(() => {
+            const ls = document.getElementById('loading-screen');
+            if(ls) { ls.style.opacity = '0'; setTimeout(() => ls.style.display = 'none', 600); }
+            requestAnimationFrame(renderLoop);
+        }, 500);
+
+    </script>
+</body>
+</html>

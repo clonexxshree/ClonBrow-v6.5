@@ -1,0 +1,518 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Physics Lab - Heat Transfer</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        body, html {
+            margin: 0;
+            padding: 0;
+            width: 100%;
+            height: 100%;
+            overflow: hidden;
+            background-color: #020617; /* Deep space slate */
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+            touch-action: none;
+            user-select: none;
+        }
+        
+        #sim-canvas {
+            display: block;
+            width: 100%;
+            height: 100%;
+            cursor: default;
+        }
+
+        /* Premium Minimalist Sliders */
+        input[type=range] {
+            -webkit-appearance: none;
+            width: 100%;
+            background: transparent;
+        }
+        input[type=range]::-webkit-slider-thumb {
+            -webkit-appearance: none;
+            height: 18px;
+            width: 18px;
+            border-radius: 50%;
+            background: #ffffff;
+            cursor: pointer;
+            margin-top: -7px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.6);
+            transition: transform 0.1s ease;
+            border: 1px solid rgba(255,255,255,0.2);
+        }
+        input[type=range]::-webkit-slider-thumb:hover {
+            transform: scale(1.15);
+        }
+        input[type=range]::-webkit-slider-runnable-track {
+            width: 100%;
+            height: 4px;
+            cursor: pointer;
+            background: rgba(255, 255, 255, 0.15);
+            border-radius: 2px;
+            box-shadow: inset 0 1px 2px rgba(0,0,0,0.5);
+        }
+        
+        /* Deep Glassmorphism Panel */
+        .glass-panel {
+            background: linear-gradient(145deg, rgba(15, 23, 42, 0.85) 0%, rgba(2, 6, 23, 0.95) 100%);
+            backdrop-filter: blur(30px);
+            -webkit-backdrop-filter: blur(30px);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            border-top: 1px solid rgba(255, 255, 255, 0.2);
+            box-shadow: 0 30px 60px -12px rgba(0, 0, 0, 0.8), inset 0 1px 10px rgba(255, 255, 255, 0.05);
+        }
+
+        .scroll-area::-webkit-scrollbar { width: 4px; }
+        .scroll-area::-webkit-scrollbar-thumb { background: rgba(255, 255, 255, 0.2); border-radius: 4px; }
+
+        /* Segmented Control Tabs */
+        .tab-btn {
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+        .tab-btn.active {
+            background-color: #ffffff;
+            color: #020617;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.4);
+        }
+        .tab-btn:not(.active):hover {
+            background-color: rgba(255,255,255,0.1);
+            color: #ffffff;
+        }
+
+        #loading-screen {
+            position: absolute;
+            inset: 0;
+            background: #020617;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: white;
+            z-index: 50;
+            transition: opacity 0.6s ease;
+        }
+    </style>
+</head>
+<body>
+
+    <!-- Loading Screen -->
+    <div id="loading-screen">
+        <div class="flex flex-col items-center gap-5">
+            <svg class="animate-spin h-8 w-8 text-orange-500" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="3"></circle><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path></svg>
+            <span class="text-xs font-medium tracking-widest text-gray-400 uppercase">Loading Thermodynamics Lab...</span>
+        </div>
+    </div>
+
+    <!-- Main UI Overlay -->
+    <div class="absolute top-5 left-5 md:top-8 md:left-8 z-10 w-[380px] glass-panel p-6 rounded-[1.5rem] pointer-events-auto flex flex-col max-h-[90vh]">
+        
+        <!-- Header -->
+        <div class="mb-5 border-b border-white/10 pb-5 shrink-0 flex items-center justify-between">
+            <div>
+                <h1 class="text-2xl font-bold tracking-tight text-white mb-1">Thermodynamics</h1>
+                <p class="text-[11px] font-medium text-orange-400 uppercase tracking-widest">Methods of Heat Transfer</p>
+            </div>
+            <div class="w-10 h-10 rounded-full bg-orange-500/20 flex items-center justify-center text-orange-400 shadow-[0_0_15px_rgba(249,115,22,0.3)]">
+                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17.657 18.657A8 8 0 016.343 7.343S7 9 9 10c0-2 .5-5 2.986-7C14 5 16.09 5.777 17.656 7.343A7.975 7.975 0 0120 13a7.975 7.975 0 01-2.343 5.657z"></path><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9.879 16.121A3 3 0 1012.015 11L11 14H9c0 .768.293 1.536.879 2.121z"></path></svg>
+            </div>
+        </div>
+
+        <!-- Module Navigation Tabs -->
+        <div class="flex p-1 bg-black/40 rounded-xl shadow-inner gap-1 mb-6 shrink-0 border border-white/5">
+            <button data-tab="conduction" class="tab-btn active flex-1 py-2 text-[11px] font-bold uppercase tracking-wider rounded-lg text-gray-400">Conduction</button>
+            <button data-tab="convection" class="tab-btn flex-1 py-2 text-[11px] font-bold uppercase tracking-wider rounded-lg text-gray-400">Convection</button>
+            <button data-tab="radiation" class="tab-btn flex-1 py-2 text-[11px] font-bold uppercase tracking-wider rounded-lg text-gray-400">Radiation</button>
+        </div>
+
+        <div class="scroll-area overflow-y-auto pr-2 pb-2 space-y-7">
+            
+            <div class="bg-black/30 p-4 rounded-xl border border-white/5 shadow-inner">
+                <h2 id="info-title" class="text-sm font-bold text-white mb-2">Conduction (Solids)</h2>
+                <p id="info-desc" class="text-xs text-gray-400 leading-relaxed">
+                    Heat is transferred through direct physical contact. Atoms at the hot end vibrate rapidly, bumping into neighboring atoms and passing the kinetic thermal energy down the solid metal rod.
+                </p>
+            </div>
+
+            <!-- CONDUCTION CONTROLS -->
+            <div id="controls-conduction" class="space-y-5">
+                <div class="space-y-3">
+                    <div class="flex justify-between items-end">
+                        <label class="text-[11px] font-semibold text-orange-400 uppercase tracking-widest">Flame Temperature</label>
+                        <span id="cond-temp-display" class="text-[11px] font-mono bg-orange-500/10 px-2 py-1 rounded text-orange-300">500°C</span>
+                    </div>
+                    <input type="range" id="cond-temp-slider" min="0" max="1000" step="10" value="500" style="accent-color: #f97316;">
+                </div>
+                <div class="space-y-3">
+                    <div class="flex justify-between items-end">
+                        <label class="text-[11px] font-semibold text-blue-400 uppercase tracking-widest">Material Conductivity</label>
+                        <span id="cond-mat-display" class="text-[11px] font-mono bg-blue-500/10 px-2 py-1 rounded text-blue-300">Iron (Medium)</span>
+                    </div>
+                    <input type="range" id="cond-mat-slider" min="0.01" max="0.1" step="0.01" value="0.05" style="accent-color: #3b82f6;">
+                </div>
+            </div>
+
+            <!-- CONVECTION CONTROLS -->
+            <div id="controls-convection" class="space-y-5 hidden">
+                <div class="space-y-3">
+                    <div class="flex justify-between items-end">
+                        <label class="text-[11px] font-semibold text-orange-400 uppercase tracking-widest">Burner Heat</label>
+                        <span id="conv-heat-display" class="text-[11px] font-mono bg-orange-500/10 px-2 py-1 rounded text-orange-300">Medium</span>
+                    </div>
+                    <input type="range" id="conv-heat-slider" min="0" max="100" step="1" value="50" style="accent-color: #f97316;">
+                </div>
+            </div>
+
+            <!-- RADIATION CONTROLS -->
+            <div id="controls-radiation" class="space-y-5 hidden">
+                <div class="space-y-3">
+                    <div class="flex justify-between items-end">
+                        <label class="text-[11px] font-semibold text-yellow-400 uppercase tracking-widest">Sun Luminosity</label>
+                        <span id="rad-heat-display" class="text-[11px] font-mono bg-yellow-500/10 px-2 py-1 rounded text-yellow-300">1.0x</span>
+                    </div>
+                    <input type="range" id="rad-heat-slider" min="0" max="3" step="0.1" value="1.0" style="accent-color: #eab308;">
+                </div>
+            </div>
+
+        </div>
+    </div>
+
+    <!-- Live Physics HUD (Bottom Right) -->
+    <div class="absolute bottom-6 right-6 z-10 glass-panel p-5 rounded-2xl pointer-events-none min-w-[200px]">
+        <div class="text-[10px] font-bold uppercase tracking-widest text-gray-500 mb-3 border-b border-white/10 pb-2">Thermal Sensors</div>
+        <div class="space-y-3">
+            <div class="flex justify-between items-center">
+                <span id="sensor-label-1" class="text-sm text-gray-300 font-medium">Source Temp</span>
+                <span id="sensor-val-1" class="text-lg font-mono font-bold text-orange-400">0°C</span>
+            </div>
+            <div class="flex justify-between items-center">
+                <span id="sensor-label-2" class="text-sm text-gray-300 font-medium">Target Temp</span>
+                <span id="sensor-val-2" class="text-lg font-mono font-bold text-cyan-400">0°C</span>
+            </div>
+        </div>
+    </div>
+
+    <canvas id="sim-canvas"></canvas>
+
+    <script>
+        const canvas = document.getElementById('sim-canvas');
+        const ctx = canvas.getContext('2d');
+
+        // --- ASSET LOADING ---
+        const imgSun = new Image();
+        const imgEarth = new Image();
+        let assetsLoaded = 0;
+
+        function checkAssets() {
+            assetsLoaded++;
+            if (assetsLoaded >= 2) {
+                const loader = document.getElementById('loading-screen');
+                if(loader) {
+                    loader.style.opacity = 0;
+                    setTimeout(() => loader.style.display = 'none', 600);
+                }
+            }
+        }
+        imgSun.onload = checkAssets;
+        imgSun.onerror = checkAssets;
+        imgEarth.onload = checkAssets;
+        imgEarth.onerror = checkAssets;
+
+        imgSun.src = 'https://res.cloudinary.com/ds93qby5a/image/upload/q_auto/f_auto/v1775882647/efefc41d-4063-4461-b33c-5b6e819a78b4-Photoroom_gh0vok.png';
+        imgEarth.src = 'https://res.cloudinary.com/ds93qby5a/image/upload/q_auto/f_auto/v1775882647/d746cf80-3073-40f3-9c03-a79cba273e8a-Photoroom_ygqjvc.png';
+
+        function resize() {
+            canvas.width = window.innerWidth;
+            canvas.height = window.innerHeight;
+            initPhysics();
+        }
+        window.addEventListener('resize', resize);
+
+        // --- GLOBAL STATE ---
+        let currentMode = 'conduction';
+        let centerX = 0, centerY = 0;
+        let time = 0;
+
+        function getHeatColor(temp, maxTemp = 1000) {
+            const ratio = Math.max(0, Math.min(1, temp / maxTemp));
+            if (ratio < 0.1) return `rgb(${40 + ratio*500}, 50, 70)`;
+            if (ratio < 0.5) {
+                const r = 90 + ((ratio - 0.1) / 0.4) * 165;
+                return `rgb(${r}, 0, 0)`;
+            }
+            if (ratio < 0.8) {
+                const g = ((ratio - 0.5) / 0.3) * 200;
+                return `rgb(255, ${g}, 0)`;
+            }
+            const b = ((ratio - 0.8) / 0.2) * 255;
+            return `rgb(255, 255, ${b})`;
+        }
+
+        // --- MODULE 1: CONDUCTION ---
+        let rod = { nodes: [], cols: 45, rows: 6, spacing: 12, sourceTemp: 500, conductivity: 0.05 };
+        function initConduction() {
+            rod.nodes = [];
+            const uiWidth = window.innerWidth >= 768 ? 400 : 0;
+            const startX = uiWidth + (window.innerWidth - uiWidth)/2 - (rod.cols * rod.spacing)/2;
+            const startY = centerY - (rod.rows * rod.spacing) / 2;
+            for (let c = 0; c < rod.cols; c++) {
+                let colNodes = [];
+                for (let r = 0; r < rod.rows; r++) {
+                    colNodes.push({ baseX: startX + c * rod.spacing, baseY: startY + r * rod.spacing, temp: 20 });
+                }
+                rod.nodes.push(colNodes);
+            }
+        }
+
+        function updateConduction() {
+            for (let r = 0; r < rod.rows; r++) rod.nodes[0][r].temp = rod.sourceTemp;
+            const nextTemp = Array(rod.cols).fill(20);
+            nextTemp[0] = rod.sourceTemp;
+            for (let c = 1; c < rod.cols - 1; c++) {
+                let avg = 0; for(let r=0; r<rod.rows; r++) avg += rod.nodes[c][r].temp; avg /= rod.rows;
+                let avgL = 0; for(let r=0; r<rod.rows; r++) avgL += rod.nodes[c-1][r].temp; avgL /= rod.rows;
+                let avgR = 0; for(let r=0; r<rod.rows; r++) avgR += rod.nodes[c+1][r].temp; avgR /= rod.rows;
+                nextTemp[c] = avg + rod.conductivity * (avgL + avgR - 2 * avg) - (avg - 20) * 0.005;
+            }
+            let endAvg = 0; for(let r=0; r<rod.rows; r++) endAvg += rod.nodes[rod.cols-1][r].temp; endAvg /= rod.rows;
+            let endL = 0; for(let r=0; r<rod.rows; r++) endL += rod.nodes[rod.cols-2][r].temp; endL /= rod.rows;
+            nextTemp[rod.cols-1] = endAvg + rod.conductivity * (endL - endAvg) - ((endAvg-20)*0.01);
+            for (let c = 1; c < rod.cols; c++) {
+                for (let r = 0; r < rod.rows; r++) {
+                    rod.nodes[c][r].temp = Math.max(20, nextTemp[c] + (Math.random() * 2 - 1) * 2);
+                }
+            }
+            document.getElementById('sensor-label-1').innerText = "Flame Temp";
+            document.getElementById('sensor-val-1').innerText = `${rod.sourceTemp.toFixed(0)}°C`;
+            document.getElementById('sensor-label-2').innerText = "Right End Temp";
+            document.getElementById('sensor-val-2').innerText = `${nextTemp[rod.cols-1].toFixed(0)}°C`;
+        }
+
+        function drawConduction() {
+            ctx.shadowBlur = 30; ctx.shadowColor = '#f97316'; ctx.globalCompositeOperation = 'screen';
+            const flameIntensity = rod.sourceTemp / 1000;
+            const startX = rod.nodes[0][0].baseX - 40;
+            if (flameIntensity > 0.05) {
+                const grad = ctx.createRadialGradient(startX, centerY, 5, startX, centerY, 60 * flameIntensity + 20);
+                grad.addColorStop(0, 'rgba(255, 255, 255, 0.9)');
+                grad.addColorStop(0.3, 'rgba(253, 224, 71, 0.8)');
+                grad.addColorStop(1, 'rgba(239, 68, 68, 0)');
+                ctx.fillStyle = grad;
+                ctx.beginPath(); ctx.arc(startX, centerY, 80, 0, Math.PI*2); ctx.fill();
+            }
+            ctx.globalCompositeOperation = 'source-over'; ctx.shadowBlur = 0;
+            for (let c = 0; c < rod.cols; c++) {
+                for (let r = 0; r < rod.rows; r++) {
+                    const node = rod.nodes[c][r];
+                    const vib = (node.temp / 1000) * 3.5;
+                    ctx.fillStyle = getHeatColor(node.temp, 1000);
+                    ctx.beginPath();
+                    ctx.arc(node.baseX + (Math.random() * 2 - 1) * vib, node.baseY + (Math.random() * 2 - 1) * vib, 4, 0, Math.PI * 2);
+                    ctx.fill();
+                }
+            }
+        }
+
+        // --- MODULE 2: CONVECTION ---
+        let pot = { x: 0, y: 0, w: 300, h: 350, heat: 50, particles: [], avgTemp: 20 };
+        function initConvection() {
+            const uiWidth = window.innerWidth >= 768 ? 400 : 0;
+            pot.x = uiWidth + (window.innerWidth - uiWidth)/2;
+            pot.y = centerY + 20;
+            pot.particles = [];
+            for (let i = 0; i < 600; i++) {
+                pot.particles.push({
+                    x: pot.x + (Math.random() - 0.5) * (pot.w - 20),
+                    y: pot.y + (Math.random() - 0.5) * (pot.h - 20),
+                    vx: 0, vy: 0, temp: 20
+                });
+            }
+        }
+
+        function updateConvection() {
+            let totalTemp = 0;
+            for (let p of pot.particles) {
+                const bY = pot.y + pot.h/2;
+                if (Math.abs(p.y - bY) < 40 && Math.abs(p.x - pot.x) < pot.w/3) p.temp += pot.heat * 0.05;
+                if (p.y < pot.y - pot.h/2 + 20) p.temp -= (p.temp - 20) * 0.02;
+                p.temp = Math.max(20, Math.min(100, p.temp));
+                p.vy += (p.temp - 50) * -0.015;
+                if (p.y < pot.y) p.vx += (p.x > pot.x ? 0.05 : -0.05) * (p.temp/100); 
+                else p.vx += (p.x > pot.x ? -0.05 : 0.05) * ((100-p.temp)/100);
+                p.vx *= 0.95; p.vy *= 0.95;
+                p.x += p.vx; p.y += p.vy;
+                if (p.x < pot.x - pot.w/2 + 10) { p.x = pot.x - pot.w/2 + 10; p.vx *= -0.5; }
+                if (p.x > pot.x + pot.w/2 - 10) { p.x = pot.x + pot.w/2 - 10; p.vx *= -0.5; }
+                if (p.y < pot.y - pot.h/2 + 10) { p.y = pot.y - pot.h/2 + 10; p.vy *= -0.5; }
+                if (p.y > pot.y + pot.h/2 - 10) { p.y = pot.y + pot.h/2 - 10; p.vy *= -0.5; }
+                totalTemp += p.temp;
+            }
+            pot.avgTemp = totalTemp / pot.particles.length;
+            document.getElementById('sensor-label-1').innerText = "Burner Output";
+            document.getElementById('sensor-val-1').innerText = `${pot.heat}%`;
+            document.getElementById('sensor-label-2').innerText = "Avg Fluid Temp";
+            document.getElementById('sensor-val-2').innerText = `${pot.avgTemp.toFixed(1)}°C`;
+        }
+
+        function drawConvection() {
+            ctx.shadowBlur = 30; ctx.shadowColor = '#f97316'; ctx.globalCompositeOperation = 'screen';
+            const flameIntensity = pot.heat / 100;
+            const bX = pot.x; const bY = pot.y + pot.h/2 + 20;
+            if (flameIntensity > 0) {
+                const grad = ctx.createRadialGradient(bX, bY, 10, bX, bY, 80 * flameIntensity + 20);
+                grad.addColorStop(0, 'rgba(255, 255, 255, 0.9)');
+                grad.addColorStop(1, 'rgba(239, 68, 68, 0)');
+                ctx.fillStyle = grad;
+                ctx.beginPath(); ctx.ellipse(bX, bY, 120 * flameIntensity, 40, 0, 0, Math.PI*2); ctx.fill();
+            }
+            ctx.globalCompositeOperation = 'source-over'; ctx.shadowBlur = 0;
+            ctx.strokeStyle = '#475569'; ctx.lineWidth = 10; ctx.lineCap = 'round'; ctx.lineJoin = 'round';
+            ctx.beginPath();
+            ctx.moveTo(pot.x - pot.w/2, pot.y - pot.h/2);
+            ctx.lineTo(pot.x - pot.w/2, pot.y + pot.h/2);
+            ctx.lineTo(pot.x + pot.w/2, pot.y + pot.h/2);
+            ctx.lineTo(pot.x + pot.w/2, pot.y - pot.h/2);
+            ctx.stroke();
+            for (let p of pot.particles) {
+                ctx.fillStyle = getHeatColor(p.temp, 100);
+                ctx.beginPath(); ctx.arc(p.x, p.y, 4, 0, Math.PI * 2); ctx.fill();
+            }
+        }
+
+        // --- MODULE 3: RADIATION ---
+        let rad = { sunX: 0, sunY: 0, sunRadius: 110, earthX: 0, earthY: 0, earthRadius: 60, luminosity: 1.0, earthTemp: -50, photons: [] };
+        function initRadiation() {
+            const uiWidth = window.innerWidth >= 768 ? 400 : 0;
+            const availableX = window.innerWidth - uiWidth;
+            rad.sunX = uiWidth + availableX * 0.2; rad.sunY = centerY;
+            rad.earthX = uiWidth + availableX * 0.8; rad.earthY = centerY;
+            rad.photons = [];
+        }
+
+        function updateRadiation() {
+            if (rad.luminosity > 0 && Math.random() < rad.luminosity * 0.6) {
+                const angle = (Math.random() - 0.5) * Math.PI * 0.6; 
+                rad.photons.push({ x: rad.sunX + Math.cos(angle) * rad.sunRadius * 0.8, y: rad.sunY + Math.sin(angle) * rad.sunRadius * 0.8, vx: Math.cos(angle) * 7.5, vy: Math.sin(angle) * 7.5, waveOffset: Math.random() * Math.PI * 2 });
+            }
+            let hits = 0;
+            for (let i = rad.photons.length - 1; i >= 0; i--) {
+                let p = rad.photons[i];
+                p.x += p.vx; p.y += p.vy;
+                const dx = p.x - rad.earthX; const dy = p.y - rad.earthY;
+                if (dx*dx + dy*dy < rad.earthRadius*rad.earthRadius) { hits++; rad.photons.splice(i, 1); continue; }
+                if (p.x > canvas.width + 100 || p.y < -100 || p.y > canvas.height + 100) rad.photons.splice(i, 1);
+            }
+            rad.earthTemp += (hits * 1.5 * rad.luminosity); 
+            rad.earthTemp -= Math.pow(Math.max(rad.earthTemp + 273, 0) / 280, 4) * 0.08; 
+            document.getElementById('sensor-val-1').innerText = `${(rad.luminosity * 1361).toFixed(0)} W/m²`;
+            document.getElementById('sensor-val-2').innerText = `${rad.earthTemp.toFixed(0)}°C`;
+        }
+
+        function drawRadiation() {
+            // Stars
+            ctx.fillStyle = '#ffffff';
+            for(let i=0; i<60; i++) {
+                ctx.globalAlpha = 0.2 + Math.sin(time*2 + i)*0.4;
+                ctx.beginPath(); ctx.arc((Math.sin(i*157.45)*0.5+0.5)*canvas.width, (Math.cos(i*248.9)*0.5+0.5)*canvas.height, Math.random()*1.5, 0, Math.PI*2); ctx.fill();
+            }
+            ctx.globalAlpha = 1.0;
+
+            // Draw Sun (Maintain Aspect Ratio)
+            if (imgSun.complete) {
+                const targetSize = rad.sunRadius * 2.8;
+                const ratio = imgSun.naturalWidth / imgSun.naturalHeight;
+                let drawW = targetSize, drawH = targetSize;
+                if (ratio > 1) drawH = drawW / ratio; else drawW = drawH * ratio;
+                
+                ctx.shadowBlur = 60 * rad.luminosity + 20; ctx.shadowColor = '#facc15';
+                ctx.drawImage(imgSun, rad.sunX - drawW/2, rad.sunY - drawH/2, drawW, drawH);
+                ctx.shadowBlur = 0;
+            }
+
+            // IR Waves
+            ctx.globalCompositeOperation = 'screen';
+            for (let p of rad.photons) {
+                const angle = Math.atan2(p.vy, p.vx);
+                ctx.strokeStyle = `rgba(253, 186, 116, ${0.4 + rad.luminosity*0.2})`; ctx.lineWidth = 2.5;
+                ctx.beginPath();
+                for (let i = 0; i < 35; i+=2) {
+                    const perp = Math.sin(time*12 - i*0.4 + p.waveOffset) * 6;
+                    const px = p.x - Math.cos(angle)*i - Math.sin(angle)*perp;
+                    const py = p.y - Math.sin(angle)*i + Math.cos(angle)*perp;
+                    if(i===0) ctx.moveTo(px, py); else ctx.lineTo(px, py);
+                }
+                ctx.stroke();
+            }
+            ctx.globalCompositeOperation = 'source-over';
+
+            // Draw Earth (Maintain Aspect Ratio)
+            if (imgEarth.complete) {
+                const targetSize = rad.earthRadius * 2.4;
+                const ratio = imgEarth.naturalWidth / imgEarth.naturalHeight;
+                let drawW = targetSize, drawH = targetSize;
+                if (ratio > 1) drawH = drawW / ratio; else drawW = drawH * ratio;
+
+                const heatRatio = Math.max(0, (rad.earthTemp + 50) / 100);
+                if (heatRatio > 0.1) { ctx.shadowBlur = 30 * heatRatio; ctx.shadowColor = '#ef4444'; }
+                ctx.drawImage(imgEarth, rad.earthX - drawW/2, rad.earthY - drawH/2, drawW, drawH);
+                ctx.shadowBlur = 0;
+
+                if (heatRatio > 0.2) {
+                    const aura = ctx.createRadialGradient(rad.earthX, rad.earthY, rad.earthRadius*0.9, rad.earthX, rad.earthY, rad.earthRadius*1.3);
+                    aura.addColorStop(0, `rgba(239, 68, 68, 0)`); aura.addColorStop(0.5, `rgba(239, 68, 68, ${0.3 * heatRatio})`); aura.addColorStop(1, `rgba(239, 68, 68, 0)`);
+                    ctx.fillStyle = aura; ctx.beginPath(); ctx.arc(rad.earthX, rad.earthY, rad.earthRadius*1.5, 0, Math.PI*2); ctx.fill();
+                }
+            }
+        }
+
+        function initPhysics() {
+            centerX = window.innerWidth / 2 + 100; centerY = window.innerHeight / 2;
+            initConduction(); initConvection(); initRadiation();
+        }
+
+        function render() {
+            time += 0.016;
+            ctx.fillStyle = '#020617'; ctx.fillRect(0, 0, canvas.width, canvas.height);
+            ctx.strokeStyle = 'rgba(255, 255, 255, 0.02)'; ctx.lineWidth = 1;
+            ctx.beginPath();
+            for(let i=0; i<canvas.width; i+=50) { ctx.moveTo(i,0); ctx.lineTo(i,canvas.height); }
+            for(let i=0; i<canvas.height; i+=50) { ctx.moveTo(0,i); ctx.lineTo(canvas.width,i); }
+            ctx.stroke();
+
+            if (currentMode === 'conduction') { updateConduction(); drawConduction(); } 
+            else if (currentMode === 'convection') { updateConvection(); drawConvection(); }
+            else if (currentMode === 'radiation') { updateRadiation(); drawRadiation(); }
+            requestAnimationFrame(render);
+        }
+
+        const tabs = document.querySelectorAll('.tab-btn');
+        tabs.forEach(btn => {
+            btn.addEventListener('click', (e) => {
+                tabs.forEach(t => { t.classList.remove('active'); t.classList.add('text-gray-400'); });
+                e.target.classList.add('active'); e.target.classList.remove('text-gray-400');
+                currentMode = e.target.getAttribute('data-tab');
+                const info = {
+                    conduction: { title: 'Conduction (Solids)', desc: 'Heat is transferred through direct physical contact. Atoms at the hot end vibrate rapidly, bumping into neighbors and passing kinetic energy down the rod.' },
+                    convection: { title: 'Convection (Fluids)', desc: 'Thermal expansion changes density. Hot water at the bottom rises, cools at the surface, and sinks, creating circular convection currents!' },
+                    radiation: { title: 'Radiation (Vacuum)', desc: 'Heat travels as electromagnetic infrared waves through the vacuum of space. No particles or physical contact are required to transfer this energy.' }
+                };
+                document.getElementById('info-title').innerText = info[currentMode].title;
+                document.getElementById('info-desc').innerText = info[currentMode].desc;
+                ['conduction', 'convection', 'radiation'].forEach(m => document.getElementById(`controls-${m}`).classList.add('hidden'));
+                document.getElementById(`controls-${currentMode}`).classList.remove('hidden');
+                initPhysics();
+            });
+        });
+
+        document.getElementById('cond-temp-slider').addEventListener('input', (e) => { rod.sourceTemp = parseFloat(e.target.value); document.getElementById('cond-temp-display').innerText = `${rod.sourceTemp}°C`; });
+        document.getElementById('cond-mat-slider').addEventListener('input', (e) => { rod.conductivity = parseFloat(e.target.value); let mat = "Iron (Medium)"; if (rod.conductivity < 0.03) mat = "Glass (Low)"; else if (rod.conductivity > 0.08) mat = "Copper (High)"; document.getElementById('cond-mat-display').innerText = mat; });
+        document.getElementById('conv-heat-slider').addEventListener('input', (e) => { pot.heat = parseFloat(e.target.value); let lbl = "Low"; if(pot.heat > 30) lbl = "Medium"; if(pot.heat > 70) lbl = "High"; document.getElementById('conv-heat-display').innerText = lbl; });
+        document.getElementById('rad-heat-slider').addEventListener('input', (e) => { rad.luminosity = parseFloat(e.target.value); document.getElementById('rad-heat-display').innerText = `${rad.luminosity.toFixed(1)}x`; });
+
+        resize();
+        render();
+    </script>
+</body>
+</html>

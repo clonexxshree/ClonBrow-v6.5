@@ -1,0 +1,7570 @@
+{
+  "generatedAt": "2026-10-06T14:25:38.706Z",
+  "count": 262,
+  "inventory": [
+    {
+      "id": "2d-vectors-html",
+      "path": "2d-vectors.html",
+      "title": "Math Lab - Calculus & Vectors",
+      "tags": [
+        "lab",
+        "math"
+      ],
+      "apiType": "embeddable-page",
+      "bytes": 37017,
+      "controls": {
+        "inputs": 7,
+        "textareas": 0,
+        "buttons": 4,
+        "canvases": 1,
+        "iframes": 0
+      },
+      "externalOrigins": [
+        "https://cdn.tailwindcss.com",
+        "https://fonts.googleapis.com",
+        "http://www.w3.org"
+      ],
+      "externalApiEndpoints": [],
+      "hasLocalReferences": false,
+      "localReferences": [],
+      "resourceId": "p001",
+      "categoryPath": ""
+    },
+    {
+      "id": "3d-bioprinting-lab-html",
+      "path": "3D Bioprinting Lab.html",
+      "title": "Bio-Fabrication | 3D Organ Printer",
+      "tags": [
+        "lab",
+        "biology",
+        "visualization"
+      ],
+      "apiType": "embeddable-page",
+      "bytes": 20041,
+      "controls": {
+        "inputs": 0,
+        "textareas": 0,
+        "buttons": 2,
+        "canvases": 0,
+        "iframes": 0
+      },
+      "externalOrigins": [
+        "https://cdn.tailwindcss.com",
+        "https://fonts.googleapis.com",
+        "https://cdnjs.cloudflare.com"
+      ],
+      "externalApiEndpoints": [],
+      "hasLocalReferences": false,
+      "localReferences": [],
+      "resourceId": "p002",
+      "categoryPath": ""
+    },
+    {
+      "id": "3d-surgery-simulator-html",
+      "path": "3D Surgery Simulator.html",
+      "title": "Advanced 3D Clinical Surgery Simulator",
+      "tags": [
+        "simulation",
+        "visualization",
+        "tool"
+      ],
+      "apiType": "embeddable-page",
+      "bytes": 29785,
+      "controls": {
+        "inputs": 0,
+        "textareas": 0,
+        "buttons": 1,
+        "canvases": 1,
+        "iframes": 0
+      },
+      "externalOrigins": [
+        "https://cdn.tailwindcss.com",
+        "https://cdnjs.cloudflare.com",
+        "https://cdn.jsdelivr.net",
+        "https://fonts.googleapis.com"
+      ],
+      "externalApiEndpoints": [],
+      "hasLocalReferences": false,
+      "localReferences": [],
+      "resourceId": "p003",
+      "categoryPath": ""
+    },
+    {
+      "id": "3d-nets-html",
+      "path": "3d-nets.html",
+      "title": "Math Lab - Applied Geometry & Data",
+      "tags": [
+        "lab",
+        "math",
+        "visualization"
+      ],
+      "apiType": "embeddable-page",
+      "bytes": 34207,
+      "controls": {
+        "inputs": 6,
+        "textareas": 0,
+        "buttons": 4,
+        "canvases": 1,
+        "iframes": 0
+      },
+      "externalOrigins": [
+        "https://cdn.tailwindcss.com",
+        "https://fonts.googleapis.com",
+        "https://cdn.jsdelivr.net",
+        "http://www.w3.org"
+      ],
+      "externalApiEndpoints": [],
+      "hasLocalReferences": false,
+      "localReferences": [],
+      "resourceId": "p004",
+      "categoryPath": ""
+    },
+    {
+      "id": "3d-planes-html",
+      "path": "3d-planes.html",
+      "title": "Math Lab - Advanced Systems",
+      "tags": [
+        "lab",
+        "math",
+        "visualization"
+      ],
+      "apiType": "embeddable-page",
+      "bytes": 46197,
+      "controls": {
+        "inputs": 7,
+        "textareas": 0,
+        "buttons": 8,
+        "canvases": 1,
+        "iframes": 0
+      },
+      "externalOrigins": [
+        "https://cdn.tailwindcss.com",
+        "https://fonts.googleapis.com",
+        "https://cdn.jsdelivr.net",
+        "http://www.w3.org"
+      ],
+      "externalApiEndpoints": [],
+      "hasLocalReferences": false,
+      "localReferences": [],
+      "resourceId": "p005",
+      "categoryPath": ""
+    },
+    {
+      "id": "active-transport-pump-diagram-html",
+      "path": "Active Transport Pump Diagram.html",
+      "title": "Active Transport Pump Animation",
+      "tags": [
+        "visualization"
+      ],
+      "apiType": "embeddable-page",
+      "bytes": 24236,
+      "controls": {
+        "inputs": 0,
+        "textareas": 0,
+        "buttons": 1,
+        "canvases": 0,
+        "iframes": 0
+      },
+      "externalOrigins": [],
+      "externalApiEndpoints": [],
+      "hasLocalReferences": false,
+      "localReferences": [],
+      "resourceId": "p006",
+      "categoryPath": ""
+    },
+    {
+      "id": "advanced-pm2-5-deposition-lab-html",
+      "path": "Advanced PM2.5 Deposition Lab.html",
+      "title": "Advanced PM2.5 Alveolar Deposition Lab",
+      "tags": [
+        "lab"
+      ],
+      "apiType": "embeddable-page",
+      "bytes": 30220,
+      "controls": {
+        "inputs": 1,
+        "textareas": 0,
+        "buttons": 1,
+        "canvases": 2,
+        "iframes": 0
+      },
+      "externalOrigins": [
+        "https://cdn.tailwindcss.com",
+        "https://fonts.googleapis.com"
+      ],
+      "externalApiEndpoints": [],
+      "hasLocalReferences": false,
+      "localReferences": [],
+      "resourceId": "p007",
+      "categoryPath": ""
+    },
+    {
+      "id": "algebra-scale-html",
+      "path": "algebra-scale.html",
+      "title": "Math Lab - Geometry & Algebra",
+      "tags": [
+        "lab",
+        "math"
+      ],
+      "apiType": "embeddable-page",
+      "bytes": 35608,
+      "controls": {
+        "inputs": 7,
+        "textareas": 0,
+        "buttons": 4,
+        "canvases": 3,
+        "iframes": 0
+      },
+      "externalOrigins": [
+        "https://cdn.tailwindcss.com",
+        "https://fonts.googleapis.com",
+        "http://www.w3.org",
+        "https://res.cloudinary.com"
+      ],
+      "externalApiEndpoints": [],
+      "hasLocalReferences": false,
+      "localReferences": [],
+      "resourceId": "p008",
+      "categoryPath": ""
+    },
+    {
+      "id": "angles-html",
+      "path": "angles.html",
+      "title": "Math Lab - Applied Geometry & Data",
+      "tags": [
+        "lab",
+        "math"
+      ],
+      "apiType": "embeddable-page",
+      "bytes": 34207,
+      "controls": {
+        "inputs": 6,
+        "textareas": 0,
+        "buttons": 4,
+        "canvases": 1,
+        "iframes": 0
+      },
+      "externalOrigins": [
+        "https://cdn.tailwindcss.com",
+        "https://fonts.googleapis.com",
+        "https://cdn.jsdelivr.net",
+        "http://www.w3.org"
+      ],
+      "externalApiEndpoints": [],
+      "hasLocalReferences": false,
+      "localReferences": [],
+      "resourceId": "p009",
+      "categoryPath": ""
+    },
+    {
+      "id": "announcement-hub-html",
+      "path": "announcement_hub.html",
+      "title": "Announcement Hub | ClonBrow Schools",
+      "tags": [
+        "dashboard"
+      ],
+      "apiType": "interactive-page",
+      "bytes": 36276,
+      "controls": {
+        "inputs": 7,
+        "textareas": 0,
+        "buttons": 21,
+        "canvases": 0,
+        "iframes": 0
+      },
+      "externalOrigins": [
+        "https://cdn.tailwindcss.com",
+        "https://cdnjs.cloudflare.com",
+        "https://fonts.googleapis.com",
+        "https://clonexxshree.pythonanywhere.com",
+        "https://api.dicebear.com"
+      ],
+      "externalApiEndpoints": [],
+      "hasLocalReferences": true,
+      "localReferences": [
+        "${avatarUrl}"
+      ],
+      "resourceId": "p010",
+      "categoryPath": ""
+    },
+    {
+      "id": "antacid-neutralization-html",
+      "path": "Antacid Neutralization.html",
+      "title": "Clinical Chemistry: Antacid Neutralization",
+      "tags": [
+        "chemistry"
+      ],
+      "apiType": "interactive-page",
+      "bytes": 18680,
+      "controls": {
+        "inputs": 0,
+        "textareas": 0,
+        "buttons": 1,
+        "canvases": 0,
+        "iframes": 0
+      },
+      "externalOrigins": [
+        "https://cdn.tailwindcss.com",
+        "http://www.w3.org"
+      ],
+      "externalApiEndpoints": [],
+      "hasLocalReferences": false,
+      "localReferences": [],
+      "resourceId": "p011",
+      "categoryPath": ""
+    },
+    {
+      "id": "antibiotic-resistance-lab-html",
+      "path": "Antibiotic Resistance Lab.html",
+      "title": "Antibiotic Resistance & Evolution Lab",
+      "tags": [
+        "lab",
+        "biology"
+      ],
+      "apiType": "embeddable-page",
+      "bytes": 19914,
+      "controls": {
+        "inputs": 0,
+        "textareas": 0,
+        "buttons": 2,
+        "canvases": 0,
+        "iframes": 0
+      },
+      "externalOrigins": [
+        "https://cdn.tailwindcss.com",
+        "https://fonts.googleapis.com",
+        "http://www.w3.org"
+      ],
+      "externalApiEndpoints": [],
+      "hasLocalReferences": false,
+      "localReferences": [],
+      "resourceId": "p012",
+      "categoryPath": ""
+    },
+    {
+      "id": "antigen-antibody-fit-lab-html",
+      "path": "Antigen-Antibody Fit Lab.html",
+      "title": "Antigen-Antibody Specificity Lab",
+      "tags": [
+        "lab"
+      ],
+      "apiType": "embeddable-page",
+      "bytes": 24253,
+      "controls": {
+        "inputs": 0,
+        "textareas": 0,
+        "buttons": 1,
+        "canvases": 0,
+        "iframes": 0
+      },
+      "externalOrigins": [
+        "https://cdn.tailwindcss.com",
+        "https://fonts.googleapis.com",
+        "http://www.w3.org"
+      ],
+      "externalApiEndpoints": [],
+      "hasLocalReferences": false,
+      "localReferences": [],
+      "resourceId": "p013",
+      "categoryPath": ""
+    },
+    {
+      "id": "antioxidant-simulation-html",
+      "path": "Antioxidant Simulation.html",
+      "title": "Draggable Antioxidant Simulation",
+      "tags": [
+        "simulation"
+      ],
+      "apiType": "embeddable-page",
+      "bytes": 16410,
+      "controls": {
+        "inputs": 0,
+        "textareas": 0,
+        "buttons": 2,
+        "canvases": 0,
+        "iframes": 0
+      },
+      "externalOrigins": [
+        "http://www.w3.org"
+      ],
+      "externalApiEndpoints": [],
+      "hasLocalReferences": false,
+      "localReferences": [],
+      "resourceId": "p014",
+      "categoryPath": ""
+    },
+    {
+      "id": "antivenom-simulator-html",
+      "path": "Antivenom Simulator.html",
+      "title": "Antivenom Neutralization Lab",
+      "tags": [
+        "lab",
+        "simulation",
+        "tool"
+      ],
+      "apiType": "embeddable-page",
+      "bytes": 16310,
+      "controls": {
+        "inputs": 0,
+        "textareas": 0,
+        "buttons": 2,
+        "canvases": 0,
+        "iframes": 0
+      },
+      "externalOrigins": [
+        "https://cdn.tailwindcss.com",
+        "https://fonts.googleapis.com"
+      ],
+      "externalApiEndpoints": [],
+      "hasLocalReferences": false,
+      "localReferences": [],
+      "resourceId": "p015",
+      "categoryPath": ""
+    },
+    {
+      "id": "arcade-hub-html",
+      "path": "arcade hub.html",
+      "title": "Arcade Hub - Brutalist Edition",
+      "tags": [
+        "game",
+        "dashboard"
+      ],
+      "apiType": "embeddable-page",
+      "bytes": 10696,
+      "controls": {
+        "inputs": 0,
+        "textareas": 0,
+        "buttons": 2,
+        "canvases": 0,
+        "iframes": 1
+      },
+      "externalOrigins": [
+        "https://cdn.tailwindcss.com",
+        "https://fonts.googleapis.com"
+      ],
+      "externalApiEndpoints": [],
+      "hasLocalReferences": false,
+      "localReferences": [],
+      "resourceId": "p016",
+      "categoryPath": ""
+    },
+    {
+      "id": "arcade-html",
+      "path": "arcade.html",
+      "title": "Arcade Hub - Brutalist Edition",
+      "tags": [
+        "game",
+        "dashboard"
+      ],
+      "apiType": "embeddable-page",
+      "bytes": 10769,
+      "controls": {
+        "inputs": 0,
+        "textareas": 0,
+        "buttons": 2,
+        "canvases": 0,
+        "iframes": 1
+      },
+      "externalOrigins": [
+        "https://cdn.tailwindcss.com",
+        "https://fonts.googleapis.com"
+      ],
+      "externalApiEndpoints": [],
+      "hasLocalReferences": false,
+      "localReferences": [],
+      "resourceId": "p017",
+      "categoryPath": ""
+    },
+    {
+      "id": "area-and-perimeter-html",
+      "path": "area-and-perimeter.html",
+      "title": "Math Lab - Interactive Concepts",
+      "tags": [
+        "lab",
+        "math"
+      ],
+      "apiType": "embeddable-page",
+      "bytes": 35135,
+      "controls": {
+        "inputs": 9,
+        "textareas": 0,
+        "buttons": 7,
+        "canvases": 3,
+        "iframes": 0
+      },
+      "externalOrigins": [
+        "https://cdn.tailwindcss.com",
+        "https://fonts.googleapis.com"
+      ],
+      "externalApiEndpoints": [],
+      "hasLocalReferences": false,
+      "localReferences": [],
+      "resourceId": "p018",
+      "categoryPath": ""
+    },
+    {
+      "id": "argand-plane-html",
+      "path": "argand-plane.html",
+      "title": "Math Lab - Linear Algebra & Conics",
+      "tags": [
+        "lab",
+        "math"
+      ],
+      "apiType": "embeddable-page",
+      "bytes": 42077,
+      "controls": {
+        "inputs": 10,
+        "textareas": 0,
+        "buttons": 8,
+        "canvases": 1,
+        "iframes": 0
+      },
+      "externalOrigins": [
+        "https://cdn.tailwindcss.com",
+        "https://fonts.googleapis.com",
+        "https://cdn.jsdelivr.net",
+        "http://www.w3.org"
+      ],
+      "externalApiEndpoints": [],
+      "hasLocalReferences": false,
+      "localReferences": [],
+      "resourceId": "p019",
+      "categoryPath": ""
+    },
+    {
+      "id": "arithmetic-progressions-html",
+      "path": "arithmetic-progressions.html",
+      "title": "Math Lab - Sequences & Statistics",
+      "tags": [
+        "lab",
+        "math"
+      ],
+      "apiType": "embeddable-page",
+      "bytes": 37536,
+      "controls": {
+        "inputs": 12,
+        "textareas": 0,
+        "buttons": 5,
+        "canvases": 1,
+        "iframes": 0
+      },
+      "externalOrigins": [
+        "https://cdn.tailwindcss.com",
+        "https://fonts.googleapis.com",
+        "http://www.w3.org"
+      ],
+      "externalApiEndpoints": [],
+      "hasLocalReferences": false,
+      "localReferences": [],
+      "resourceId": "p020",
+      "categoryPath": ""
+    },
+    {
+      "id": "asthma-airflow-lab-html",
+      "path": "Asthma Airflow Lab.html",
+      "title": "Asthma Airflow & Bernoulli's Principle",
+      "tags": [
+        "lab"
+      ],
+      "apiType": "embeddable-page",
+      "bytes": 28573,
+      "controls": {
+        "inputs": 1,
+        "textareas": 0,
+        "buttons": 0,
+        "canvases": 1,
+        "iframes": 0
+      },
+      "externalOrigins": [
+        "https://cdn.tailwindcss.com",
+        "https://fonts.googleapis.com",
+        "http://www.w3.org"
+      ],
+      "externalApiEndpoints": [],
+      "hasLocalReferences": false,
+      "localReferences": [],
+      "resourceId": "p021",
+      "categoryPath": ""
+    },
+    {
+      "id": "audiology-lab-html",
+      "path": "Audiology Lab.html",
+      "title": "Audiology & Frequency Sweep Lab",
+      "tags": [
+        "lab"
+      ],
+      "apiType": "embeddable-page",
+      "bytes": 25300,
+      "controls": {
+        "inputs": 3,
+        "textareas": 0,
+        "buttons": 4,
+        "canvases": 1,
+        "iframes": 0
+      },
+      "externalOrigins": [
+        "https://cdn.tailwindcss.com",
+        "https://fonts.googleapis.com"
+      ],
+      "externalApiEndpoints": [],
+      "hasLocalReferences": false,
+      "localReferences": [],
+      "resourceId": "p022",
+      "categoryPath": ""
+    },
+    {
+      "id": "bar-graphs-html",
+      "path": "bar-graphs.html",
+      "title": "Math Lab - Applied Geometry & Data",
+      "tags": [
+        "lab",
+        "math",
+        "chemistry",
+        "visualization"
+      ],
+      "apiType": "embeddable-page",
+      "bytes": 34207,
+      "controls": {
+        "inputs": 6,
+        "textareas": 0,
+        "buttons": 4,
+        "canvases": 1,
+        "iframes": 0
+      },
+      "externalOrigins": [
+        "https://cdn.tailwindcss.com",
+        "https://fonts.googleapis.com",
+        "https://cdn.jsdelivr.net",
+        "http://www.w3.org"
+      ],
+      "externalApiEndpoints": [],
+      "hasLocalReferences": false,
+      "localReferences": [],
+      "resourceId": "p023",
+      "categoryPath": ""
+    },
+    {
+      "id": "basics-of-newtons-laws-html",
+      "path": "basics-of-newtons-laws.html",
+      "title": "Physics Lab - Newton's Laws",
+      "tags": [
+        "lab",
+        "chemistry",
+        "physics"
+      ],
+      "apiType": "embeddable-page",
+      "bytes": 24931,
+      "controls": {
+        "inputs": 3,
+        "textareas": 0,
+        "buttons": 9,
+        "canvases": 3,
+        "iframes": 0
+      },
+      "externalOrigins": [
+        "https://cdn.tailwindcss.com",
+        "https://fonts.googleapis.com",
+        "http://www.w3.org",
+        "https://res.cloudinary.com"
+      ],
+      "externalApiEndpoints": [],
+      "hasLocalReferences": false,
+      "localReferences": [],
+      "resourceId": "p024",
+      "categoryPath": ""
+    },
+    {
+      "id": "bicep-torque-calculator-html",
+      "path": "Bicep Torque Calculator.html",
+      "title": "Joint Torque & Biomechanics Lab",
+      "tags": [
+        "lab",
+        "biology",
+        "calculator"
+      ],
+      "apiType": "embeddable-page",
+      "bytes": 16242,
+      "controls": {
+        "inputs": 2,
+        "textareas": 0,
+        "buttons": 0,
+        "canvases": 0,
+        "iframes": 0
+      },
+      "externalOrigins": [
+        "https://cdn.tailwindcss.com",
+        "https://fonts.googleapis.com"
+      ],
+      "externalApiEndpoints": [],
+      "hasLocalReferences": false,
+      "localReferences": [],
+      "resourceId": "p025",
+      "categoryPath": ""
+    },
+    {
+      "id": "biofeedback-loop-html",
+      "path": "Biofeedback Loop.html",
+      "title": "Cardiac Resonance | Biofeedback Entrainment",
+      "tags": [
+        "biology"
+      ],
+      "apiType": "interactive-page",
+      "bytes": 24946,
+      "controls": {
+        "inputs": 0,
+        "textareas": 0,
+        "buttons": 1,
+        "canvases": 1,
+        "iframes": 0
+      },
+      "externalOrigins": [
+        "https://cdn.tailwindcss.com",
+        "https://fonts.googleapis.com",
+        "http://www.w3.org"
+      ],
+      "externalApiEndpoints": [],
+      "hasLocalReferences": false,
+      "localReferences": [],
+      "resourceId": "p026",
+      "categoryPath": ""
+    },
+    {
+      "id": "bionic-eye-lab-html",
+      "path": "Bionic Eye Lab.html",
+      "title": "Bionic Eye Resolution & Neural Prosthetics Lab",
+      "tags": [
+        "lab",
+        "biology"
+      ],
+      "apiType": "embeddable-page",
+      "bytes": 22718,
+      "controls": {
+        "inputs": 1,
+        "textareas": 0,
+        "buttons": 1,
+        "canvases": 2,
+        "iframes": 0
+      },
+      "externalOrigins": [
+        "https://cdn.tailwindcss.com",
+        "https://fonts.googleapis.com"
+      ],
+      "externalApiEndpoints": [],
+      "hasLocalReferences": false,
+      "localReferences": [],
+      "resourceId": "p027",
+      "categoryPath": ""
+    },
+    {
+      "id": "blood-agglutination-simulation-html",
+      "path": "Blood Agglutination Simulation.html",
+      "title": "Clinical Immunology: Agglutination Test",
+      "tags": [
+        "simulation",
+        "quiz",
+        "biology"
+      ],
+      "apiType": "embeddable-page",
+      "bytes": 16396,
+      "controls": {
+        "inputs": 0,
+        "textareas": 0,
+        "buttons": 8,
+        "canvases": 1,
+        "iframes": 0
+      },
+      "externalOrigins": [
+        "https://cdn.tailwindcss.com"
+      ],
+      "externalApiEndpoints": [],
+      "hasLocalReferences": false,
+      "localReferences": [],
+      "resourceId": "p028",
+      "categoryPath": ""
+    },
+    {
+      "id": "blood-buffer-equilibrium-html",
+      "path": "Blood Buffer Equilibrium.html",
+      "title": "Blood Buffer System: Acid-Base Equilibrium",
+      "tags": [
+        "biology",
+        "chemistry"
+      ],
+      "apiType": "interactive-page",
+      "bytes": 25236,
+      "controls": {
+        "inputs": 0,
+        "textareas": 0,
+        "buttons": 2,
+        "canvases": 0,
+        "iframes": 0
+      },
+      "externalOrigins": [],
+      "externalApiEndpoints": [],
+      "hasLocalReferences": false,
+      "localReferences": [],
+      "resourceId": "p029",
+      "categoryPath": ""
+    },
+    {
+      "id": "blood-cancer-surgery-html",
+      "path": "Blood cancer surgery.html",
+      "title": "Stem Cell Donation Procedures",
+      "tags": [
+        "biology"
+      ],
+      "apiType": "interactive-page",
+      "bytes": 75254,
+      "controls": {
+        "inputs": 0,
+        "textareas": 0,
+        "buttons": 2,
+        "canvases": 1,
+        "iframes": 0
+      },
+      "externalOrigins": [
+        "https://cdn.tailwindcss.com",
+        "https://fonts.googleapis.com"
+      ],
+      "externalApiEndpoints": [],
+      "hasLocalReferences": false,
+      "localReferences": [],
+      "resourceId": "p030",
+      "categoryPath": ""
+    },
+    {
+      "id": "blood-system-reboot-recovery-html",
+      "path": "blood system reboot recovery.html",
+      "title": "Post-Transplant Recovery Protocol",
+      "tags": [
+        "biology"
+      ],
+      "apiType": "interactive-page",
+      "bytes": 53186,
+      "controls": {
+        "inputs": 1,
+        "textareas": 0,
+        "buttons": 4,
+        "canvases": 1,
+        "iframes": 0
+      },
+      "externalOrigins": [
+        "https://cdn.tailwindcss.com",
+        "https://cdnjs.cloudflare.com",
+        "https://fonts.googleapis.com"
+      ],
+      "externalApiEndpoints": [],
+      "hasLocalReferences": false,
+      "localReferences": [],
+      "resourceId": "p031",
+      "categoryPath": ""
+    },
+    {
+      "id": "blood-brain-barrier-diagram-html",
+      "path": "Blood-Brain Barrier Diagram.html",
+      "title": "Blood-Brain Barrier (BBB) - Clinical Diagram",
+      "tags": [
+        "biology",
+        "visualization"
+      ],
+      "apiType": "embeddable-page",
+      "bytes": 31089,
+      "controls": {
+        "inputs": 0,
+        "textareas": 0,
+        "buttons": 0,
+        "canvases": 0,
+        "iframes": 0
+      },
+      "externalOrigins": [
+        "https://cdn.tailwindcss.com",
+        "https://fonts.googleapis.com",
+        "http://www.w3.org"
+      ],
+      "externalApiEndpoints": [],
+      "hasLocalReferences": false,
+      "localReferences": [],
+      "resourceId": "p032",
+      "categoryPath": ""
+    },
+    {
+      "id": "bohr-effect-hemoglobin-html",
+      "path": "Bohr Effect & Hemoglobin.html",
+      "title": "Bohr Effect & Hemoglobin Dynamics",
+      "tags": [
+        "prototype"
+      ],
+      "apiType": "interactive-page",
+      "bytes": 23199,
+      "controls": {
+        "inputs": 2,
+        "textareas": 0,
+        "buttons": 0,
+        "canvases": 0,
+        "iframes": 0
+      },
+      "externalOrigins": [
+        "https://cdn.tailwindcss.com"
+      ],
+      "externalApiEndpoints": [],
+      "hasLocalReferences": false,
+      "localReferences": [],
+      "resourceId": "p033",
+      "categoryPath": ""
+    },
+    {
+      "id": "bohr-model-html",
+      "path": "bohr-model.html",
+      "title": "Physics Lab - Atomic & Nuclear",
+      "tags": [
+        "lab",
+        "chemistry",
+        "physics",
+        "visualization"
+      ],
+      "apiType": "embeddable-page",
+      "bytes": 36353,
+      "controls": {
+        "inputs": 4,
+        "textareas": 0,
+        "buttons": 5,
+        "canvases": 3,
+        "iframes": 0
+      },
+      "externalOrigins": [
+        "https://cdn.tailwindcss.com",
+        "https://fonts.googleapis.com",
+        "http://www.w3.org"
+      ],
+      "externalApiEndpoints": [],
+      "hasLocalReferences": false,
+      "localReferences": [],
+      "resourceId": "p034",
+      "categoryPath": ""
+    },
+    {
+      "id": "bone-density-lab-html",
+      "path": "Bone Density Lab.html",
+      "title": "Bone Density: Archimedes' Principle Lab",
+      "tags": [
+        "lab"
+      ],
+      "apiType": "embeddable-page",
+      "bytes": 15723,
+      "controls": {
+        "inputs": 2,
+        "textareas": 0,
+        "buttons": 0,
+        "canvases": 0,
+        "iframes": 0
+      },
+      "externalOrigins": [
+        "http://www.w3.org"
+      ],
+      "externalApiEndpoints": [],
+      "hasLocalReferences": false,
+      "localReferences": [],
+      "resourceId": "p035",
+      "categoryPath": ""
+    },
+    {
+      "id": "brain-html",
+      "path": "brain.html",
+      "title": "Brain Research Centre | Clonexx",
+      "tags": [
+        "biology"
+      ],
+      "apiType": "interactive-page",
+      "bytes": 59824,
+      "controls": {
+        "inputs": 4,
+        "textareas": 2,
+        "buttons": 15,
+        "canvases": 0,
+        "iframes": 0
+      },
+      "externalOrigins": [
+        "https://cdn.tailwindcss.com",
+        "https://cdnjs.cloudflare.com",
+        "https://fonts.googleapis.com"
+      ],
+      "externalApiEndpoints": [],
+      "hasLocalReferences": false,
+      "localReferences": [],
+      "resourceId": "p036",
+      "categoryPath": ""
+    },
+    {
+      "id": "brainboard-html",
+      "path": "brainboard.html",
+      "title": "BrainBoard | ClonBrow OS",
+      "tags": [
+        "biology"
+      ],
+      "apiType": "interactive-page",
+      "bytes": 22394,
+      "controls": {
+        "inputs": 2,
+        "textareas": 3,
+        "buttons": 20,
+        "canvases": 1,
+        "iframes": 0
+      },
+      "externalOrigins": [
+        "https://cdn.tailwindcss.com",
+        "https://cdnjs.cloudflare.com",
+        "https://fonts.googleapis.com"
+      ],
+      "externalApiEndpoints": [],
+      "hasLocalReferences": true,
+      "localReferences": [
+        "${e.target.result}",
+        "file",
+        "image/png"
+      ],
+      "resourceId": "p037",
+      "categoryPath": ""
+    },
+    {
+      "id": "breathalyzer-simulation-html",
+      "path": "Breathalyzer Simulation.html",
+      "title": "Breathalyzer Analysis Simulation",
+      "tags": [
+        "simulation"
+      ],
+      "apiType": "embeddable-page",
+      "bytes": 18796,
+      "controls": {
+        "inputs": 0,
+        "textareas": 0,
+        "buttons": 1,
+        "canvases": 1,
+        "iframes": 0
+      },
+      "externalOrigins": [],
+      "externalApiEndpoints": [],
+      "hasLocalReferences": false,
+      "localReferences": [],
+      "resourceId": "p038",
+      "categoryPath": ""
+    },
+    {
+      "id": "brutalist-html",
+      "path": "brutalist.html",
+      "title": "CLONBROW",
+      "tags": [
+        "external-api"
+      ],
+      "apiType": "interactive-page",
+      "bytes": 130477,
+      "controls": {
+        "inputs": 35,
+        "textareas": 10,
+        "buttons": 143,
+        "canvases": 1,
+        "iframes": 2
+      },
+      "externalOrigins": [
+        "http://www.w3.org",
+        "https://cdn.tailwindcss.com",
+        "https://cdnjs.cloudflare.com",
+        "https://fonts.googleapis.com",
+        "https://clonexxshree.pythonanywhere.com",
+        "https://en.wikipedia.org"
+      ],
+      "externalApiEndpoints": [
+        "https://en.wikipedia.org/w/api.php?action=query&generator=search&gsrsearch=${encodeURIComponent(q)}&gsrlimit=8&prop=extracts|pageimages&exintro=1&explaintext=1&piprop=thumbnail&pithumbsize=160&format=json&origin=*",
+        "https://en.wikipedia.org/w/api.php?action=parse&page=${encodeURIComponent(title)}&prop=text&redirects=1&format=json&origin=*"
+      ],
+      "hasLocalReferences": true,
+      "localReferences": [
+        "theme-mobile.css",
+        "${p.thumbnail.source}"
+      ],
+      "resourceId": "p039",
+      "categoryPath": ""
+    },
+    {
+      "id": "buoyancy-html",
+      "path": "buoyancy.html",
+      "title": "Physics Lab - Buoyancy & Displacement",
+      "tags": [
+        "lab",
+        "chemistry",
+        "physics"
+      ],
+      "apiType": "embeddable-page",
+      "bytes": 27371,
+      "controls": {
+        "inputs": 2,
+        "textareas": 0,
+        "buttons": 3,
+        "canvases": 1,
+        "iframes": 0
+      },
+      "externalOrigins": [
+        "https://cdn.tailwindcss.com",
+        "https://fonts.googleapis.com"
+      ],
+      "externalApiEndpoints": [],
+      "hasLocalReferences": false,
+      "localReferences": [],
+      "resourceId": "p040",
+      "categoryPath": ""
+    },
+    {
+      "id": "burn-degree-estimator-html",
+      "path": "Burn Degree Estimator.html",
+      "title": "Med-Logic | TBSA Burn Estimator",
+      "tags": [
+        "prototype"
+      ],
+      "apiType": "interactive-page",
+      "bytes": 14876,
+      "controls": {
+        "inputs": 0,
+        "textareas": 0,
+        "buttons": 5,
+        "canvases": 0,
+        "iframes": 0
+      },
+      "externalOrigins": [
+        "https://cdn.tailwindcss.com",
+        "https://fonts.googleapis.com"
+      ],
+      "externalApiEndpoints": [],
+      "hasLocalReferences": false,
+      "localReferences": [],
+      "resourceId": "p041",
+      "categoryPath": ""
+    },
+    {
+      "id": "capillary-action-lab-html",
+      "path": "Capillary Action Lab.html",
+      "title": "Capillary Action: Blood Draw Lab",
+      "tags": [
+        "lab",
+        "biology"
+      ],
+      "apiType": "embeddable-page",
+      "bytes": 21954,
+      "controls": {
+        "inputs": 1,
+        "textareas": 0,
+        "buttons": 0,
+        "canvases": 1,
+        "iframes": 0
+      },
+      "externalOrigins": [
+        "http://www.w3.org"
+      ],
+      "externalApiEndpoints": [],
+      "hasLocalReferences": false,
+      "localReferences": [],
+      "resourceId": "p042",
+      "categoryPath": ""
+    },
+    {
+      "id": "carbon-monoxide-binding-simulation-html",
+      "path": "Carbon Monoxide Binding Simulation.html",
+      "title": "Carbon Monoxide vs. Hemoglobin",
+      "tags": [
+        "simulation"
+      ],
+      "apiType": "embeddable-page",
+      "bytes": 14344,
+      "controls": {
+        "inputs": 0,
+        "textareas": 0,
+        "buttons": 3,
+        "canvases": 1,
+        "iframes": 0
+      },
+      "externalOrigins": [],
+      "externalApiEndpoints": [],
+      "hasLocalReferences": false,
+      "localReferences": [],
+      "resourceId": "p043",
+      "categoryPath": ""
+    },
+    {
+      "id": "carrom-html",
+      "path": "carrom.html",
+      "title": "Carrom Master",
+      "tags": [
+        "prototype"
+      ],
+      "apiType": "interactive-page",
+      "bytes": 24470,
+      "controls": {
+        "inputs": 0,
+        "textareas": 0,
+        "buttons": 1,
+        "canvases": 1,
+        "iframes": 0
+      },
+      "externalOrigins": [
+        "https://cdn.tailwindcss.com",
+        "https://fonts.googleapis.com"
+      ],
+      "externalApiEndpoints": [],
+      "hasLocalReferences": false,
+      "localReferences": [],
+      "resourceId": "p044",
+      "categoryPath": ""
+    },
+    {
+      "id": "cataract-light-scattering-html",
+      "path": "Cataract Light Scattering.html",
+      "title": "Cataract Simulation: Light Scattering",
+      "tags": [
+        "simulation"
+      ],
+      "apiType": "embeddable-page",
+      "bytes": 18199,
+      "controls": {
+        "inputs": 1,
+        "textareas": 0,
+        "buttons": 0,
+        "canvases": 0,
+        "iframes": 0
+      },
+      "externalOrigins": [
+        "http://www.w3.org"
+      ],
+      "externalApiEndpoints": [],
+      "hasLocalReferences": false,
+      "localReferences": [],
+      "resourceId": "p045",
+      "categoryPath": ""
+    },
+    {
+      "id": "cell-membrane-simulation-html",
+      "path": "Cell Membrane Simulation.html",
+      "title": "Phospholipid Bilayer Simulation",
+      "tags": [
+        "simulation",
+        "biology",
+        "chemistry"
+      ],
+      "apiType": "embeddable-page",
+      "bytes": 16090,
+      "controls": {
+        "inputs": 0,
+        "textareas": 0,
+        "buttons": 0,
+        "canvases": 0,
+        "iframes": 0
+      },
+      "externalOrigins": [
+        "https://cdn.tailwindcss.com",
+        "http://www.w3.org"
+      ],
+      "externalApiEndpoints": [],
+      "hasLocalReferences": false,
+      "localReferences": [],
+      "resourceId": "p046",
+      "categoryPath": ""
+    },
+    {
+      "id": "centrifuge-separation-lab-html",
+      "path": "Centrifuge Separation Lab.html",
+      "title": "Centrifuge Separation & Kinematics Lab",
+      "tags": [
+        "lab"
+      ],
+      "apiType": "embeddable-page",
+      "bytes": 30156,
+      "controls": {
+        "inputs": 1,
+        "textareas": 0,
+        "buttons": 1,
+        "canvases": 1,
+        "iframes": 0
+      },
+      "externalOrigins": [
+        "https://cdn.tailwindcss.com",
+        "https://fonts.googleapis.com",
+        "http://www.w3.org"
+      ],
+      "externalApiEndpoints": [],
+      "hasLocalReferences": false,
+      "localReferences": [],
+      "resourceId": "p047",
+      "categoryPath": ""
+    },
+    {
+      "id": "cerebrospinal-fluid-pressure-lab-html",
+      "path": "Cerebrospinal Fluid Pressure Lab.html",
+      "title": "Cerebrospinal Pressure: Pascal's Law Lab",
+      "tags": [
+        "lab"
+      ],
+      "apiType": "embeddable-page",
+      "bytes": 25662,
+      "controls": {
+        "inputs": 1,
+        "textareas": 0,
+        "buttons": 0,
+        "canvases": 1,
+        "iframes": 0
+      },
+      "externalOrigins": [],
+      "externalApiEndpoints": [],
+      "hasLocalReferences": false,
+      "localReferences": [],
+      "resourceId": "p048",
+      "categoryPath": ""
+    },
+    {
+      "id": "chateret-html",
+      "path": "chateret.html",
+      "title": "Chatert - ClonMedic Comms",
+      "tags": [
+        "prototype"
+      ],
+      "apiType": "interactive-page",
+      "bytes": 38978,
+      "controls": {
+        "inputs": 5,
+        "textareas": 1,
+        "buttons": 31,
+        "canvases": 0,
+        "iframes": 0
+      },
+      "externalOrigins": [
+        "https://cdn.tailwindcss.com",
+        "https://cdnjs.cloudflare.com",
+        "https://api.dicebear.com",
+        "https://clonexxshree.pythonanywhere.com"
+      ],
+      "externalApiEndpoints": [],
+      "hasLocalReferences": true,
+      "localReferences": [
+        "${chat.avatar}",
+        "${getAvatarForSender(msg.sender)}",
+        "${dm.avatar}"
+      ],
+      "resourceId": "p049",
+      "categoryPath": ""
+    },
+    {
+      "id": "chess-html",
+      "path": "chess.html",
+      "title": "3D Master Chess",
+      "tags": [
+        "visualization"
+      ],
+      "apiType": "embeddable-page",
+      "bytes": 23471,
+      "controls": {
+        "inputs": 0,
+        "textareas": 0,
+        "buttons": 2,
+        "canvases": 1,
+        "iframes": 0
+      },
+      "externalOrigins": [
+        "https://cdn.tailwindcss.com",
+        "https://cdnjs.cloudflare.com",
+        "https://cdn.jsdelivr.net",
+        "https://fonts.googleapis.com"
+      ],
+      "externalApiEndpoints": [],
+      "hasLocalReferences": false,
+      "localReferences": [],
+      "resourceId": "p050",
+      "categoryPath": ""
+    },
+    {
+      "id": "childish-html",
+      "path": "childish.html",
+      "title": "clonbrow // play",
+      "tags": [
+        "external-api"
+      ],
+      "apiType": "interactive-page",
+      "bytes": 143275,
+      "controls": {
+        "inputs": 35,
+        "textareas": 10,
+        "buttons": 143,
+        "canvases": 1,
+        "iframes": 2
+      },
+      "externalOrigins": [
+        "http://www.w3.org",
+        "https://cdn.tailwindcss.com",
+        "https://cdnjs.cloudflare.com",
+        "https://fonts.googleapis.com",
+        "https://fonts.gstatic.com",
+        "https://clonexxshree.pythonanywhere.com",
+        "https://en.wikipedia.org"
+      ],
+      "externalApiEndpoints": [
+        "https://en.wikipedia.org/w/api.php?action=query&generator=search&gsrsearch=${encodeURIComponent(q)}&gsrlimit=8&prop=extracts|pageimages&exintro=1&explaintext=1&piprop=thumbnail&pithumbsize=160&format=json&origin=*",
+        "https://en.wikipedia.org/w/api.php?action=parse&page=${encodeURIComponent(title)}&prop=text&redirects=1&format=json&origin=*"
+      ],
+      "hasLocalReferences": true,
+      "localReferences": [
+        "theme-mobile.css",
+        "${p.thumbnail.source}"
+      ],
+      "resourceId": "p051",
+      "categoryPath": ""
+    },
+    {
+      "id": "chromatography-lab-html",
+      "path": "Chromatography Lab.html",
+      "title": "Advanced Chromatography Simulator",
+      "tags": [
+        "lab",
+        "simulation",
+        "math",
+        "chemistry",
+        "visualization",
+        "tool"
+      ],
+      "apiType": "embeddable-page",
+      "bytes": 21075,
+      "controls": {
+        "inputs": 0,
+        "textareas": 0,
+        "buttons": 2,
+        "canvases": 0,
+        "iframes": 0
+      },
+      "externalOrigins": [
+        "https://cdn.tailwindcss.com",
+        "https://fonts.googleapis.com",
+        "http://www.w3.org"
+      ],
+      "externalApiEndpoints": [],
+      "hasLocalReferences": false,
+      "localReferences": [],
+      "resourceId": "p052",
+      "categoryPath": ""
+    },
+    {
+      "id": "chrome-store-submission-privacy-policy-draft-html",
+      "path": "chrome-store-submission/PRIVACY-POLICY-DRAFT.html",
+      "title": "Clonbrow Privacy Policy",
+      "tags": [
+        "prototype"
+      ],
+      "apiType": "content-page",
+      "bytes": 2653,
+      "controls": {
+        "inputs": 0,
+        "textareas": 0,
+        "buttons": 0,
+        "canvases": 0,
+        "iframes": 0
+      },
+      "externalOrigins": [],
+      "externalApiEndpoints": [],
+      "hasLocalReferences": false,
+      "localReferences": [],
+      "resourceId": "p053",
+      "categoryPath": "chrome-store-submission"
+    },
+    {
+      "id": "circle-tangents-html",
+      "path": "circle-tangents.html",
+      "title": "Math Lab - Algebra & Circle Geometry",
+      "tags": [
+        "lab",
+        "math"
+      ],
+      "apiType": "embeddable-page",
+      "bytes": 36878,
+      "controls": {
+        "inputs": 5,
+        "textareas": 0,
+        "buttons": 4,
+        "canvases": 1,
+        "iframes": 0
+      },
+      "externalOrigins": [
+        "https://cdn.tailwindcss.com",
+        "https://fonts.googleapis.com",
+        "http://www.w3.org",
+        "https://res.cloudinary.com"
+      ],
+      "externalApiEndpoints": [],
+      "hasLocalReferences": false,
+      "localReferences": [],
+      "resourceId": "p054",
+      "categoryPath": ""
+    },
+    {
+      "id": "circle-theorems-html",
+      "path": "circle-theorems.html",
+      "title": "Math Lab - Algebra & Circle Geometry",
+      "tags": [
+        "lab",
+        "math"
+      ],
+      "apiType": "embeddable-page",
+      "bytes": 36878,
+      "controls": {
+        "inputs": 5,
+        "textareas": 0,
+        "buttons": 4,
+        "canvases": 1,
+        "iframes": 0
+      },
+      "externalOrigins": [
+        "https://cdn.tailwindcss.com",
+        "https://fonts.googleapis.com",
+        "http://www.w3.org",
+        "https://res.cloudinary.com"
+      ],
+      "externalApiEndpoints": [],
+      "hasLocalReferences": false,
+      "localReferences": [],
+      "resourceId": "p055",
+      "categoryPath": ""
+    },
+    {
+      "id": "clinical-protocol-bariatric-resection-gastric-sleeve-html",
+      "path": "Clinical Protocol Bariatric Resection Gastric Sleeve.html",
+      "title": "Clinical Protocol: Bariatric Resection (Gastric Sleeve)",
+      "tags": [
+        "prototype"
+      ],
+      "apiType": "interactive-page",
+      "bytes": 58407,
+      "controls": {
+        "inputs": 0,
+        "textareas": 0,
+        "buttons": 5,
+        "canvases": 1,
+        "iframes": 0
+      },
+      "externalOrigins": [
+        "https://cdn.tailwindcss.com",
+        "https://cdnjs.cloudflare.com",
+        "https://fonts.googleapis.com",
+        "https://res.cloudinary.com"
+      ],
+      "externalApiEndpoints": [],
+      "hasLocalReferences": false,
+      "localReferences": [],
+      "resourceId": "p056",
+      "categoryPath": ""
+    },
+    {
+      "id": "clock-angles-html",
+      "path": "clock-angles.html",
+      "title": "Math Lab - Fundamentals & Geometry",
+      "tags": [
+        "lab",
+        "math"
+      ],
+      "apiType": "embeddable-page",
+      "bytes": 41751,
+      "controls": {
+        "inputs": 7,
+        "textareas": 0,
+        "buttons": 10,
+        "canvases": 1,
+        "iframes": 0
+      },
+      "externalOrigins": [
+        "https://cdn.tailwindcss.com",
+        "https://fonts.googleapis.com",
+        "http://www.w3.org"
+      ],
+      "externalApiEndpoints": [],
+      "hasLocalReferences": false,
+      "localReferences": [],
+      "resourceId": "p057",
+      "categoryPath": ""
+    },
+    {
+      "id": "clonbrow-dashboard-9-html",
+      "path": "clonbrow_dashboard (9).html",
+      "title": "ClonBrow OS | Dashboard",
+      "tags": [
+        "dashboard"
+      ],
+      "apiType": "interactive-page",
+      "bytes": 28898,
+      "controls": {
+        "inputs": 1,
+        "textareas": 0,
+        "buttons": 5,
+        "canvases": 1,
+        "iframes": 0
+      },
+      "externalOrigins": [
+        "https://cdn.tailwindcss.com",
+        "https://cdnjs.cloudflare.com",
+        "https://fonts.googleapis.com",
+        "https://fonts.gstatic.com",
+        "https://cdn.jsdelivr.net",
+        "https://res.cloudinary.com"
+      ],
+      "externalApiEndpoints": [],
+      "hasLocalReferences": true,
+      "localReferences": [
+        "dert.html",
+        "dashboard.html",
+        "searcher.html",
+        "login.html"
+      ],
+      "resourceId": "p058",
+      "categoryPath": ""
+    },
+    {
+      "id": "clonbrow-win32-x64-licenses-chromium-html",
+      "path": "Clonbrow-win32-x64/LICENSES.chromium.html",
+      "title": "Credits",
+      "tags": [
+        "runtime-package"
+      ],
+      "apiType": "package-support",
+      "bytes": 8245732,
+      "controls": {
+        "inputs": 351,
+        "textareas": 0,
+        "buttons": 0,
+        "canvases": 0,
+        "iframes": 0
+      },
+      "externalOrigins": [
+        "http://www.kurims.kyoto-u.ac.jp",
+        "https://github.com",
+        "https://www.apache.org",
+        "https://raw.githubusercontent.com",
+        "http://www.apache.org",
+        "https://aomedia.googlesource.com",
+        "http://code.google.com",
+        "http://lcamtuf.coredump.cx",
+        "http://source.android.com",
+        "http://developer.android.com",
+        "https://developer.android.com",
+        "https://android.googlesource.com"
+      ],
+      "externalApiEndpoints": [],
+      "hasLocalReferences": true,
+      "localReferences": [
+        "chrome://resources/css/text_defaults.css",
+        "chrome://credits/credits.css",
+        "github.com/GoogleChrome/lighthouse",
+        "This is the canonical public repository",
+        "ftp://sourceware.org/pub/newlib/newlib-2.0.0.tar.gz",
+        "None",
+        "source.chromium.org/chromium/chromium/src/+/master:v8/src/base/ieee754.cc"
+      ],
+      "resourceId": "p059",
+      "categoryPath": "Clonbrow-win32-x64"
+    },
+    {
+      "id": "clonbrow-win32-x64-resources-app-lib-static-login-html",
+      "path": "Clonbrow-win32-x64/resources/app/lib/static/login.html",
+      "title": "Login",
+      "tags": [
+        "runtime-package"
+      ],
+      "apiType": "package-support",
+      "bytes": 579,
+      "controls": {
+        "inputs": 2,
+        "textareas": 0,
+        "buttons": 1,
+        "canvases": 0,
+        "iframes": 0
+      },
+      "externalOrigins": [],
+      "externalApiEndpoints": [],
+      "hasLocalReferences": true,
+      "localReferences": [
+        "login.css",
+        "login.js"
+      ],
+      "resourceId": "p060",
+      "categoryPath": "Clonbrow-win32-x64/resources/app/lib/static"
+    },
+    {
+      "id": "clonesh-html",
+      "path": "clonesh.html",
+      "title": "ClonMedic OS",
+      "tags": [
+        "external-api"
+      ],
+      "apiType": "interactive-page",
+      "bytes": 61651,
+      "controls": {
+        "inputs": 6,
+        "textareas": 1,
+        "buttons": 19,
+        "canvases": 0,
+        "iframes": 0
+      },
+      "externalOrigins": [
+        "https://cdn.tailwindcss.com",
+        "https://cdnjs.cloudflare.com",
+        "https://res.cloudinary.com",
+        "https://api.dicebear.com",
+        "https://www.gstatic.com",
+        "https://en.wikipedia.org"
+      ],
+      "externalApiEndpoints": [
+        "https://en.wikipedia.org/w/api.php?action=query&list=search&srsearch=${encodeURIComponent(query)}&utf8=&format=json&origin=*"
+      ],
+      "hasLocalReferences": true,
+      "localReferences": [
+        "${msg.pfp}",
+        "${data.pfp}",
+        "${req.senderPfp}",
+        "url",
+        "file"
+      ],
+      "resourceId": "p061",
+      "categoryPath": ""
+    },
+    {
+      "id": "clonexx-chat-html",
+      "path": "clonexx-(chat).html",
+      "title": "Clonexx AI - Sovereign Chat",
+      "tags": [
+        "external-api"
+      ],
+      "apiType": "interactive-page",
+      "bytes": 33620,
+      "controls": {
+        "inputs": 0,
+        "textareas": 1,
+        "buttons": 17,
+        "canvases": 0,
+        "iframes": 0
+      },
+      "externalOrigins": [
+        "https://cdn.tailwindcss.com",
+        "https://cdn.jsdelivr.net",
+        "https://unpkg.com",
+        "https://fonts.googleapis.com",
+        "https://d8j0ntlcm91z4.cloudfront.net",
+        "https://shreeclonexx.pythonanywhere.com",
+        "http://localhost:8000"
+      ],
+      "externalApiEndpoints": [
+        "https://shreeClonexx.pythonanywhere.com/api/user",
+        "https://shreeClonexx.pythonanywhere.com/api/chats",
+        "http://localhost:8000/api/chat"
+      ],
+      "hasLocalReferences": true,
+      "localReferences": [
+        "clonmage.html",
+        "slideso.html",
+        "bcg.html",
+        "lityl.html",
+        "formi.html",
+        "datastore.html",
+        "worder.html",
+        "webdi.html",
+        "twoaisers.html",
+        "terminal.html",
+        "ClonexxAI.html"
+      ],
+      "resourceId": "p062",
+      "categoryPath": ""
+    },
+    {
+      "id": "clonmage-html",
+      "path": "clonmage.html",
+      "title": "Clonexx AI - Clonmage v1",
+      "tags": [
+        "external-api"
+      ],
+      "apiType": "interactive-page",
+      "bytes": 25206,
+      "controls": {
+        "inputs": 1,
+        "textareas": 1,
+        "buttons": 6,
+        "canvases": 0,
+        "iframes": 0
+      },
+      "externalOrigins": [
+        "https://cdn.tailwindcss.com",
+        "https://unpkg.com",
+        "https://fonts.googleapis.com",
+        "http://www.w3.org",
+        "https://d8j0ntlcm91z4.cloudfront.net",
+        "https://shreeclonexx.pythonanywhere.com",
+        "http://localhost:8000"
+      ],
+      "externalApiEndpoints": [
+        "https://shreeClonexx.pythonanywhere.com/api/user",
+        "http://localhost:8000/api/generate-image"
+      ],
+      "hasLocalReferences": true,
+      "localReferences": [
+        "clonexx-(chat).html",
+        "clonmage.html",
+        "slideso.html",
+        "bcg.html",
+        "lityl.html",
+        "formi.html",
+        "datastore.html",
+        "worder.html",
+        "webdi.html",
+        "twoaisers.html",
+        "terminal.html",
+        "ClonexxAI.html",
+        "${imgBase64}",
+        "file",
+        "blob",
+        "url"
+      ],
+      "resourceId": "p063",
+      "categoryPath": ""
+    },
+    {
+      "id": "clonmed-dashboard-html",
+      "path": "clonmed_dashboard.html",
+      "title": "ClonMed | Clinical Intelligence",
+      "tags": [
+        "dashboard"
+      ],
+      "apiType": "interactive-page",
+      "bytes": 8083,
+      "controls": {
+        "inputs": 3,
+        "textareas": 1,
+        "buttons": 1,
+        "canvases": 0,
+        "iframes": 0
+      },
+      "externalOrigins": [
+        "https://cors-anywhere.herokuapp.com",
+        "https://app.promptopinion.ai",
+        "https://taupe-druid-86622d.netlify.app"
+      ],
+      "externalApiEndpoints": [],
+      "hasLocalReferences": false,
+      "localReferences": [],
+      "resourceId": "p064",
+      "categoryPath": ""
+    },
+    {
+      "id": "clotting-cascade-simulation-html",
+      "path": "Clotting Cascade Simulation.html",
+      "title": "Clotting Cascade: Hemostasis in Action",
+      "tags": [
+        "simulation"
+      ],
+      "apiType": "embeddable-page",
+      "bytes": 19159,
+      "controls": {
+        "inputs": 0,
+        "textareas": 0,
+        "buttons": 3,
+        "canvases": 1,
+        "iframes": 0
+      },
+      "externalOrigins": [],
+      "externalApiEndpoints": [],
+      "hasLocalReferences": false,
+      "localReferences": [],
+      "resourceId": "p065",
+      "categoryPath": ""
+    },
+    {
+      "id": "color-blindness-lab-html",
+      "path": "Color Blindness Lab.html",
+      "title": "Color Vision Deficiency Laboratory",
+      "tags": [
+        "lab"
+      ],
+      "apiType": "embeddable-page",
+      "bytes": 21787,
+      "controls": {
+        "inputs": 0,
+        "textareas": 0,
+        "buttons": 5,
+        "canvases": 0,
+        "iframes": 0
+      },
+      "externalOrigins": [
+        "https://cdn.tailwindcss.com",
+        "https://fonts.googleapis.com"
+      ],
+      "externalApiEndpoints": [],
+      "hasLocalReferences": false,
+      "localReferences": [],
+      "resourceId": "p066",
+      "categoryPath": ""
+    },
+    {
+      "id": "concussion-momentum-lab-html",
+      "path": "Concussion Momentum Lab.html",
+      "title": "Impulse & Momentum: Concussion Simulator",
+      "tags": [
+        "lab",
+        "simulation",
+        "tool"
+      ],
+      "apiType": "embeddable-page",
+      "bytes": 26464,
+      "controls": {
+        "inputs": 1,
+        "textareas": 0,
+        "buttons": 2,
+        "canvases": 1,
+        "iframes": 0
+      },
+      "externalOrigins": [
+        "https://cdn.tailwindcss.com",
+        "https://fonts.googleapis.com"
+      ],
+      "externalApiEndpoints": [],
+      "hasLocalReferences": false,
+      "localReferences": [],
+      "resourceId": "p067",
+      "categoryPath": ""
+    },
+    {
+      "id": "congruency-vs-similarity-html",
+      "path": "congruency-vs-similarity.html",
+      "title": "Math Lab - Sequences & Statistics",
+      "tags": [
+        "lab",
+        "math"
+      ],
+      "apiType": "embeddable-page",
+      "bytes": 37536,
+      "controls": {
+        "inputs": 12,
+        "textareas": 0,
+        "buttons": 5,
+        "canvases": 1,
+        "iframes": 0
+      },
+      "externalOrigins": [
+        "https://cdn.tailwindcss.com",
+        "https://fonts.googleapis.com",
+        "http://www.w3.org"
+      ],
+      "externalApiEndpoints": [],
+      "hasLocalReferences": false,
+      "localReferences": [],
+      "resourceId": "p068",
+      "categoryPath": ""
+    },
+    {
+      "id": "conic-sections-html",
+      "path": "conic-sections.html",
+      "title": "Math Lab - Linear Algebra & Conics",
+      "tags": [
+        "lab",
+        "math"
+      ],
+      "apiType": "embeddable-page",
+      "bytes": 42077,
+      "controls": {
+        "inputs": 10,
+        "textareas": 0,
+        "buttons": 8,
+        "canvases": 1,
+        "iframes": 0
+      },
+      "externalOrigins": [
+        "https://cdn.tailwindcss.com",
+        "https://fonts.googleapis.com",
+        "https://cdn.jsdelivr.net",
+        "http://www.w3.org"
+      ],
+      "externalApiEndpoints": [],
+      "hasLocalReferences": false,
+      "localReferences": [],
+      "resourceId": "p069",
+      "categoryPath": ""
+    },
+    {
+      "id": "control-html",
+      "path": "control.html",
+      "title": "ClonBrow OS | The Ultimate Student Browser",
+      "tags": [
+        "external-api"
+      ],
+      "apiType": "interactive-page",
+      "bytes": 155459,
+      "controls": {
+        "inputs": 38,
+        "textareas": 2,
+        "buttons": 77,
+        "canvases": 0,
+        "iframes": 0
+      },
+      "externalOrigins": [
+        "https://cdn.tailwindcss.com",
+        "https://cdnjs.cloudflare.com",
+        "https://fonts.googleapis.com",
+        "https://api.dicebear.com",
+        "https://res.cloudinary.com",
+        "http://127.0.0.1:5000",
+        "https://www.google.com",
+        "https://en.wikipedia.org"
+      ],
+      "externalApiEndpoints": [
+        "https://en.wikipedia.org/w/api.php?action=query&list=search&srsearch=${encodeURIComponent(query)}&utf8=&format=json&origin=*",
+        "https://en.wikipedia.org/w/api.php?action=query&prop=extracts&titles=${encodeURIComponent(title)}&format=json&origin=*"
+      ],
+      "hasLocalReferences": true,
+      "localReferences": [
+        "${faviconUrl}",
+        "about:blank",
+        "url",
+        "tab.url"
+      ],
+      "resourceId": "p070",
+      "categoryPath": ""
+    },
+    {
+      "id": "coordinate-plane-html",
+      "path": "coordinate-plane.html",
+      "title": "Math Lab - Fundamentals & Geometry",
+      "tags": [
+        "lab",
+        "math"
+      ],
+      "apiType": "embeddable-page",
+      "bytes": 41751,
+      "controls": {
+        "inputs": 7,
+        "textareas": 0,
+        "buttons": 10,
+        "canvases": 1,
+        "iframes": 0
+      },
+      "externalOrigins": [
+        "https://cdn.tailwindcss.com",
+        "https://fonts.googleapis.com",
+        "http://www.w3.org"
+      ],
+      "externalApiEndpoints": [],
+      "hasLocalReferences": false,
+      "localReferences": [],
+      "resourceId": "p071",
+      "categoryPath": ""
+    },
+    {
+      "id": "cortisol-stress-lab-html",
+      "path": "Cortisol Stress Lab.html",
+      "title": "Cortisol Stress Lab: Physiological Response",
+      "tags": [
+        "lab",
+        "biology",
+        "chemistry"
+      ],
+      "apiType": "embeddable-page",
+      "bytes": 15210,
+      "controls": {
+        "inputs": 0,
+        "textareas": 0,
+        "buttons": 2,
+        "canvases": 2,
+        "iframes": 0
+      },
+      "externalOrigins": [
+        "https://cdn.tailwindcss.com",
+        "https://fonts.googleapis.com"
+      ],
+      "externalApiEndpoints": [],
+      "hasLocalReferences": false,
+      "localReferences": [],
+      "resourceId": "p072",
+      "categoryPath": ""
+    },
+    {
+      "id": "coulombs-law-html",
+      "path": "coulombs-law.html",
+      "title": "Physics Lab - Waves & Electrostatics",
+      "tags": [
+        "lab",
+        "chemistry",
+        "physics"
+      ],
+      "apiType": "embeddable-page",
+      "bytes": 29961,
+      "controls": {
+        "inputs": 4,
+        "textareas": 0,
+        "buttons": 4,
+        "canvases": 3,
+        "iframes": 0
+      },
+      "externalOrigins": [
+        "https://cdn.tailwindcss.com",
+        "https://fonts.googleapis.com",
+        "http://www.w3.org",
+        "https://res.cloudinary.com"
+      ],
+      "externalApiEndpoints": [],
+      "hasLocalReferences": false,
+      "localReferences": [],
+      "resourceId": "p073",
+      "categoryPath": ""
+    },
+    {
+      "id": "cricket-html",
+      "path": "cricket.html",
+      "title": "3D Cricket Master",
+      "tags": [
+        "visualization"
+      ],
+      "apiType": "embeddable-page",
+      "bytes": 26681,
+      "controls": {
+        "inputs": 0,
+        "textareas": 0,
+        "buttons": 3,
+        "canvases": 1,
+        "iframes": 0
+      },
+      "externalOrigins": [
+        "https://cdn.tailwindcss.com",
+        "https://cdnjs.cloudflare.com",
+        "https://fonts.googleapis.com"
+      ],
+      "externalApiEndpoints": [],
+      "hasLocalReferences": false,
+      "localReferences": [],
+      "resourceId": "p074",
+      "categoryPath": ""
+    },
+    {
+      "id": "crispr-gene-splicer-html",
+      "path": "CRISPR Gene Splicer.html",
+      "title": "CRISPR-Cas9 Genomic Editor",
+      "tags": [
+        "biology",
+        "tool"
+      ],
+      "apiType": "interactive-page",
+      "bytes": 23477,
+      "controls": {
+        "inputs": 0,
+        "textareas": 0,
+        "buttons": 2,
+        "canvases": 0,
+        "iframes": 0
+      },
+      "externalOrigins": [
+        "https://cdn.tailwindcss.com",
+        "https://fonts.googleapis.com",
+        "http://www.w3.org"
+      ],
+      "externalApiEndpoints": [],
+      "hasLocalReferences": false,
+      "localReferences": [],
+      "resourceId": "p075",
+      "categoryPath": ""
+    },
+    {
+      "id": "cryopreservation-lab-html",
+      "path": "Cryopreservation Lab.html",
+      "title": "Cryobiology | Flash Freeze Simulator",
+      "tags": [
+        "lab",
+        "simulation",
+        "biology",
+        "tool"
+      ],
+      "apiType": "embeddable-page",
+      "bytes": 22666,
+      "controls": {
+        "inputs": 1,
+        "textareas": 0,
+        "buttons": 2,
+        "canvases": 1,
+        "iframes": 0
+      },
+      "externalOrigins": [
+        "https://cdn.tailwindcss.com",
+        "https://fonts.googleapis.com"
+      ],
+      "externalApiEndpoints": [],
+      "hasLocalReferences": false,
+      "localReferences": [],
+      "resourceId": "p076",
+      "categoryPath": ""
+    },
+    {
+      "id": "cryosurgery-lab-html",
+      "path": "Cryosurgery Lab.html",
+      "title": "Cryosurgery & Phase Change Lab",
+      "tags": [
+        "lab",
+        "chemistry"
+      ],
+      "apiType": "embeddable-page",
+      "bytes": 27935,
+      "controls": {
+        "inputs": 0,
+        "textareas": 0,
+        "buttons": 1,
+        "canvases": 2,
+        "iframes": 0
+      },
+      "externalOrigins": [
+        "https://cdn.tailwindcss.com",
+        "https://fonts.googleapis.com",
+        "http://www.w3.org"
+      ],
+      "externalApiEndpoints": [],
+      "hasLocalReferences": false,
+      "localReferences": [],
+      "resourceId": "p077",
+      "categoryPath": ""
+    },
+    {
+      "id": "cyanide-blockade-simulation-html",
+      "path": "Cyanide Blockade Simulation.html",
+      "title": "Cyanide Blockade: Mitochondrial Failure",
+      "tags": [
+        "simulation"
+      ],
+      "apiType": "embeddable-page",
+      "bytes": 18220,
+      "controls": {
+        "inputs": 0,
+        "textareas": 0,
+        "buttons": 3,
+        "canvases": 1,
+        "iframes": 0
+      },
+      "externalOrigins": [],
+      "externalApiEndpoints": [],
+      "hasLocalReferences": false,
+      "localReferences": [],
+      "resourceId": "p078",
+      "categoryPath": ""
+    },
+    {
+      "id": "cybernetic-haptic-lab-html",
+      "path": "Cybernetic Haptic Lab.html",
+      "title": "Cybernetic Haptic Feedback Lab",
+      "tags": [
+        "lab"
+      ],
+      "apiType": "embeddable-page",
+      "bytes": 34990,
+      "controls": {
+        "inputs": 1,
+        "textareas": 0,
+        "buttons": 0,
+        "canvases": 2,
+        "iframes": 0
+      },
+      "externalOrigins": [
+        "https://cdn.tailwindcss.com",
+        "https://fonts.googleapis.com"
+      ],
+      "externalApiEndpoints": [],
+      "hasLocalReferences": false,
+      "localReferences": [],
+      "resourceId": "p079",
+      "categoryPath": ""
+    },
+    {
+      "id": "cytochrome-p450-lab-html",
+      "path": "Cytochrome P450 Lab.html",
+      "title": "CYP450 Metabolic Factory",
+      "tags": [
+        "lab"
+      ],
+      "apiType": "embeddable-page",
+      "bytes": 20163,
+      "controls": {
+        "inputs": 1,
+        "textareas": 0,
+        "buttons": 1,
+        "canvases": 0,
+        "iframes": 0
+      },
+      "externalOrigins": [
+        "https://cdn.tailwindcss.com",
+        "https://fonts.googleapis.com"
+      ],
+      "externalApiEndpoints": [],
+      "hasLocalReferences": false,
+      "localReferences": [],
+      "resourceId": "p080",
+      "categoryPath": ""
+    },
+    {
+      "id": "dab-html",
+      "path": "dab.html",
+      "title": "ClonBrow OS | Official Student Workspace",
+      "tags": [
+        "external-api"
+      ],
+      "apiType": "interactive-page",
+      "bytes": 143582,
+      "controls": {
+        "inputs": 28,
+        "textareas": 2,
+        "buttons": 79,
+        "canvases": 1,
+        "iframes": 0
+      },
+      "externalOrigins": [
+        "https://cdn.tailwindcss.com",
+        "https://cdnjs.cloudflare.com",
+        "https://fonts.googleapis.com",
+        "https://images.unsplash.com",
+        "https://clonexxshree.pythonanywhere.com",
+        "https://en.wikipedia.org"
+      ],
+      "externalApiEndpoints": [
+        "https://en.wikipedia.org/w/api.php?action=query&list=search&srsearch=${encodeURIComponent(query)}&utf8=&format=json&origin=*",
+        "https://en.wikipedia.org/w/api.php?action=query&prop=extracts&exintro&explaintext&titles=${encodeURIComponent(topTitle)}&format=json&origin=*",
+        "https://en.wikipedia.org/w/api.php?action=query&prop=extracts&titles=${encodeURIComponent(title)}&format=json&origin=*"
+      ],
+      "hasLocalReferences": true,
+      "localReferences": [
+        "theme-mobile.css",
+        "about:blank",
+        "url"
+      ],
+      "resourceId": "p081",
+      "categoryPath": ""
+    },
+    {
+      "id": "dashboard-html",
+      "path": "dashboard.html",
+      "title": "ClonBrow OS | Dashboard",
+      "tags": [
+        "dashboard"
+      ],
+      "apiType": "interactive-page",
+      "bytes": 29472,
+      "controls": {
+        "inputs": 1,
+        "textareas": 0,
+        "buttons": 5,
+        "canvases": 1,
+        "iframes": 0
+      },
+      "externalOrigins": [
+        "https://cdn.tailwindcss.com",
+        "https://cdnjs.cloudflare.com",
+        "https://fonts.googleapis.com",
+        "https://fonts.gstatic.com",
+        "https://cdn.jsdelivr.net",
+        "https://res.cloudinary.com"
+      ],
+      "externalApiEndpoints": [],
+      "hasLocalReferences": true,
+      "localReferences": [
+        "dert.html",
+        "dashboard.html",
+        "searcher.html",
+        "login.html"
+      ],
+      "resourceId": "p082",
+      "categoryPath": ""
+    },
+    {
+      "id": "defibrillator-lab-html",
+      "path": "Defibrillator Lab.html",
+      "title": "Defibrillator Capacitor Lab",
+      "tags": [
+        "lab"
+      ],
+      "apiType": "embeddable-page",
+      "bytes": 30378,
+      "controls": {
+        "inputs": 2,
+        "textareas": 0,
+        "buttons": 2,
+        "canvases": 1,
+        "iframes": 0
+      },
+      "externalOrigins": [
+        "https://cdn.tailwindcss.com",
+        "https://fonts.googleapis.com"
+      ],
+      "externalApiEndpoints": [],
+      "hasLocalReferences": false,
+      "localReferences": [],
+      "resourceId": "p083",
+      "categoryPath": ""
+    },
+    {
+      "id": "density-tower-lab-html",
+      "path": "density-tower-lab.html",
+      "title": "Physics Lab - Density Towers",
+      "tags": [
+        "lab",
+        "chemistry",
+        "physics"
+      ],
+      "apiType": "embeddable-page",
+      "bytes": 21172,
+      "controls": {
+        "inputs": 0,
+        "textareas": 0,
+        "buttons": 6,
+        "canvases": 1,
+        "iframes": 0
+      },
+      "externalOrigins": [
+        "https://cdn.tailwindcss.com",
+        "https://fonts.googleapis.com"
+      ],
+      "externalApiEndpoints": [],
+      "hasLocalReferences": false,
+      "localReferences": [],
+      "resourceId": "p084",
+      "categoryPath": ""
+    },
+    {
+      "id": "derivatives-html",
+      "path": "derivatives.html",
+      "title": "Math Lab - Calculus & Vectors",
+      "tags": [
+        "lab",
+        "math"
+      ],
+      "apiType": "embeddable-page",
+      "bytes": 37017,
+      "controls": {
+        "inputs": 7,
+        "textareas": 0,
+        "buttons": 4,
+        "canvases": 1,
+        "iframes": 0
+      },
+      "externalOrigins": [
+        "https://cdn.tailwindcss.com",
+        "https://fonts.googleapis.com",
+        "http://www.w3.org"
+      ],
+      "externalApiEndpoints": [],
+      "hasLocalReferences": false,
+      "localReferences": [],
+      "resourceId": "p085",
+      "categoryPath": ""
+    },
+    {
+      "id": "digital-hospital-html",
+      "path": "Digital hospital.html",
+      "title": "CLONMED | AI Diagnostic System",
+      "tags": [
+        "external-api"
+      ],
+      "apiType": "interactive-page",
+      "bytes": 40645,
+      "controls": {
+        "inputs": 3,
+        "textareas": 1,
+        "buttons": 6,
+        "canvases": 0,
+        "iframes": 0
+      },
+      "externalOrigins": [
+        "https://cdn.tailwindcss.com",
+        "https://fonts.googleapis.com",
+        "https://ajax.googleapis.com",
+        "https://cdnjs.cloudflare.com",
+        "https://modelviewer.dev",
+        "http://www.w3.org",
+        "https://ipapi.co",
+        "https://openrouter.ai",
+        "https://generativelanguage.googleapis.com",
+        "https://images.unsplash.com"
+      ],
+      "externalApiEndpoints": [
+        "https://ipapi.co/json/"
+      ],
+      "hasLocalReferences": false,
+      "localReferences": [],
+      "resourceId": "p086",
+      "categoryPath": ""
+    },
+    {
+      "id": "distance-vs-displacement-html",
+      "path": "distance-vs-displacement.html",
+      "title": "Physics Lab - Distance vs Displacement",
+      "tags": [
+        "lab",
+        "chemistry",
+        "physics"
+      ],
+      "apiType": "embeddable-page",
+      "bytes": 18613,
+      "controls": {
+        "inputs": 3,
+        "textareas": 0,
+        "buttons": 1,
+        "canvases": 1,
+        "iframes": 0
+      },
+      "externalOrigins": [
+        "https://cdn.tailwindcss.com",
+        "https://fonts.googleapis.com"
+      ],
+      "externalApiEndpoints": [],
+      "hasLocalReferences": false,
+      "localReferences": [],
+      "resourceId": "p087",
+      "categoryPath": ""
+    },
+    {
+      "id": "dopamine-reward-lab-html",
+      "path": "Dopamine Reward Lab.html",
+      "title": "Neurobiology: The Dopamine Reward Loop",
+      "tags": [
+        "lab",
+        "biology"
+      ],
+      "apiType": "embeddable-page",
+      "bytes": 27037,
+      "controls": {
+        "inputs": 0,
+        "textareas": 0,
+        "buttons": 2,
+        "canvases": 1,
+        "iframes": 0
+      },
+      "externalOrigins": [
+        "https://cdn.tailwindcss.com",
+        "https://fonts.googleapis.com"
+      ],
+      "externalApiEndpoints": [],
+      "hasLocalReferences": false,
+      "localReferences": [],
+      "resourceId": "p088",
+      "categoryPath": ""
+    },
+    {
+      "id": "dot-and-cross-products-html",
+      "path": "dot-and-cross-products.html",
+      "title": "Math Lab - Linear Algebra & Conics",
+      "tags": [
+        "lab",
+        "math"
+      ],
+      "apiType": "embeddable-page",
+      "bytes": 42077,
+      "controls": {
+        "inputs": 10,
+        "textareas": 0,
+        "buttons": 8,
+        "canvases": 1,
+        "iframes": 0
+      },
+      "externalOrigins": [
+        "https://cdn.tailwindcss.com",
+        "https://fonts.googleapis.com",
+        "https://cdn.jsdelivr.net",
+        "http://www.w3.org"
+      ],
+      "externalApiEndpoints": [],
+      "hasLocalReferences": false,
+      "localReferences": [],
+      "resourceId": "p089",
+      "categoryPath": ""
+    },
+    {
+      "id": "duo-html",
+      "path": "duo.html",
+      "title": "DUO - Card Game",
+      "tags": [
+        "game"
+      ],
+      "apiType": "embeddable-page",
+      "bytes": 28175,
+      "controls": {
+        "inputs": 0,
+        "textareas": 0,
+        "buttons": 2,
+        "canvases": 0,
+        "iframes": 0
+      },
+      "externalOrigins": [
+        "https://cdn.tailwindcss.com",
+        "https://fonts.googleapis.com"
+      ],
+      "externalApiEndpoints": [],
+      "hasLocalReferences": false,
+      "localReferences": [],
+      "resourceId": "p090",
+      "categoryPath": ""
+    },
+    {
+      "id": "dynamics-html",
+      "path": "dynamics.html",
+      "title": "Physics Lab - Dynamics & Fluids",
+      "tags": [
+        "lab",
+        "chemistry",
+        "physics"
+      ],
+      "apiType": "embeddable-page",
+      "bytes": 21870,
+      "controls": {
+        "inputs": 4,
+        "textareas": 0,
+        "buttons": 2,
+        "canvases": 3,
+        "iframes": 0
+      },
+      "externalOrigins": [
+        "https://cdn.tailwindcss.com",
+        "https://fonts.googleapis.com",
+        "http://www.w3.org",
+        "https://res.cloudinary.com"
+      ],
+      "externalApiEndpoints": [],
+      "hasLocalReferences": false,
+      "localReferences": [],
+      "resourceId": "p091",
+      "categoryPath": ""
+    },
+    {
+      "id": "editor-html",
+      "path": "editor.html",
+      "title": "Clonbrow saver - The Forge",
+      "tags": [
+        "tool"
+      ],
+      "apiType": "interactive-page",
+      "bytes": 23093,
+      "controls": {
+        "inputs": 2,
+        "textareas": 1,
+        "buttons": 5,
+        "canvases": 1,
+        "iframes": 0
+      },
+      "externalOrigins": [
+        "https://cdn.tailwindcss.com",
+        "https://fonts.googleapis.com",
+        "https://unpkg.com",
+        "https://cdnjs.cloudflare.com",
+        "https://shreeclonexx.pythonanywhere.com"
+      ],
+      "externalApiEndpoints": [],
+      "hasLocalReferences": true,
+      "localReferences": [
+        "dashboard.html",
+        "quests.html"
+      ],
+      "resourceId": "p092",
+      "categoryPath": ""
+    },
+    {
+      "id": "educationist-html",
+      "path": "educationist.html",
+      "title": "Educationist - Live Physics & Maths",
+      "tags": [
+        "math",
+        "chemistry",
+        "physics"
+      ],
+      "apiType": "interactive-page",
+      "bytes": 49235,
+      "controls": {
+        "inputs": 0,
+        "textareas": 0,
+        "buttons": 11,
+        "canvases": 0,
+        "iframes": 1
+      },
+      "externalOrigins": [
+        "https://cdn.tailwindcss.com",
+        "https://unpkg.com",
+        "https://fonts.googleapis.com",
+        "https://fonts.gstatic.com",
+        "https://ajax.googleapis.com",
+        "https://modelviewer.dev"
+      ],
+      "externalApiEndpoints": [],
+      "hasLocalReferences": false,
+      "localReferences": [],
+      "resourceId": "p093",
+      "categoryPath": ""
+    },
+    {
+      "id": "eeg-wave-superposition-lab-html",
+      "path": "EEG Wave Superposition Lab.html",
+      "title": "EEG Wave Analysis: Superposition",
+      "tags": [
+        "lab",
+        "physics"
+      ],
+      "apiType": "embeddable-page",
+      "bytes": 18661,
+      "controls": {
+        "inputs": 4,
+        "textareas": 0,
+        "buttons": 4,
+        "canvases": 1,
+        "iframes": 0
+      },
+      "externalOrigins": [],
+      "externalApiEndpoints": [],
+      "hasLocalReferences": false,
+      "localReferences": [],
+      "resourceId": "p094",
+      "categoryPath": ""
+    },
+    {
+      "id": "electromagnetism-html",
+      "path": "electromagnetism.html",
+      "title": "Physics Lab - Electromagnetism",
+      "tags": [
+        "lab",
+        "chemistry",
+        "physics"
+      ],
+      "apiType": "embeddable-page",
+      "bytes": 19613,
+      "controls": {
+        "inputs": 3,
+        "textareas": 0,
+        "buttons": 0,
+        "canvases": 3,
+        "iframes": 0
+      },
+      "externalOrigins": [
+        "https://cdn.tailwindcss.com",
+        "https://fonts.googleapis.com"
+      ],
+      "externalApiEndpoints": [],
+      "hasLocalReferences": false,
+      "localReferences": [],
+      "resourceId": "p095",
+      "categoryPath": ""
+    },
+    {
+      "id": "elisa-microplate-simulator-html",
+      "path": "ELISA Microplate Simulator.html",
+      "title": "ELISA Microplate Simulator",
+      "tags": [
+        "simulation",
+        "tool"
+      ],
+      "apiType": "embeddable-page",
+      "bytes": 15235,
+      "controls": {
+        "inputs": 0,
+        "textareas": 0,
+        "buttons": 3,
+        "canvases": 0,
+        "iframes": 0
+      },
+      "externalOrigins": [
+        "https://cdn.tailwindcss.com",
+        "https://fonts.googleapis.com",
+        "http://www.w3.org"
+      ],
+      "externalApiEndpoints": [],
+      "hasLocalReferences": false,
+      "localReferences": [],
+      "resourceId": "p096",
+      "categoryPath": ""
+    },
+    {
+      "id": "endoscopy-fiber-optics-lab-html",
+      "path": "Endoscopy Fiber Optics Lab.html",
+      "title": "Endoscopy & Total Internal Reflection Lab",
+      "tags": [
+        "lab",
+        "physics"
+      ],
+      "apiType": "embeddable-page",
+      "bytes": 26801,
+      "controls": {
+        "inputs": 3,
+        "textareas": 0,
+        "buttons": 0,
+        "canvases": 1,
+        "iframes": 0
+      },
+      "externalOrigins": [
+        "https://cdn.tailwindcss.com",
+        "https://fonts.googleapis.com"
+      ],
+      "externalApiEndpoints": [],
+      "hasLocalReferences": false,
+      "localReferences": [],
+      "resourceId": "p097",
+      "categoryPath": ""
+    },
+    {
+      "id": "energy-html",
+      "path": "energy.html",
+      "title": "Physics Lab - Energy & Momentum",
+      "tags": [
+        "lab",
+        "chemistry",
+        "physics"
+      ],
+      "apiType": "embeddable-page",
+      "bytes": 23279,
+      "controls": {
+        "inputs": 2,
+        "textareas": 0,
+        "buttons": 4,
+        "canvases": 3,
+        "iframes": 0
+      },
+      "externalOrigins": [
+        "https://cdn.tailwindcss.com",
+        "https://fonts.googleapis.com",
+        "http://www.w3.org",
+        "https://res.cloudinary.com"
+      ],
+      "externalApiEndpoints": [],
+      "hasLocalReferences": false,
+      "localReferences": [],
+      "resourceId": "p098",
+      "categoryPath": ""
+    },
+    {
+      "id": "eulers-identity-html",
+      "path": "eulers-identity.html",
+      "title": "Math Lab - Advanced Systems",
+      "tags": [
+        "lab",
+        "math"
+      ],
+      "apiType": "embeddable-page",
+      "bytes": 46197,
+      "controls": {
+        "inputs": 7,
+        "textareas": 0,
+        "buttons": 8,
+        "canvases": 1,
+        "iframes": 0
+      },
+      "externalOrigins": [
+        "https://cdn.tailwindcss.com",
+        "https://fonts.googleapis.com",
+        "https://cdn.jsdelivr.net",
+        "http://www.w3.org"
+      ],
+      "externalApiEndpoints": [],
+      "hasLocalReferences": false,
+      "localReferences": [],
+      "resourceId": "p099",
+      "categoryPath": ""
+    },
+    {
+      "id": "explore-html",
+      "path": "explore.html",
+      "title": "Clonbrow saver - 1st Person Explore",
+      "tags": [
+        "prototype"
+      ],
+      "apiType": "interactive-page",
+      "bytes": 30705,
+      "controls": {
+        "inputs": 0,
+        "textareas": 0,
+        "buttons": 6,
+        "canvases": 0,
+        "iframes": 0
+      },
+      "externalOrigins": [
+        "https://cdn.tailwindcss.com",
+        "https://fonts.googleapis.com",
+        "https://unpkg.com",
+        "https://cdnjs.cloudflare.com",
+        "https://cdn.jsdelivr.net",
+        "https://shreeclonexx.pythonanywhere.com"
+      ],
+      "externalApiEndpoints": [],
+      "hasLocalReferences": false,
+      "localReferences": [],
+      "resourceId": "p100",
+      "categoryPath": ""
+    },
+    {
+      "id": "exponents-html",
+      "path": "exponents.html",
+      "title": "Math Lab - Proportions, Exponents & Trigonometry",
+      "tags": [
+        "lab",
+        "math"
+      ],
+      "apiType": "embeddable-page",
+      "bytes": 40697,
+      "controls": {
+        "inputs": 6,
+        "textareas": 0,
+        "buttons": 4,
+        "canvases": 1,
+        "iframes": 0
+      },
+      "externalOrigins": [
+        "https://cdn.tailwindcss.com",
+        "https://fonts.googleapis.com",
+        "http://www.w3.org",
+        "https://res.cloudinary.com"
+      ],
+      "externalApiEndpoints": [],
+      "hasLocalReferences": false,
+      "localReferences": [],
+      "resourceId": "p101",
+      "categoryPath": ""
+    },
+    {
+      "id": "football-html",
+      "path": "football.html",
+      "title": "Football Master",
+      "tags": [
+        "prototype"
+      ],
+      "apiType": "interactive-page",
+      "bytes": 25716,
+      "controls": {
+        "inputs": 0,
+        "textareas": 0,
+        "buttons": 2,
+        "canvases": 1,
+        "iframes": 0
+      },
+      "externalOrigins": [
+        "https://cdn.tailwindcss.com",
+        "https://fonts.googleapis.com"
+      ],
+      "externalApiEndpoints": [],
+      "hasLocalReferences": false,
+      "localReferences": [],
+      "resourceId": "p102",
+      "categoryPath": ""
+    },
+    {
+      "id": "fps-html",
+      "path": "fps.html",
+      "title": "Lush FPS Survival Adventure",
+      "tags": [
+        "prototype"
+      ],
+      "apiType": "interactive-page",
+      "bytes": 69898,
+      "controls": {
+        "inputs": 0,
+        "textareas": 0,
+        "buttons": 1,
+        "canvases": 2,
+        "iframes": 0
+      },
+      "externalOrigins": [
+        "https://cdn.tailwindcss.com",
+        "https://unpkg.com",
+        "https://cdn.jsdelivr.net",
+        "https://fonts.googleapis.com",
+        "https://raw.githubusercontent.com",
+        "https://res.cloudinary.com",
+        "https://www.gstatic.com"
+      ],
+      "externalApiEndpoints": [],
+      "hasLocalReferences": false,
+      "localReferences": [],
+      "resourceId": "p103",
+      "categoryPath": ""
+    },
+    {
+      "id": "fractions-html",
+      "path": "fractions.html",
+      "title": "Math Lab - Interactive Concepts",
+      "tags": [
+        "lab",
+        "math"
+      ],
+      "apiType": "embeddable-page",
+      "bytes": 35135,
+      "controls": {
+        "inputs": 9,
+        "textareas": 0,
+        "buttons": 7,
+        "canvases": 3,
+        "iframes": 0
+      },
+      "externalOrigins": [
+        "https://cdn.tailwindcss.com",
+        "https://fonts.googleapis.com"
+      ],
+      "externalApiEndpoints": [],
+      "hasLocalReferences": false,
+      "localReferences": [],
+      "resourceId": "p104",
+      "categoryPath": ""
+    },
+    {
+      "id": "friction-html",
+      "path": "friction.html",
+      "title": "Physics Lab - Friction & Surfaces",
+      "tags": [
+        "lab",
+        "chemistry",
+        "physics"
+      ],
+      "apiType": "embeddable-page",
+      "bytes": 23996,
+      "controls": {
+        "inputs": 3,
+        "textareas": 0,
+        "buttons": 9,
+        "canvases": 1,
+        "iframes": 0
+      },
+      "externalOrigins": [
+        "https://cdn.tailwindcss.com",
+        "https://fonts.googleapis.com"
+      ],
+      "externalApiEndpoints": [],
+      "hasLocalReferences": false,
+      "localReferences": [],
+      "resourceId": "p105",
+      "categoryPath": ""
+    },
+    {
+      "id": "gait-pendulum-lab-html",
+      "path": "Gait Pendulum Lab.html",
+      "title": "Gait Analysis: Leg Pendulum Simulator",
+      "tags": [
+        "lab",
+        "simulation",
+        "tool"
+      ],
+      "apiType": "embeddable-page",
+      "bytes": 15104,
+      "controls": {
+        "inputs": 2,
+        "textareas": 0,
+        "buttons": 1,
+        "canvases": 2,
+        "iframes": 0
+      },
+      "externalOrigins": [
+        "https://cdn.tailwindcss.com",
+        "https://fonts.googleapis.com"
+      ],
+      "externalApiEndpoints": [],
+      "hasLocalReferences": false,
+      "localReferences": [],
+      "resourceId": "p106",
+      "categoryPath": ""
+    },
+    {
+      "id": "galtons-board-html",
+      "path": "galtons-board.html",
+      "title": "Math Lab - Advanced Systems",
+      "tags": [
+        "lab",
+        "math"
+      ],
+      "apiType": "embeddable-page",
+      "bytes": 46197,
+      "controls": {
+        "inputs": 7,
+        "textareas": 0,
+        "buttons": 8,
+        "canvases": 1,
+        "iframes": 0
+      },
+      "externalOrigins": [
+        "https://cdn.tailwindcss.com",
+        "https://fonts.googleapis.com",
+        "https://cdn.jsdelivr.net",
+        "http://www.w3.org"
+      ],
+      "externalApiEndpoints": [],
+      "hasLocalReferences": false,
+      "localReferences": [],
+      "resourceId": "p107",
+      "categoryPath": ""
+    },
+    {
+      "id": "garden-html",
+      "path": "garden.html",
+      "title": "Mangrove Garden | Clonexx Campus",
+      "tags": [
+        "prototype"
+      ],
+      "apiType": "content-page",
+      "bytes": 2333,
+      "controls": {
+        "inputs": 0,
+        "textareas": 0,
+        "buttons": 0,
+        "canvases": 0,
+        "iframes": 0
+      },
+      "externalOrigins": [],
+      "externalApiEndpoints": [],
+      "hasLocalReferences": true,
+      "localReferences": [
+        "heril.html"
+      ],
+      "resourceId": "p108",
+      "categoryPath": ""
+    },
+    {
+      "id": "gastric-absorption-engine-html",
+      "path": "Gastric Absorption Engine.html",
+      "title": "Gastric Absorption Engine",
+      "tags": [
+        "prototype"
+      ],
+      "apiType": "interactive-page",
+      "bytes": 9224,
+      "controls": {
+        "inputs": 2,
+        "textareas": 0,
+        "buttons": 0,
+        "canvases": 0,
+        "iframes": 0
+      },
+      "externalOrigins": [
+        "https://cdn.tailwindcss.com",
+        "http://www.w3.org",
+        "https://res.cloudinary.com"
+      ],
+      "externalApiEndpoints": [],
+      "hasLocalReferences": false,
+      "localReferences": [],
+      "resourceId": "p109",
+      "categoryPath": ""
+    },
+    {
+      "id": "gene-drive-evolution-html",
+      "path": "Gene Drive Evolution.html",
+      "title": "Gene Drive Evolution | Advanced Simulator",
+      "tags": [
+        "simulation",
+        "biology",
+        "tool"
+      ],
+      "apiType": "embeddable-page",
+      "bytes": 33403,
+      "controls": {
+        "inputs": 3,
+        "textareas": 0,
+        "buttons": 3,
+        "canvases": 2,
+        "iframes": 0
+      },
+      "externalOrigins": [
+        "https://cdn.tailwindcss.com",
+        "https://fonts.googleapis.com",
+        "http://www.w3.org"
+      ],
+      "externalApiEndpoints": [],
+      "hasLocalReferences": false,
+      "localReferences": [],
+      "resourceId": "p110",
+      "categoryPath": ""
+    },
+    {
+      "id": "geometric-progressions-html",
+      "path": "geometric-progressions.html",
+      "title": "Math Lab - Sequences & Statistics",
+      "tags": [
+        "lab",
+        "math"
+      ],
+      "apiType": "embeddable-page",
+      "bytes": 37536,
+      "controls": {
+        "inputs": 12,
+        "textareas": 0,
+        "buttons": 5,
+        "canvases": 1,
+        "iframes": 0
+      },
+      "externalOrigins": [
+        "https://cdn.tailwindcss.com",
+        "https://fonts.googleapis.com",
+        "http://www.w3.org"
+      ],
+      "externalApiEndpoints": [],
+      "hasLocalReferences": false,
+      "localReferences": [],
+      "resourceId": "p111",
+      "categoryPath": ""
+    },
+    {
+      "id": "gfn-html",
+      "path": "gfn.html",
+      "title": "ClonMedic OS",
+      "tags": [
+        "external-api"
+      ],
+      "apiType": "interactive-page",
+      "bytes": 61110,
+      "controls": {
+        "inputs": 6,
+        "textareas": 1,
+        "buttons": 19,
+        "canvases": 0,
+        "iframes": 0
+      },
+      "externalOrigins": [
+        "https://cdn.tailwindcss.com",
+        "https://cdnjs.cloudflare.com",
+        "https://res.cloudinary.com",
+        "https://www.gstatic.com",
+        "https://en.wikipedia.org",
+        "https://api.dicebear.com"
+      ],
+      "externalApiEndpoints": [
+        "https://en.wikipedia.org/w/api.php?action=query&list=search&srsearch=${encodeURIComponent(query)}&utf8=&format=json&origin=*"
+      ],
+      "hasLocalReferences": true,
+      "localReferences": [
+        "${msg.pfp}",
+        "${data.pfp}",
+        "${req.senderPfp}",
+        "url",
+        "file"
+      ],
+      "resourceId": "p112",
+      "categoryPath": ""
+    },
+    {
+      "id": "glomerular-sieve-lab-html",
+      "path": "Glomerular Sieve Lab.html",
+      "title": "Glomerular Sieve & Renal Filtration Lab",
+      "tags": [
+        "lab"
+      ],
+      "apiType": "embeddable-page",
+      "bytes": 32819,
+      "controls": {
+        "inputs": 2,
+        "textareas": 0,
+        "buttons": 0,
+        "canvases": 1,
+        "iframes": 0
+      },
+      "externalOrigins": [
+        "https://cdn.tailwindcss.com",
+        "https://fonts.googleapis.com",
+        "http://www.w3.org"
+      ],
+      "externalApiEndpoints": [],
+      "hasLocalReferences": false,
+      "localReferences": [],
+      "resourceId": "p113",
+      "categoryPath": ""
+    },
+    {
+      "id": "gravity-html",
+      "path": "gravity.html",
+      "title": "Physics Lab - Gravity",
+      "tags": [
+        "lab",
+        "chemistry",
+        "physics"
+      ],
+      "apiType": "embeddable-page",
+      "bytes": 26333,
+      "controls": {
+        "inputs": 2,
+        "textareas": 0,
+        "buttons": 1,
+        "canvases": 1,
+        "iframes": 0
+      },
+      "externalOrigins": [
+        "https://cdn.tailwindcss.com",
+        "https://fonts.googleapis.com",
+        "http://www.w3.org",
+        "https://res.cloudinary.com"
+      ],
+      "externalApiEndpoints": [],
+      "hasLocalReferences": false,
+      "localReferences": [],
+      "resourceId": "p114",
+      "categoryPath": ""
+    },
+    {
+      "id": "half-life-visualizer-html",
+      "path": "Half-Life Visualizer.html",
+      "title": "Pharmacokinetics Engine",
+      "tags": [
+        "chemistry",
+        "visualization"
+      ],
+      "apiType": "embeddable-page",
+      "bytes": 17808,
+      "controls": {
+        "inputs": 4,
+        "textareas": 0,
+        "buttons": 0,
+        "canvases": 1,
+        "iframes": 0
+      },
+      "externalOrigins": [
+        "https://cdn.tailwindcss.com",
+        "https://cdn.jsdelivr.net",
+        "http://www.w3.org"
+      ],
+      "externalApiEndpoints": [],
+      "hasLocalReferences": false,
+      "localReferences": [],
+      "resourceId": "p115",
+      "categoryPath": ""
+    },
+    {
+      "id": "heat-basics-html",
+      "path": "heat-basics.html",
+      "title": "Physics Lab - Heat Transfer",
+      "tags": [
+        "lab",
+        "chemistry",
+        "physics"
+      ],
+      "apiType": "embeddable-page",
+      "bytes": 28594,
+      "controls": {
+        "inputs": 4,
+        "textareas": 0,
+        "buttons": 3,
+        "canvases": 3,
+        "iframes": 0
+      },
+      "externalOrigins": [
+        "https://cdn.tailwindcss.com",
+        "https://fonts.googleapis.com",
+        "http://www.w3.org",
+        "https://res.cloudinary.com"
+      ],
+      "externalApiEndpoints": [],
+      "hasLocalReferences": false,
+      "localReferences": [],
+      "resourceId": "p116",
+      "categoryPath": ""
+    },
+    {
+      "id": "heatstroke-evaporation-lab-html",
+      "path": "Heatstroke Evaporation Lab.html",
+      "title": "Thermodynamics | Heatstroke Evaporation Lab",
+      "tags": [
+        "lab"
+      ],
+      "apiType": "embeddable-page",
+      "bytes": 18188,
+      "controls": {
+        "inputs": 2,
+        "textareas": 0,
+        "buttons": 0,
+        "canvases": 1,
+        "iframes": 0
+      },
+      "externalOrigins": [
+        "https://cdn.tailwindcss.com",
+        "https://fonts.googleapis.com"
+      ],
+      "externalApiEndpoints": [],
+      "hasLocalReferences": false,
+      "localReferences": [],
+      "resourceId": "p117",
+      "categoryPath": ""
+    },
+    {
+      "id": "heavy-metal-chelation-html",
+      "path": "Heavy Metal Chelation.html",
+      "title": "Molecular Dynamics: Heavy Metal Chelation",
+      "tags": [
+        "prototype"
+      ],
+      "apiType": "interactive-page",
+      "bytes": 16481,
+      "controls": {
+        "inputs": 0,
+        "textareas": 0,
+        "buttons": 1,
+        "canvases": 0,
+        "iframes": 0
+      },
+      "externalOrigins": [
+        "https://cdn.tailwindcss.com",
+        "http://www.w3.org"
+      ],
+      "externalApiEndpoints": [],
+      "hasLocalReferences": false,
+      "localReferences": [],
+      "resourceId": "p118",
+      "categoryPath": ""
+    },
+    {
+      "id": "heril-html",
+      "path": "heril.html",
+      "title": "Flying Island | ClonBrow OS",
+      "tags": [
+        "prototype"
+      ],
+      "apiType": "interactive-page",
+      "bytes": 37407,
+      "controls": {
+        "inputs": 0,
+        "textareas": 0,
+        "buttons": 1,
+        "canvases": 0,
+        "iframes": 0
+      },
+      "externalOrigins": [
+        "https://cdn.tailwindcss.com",
+        "https://cdnjs.cloudflare.com",
+        "https://fonts.googleapis.com",
+        "https://cdn.jsdelivr.net"
+      ],
+      "externalApiEndpoints": [],
+      "hasLocalReferences": false,
+      "localReferences": [],
+      "resourceId": "p119",
+      "categoryPath": ""
+    },
+    {
+      "id": "hill-html",
+      "path": "hill.html",
+      "title": "ClonMedic OS",
+      "tags": [
+        "external-api"
+      ],
+      "apiType": "interactive-page",
+      "bytes": 76138,
+      "controls": {
+        "inputs": 14,
+        "textareas": 3,
+        "buttons": 33,
+        "canvases": 1,
+        "iframes": 0
+      },
+      "externalOrigins": [
+        "https://cdn.tailwindcss.com",
+        "https://cdnjs.cloudflare.com",
+        "https://res.cloudinary.com",
+        "https://logo-url.com",
+        "https://www.gstatic.com",
+        "https://en.wikipedia.org",
+        "https://api.dicebear.com"
+      ],
+      "externalApiEndpoints": [
+        "https://en.wikipedia.org/w/api.php?action=query&list=search&srsearch=${encodeURIComponent(query)}&utf8=&format=json&origin=*"
+      ],
+      "hasLocalReferences": false,
+      "localReferences": [
+        "blob",
+        "url",
+        "file"
+      ],
+      "resourceId": "p120",
+      "categoryPath": ""
+    },
+    {
+      "id": "histamine-response-simulation-html",
+      "path": "Histamine Response Simulation.html",
+      "title": "Histamine Response: Vasodilation Lab",
+      "tags": [
+        "lab",
+        "simulation"
+      ],
+      "apiType": "embeddable-page",
+      "bytes": 17218,
+      "controls": {
+        "inputs": 0,
+        "textareas": 0,
+        "buttons": 2,
+        "canvases": 1,
+        "iframes": 0
+      },
+      "externalOrigins": [],
+      "externalApiEndpoints": [],
+      "hasLocalReferences": false,
+      "localReferences": [],
+      "resourceId": "p121",
+      "categoryPath": ""
+    },
+    {
+      "id": "hospital-html",
+      "path": "hospital.html",
+      "title": "Hospital Lab | Clonexx Research Centre",
+      "tags": [
+        "lab"
+      ],
+      "apiType": "embeddable-page",
+      "bytes": 50205,
+      "controls": {
+        "inputs": 0,
+        "textareas": 0,
+        "buttons": 2,
+        "canvases": 0,
+        "iframes": 1
+      },
+      "externalOrigins": [
+        "https://cdn.tailwindcss.com",
+        "https://cdnjs.cloudflare.com",
+        "https://fonts.googleapis.com"
+      ],
+      "externalApiEndpoints": [],
+      "hasLocalReferences": false,
+      "localReferences": [],
+      "resourceId": "p122",
+      "categoryPath": ""
+    },
+    {
+      "id": "human-eye-html",
+      "path": "human-eye.html",
+      "title": "Physics Lab - 2D Eye Optics",
+      "tags": [
+        "lab",
+        "chemistry",
+        "physics"
+      ],
+      "apiType": "embeddable-page",
+      "bytes": 20993,
+      "controls": {
+        "inputs": 2,
+        "textareas": 0,
+        "buttons": 0,
+        "canvases": 3,
+        "iframes": 0
+      },
+      "externalOrigins": [
+        "https://cdn.tailwindcss.com",
+        "https://fonts.googleapis.com"
+      ],
+      "externalApiEndpoints": [],
+      "hasLocalReferences": false,
+      "localReferences": [],
+      "resourceId": "p123",
+      "categoryPath": ""
+    },
+    {
+      "id": "hyatt-html",
+      "path": "hyatt.html",
+      "title": "ClonMedic OS",
+      "tags": [
+        "external-api"
+      ],
+      "apiType": "interactive-page",
+      "bytes": 74645,
+      "controls": {
+        "inputs": 14,
+        "textareas": 3,
+        "buttons": 33,
+        "canvases": 1,
+        "iframes": 0
+      },
+      "externalOrigins": [
+        "https://cdn.tailwindcss.com",
+        "https://cdnjs.cloudflare.com",
+        "https://res.cloudinary.com",
+        "https://logo-url.com",
+        "https://www.gstatic.com",
+        "https://en.wikipedia.org",
+        "https://api.dicebear.com"
+      ],
+      "externalApiEndpoints": [
+        "https://en.wikipedia.org/w/api.php?action=query&list=search&srsearch=${encodeURIComponent(query)}&utf8=&format=json&origin=*"
+      ],
+      "hasLocalReferences": false,
+      "localReferences": [
+        "blob",
+        "url",
+        "file"
+      ],
+      "resourceId": "p124",
+      "categoryPath": ""
+    },
+    {
+      "id": "hypothermia-core-temp-lab-html",
+      "path": "Hypothermia Core Temp Lab.html",
+      "title": "Hypothermia & Thermal Hemodynamics Lab",
+      "tags": [
+        "lab"
+      ],
+      "apiType": "embeddable-page",
+      "bytes": 34647,
+      "controls": {
+        "inputs": 1,
+        "textareas": 0,
+        "buttons": 1,
+        "canvases": 2,
+        "iframes": 0
+      },
+      "externalOrigins": [
+        "https://cdn.tailwindcss.com",
+        "https://fonts.googleapis.com"
+      ],
+      "externalApiEndpoints": [],
+      "hasLocalReferences": false,
+      "localReferences": [],
+      "resourceId": "p125",
+      "categoryPath": ""
+    },
+    {
+      "id": "iamnoob-html",
+      "path": "iamnoob.html",
+      "title": "iamnoob",
+      "tags": [
+        "prototype"
+      ],
+      "apiType": "content-page",
+      "bytes": 0,
+      "controls": {
+        "inputs": 0,
+        "textareas": 0,
+        "buttons": 0,
+        "canvases": 0,
+        "iframes": 0
+      },
+      "externalOrigins": [],
+      "externalApiEndpoints": [],
+      "hasLocalReferences": false,
+      "localReferences": [],
+      "resourceId": "p126",
+      "categoryPath": ""
+    },
+    {
+      "id": "index-2-html",
+      "path": "index (2).html",
+      "title": "ClonMedic OS",
+      "tags": [
+        "external-api"
+      ],
+      "apiType": "interactive-page",
+      "bytes": 86201,
+      "controls": {
+        "inputs": 17,
+        "textareas": 3,
+        "buttons": 34,
+        "canvases": 1,
+        "iframes": 0
+      },
+      "externalOrigins": [
+        "https://cdn.tailwindcss.com",
+        "https://cdnjs.cloudflare.com",
+        "https://res.cloudinary.com",
+        "https://api.dicebear.com",
+        "https://logo-url.com",
+        "https://www.gstatic.com",
+        "https://www.google.com",
+        "https://en.wikipedia.org"
+      ],
+      "externalApiEndpoints": [
+        "https://en.wikipedia.org/w/api.php?action=query&list=search&srsearch=${encodeURIComponent(query)}&utf8=&format=json&origin=*"
+      ],
+      "hasLocalReferences": false,
+      "localReferences": [
+        "blob",
+        "url",
+        "file"
+      ],
+      "resourceId": "p127",
+      "categoryPath": ""
+    },
+    {
+      "id": "integration-html",
+      "path": "integration.html",
+      "title": "Math Lab - Calculus & Vectors",
+      "tags": [
+        "lab",
+        "math"
+      ],
+      "apiType": "embeddable-page",
+      "bytes": 37017,
+      "controls": {
+        "inputs": 7,
+        "textareas": 0,
+        "buttons": 4,
+        "canvases": 1,
+        "iframes": 0
+      },
+      "externalOrigins": [
+        "https://cdn.tailwindcss.com",
+        "https://fonts.googleapis.com",
+        "http://www.w3.org"
+      ],
+      "externalApiEndpoints": [],
+      "hasLocalReferences": false,
+      "localReferences": [],
+      "resourceId": "p128",
+      "categoryPath": ""
+    },
+    {
+      "id": "iv-titration-engine-html",
+      "path": "IV Titration Engine.html",
+      "title": "IV Titration Engine",
+      "tags": [
+        "chemistry"
+      ],
+      "apiType": "interactive-page",
+      "bytes": 18911,
+      "controls": {
+        "inputs": 3,
+        "textareas": 0,
+        "buttons": 0,
+        "canvases": 1,
+        "iframes": 0
+      },
+      "externalOrigins": [
+        "https://cdn.tailwindcss.com",
+        "http://www.w3.org"
+      ],
+      "externalApiEndpoints": [],
+      "hasLocalReferences": false,
+      "localReferences": [],
+      "resourceId": "p129",
+      "categoryPath": ""
+    },
+    {
+      "id": "kidney-filtration-html",
+      "path": "Kidney Filtration.html",
+      "title": "Renal Ultrafiltration Simulator",
+      "tags": [
+        "simulation",
+        "tool"
+      ],
+      "apiType": "embeddable-page",
+      "bytes": 15324,
+      "controls": {
+        "inputs": 0,
+        "textareas": 0,
+        "buttons": 0,
+        "canvases": 0,
+        "iframes": 0
+      },
+      "externalOrigins": [
+        "https://cdn.tailwindcss.com",
+        "https://fonts.googleapis.com",
+        "http://www.w3.org"
+      ],
+      "externalApiEndpoints": [],
+      "hasLocalReferences": false,
+      "localReferences": [],
+      "resourceId": "p130",
+      "categoryPath": ""
+    },
+    {
+      "id": "laber-html",
+      "path": "laber.html",
+      "title": "Island Lab | ClonBrow OS",
+      "tags": [
+        "lab"
+      ],
+      "apiType": "embeddable-page",
+      "bytes": 48603,
+      "controls": {
+        "inputs": 0,
+        "textareas": 0,
+        "buttons": 1,
+        "canvases": 0,
+        "iframes": 1
+      },
+      "externalOrigins": [
+        "https://cdn.tailwindcss.com",
+        "https://fonts.googleapis.com",
+        "https://cdnjs.cloudflare.com"
+      ],
+      "externalApiEndpoints": [],
+      "hasLocalReferences": false,
+      "localReferences": [],
+      "resourceId": "p131",
+      "categoryPath": ""
+    },
+    {
+      "id": "laparoscopic-precision-lab-html",
+      "path": "Laparoscopic Precision Lab.html",
+      "title": "Laparoscopic Precision Lab",
+      "tags": [
+        "lab"
+      ],
+      "apiType": "embeddable-page",
+      "bytes": 18811,
+      "controls": {
+        "inputs": 0,
+        "textareas": 0,
+        "buttons": 3,
+        "canvases": 0,
+        "iframes": 0
+      },
+      "externalOrigins": [
+        "https://cdn.tailwindcss.com",
+        "https://fonts.googleapis.com"
+      ],
+      "externalApiEndpoints": [],
+      "hasLocalReferences": false,
+      "localReferences": [],
+      "resourceId": "p132",
+      "categoryPath": ""
+    },
+    {
+      "id": "lead-poisoning-lab-html",
+      "path": "Lead Poisoning Lab.html",
+      "title": "Neuro-Toxicology | Lead Infiltration Lab",
+      "tags": [
+        "lab",
+        "biology"
+      ],
+      "apiType": "embeddable-page",
+      "bytes": 15185,
+      "controls": {
+        "inputs": 2,
+        "textareas": 0,
+        "buttons": 1,
+        "canvases": 1,
+        "iframes": 0
+      },
+      "externalOrigins": [
+        "https://cdn.tailwindcss.com",
+        "https://fonts.googleapis.com"
+      ],
+      "externalApiEndpoints": [],
+      "hasLocalReferences": false,
+      "localReferences": [],
+      "resourceId": "p133",
+      "categoryPath": ""
+    },
+    {
+      "id": "len-html",
+      "path": "len.html",
+      "title": "ClonMedic OS",
+      "tags": [
+        "external-api"
+      ],
+      "apiType": "interactive-page",
+      "bytes": 81969,
+      "controls": {
+        "inputs": 16,
+        "textareas": 3,
+        "buttons": 33,
+        "canvases": 1,
+        "iframes": 0
+      },
+      "externalOrigins": [
+        "https://cdn.tailwindcss.com",
+        "https://cdnjs.cloudflare.com",
+        "https://res.cloudinary.com",
+        "https://api.dicebear.com",
+        "https://logo-url.com",
+        "https://www.gstatic.com",
+        "https://en.wikipedia.org"
+      ],
+      "externalApiEndpoints": [
+        "https://en.wikipedia.org/w/api.php?action=query&list=search&srsearch=${encodeURIComponent(query)}&utf8=&format=json&origin=*"
+      ],
+      "hasLocalReferences": false,
+      "localReferences": [
+        "blob",
+        "url",
+        "file"
+      ],
+      "resourceId": "p134",
+      "categoryPath": ""
+    },
+    {
+      "id": "library-html",
+      "path": "library.html",
+      "title": "Library | ClonBrow OS",
+      "tags": [
+        "external-api"
+      ],
+      "apiType": "interactive-page",
+      "bytes": 28436,
+      "controls": {
+        "inputs": 1,
+        "textareas": 0,
+        "buttons": 3,
+        "canvases": 1,
+        "iframes": 0
+      },
+      "externalOrigins": [
+        "https://cdn.tailwindcss.com",
+        "https://cdnjs.cloudflare.com",
+        "https://fonts.googleapis.com",
+        "https://en.wikipedia.org"
+      ],
+      "externalApiEndpoints": [
+        "https://en.wikipedia.org/w/api.php?action=query&prop=extracts&titles=${encodeURIComponent(query)}&explaintext=1&format=json&origin=*"
+      ],
+      "hasLocalReferences": true,
+      "localReferences": [
+        "lab_world.html"
+      ],
+      "resourceId": "p135",
+      "categoryPath": ""
+    },
+    {
+      "id": "ligament-elasticity-lab-html",
+      "path": "Ligament Elasticity Lab.html",
+      "title": "Ligament Elasticity & Rupture Lab",
+      "tags": [
+        "lab"
+      ],
+      "apiType": "embeddable-page",
+      "bytes": 19236,
+      "controls": {
+        "inputs": 2,
+        "textareas": 0,
+        "buttons": 1,
+        "canvases": 3,
+        "iframes": 0
+      },
+      "externalOrigins": [
+        "https://cdn.tailwindcss.com",
+        "https://fonts.googleapis.com"
+      ],
+      "externalApiEndpoints": [],
+      "hasLocalReferences": false,
+      "localReferences": [],
+      "resourceId": "p136",
+      "categoryPath": ""
+    },
+    {
+      "id": "light-aesthatics-html",
+      "path": "light aesthatics.html",
+      "title": "ClonBrow OS | Workspace",
+      "tags": [
+        "external-api"
+      ],
+      "apiType": "interactive-page",
+      "bytes": 150747,
+      "controls": {
+        "inputs": 37,
+        "textareas": 2,
+        "buttons": 77,
+        "canvases": 2,
+        "iframes": 0
+      },
+      "externalOrigins": [
+        "https://cdn.tailwindcss.com",
+        "https://cdnjs.cloudflare.com",
+        "https://fonts.googleapis.com",
+        "https://cdn.jsdelivr.net",
+        "https://res.cloudinary.com",
+        "https://api.dicebear.com",
+        "https://clonexxshree.pythonanywhere.com",
+        "https://en.wikipedia.org"
+      ],
+      "externalApiEndpoints": [
+        "https://en.wikipedia.org/w/api.php?action=query&list=search&srsearch=${encodeURIComponent(query)}&utf8=&format=json&origin=*",
+        "https://en.wikipedia.org/w/api.php?action=query&prop=extracts&titles=${encodeURIComponent(title)}&format=json&origin=*"
+      ],
+      "hasLocalReferences": true,
+      "localReferences": [
+        "theme-mobile.css",
+        "about:blank",
+        "url"
+      ],
+      "resourceId": "p137",
+      "categoryPath": ""
+    },
+    {
+      "id": "light-dispersion-html",
+      "path": "light-dispersion.html",
+      "title": "Physics Lab - 2D Interactive Optics",
+      "tags": [
+        "lab",
+        "chemistry",
+        "physics"
+      ],
+      "apiType": "embeddable-page",
+      "bytes": 37377,
+      "controls": {
+        "inputs": 5,
+        "textareas": 0,
+        "buttons": 3,
+        "canvases": 3,
+        "iframes": 0
+      },
+      "externalOrigins": [
+        "https://cdn.tailwindcss.com",
+        "https://fonts.googleapis.com"
+      ],
+      "externalApiEndpoints": [],
+      "hasLocalReferences": false,
+      "localReferences": [],
+      "resourceId": "p138",
+      "categoryPath": ""
+    },
+    {
+      "id": "limits-html",
+      "path": "limits.html",
+      "title": "Math Lab - Calculus & Vectors",
+      "tags": [
+        "lab",
+        "math"
+      ],
+      "apiType": "embeddable-page",
+      "bytes": 37017,
+      "controls": {
+        "inputs": 7,
+        "textareas": 0,
+        "buttons": 4,
+        "canvases": 1,
+        "iframes": 0
+      },
+      "externalOrigins": [
+        "https://cdn.tailwindcss.com",
+        "https://fonts.googleapis.com",
+        "http://www.w3.org"
+      ],
+      "externalApiEndpoints": [],
+      "hasLocalReferences": false,
+      "localReferences": [],
+      "resourceId": "p139",
+      "categoryPath": ""
+    },
+    {
+      "id": "linear-programming-html",
+      "path": "linear-programming.html",
+      "title": "Math Lab - Advanced Systems",
+      "tags": [
+        "lab",
+        "math"
+      ],
+      "apiType": "embeddable-page",
+      "bytes": 46197,
+      "controls": {
+        "inputs": 7,
+        "textareas": 0,
+        "buttons": 8,
+        "canvases": 1,
+        "iframes": 0
+      },
+      "externalOrigins": [
+        "https://cdn.tailwindcss.com",
+        "https://fonts.googleapis.com",
+        "https://cdn.jsdelivr.net",
+        "http://www.w3.org"
+      ],
+      "externalApiEndpoints": [],
+      "hasLocalReferences": false,
+      "localReferences": [],
+      "resourceId": "p140",
+      "categoryPath": ""
+    },
+    {
+      "id": "lock-key-visualizer-html",
+      "path": "Lock & Key Visualizer.html",
+      "title": "Professional Molecular Docking Simulation",
+      "tags": [
+        "simulation",
+        "visualization"
+      ],
+      "apiType": "embeddable-page",
+      "bytes": 22786,
+      "controls": {
+        "inputs": 0,
+        "textareas": 0,
+        "buttons": 0,
+        "canvases": 0,
+        "iframes": 0
+      },
+      "externalOrigins": [
+        "https://cdn.tailwindcss.com"
+      ],
+      "externalApiEndpoints": [],
+      "hasLocalReferences": false,
+      "localReferences": [],
+      "resourceId": "p141",
+      "categoryPath": ""
+    },
+    {
+      "id": "login-for-clonexx-html",
+      "path": "login-for-clonexx.html",
+      "title": "Clonexx AI - Login",
+      "tags": [
+        "external-api"
+      ],
+      "apiType": "interactive-page",
+      "bytes": 12689,
+      "controls": {
+        "inputs": 5,
+        "textareas": 0,
+        "buttons": 4,
+        "canvases": 0,
+        "iframes": 0
+      },
+      "externalOrigins": [
+        "https://cdn.tailwindcss.com",
+        "https://fonts.googleapis.com",
+        "https://fonts.gstatic.com",
+        "https://d8j0ntlcm91z4.cloudfront.net",
+        "https://shreeclonexx.pythonanywhere.com"
+      ],
+      "externalApiEndpoints": [
+        "https://shreeClonexx.pythonanywhere.com/api/login",
+        "https://shreeClonexx.pythonanywhere.com/api/register"
+      ],
+      "hasLocalReferences": true,
+      "localReferences": [
+        "clonexx-(chat).html"
+      ],
+      "resourceId": "p142",
+      "categoryPath": ""
+    },
+    {
+      "id": "login-html",
+      "path": "login.html",
+      "title": "ClonBrow OS | Login",
+      "tags": [
+        "prototype"
+      ],
+      "apiType": "interactive-page",
+      "bytes": 20711,
+      "controls": {
+        "inputs": 3,
+        "textareas": 0,
+        "buttons": 1,
+        "canvases": 1,
+        "iframes": 0
+      },
+      "externalOrigins": [
+        "https://cdn.tailwindcss.com",
+        "https://cdnjs.cloudflare.com",
+        "https://fonts.googleapis.com",
+        "https://res.cloudinary.com",
+        "https://clonexxshree.pythonanywhere.com"
+      ],
+      "externalApiEndpoints": [],
+      "hasLocalReferences": false,
+      "localReferences": [],
+      "resourceId": "p143",
+      "categoryPath": ""
+    },
+    {
+      "id": "ludo-html",
+      "path": "ludo.html",
+      "title": "Ludo Master",
+      "tags": [
+        "prototype"
+      ],
+      "apiType": "interactive-page",
+      "bytes": 28880,
+      "controls": {
+        "inputs": 0,
+        "textareas": 0,
+        "buttons": 1,
+        "canvases": 1,
+        "iframes": 0
+      },
+      "externalOrigins": [
+        "https://cdn.tailwindcss.com",
+        "https://fonts.googleapis.com"
+      ],
+      "externalApiEndpoints": [],
+      "hasLocalReferences": false,
+      "localReferences": [],
+      "resourceId": "p144",
+      "categoryPath": ""
+    },
+    {
+      "id": "lymph-node-filtration-lab-html",
+      "path": "Lymph Node Filtration Lab.html",
+      "title": "Lymph Node Filter Simulation",
+      "tags": [
+        "lab",
+        "simulation",
+        "chemistry"
+      ],
+      "apiType": "embeddable-page",
+      "bytes": 18169,
+      "controls": {
+        "inputs": 2,
+        "textareas": 0,
+        "buttons": 1,
+        "canvases": 1,
+        "iframes": 0
+      },
+      "externalOrigins": [
+        "http://www.w3.org"
+      ],
+      "externalApiEndpoints": [],
+      "hasLocalReferences": false,
+      "localReferences": [],
+      "resourceId": "p145",
+      "categoryPath": ""
+    },
+    {
+      "id": "magnets-html",
+      "path": "magnets.html",
+      "title": "Physics Lab - Light & Magnets",
+      "tags": [
+        "lab",
+        "chemistry",
+        "physics"
+      ],
+      "apiType": "embeddable-page",
+      "bytes": 29154,
+      "controls": {
+        "inputs": 5,
+        "textareas": 0,
+        "buttons": 0,
+        "canvases": 1,
+        "iframes": 0
+      },
+      "externalOrigins": [
+        "https://cdn.tailwindcss.com",
+        "https://fonts.googleapis.com",
+        "http://www.w3.org",
+        "https://res.cloudinary.com"
+      ],
+      "externalApiEndpoints": [],
+      "hasLocalReferences": false,
+      "localReferences": [],
+      "resourceId": "p146",
+      "categoryPath": ""
+    },
+    {
+      "id": "mailgo-html",
+      "path": "mailgo.html",
+      "title": "MailGo | Comprehensive Comms",
+      "tags": [
+        "prototype"
+      ],
+      "apiType": "interactive-page",
+      "bytes": 41018,
+      "controls": {
+        "inputs": 7,
+        "textareas": 0,
+        "buttons": 34,
+        "canvases": 0,
+        "iframes": 0
+      },
+      "externalOrigins": [
+        "https://cdn.tailwindcss.com",
+        "https://cdnjs.cloudflare.com",
+        "https://fonts.googleapis.com",
+        "https://clonexxshree.pythonanywhere.com",
+        "https://api.dicebear.com"
+      ],
+      "externalApiEndpoints": [],
+      "hasLocalReferences": true,
+      "localReferences": [
+        "${avatar}"
+      ],
+      "resourceId": "p147",
+      "categoryPath": ""
+    },
+    {
+      "id": "main-html",
+      "path": "main.html",
+      "title": "clonbrow",
+      "tags": [
+        "prototype"
+      ],
+      "apiType": "interactive-page",
+      "bytes": 115166,
+      "controls": {
+        "inputs": 14,
+        "textareas": 11,
+        "buttons": 55,
+        "canvases": 0,
+        "iframes": 1
+      },
+      "externalOrigins": [
+        "https://res.cloudinary.com",
+        "https://example.com"
+      ],
+      "externalApiEndpoints": [],
+      "hasLocalReferences": true,
+      "localReferences": [
+        "$2",
+        "b",
+        "a.href"
+      ],
+      "resourceId": "p148",
+      "categoryPath": ""
+    },
+    {
+      "id": "map-html",
+      "path": "map.html",
+      "title": "Clonbrow saver - The Isometric Realm",
+      "tags": [
+        "prototype"
+      ],
+      "apiType": "interactive-page",
+      "bytes": 23538,
+      "controls": {
+        "inputs": 0,
+        "textareas": 0,
+        "buttons": 1,
+        "canvases": 0,
+        "iframes": 0
+      },
+      "externalOrigins": [
+        "https://cdn.tailwindcss.com",
+        "https://fonts.googleapis.com",
+        "https://unpkg.com",
+        "https://cdnjs.cloudflare.com",
+        "https://cdn.jsdelivr.net",
+        "https://shreeclonexx.pythonanywhere.com"
+      ],
+      "externalApiEndpoints": [],
+      "hasLocalReferences": false,
+      "localReferences": [],
+      "resourceId": "p149",
+      "categoryPath": ""
+    },
+    {
+      "id": "math-lab-dashboard-html",
+      "path": "Math Lab Dashboard.html",
+      "title": "Math Lab | Brutalist UI",
+      "tags": [
+        "lab",
+        "math",
+        "dashboard"
+      ],
+      "apiType": "embeddable-page",
+      "bytes": 17068,
+      "controls": {
+        "inputs": 0,
+        "textareas": 0,
+        "buttons": 2,
+        "canvases": 0,
+        "iframes": 1
+      },
+      "externalOrigins": [
+        "https://cdn.tailwindcss.com",
+        "https://unpkg.com",
+        "https://fonts.googleapis.com"
+      ],
+      "externalApiEndpoints": [],
+      "hasLocalReferences": false,
+      "localReferences": [],
+      "resourceId": "p150",
+      "categoryPath": ""
+    },
+    {
+      "id": "matrices-2d-html",
+      "path": "matrices-2d.html",
+      "title": "Math Lab - Linear Algebra & Conics",
+      "tags": [
+        "lab",
+        "math"
+      ],
+      "apiType": "embeddable-page",
+      "bytes": 42077,
+      "controls": {
+        "inputs": 10,
+        "textareas": 0,
+        "buttons": 8,
+        "canvases": 1,
+        "iframes": 0
+      },
+      "externalOrigins": [
+        "https://cdn.tailwindcss.com",
+        "https://fonts.googleapis.com",
+        "https://cdn.jsdelivr.net",
+        "http://www.w3.org"
+      ],
+      "externalApiEndpoints": [],
+      "hasLocalReferences": false,
+      "localReferences": [],
+      "resourceId": "p151",
+      "categoryPath": ""
+    },
+    {
+      "id": "medic-of-all-html",
+      "path": "medic of all.html",
+      "title": "ClonMed - AI Medical Dashboard",
+      "tags": [
+        "biology",
+        "dashboard"
+      ],
+      "apiType": "interactive-page",
+      "bytes": 28317,
+      "controls": {
+        "inputs": 1,
+        "textareas": 0,
+        "buttons": 1,
+        "canvases": 0,
+        "iframes": 1
+      },
+      "externalOrigins": [
+        "https://cdn.tailwindcss.com",
+        "https://unpkg.com",
+        "https://fonts.googleapis.com",
+        "https://res.cloudinary.com"
+      ],
+      "externalApiEndpoints": [],
+      "hasLocalReferences": true,
+      "localReferences": [
+        "${category.imageUrl}"
+      ],
+      "resourceId": "p152",
+      "categoryPath": ""
+    },
+    {
+      "id": "medicof-all-html",
+      "path": "medicof all.html",
+      "title": "ClonMed - AI Medical Dashboard",
+      "tags": [
+        "biology",
+        "dashboard"
+      ],
+      "apiType": "interactive-page",
+      "bytes": 32800,
+      "controls": {
+        "inputs": 1,
+        "textareas": 0,
+        "buttons": 3,
+        "canvases": 0,
+        "iframes": 1
+      },
+      "externalOrigins": [
+        "https://cdn.tailwindcss.com",
+        "https://unpkg.com",
+        "https://fonts.googleapis.com",
+        "https://res.cloudinary.com"
+      ],
+      "externalApiEndpoints": [],
+      "hasLocalReferences": true,
+      "localReferences": [
+        "${category.imageUrl}"
+      ],
+      "resourceId": "p153",
+      "categoryPath": ""
+    },
+    {
+      "id": "mega-city-builder-html",
+      "path": "Mega City Builder.html",
+      "title": "Mega City Builder Ultimate",
+      "tags": [
+        "prototype"
+      ],
+      "apiType": "interactive-page",
+      "bytes": 55821,
+      "controls": {
+        "inputs": 2,
+        "textareas": 0,
+        "buttons": 4,
+        "canvases": 1,
+        "iframes": 0
+      },
+      "externalOrigins": [
+        "https://cdn.tailwindcss.com",
+        "https://unpkg.com",
+        "https://cdn.jsdelivr.net",
+        "https://fonts.googleapis.com",
+        "https://res.cloudinary.com"
+      ],
+      "externalApiEndpoints": [],
+      "hasLocalReferences": false,
+      "localReferences": [],
+      "resourceId": "p154",
+      "categoryPath": ""
+    },
+    {
+      "id": "mehafg-html",
+      "path": "mehafg.html",
+      "title": "ClonMedic OS",
+      "tags": [
+        "external-api"
+      ],
+      "apiType": "interactive-page",
+      "bytes": 61651,
+      "controls": {
+        "inputs": 6,
+        "textareas": 1,
+        "buttons": 19,
+        "canvases": 0,
+        "iframes": 0
+      },
+      "externalOrigins": [
+        "https://cdn.tailwindcss.com",
+        "https://cdnjs.cloudflare.com",
+        "https://res.cloudinary.com",
+        "https://api.dicebear.com",
+        "https://www.gstatic.com",
+        "https://en.wikipedia.org"
+      ],
+      "externalApiEndpoints": [
+        "https://en.wikipedia.org/w/api.php?action=query&list=search&srsearch=${encodeURIComponent(query)}&utf8=&format=json&origin=*"
+      ],
+      "hasLocalReferences": true,
+      "localReferences": [
+        "${msg.pfp}",
+        "${data.pfp}",
+        "${req.senderPfp}",
+        "url",
+        "file"
+      ],
+      "resourceId": "p155",
+      "categoryPath": ""
+    },
+    {
+      "id": "mekyakaru-html",
+      "path": "mekyakaru.html",
+      "title": "Laner Social | Brutalist UI",
+      "tags": [
+        "prototype"
+      ],
+      "apiType": "interactive-page",
+      "bytes": 26718,
+      "controls": {
+        "inputs": 2,
+        "textareas": 2,
+        "buttons": 24,
+        "canvases": 0,
+        "iframes": 0
+      },
+      "externalOrigins": [
+        "https://cdn.tailwindcss.com",
+        "https://unpkg.com",
+        "https://fonts.googleapis.com",
+        "https://api.dicebear.com",
+        "https://images.unsplash.com"
+      ],
+      "externalApiEndpoints": [],
+      "hasLocalReferences": false,
+      "localReferences": [],
+      "resourceId": "p156",
+      "categoryPath": ""
+    },
+    {
+      "id": "melanin-photoprotection-lab-html",
+      "path": "Melanin Photoprotection Lab.html",
+      "title": "Melanin Photoprotection & UV Damage Lab",
+      "tags": [
+        "lab",
+        "chemistry"
+      ],
+      "apiType": "embeddable-page",
+      "bytes": 27971,
+      "controls": {
+        "inputs": 1,
+        "textareas": 0,
+        "buttons": 1,
+        "canvases": 1,
+        "iframes": 0
+      },
+      "externalOrigins": [
+        "https://cdn.tailwindcss.com",
+        "https://fonts.googleapis.com",
+        "http://www.w3.org"
+      ],
+      "externalApiEndpoints": [],
+      "hasLocalReferences": false,
+      "localReferences": [],
+      "resourceId": "p157",
+      "categoryPath": ""
+    },
+    {
+      "id": "metabs-html",
+      "path": "Metabs.html",
+      "title": "FORENSIC OS | Digital Crime Lab",
+      "tags": [
+        "lab"
+      ],
+      "apiType": "embeddable-page",
+      "bytes": 71565,
+      "controls": {
+        "inputs": 2,
+        "textareas": 0,
+        "buttons": 4,
+        "canvases": 3,
+        "iframes": 0
+      },
+      "externalOrigins": [
+        "https://fonts.googleapis.com"
+      ],
+      "externalApiEndpoints": [],
+      "hasLocalReferences": false,
+      "localReferences": [],
+      "resourceId": "p158",
+      "categoryPath": ""
+    },
+    {
+      "id": "minimal-html",
+      "path": "minimal.html",
+      "title": "clonbrow",
+      "tags": [
+        "external-api"
+      ],
+      "apiType": "interactive-page",
+      "bytes": 126385,
+      "controls": {
+        "inputs": 35,
+        "textareas": 10,
+        "buttons": 143,
+        "canvases": 1,
+        "iframes": 2
+      },
+      "externalOrigins": [
+        "http://www.w3.org",
+        "https://cdn.tailwindcss.com",
+        "https://cdnjs.cloudflare.com",
+        "https://fonts.googleapis.com",
+        "https://clonexxshree.pythonanywhere.com",
+        "https://en.wikipedia.org"
+      ],
+      "externalApiEndpoints": [
+        "https://en.wikipedia.org/w/api.php?action=query&generator=search&gsrsearch=${encodeURIComponent(q)}&gsrlimit=8&prop=extracts|pageimages&exintro=1&explaintext=1&piprop=thumbnail&pithumbsize=160&format=json&origin=*",
+        "https://en.wikipedia.org/w/api.php?action=parse&page=${encodeURIComponent(title)}&prop=text&redirects=1&format=json&origin=*"
+      ],
+      "hasLocalReferences": true,
+      "localReferences": [
+        "theme-mobile.css",
+        "${p.thumbnail.source}"
+      ],
+      "resourceId": "p159",
+      "categoryPath": ""
+    },
+    {
+      "id": "mixofall-html",
+      "path": "mixofall.html",
+      "title": "ClonMed - AI Medical Dashboard",
+      "tags": [
+        "biology",
+        "dashboard"
+      ],
+      "apiType": "interactive-page",
+      "bytes": 33205,
+      "controls": {
+        "inputs": 1,
+        "textareas": 0,
+        "buttons": 1,
+        "canvases": 0,
+        "iframes": 1
+      },
+      "externalOrigins": [
+        "https://cdn.tailwindcss.com",
+        "https://unpkg.com",
+        "https://fonts.googleapis.com",
+        "https://res.cloudinary.com"
+      ],
+      "externalApiEndpoints": [],
+      "hasLocalReferences": true,
+      "localReferences": [
+        "${category.imageUrl}"
+      ],
+      "resourceId": "p160",
+      "categoryPath": ""
+    },
+    {
+      "id": "mobile-version-html",
+      "path": "mobile-version.html",
+      "title": "clonbrow · mobile",
+      "tags": [
+        "prototype"
+      ],
+      "apiType": "interactive-page",
+      "bytes": 115814,
+      "controls": {
+        "inputs": 14,
+        "textareas": 11,
+        "buttons": 55,
+        "canvases": 0,
+        "iframes": 1
+      },
+      "externalOrigins": [
+        "https://res.cloudinary.com",
+        "https://example.com"
+      ],
+      "externalApiEndpoints": [],
+      "hasLocalReferences": true,
+      "localReferences": [
+        "$2",
+        "b",
+        "a.href"
+      ],
+      "resourceId": "p161",
+      "categoryPath": ""
+    },
+    {
+      "id": "momentum-html",
+      "path": "momentum.html",
+      "title": "Physics Lab - Energy & Momentum",
+      "tags": [
+        "lab",
+        "chemistry",
+        "physics"
+      ],
+      "apiType": "embeddable-page",
+      "bytes": 23279,
+      "controls": {
+        "inputs": 2,
+        "textareas": 0,
+        "buttons": 4,
+        "canvases": 3,
+        "iframes": 0
+      },
+      "externalOrigins": [
+        "https://cdn.tailwindcss.com",
+        "https://fonts.googleapis.com",
+        "http://www.w3.org",
+        "https://res.cloudinary.com"
+      ],
+      "externalApiEndpoints": [],
+      "hasLocalReferences": false,
+      "localReferences": [],
+      "resourceId": "p162",
+      "categoryPath": ""
+    },
+    {
+      "id": "mri-proton-alignment-lab-html",
+      "path": "MRI Proton Alignment Lab.html",
+      "title": "MRI Physics: Proton Alignment & Precession",
+      "tags": [
+        "lab",
+        "chemistry",
+        "physics"
+      ],
+      "apiType": "embeddable-page",
+      "bytes": 24834,
+      "controls": {
+        "inputs": 1,
+        "textareas": 0,
+        "buttons": 0,
+        "canvases": 0,
+        "iframes": 0
+      },
+      "externalOrigins": [
+        "https://cdn.tailwindcss.com",
+        "https://fonts.googleapis.com",
+        "http://www.w3.org"
+      ],
+      "externalApiEndpoints": [],
+      "hasLocalReferences": false,
+      "localReferences": [],
+      "resourceId": "p163",
+      "categoryPath": ""
+    },
+    {
+      "id": "multiplication-arrays-html",
+      "path": "multiplication-arrays.html",
+      "title": "Math Lab - Interactive Concepts",
+      "tags": [
+        "lab",
+        "math"
+      ],
+      "apiType": "embeddable-page",
+      "bytes": 35135,
+      "controls": {
+        "inputs": 9,
+        "textareas": 0,
+        "buttons": 7,
+        "canvases": 3,
+        "iframes": 0
+      },
+      "externalOrigins": [
+        "https://cdn.tailwindcss.com",
+        "https://fonts.googleapis.com"
+      ],
+      "externalApiEndpoints": [],
+      "hasLocalReferences": false,
+      "localReferences": [],
+      "resourceId": "p164",
+      "categoryPath": ""
+    },
+    {
+      "id": "muscle-fatigue-lactic-acid-html",
+      "path": "Muscle Fatigue & Lactic Acid.html",
+      "title": "Muscle Fiber Fatigue Dynamics",
+      "tags": [
+        "chemistry"
+      ],
+      "apiType": "interactive-page",
+      "bytes": 14323,
+      "controls": {
+        "inputs": 0,
+        "textareas": 0,
+        "buttons": 1,
+        "canvases": 0,
+        "iframes": 0
+      },
+      "externalOrigins": [
+        "https://cdn.tailwindcss.com",
+        "http://www.w3.org"
+      ],
+      "externalApiEndpoints": [],
+      "hasLocalReferences": false,
+      "localReferences": [],
+      "resourceId": "p165",
+      "categoryPath": ""
+    },
+    {
+      "id": "myelin-insulation-lab-html",
+      "path": "Myelin Insulation Lab.html",
+      "title": "Neuro-Link | Myelin Insulation Lab",
+      "tags": [
+        "lab",
+        "biology"
+      ],
+      "apiType": "embeddable-page",
+      "bytes": 17295,
+      "controls": {
+        "inputs": 0,
+        "textareas": 0,
+        "buttons": 2,
+        "canvases": 2,
+        "iframes": 0
+      },
+      "externalOrigins": [
+        "https://cdn.tailwindcss.com",
+        "https://fonts.googleapis.com"
+      ],
+      "externalApiEndpoints": [],
+      "hasLocalReferences": false,
+      "localReferences": [],
+      "resourceId": "p166",
+      "categoryPath": ""
+    },
+    {
+      "id": "na-k-action-potential-html",
+      "path": "Na K Action Potential.html",
+      "title": "Na+/K+ Action Potential Simulator",
+      "tags": [
+        "simulation",
+        "tool"
+      ],
+      "apiType": "embeddable-page",
+      "bytes": 27500,
+      "controls": {
+        "inputs": 0,
+        "textareas": 0,
+        "buttons": 1,
+        "canvases": 1,
+        "iframes": 0
+      },
+      "externalOrigins": [
+        "https://cdn.tailwindcss.com",
+        "https://fonts.googleapis.com",
+        "http://www.w3.org"
+      ],
+      "externalApiEndpoints": [],
+      "hasLocalReferences": false,
+      "localReferences": [],
+      "resourceId": "p167",
+      "categoryPath": ""
+    },
+    {
+      "id": "nanobot-targeted-delivery-html",
+      "path": "Nanobot Targeted Delivery.html",
+      "title": "Nano-Oncology | Targeted Delivery",
+      "tags": [
+        "prototype"
+      ],
+      "apiType": "interactive-page",
+      "bytes": 17590,
+      "controls": {
+        "inputs": 0,
+        "textareas": 0,
+        "buttons": 1,
+        "canvases": 1,
+        "iframes": 0
+      },
+      "externalOrigins": [
+        "https://cdn.tailwindcss.com",
+        "https://fonts.googleapis.com"
+      ],
+      "externalApiEndpoints": [],
+      "hasLocalReferences": false,
+      "localReferences": [],
+      "resourceId": "p168",
+      "categoryPath": ""
+    },
+    {
+      "id": "neural-resection-simulator-html",
+      "path": "Neural Resection Simulator.html",
+      "title": "Clinical Protocol: Neurological Resection & Neural Wiring",
+      "tags": [
+        "simulation",
+        "biology",
+        "tool"
+      ],
+      "apiType": "embeddable-page",
+      "bytes": 60880,
+      "controls": {
+        "inputs": 3,
+        "textareas": 0,
+        "buttons": 3,
+        "canvases": 1,
+        "iframes": 0
+      },
+      "externalOrigins": [
+        "https://cdn.tailwindcss.com",
+        "https://cdnjs.cloudflare.com",
+        "https://fonts.googleapis.com",
+        "https://res.cloudinary.com"
+      ],
+      "externalApiEndpoints": [],
+      "hasLocalReferences": false,
+      "localReferences": [],
+      "resourceId": "p169",
+      "categoryPath": ""
+    },
+    {
+      "id": "neural-resistance-lab-html",
+      "path": "Neural Resistance Lab.html",
+      "title": "Neural Resistance: Ohm's Law in Biology",
+      "tags": [
+        "lab",
+        "biology"
+      ],
+      "apiType": "embeddable-page",
+      "bytes": 20485,
+      "controls": {
+        "inputs": 1,
+        "textareas": 0,
+        "buttons": 1,
+        "canvases": 1,
+        "iframes": 0
+      },
+      "externalOrigins": [
+        "http://www.w3.org"
+      ],
+      "externalApiEndpoints": [],
+      "hasLocalReferences": false,
+      "localReferences": [],
+      "resourceId": "p170",
+      "categoryPath": ""
+    },
+    {
+      "id": "neuroplasticity-lab-html",
+      "path": "Neuroplasticity Lab.html",
+      "title": "Neuroplasticity & Hebbian Learning Lab",
+      "tags": [
+        "lab",
+        "biology"
+      ],
+      "apiType": "embeddable-page",
+      "bytes": 23120,
+      "controls": {
+        "inputs": 0,
+        "textareas": 0,
+        "buttons": 1,
+        "canvases": 0,
+        "iframes": 0
+      },
+      "externalOrigins": [
+        "https://cdn.tailwindcss.com",
+        "https://fonts.googleapis.com",
+        "http://www.w3.org"
+      ],
+      "externalApiEndpoints": [],
+      "hasLocalReferences": false,
+      "localReferences": [],
+      "resourceId": "p171",
+      "categoryPath": ""
+    },
+    {
+      "id": "normal-html",
+      "path": "normal.html",
+      "title": "ClonBrow OS | The Ultimate Student Browser",
+      "tags": [
+        "external-api"
+      ],
+      "apiType": "interactive-page",
+      "bytes": 164052,
+      "controls": {
+        "inputs": 38,
+        "textareas": 2,
+        "buttons": 78,
+        "canvases": 0,
+        "iframes": 0
+      },
+      "externalOrigins": [
+        "https://cdn.tailwindcss.com",
+        "https://cdnjs.cloudflare.com",
+        "https://fonts.googleapis.com",
+        "https://cdn.jsdelivr.net",
+        "https://api.dicebear.com",
+        "https://res.cloudinary.com",
+        "https://www.transparenttextures.com",
+        "https://clonexxshree.pythonanywhere.com",
+        "https://www.google.com",
+        "https://en.wikipedia.org"
+      ],
+      "externalApiEndpoints": [
+        "https://en.wikipedia.org/w/api.php?action=query&list=search&srsearch=${encodeURIComponent(query)}&utf8=&format=json&origin=*",
+        "https://en.wikipedia.org/w/api.php?action=query&prop=extracts&titles=${encodeURIComponent(title)}&format=json&origin=*"
+      ],
+      "hasLocalReferences": true,
+      "localReferences": [
+        "theme-mobile.css",
+        "${faviconUrl}",
+        "about:blank",
+        "url",
+        "tab.url"
+      ],
+      "resourceId": "p172",
+      "categoryPath": ""
+    },
+    {
+      "id": "npc-house-html",
+      "path": "NPC-house.html",
+      "title": "Clonbrow saver - Data Node",
+      "tags": [
+        "prototype"
+      ],
+      "apiType": "interactive-page",
+      "bytes": 13298,
+      "controls": {
+        "inputs": 0,
+        "textareas": 0,
+        "buttons": 3,
+        "canvases": 0,
+        "iframes": 1
+      },
+      "externalOrigins": [
+        "https://cdn.tailwindcss.com",
+        "https://fonts.googleapis.com",
+        "https://unpkg.com",
+        "https://cdnjs.cloudflare.com",
+        "https://cdn.jsdelivr.net",
+        "https://shreeclonexx.pythonanywhere.com"
+      ],
+      "externalApiEndpoints": [],
+      "hasLocalReferences": false,
+      "localReferences": [],
+      "resourceId": "p173",
+      "categoryPath": ""
+    },
+    {
+      "id": "number-line-html",
+      "path": "number-line.html",
+      "title": "Math Lab - Fundamentals & Geometry",
+      "tags": [
+        "lab",
+        "math"
+      ],
+      "apiType": "embeddable-page",
+      "bytes": 41751,
+      "controls": {
+        "inputs": 7,
+        "textareas": 0,
+        "buttons": 10,
+        "canvases": 1,
+        "iframes": 0
+      },
+      "externalOrigins": [
+        "https://cdn.tailwindcss.com",
+        "https://fonts.googleapis.com",
+        "http://www.w3.org"
+      ],
+      "externalApiEndpoints": [],
+      "hasLocalReferences": false,
+      "localReferences": [],
+      "resourceId": "p174",
+      "categoryPath": ""
+    },
+    {
+      "id": "ohhy-html",
+      "path": "ohhy.html",
+      "title": "Clonmed — Interactive Labs",
+      "tags": [
+        "prototype"
+      ],
+      "apiType": "interactive-page",
+      "bytes": 36350,
+      "controls": {
+        "inputs": 0,
+        "textareas": 0,
+        "buttons": 11,
+        "canvases": 0,
+        "iframes": 0
+      },
+      "externalOrigins": [
+        "https://fonts.googleapis.com",
+        "https://fonts.gstatic.com",
+        "https://api.fontshare.com",
+        "https://cdn.jsdelivr.net",
+        "https://unpkg.com",
+        "http://www.w3.org",
+        "https://d8j0ntlcm91z4.cloudfront.net",
+        "https://stream.mux.com"
+      ],
+      "externalApiEndpoints": [],
+      "hasLocalReferences": true,
+      "localReferences": [
+        "mixofall.html"
+      ],
+      "resourceId": "p175",
+      "categoryPath": ""
+    },
+    {
+      "id": "ohy-html",
+      "path": "ohy.html",
+      "title": "ClonBrow — The browser built for school",
+      "tags": [
+        "prototype"
+      ],
+      "apiType": "interactive-page",
+      "bytes": 87573,
+      "controls": {
+        "inputs": 0,
+        "textareas": 0,
+        "buttons": 8,
+        "canvases": 1,
+        "iframes": 0
+      },
+      "externalOrigins": [
+        "https://fonts.googleapis.com",
+        "https://fonts.gstatic.com",
+        "http://www.w3.org",
+        "https://i.pravatar.cc",
+        "https://drive.google.com"
+      ],
+      "externalApiEndpoints": [],
+      "hasLocalReferences": true,
+      "localReferences": [
+        "browser.html",
+        "%23n"
+      ],
+      "resourceId": "p176",
+      "categoryPath": ""
+    },
+    {
+      "id": "organ-compatibility-lab-html",
+      "path": "Organ Compatibility Lab.html",
+      "title": "Transplant Command Center",
+      "tags": [
+        "lab",
+        "biology"
+      ],
+      "apiType": "embeddable-page",
+      "bytes": 33542,
+      "controls": {
+        "inputs": 0,
+        "textareas": 0,
+        "buttons": 1,
+        "canvases": 1,
+        "iframes": 0
+      },
+      "externalOrigins": [
+        "https://cdn.tailwindcss.com",
+        "https://fonts.googleapis.com"
+      ],
+      "externalApiEndpoints": [],
+      "hasLocalReferences": false,
+      "localReferences": [],
+      "resourceId": "p177",
+      "categoryPath": ""
+    },
+    {
+      "id": "parabola-trajectory-html",
+      "path": "parabola-trajectory.html",
+      "title": "Math Lab - Algebra & Circle Geometry",
+      "tags": [
+        "lab",
+        "math"
+      ],
+      "apiType": "embeddable-page",
+      "bytes": 36878,
+      "controls": {
+        "inputs": 5,
+        "textareas": 0,
+        "buttons": 4,
+        "canvases": 1,
+        "iframes": 0
+      },
+      "externalOrigins": [
+        "https://cdn.tailwindcss.com",
+        "https://fonts.googleapis.com",
+        "http://www.w3.org",
+        "https://res.cloudinary.com"
+      ],
+      "externalApiEndpoints": [],
+      "hasLocalReferences": false,
+      "localReferences": [],
+      "resourceId": "p178",
+      "categoryPath": ""
+    },
+    {
+      "id": "parametric-spirograph-html",
+      "path": "parametric-spirograph.html",
+      "title": "Math Lab - Advanced Systems",
+      "tags": [
+        "lab",
+        "math",
+        "chemistry",
+        "visualization"
+      ],
+      "apiType": "embeddable-page",
+      "bytes": 46197,
+      "controls": {
+        "inputs": 7,
+        "textareas": 0,
+        "buttons": 8,
+        "canvases": 1,
+        "iframes": 0
+      },
+      "externalOrigins": [
+        "https://cdn.tailwindcss.com",
+        "https://fonts.googleapis.com",
+        "https://cdn.jsdelivr.net",
+        "http://www.w3.org"
+      ],
+      "externalApiEndpoints": [],
+      "hasLocalReferences": false,
+      "localReferences": [],
+      "resourceId": "p179",
+      "categoryPath": ""
+    },
+    {
+      "id": "pcr-thermal-cycling-html",
+      "path": "PCR Thermal Cycling.html",
+      "title": "PCR Thermal Cycling Simulator",
+      "tags": [
+        "simulation",
+        "tool"
+      ],
+      "apiType": "embeddable-page",
+      "bytes": 18413,
+      "controls": {
+        "inputs": 0,
+        "textareas": 0,
+        "buttons": 2,
+        "canvases": 0,
+        "iframes": 0
+      },
+      "externalOrigins": [
+        "https://cdn.tailwindcss.com",
+        "https://fonts.googleapis.com",
+        "http://www.w3.org"
+      ],
+      "externalApiEndpoints": [],
+      "hasLocalReferences": false,
+      "localReferences": [],
+      "resourceId": "p180",
+      "categoryPath": ""
+    },
+    {
+      "id": "phagocytosis-lab-html",
+      "path": "Phagocytosis Lab.html",
+      "title": "Phagocytosis Simulation Lab",
+      "tags": [
+        "lab",
+        "simulation",
+        "chemistry"
+      ],
+      "apiType": "embeddable-page",
+      "bytes": 23718,
+      "controls": {
+        "inputs": 0,
+        "textareas": 0,
+        "buttons": 1,
+        "canvases": 0,
+        "iframes": 0
+      },
+      "externalOrigins": [
+        "https://cdn.tailwindcss.com",
+        "https://fonts.googleapis.com",
+        "http://www.w3.org"
+      ],
+      "externalApiEndpoints": [],
+      "hasLocalReferences": false,
+      "localReferences": [],
+      "resourceId": "p181",
+      "categoryPath": ""
+    },
+    {
+      "id": "physics-lab-dashboard-html",
+      "path": "Physics Lab Dashboard.html",
+      "title": "Physics Lab | Brutalist UI",
+      "tags": [
+        "lab",
+        "chemistry",
+        "physics",
+        "dashboard"
+      ],
+      "apiType": "embeddable-page",
+      "bytes": 15114,
+      "controls": {
+        "inputs": 0,
+        "textareas": 0,
+        "buttons": 2,
+        "canvases": 0,
+        "iframes": 1
+      },
+      "externalOrigins": [
+        "https://cdn.tailwindcss.com",
+        "https://unpkg.com",
+        "https://fonts.googleapis.com"
+      ],
+      "externalApiEndpoints": [],
+      "hasLocalReferences": false,
+      "localReferences": [],
+      "resourceId": "p182",
+      "categoryPath": ""
+    },
+    {
+      "id": "physics-lab-html",
+      "path": "physics-lab.html",
+      "title": "Physics Lab | Clonexx Research Centre",
+      "tags": [
+        "lab",
+        "chemistry",
+        "physics"
+      ],
+      "apiType": "embeddable-page",
+      "bytes": 46198,
+      "controls": {
+        "inputs": 0,
+        "textareas": 0,
+        "buttons": 2,
+        "canvases": 0,
+        "iframes": 1
+      },
+      "externalOrigins": [
+        "https://cdn.tailwindcss.com",
+        "https://cdnjs.cloudflare.com",
+        "https://fonts.googleapis.com"
+      ],
+      "externalApiEndpoints": [],
+      "hasLocalReferences": false,
+      "localReferences": [],
+      "resourceId": "p183",
+      "categoryPath": ""
+    },
+    {
+      "id": "pizzaria-html",
+      "path": "pizzaria.html",
+      "title": "3D Pizza Tycoon",
+      "tags": [
+        "visualization"
+      ],
+      "apiType": "embeddable-page",
+      "bytes": 31536,
+      "controls": {
+        "inputs": 0,
+        "textareas": 0,
+        "buttons": 10,
+        "canvases": 1,
+        "iframes": 0
+      },
+      "externalOrigins": [
+        "https://cdn.tailwindcss.com",
+        "https://cdnjs.cloudflare.com",
+        "https://fonts.googleapis.com"
+      ],
+      "externalApiEndpoints": [],
+      "hasLocalReferences": false,
+      "localReferences": [],
+      "resourceId": "p184",
+      "categoryPath": ""
+    },
+    {
+      "id": "place-values-html",
+      "path": "place-values.html",
+      "title": "Math Lab - Fundamentals & Geometry",
+      "tags": [
+        "lab",
+        "math"
+      ],
+      "apiType": "embeddable-page",
+      "bytes": 41751,
+      "controls": {
+        "inputs": 7,
+        "textareas": 0,
+        "buttons": 10,
+        "canvases": 1,
+        "iframes": 0
+      },
+      "externalOrigins": [
+        "https://cdn.tailwindcss.com",
+        "https://fonts.googleapis.com",
+        "http://www.w3.org"
+      ],
+      "externalApiEndpoints": [],
+      "hasLocalReferences": false,
+      "localReferences": [],
+      "resourceId": "p185",
+      "categoryPath": ""
+    },
+    {
+      "id": "poiseuille-s-law-lab-html",
+      "path": "Poiseuille_s Law Lab.html",
+      "title": "Blood Viscosity Lab: Poiseuille's Law",
+      "tags": [
+        "lab",
+        "biology"
+      ],
+      "apiType": "embeddable-page",
+      "bytes": 21043,
+      "controls": {
+        "inputs": 1,
+        "textareas": 0,
+        "buttons": 0,
+        "canvases": 1,
+        "iframes": 0
+      },
+      "externalOrigins": [],
+      "externalApiEndpoints": [],
+      "hasLocalReferences": false,
+      "localReferences": [],
+      "resourceId": "p186",
+      "categoryPath": ""
+    },
+    {
+      "id": "polarization-html",
+      "path": "polarization.html",
+      "title": "Physics Lab - Quantum & Optics",
+      "tags": [
+        "lab",
+        "chemistry",
+        "physics"
+      ],
+      "apiType": "embeddable-page",
+      "bytes": 33413,
+      "controls": {
+        "inputs": 4,
+        "textareas": 0,
+        "buttons": 2,
+        "canvases": 3,
+        "iframes": 0
+      },
+      "externalOrigins": [
+        "https://cdn.tailwindcss.com",
+        "https://fonts.googleapis.com",
+        "http://www.w3.org"
+      ],
+      "externalApiEndpoints": [],
+      "hasLocalReferences": false,
+      "localReferences": [],
+      "resourceId": "p187",
+      "categoryPath": ""
+    },
+    {
+      "id": "pptier-html",
+      "path": "pptier.html",
+      "title": "PPT Maker | ClonBrow OS",
+      "tags": [
+        "prototype"
+      ],
+      "apiType": "interactive-page",
+      "bytes": 16895,
+      "controls": {
+        "inputs": 1,
+        "textareas": 0,
+        "buttons": 6,
+        "canvases": 0,
+        "iframes": 0
+      },
+      "externalOrigins": [
+        "https://cdn.tailwindcss.com",
+        "https://cdnjs.cloudflare.com",
+        "https://fonts.googleapis.com",
+        "https://cdn.jsdelivr.net",
+        "https://placehold.co"
+      ],
+      "externalApiEndpoints": [],
+      "hasLocalReferences": true,
+      "localReferences": [
+        "${imgSrc}",
+        "file"
+      ],
+      "resourceId": "p188",
+      "categoryPath": ""
+    },
+    {
+      "id": "premium-html",
+      "path": "Premium.html",
+      "title": "clonbrow // premium",
+      "tags": [
+        "external-api"
+      ],
+      "apiType": "interactive-page",
+      "bytes": 137793,
+      "controls": {
+        "inputs": 35,
+        "textareas": 10,
+        "buttons": 143,
+        "canvases": 1,
+        "iframes": 2
+      },
+      "externalOrigins": [
+        "http://www.w3.org",
+        "https://cdn.tailwindcss.com",
+        "https://cdnjs.cloudflare.com",
+        "https://fonts.googleapis.com",
+        "https://fonts.gstatic.com",
+        "https://fonts.cdnfonts.com",
+        "https://clonexxshree.pythonanywhere.com",
+        "https://en.wikipedia.org"
+      ],
+      "externalApiEndpoints": [
+        "https://en.wikipedia.org/w/api.php?action=query&generator=search&gsrsearch=${encodeURIComponent(q)}&gsrlimit=8&prop=extracts|pageimages&exintro=1&explaintext=1&piprop=thumbnail&pithumbsize=160&format=json&origin=*",
+        "https://en.wikipedia.org/w/api.php?action=parse&page=${encodeURIComponent(title)}&prop=text&redirects=1&format=json&origin=*"
+      ],
+      "hasLocalReferences": true,
+      "localReferences": [
+        "theme-mobile.css",
+        "${p.thumbnail.source}",
+        "%23n"
+      ],
+      "resourceId": "p189",
+      "categoryPath": ""
+    },
+    {
+      "id": "probability-html",
+      "path": "probability.html",
+      "title": "Math Lab - Statistics & Advanced Geometry",
+      "tags": [
+        "lab",
+        "math"
+      ],
+      "apiType": "embeddable-page",
+      "bytes": 38661,
+      "controls": {
+        "inputs": 2,
+        "textareas": 0,
+        "buttons": 11,
+        "canvases": 1,
+        "iframes": 0
+      },
+      "externalOrigins": [
+        "https://cdn.tailwindcss.com",
+        "https://fonts.googleapis.com",
+        "https://cdn.jsdelivr.net",
+        "http://www.w3.org"
+      ],
+      "externalApiEndpoints": [],
+      "hasLocalReferences": false,
+      "localReferences": [],
+      "resourceId": "p190",
+      "categoryPath": ""
+    },
+    {
+      "id": "projectile-motion-html",
+      "path": "projectile-motion.html",
+      "title": "Physics Lab - Optics & Kinematics",
+      "tags": [
+        "lab",
+        "chemistry",
+        "physics"
+      ],
+      "apiType": "embeddable-page",
+      "bytes": 22004,
+      "controls": {
+        "inputs": 4,
+        "textareas": 0,
+        "buttons": 3,
+        "canvases": 3,
+        "iframes": 0
+      },
+      "externalOrigins": [
+        "https://cdn.tailwindcss.com",
+        "https://fonts.googleapis.com"
+      ],
+      "externalApiEndpoints": [],
+      "hasLocalReferences": false,
+      "localReferences": [],
+      "resourceId": "p191",
+      "categoryPath": ""
+    },
+    {
+      "id": "property-tycoon-html",
+      "path": "property-tycoon.html",
+      "title": "Property Tycoon",
+      "tags": [
+        "prototype"
+      ],
+      "apiType": "interactive-page",
+      "bytes": 28761,
+      "controls": {
+        "inputs": 0,
+        "textareas": 0,
+        "buttons": 19,
+        "canvases": 0,
+        "iframes": 0
+      },
+      "externalOrigins": [
+        "https://cdn.tailwindcss.com",
+        "https://fonts.googleapis.com"
+      ],
+      "externalApiEndpoints": [],
+      "hasLocalReferences": false,
+      "localReferences": [],
+      "resourceId": "p192",
+      "categoryPath": ""
+    },
+    {
+      "id": "prosthetic-force-multiplier-html",
+      "path": "Prosthetic Force Multiplier.html",
+      "title": "Prosthetic Mechanical Advantage Lab",
+      "tags": [
+        "lab",
+        "physics"
+      ],
+      "apiType": "embeddable-page",
+      "bytes": 15082,
+      "controls": {
+        "inputs": 2,
+        "textareas": 0,
+        "buttons": 0,
+        "canvases": 0,
+        "iframes": 0
+      },
+      "externalOrigins": [
+        "https://cdn.tailwindcss.com",
+        "https://fonts.googleapis.com"
+      ],
+      "externalApiEndpoints": [],
+      "hasLocalReferences": false,
+      "localReferences": [],
+      "resourceId": "p193",
+      "categoryPath": ""
+    },
+    {
+      "id": "protein-synthesis-factory-html",
+      "path": "Protein Synthesis Factory.html",
+      "title": "Bio-Synth | Protein Factory",
+      "tags": [
+        "biology"
+      ],
+      "apiType": "interactive-page",
+      "bytes": 13127,
+      "controls": {
+        "inputs": 1,
+        "textareas": 0,
+        "buttons": 1,
+        "canvases": 0,
+        "iframes": 0
+      },
+      "externalOrigins": [
+        "https://cdn.tailwindcss.com",
+        "https://fonts.googleapis.com"
+      ],
+      "externalApiEndpoints": [],
+      "hasLocalReferences": false,
+      "localReferences": [],
+      "resourceId": "p194",
+      "categoryPath": ""
+    },
+    {
+      "id": "pulse-oximetry-lab-html",
+      "path": "Pulse Oximetry Lab.html",
+      "title": "Pulse Oximetry & Spectrophotometry Lab",
+      "tags": [
+        "lab",
+        "chemistry"
+      ],
+      "apiType": "embeddable-page",
+      "bytes": 27885,
+      "controls": {
+        "inputs": 2,
+        "textareas": 0,
+        "buttons": 0,
+        "canvases": 1,
+        "iframes": 0
+      },
+      "externalOrigins": [
+        "https://cdn.tailwindcss.com",
+        "https://fonts.googleapis.com"
+      ],
+      "externalApiEndpoints": [],
+      "hasLocalReferences": false,
+      "localReferences": [],
+      "resourceId": "p195",
+      "categoryPath": ""
+    },
+    {
+      "id": "punnett-square-sim-html",
+      "path": "Punnett Square Sim.html",
+      "title": "Mendelian Genetics Lab: Punnett Square",
+      "tags": [
+        "lab",
+        "biology"
+      ],
+      "apiType": "embeddable-page",
+      "bytes": 18715,
+      "controls": {
+        "inputs": 0,
+        "textareas": 0,
+        "buttons": 2,
+        "canvases": 0,
+        "iframes": 0
+      },
+      "externalOrigins": [
+        "https://cdn.tailwindcss.com",
+        "https://fonts.googleapis.com"
+      ],
+      "externalApiEndpoints": [],
+      "hasLocalReferences": false,
+      "localReferences": [],
+      "resourceId": "p196",
+      "categoryPath": ""
+    },
+    {
+      "id": "pythagorean-theorem-html",
+      "path": "pythagorean-theorem.html",
+      "title": "Math Lab - Geometry & Algebra",
+      "tags": [
+        "lab",
+        "math"
+      ],
+      "apiType": "embeddable-page",
+      "bytes": 35608,
+      "controls": {
+        "inputs": 7,
+        "textareas": 0,
+        "buttons": 4,
+        "canvases": 3,
+        "iframes": 0
+      },
+      "externalOrigins": [
+        "https://cdn.tailwindcss.com",
+        "https://fonts.googleapis.com",
+        "http://www.w3.org",
+        "https://res.cloudinary.com"
+      ],
+      "externalApiEndpoints": [],
+      "hasLocalReferences": false,
+      "localReferences": [],
+      "resourceId": "p197",
+      "categoryPath": ""
+    },
+    {
+      "id": "quadratic-roots-html",
+      "path": "quadratic-roots.html",
+      "title": "Math Lab - Algebra & Circle Geometry",
+      "tags": [
+        "lab",
+        "math"
+      ],
+      "apiType": "embeddable-page",
+      "bytes": 36878,
+      "controls": {
+        "inputs": 5,
+        "textareas": 0,
+        "buttons": 4,
+        "canvases": 1,
+        "iframes": 0
+      },
+      "externalOrigins": [
+        "https://cdn.tailwindcss.com",
+        "https://fonts.googleapis.com",
+        "http://www.w3.org",
+        "https://res.cloudinary.com"
+      ],
+      "externalApiEndpoints": [],
+      "hasLocalReferences": false,
+      "localReferences": [],
+      "resourceId": "p198",
+      "categoryPath": ""
+    },
+    {
+      "id": "radiation-physics-lab-html",
+      "path": "Radiation Physics Lab.html",
+      "title": "Radiation Physics: Inverse Square & Half-Life",
+      "tags": [
+        "lab",
+        "chemistry",
+        "physics"
+      ],
+      "apiType": "embeddable-page",
+      "bytes": 30435,
+      "controls": {
+        "inputs": 1,
+        "textareas": 0,
+        "buttons": 1,
+        "canvases": 2,
+        "iframes": 0
+      },
+      "externalOrigins": [
+        "https://cdn.tailwindcss.com",
+        "https://fonts.googleapis.com",
+        "http://www.w3.org"
+      ],
+      "externalApiEndpoints": [],
+      "hasLocalReferences": false,
+      "localReferences": [],
+      "resourceId": "p199",
+      "categoryPath": ""
+    },
+    {
+      "id": "radio-isotope-mapping-html",
+      "path": "Radio-isotope Mapping.html",
+      "title": "Nuclear Medicine: Radio-isotope Mapping",
+      "tags": [
+        "prototype"
+      ],
+      "apiType": "interactive-page",
+      "bytes": 14460,
+      "controls": {
+        "inputs": 0,
+        "textareas": 0,
+        "buttons": 3,
+        "canvases": 1,
+        "iframes": 0
+      },
+      "externalOrigins": [
+        "https://cdn.tailwindcss.com"
+      ],
+      "externalApiEndpoints": [],
+      "hasLocalReferences": false,
+      "localReferences": [],
+      "resourceId": "p200",
+      "categoryPath": ""
+    },
+    {
+      "id": "radioactive-seed-implant-lab-html",
+      "path": "Radioactive Seed Implant Lab.html",
+      "title": "Brachytherapy Lab: Radioactive Decay",
+      "tags": [
+        "lab"
+      ],
+      "apiType": "embeddable-page",
+      "bytes": 22912,
+      "controls": {
+        "inputs": 1,
+        "textareas": 0,
+        "buttons": 4,
+        "canvases": 1,
+        "iframes": 0
+      },
+      "externalOrigins": [],
+      "externalApiEndpoints": [],
+      "hasLocalReferences": false,
+      "localReferences": [],
+      "resourceId": "p201",
+      "categoryPath": ""
+    },
+    {
+      "id": "radioactive-decay-html",
+      "path": "radioactive-decay.html",
+      "title": "Physics Lab - Atomic & Nuclear",
+      "tags": [
+        "lab",
+        "chemistry",
+        "physics"
+      ],
+      "apiType": "embeddable-page",
+      "bytes": 36353,
+      "controls": {
+        "inputs": 4,
+        "textareas": 0,
+        "buttons": 5,
+        "canvases": 3,
+        "iframes": 0
+      },
+      "externalOrigins": [
+        "https://cdn.tailwindcss.com",
+        "https://fonts.googleapis.com",
+        "http://www.w3.org"
+      ],
+      "externalApiEndpoints": [],
+      "hasLocalReferences": false,
+      "localReferences": [],
+      "resourceId": "p202",
+      "categoryPath": ""
+    },
+    {
+      "id": "ratios-html",
+      "path": "ratios.html",
+      "title": "Math Lab - Proportions, Exponents & Trigonometry",
+      "tags": [
+        "lab",
+        "math"
+      ],
+      "apiType": "embeddable-page",
+      "bytes": 40697,
+      "controls": {
+        "inputs": 6,
+        "textareas": 0,
+        "buttons": 4,
+        "canvases": 1,
+        "iframes": 0
+      },
+      "externalOrigins": [
+        "https://cdn.tailwindcss.com",
+        "https://fonts.googleapis.com",
+        "http://www.w3.org",
+        "https://res.cloudinary.com"
+      ],
+      "externalApiEndpoints": [],
+      "hasLocalReferences": false,
+      "localReferences": [],
+      "resourceId": "p203",
+      "categoryPath": ""
+    },
+    {
+      "id": "reflex-arc-timer-lab-html",
+      "path": "Reflex Arc Timer Lab.html",
+      "title": "Reflex Arc Kinematics Lab",
+      "tags": [
+        "lab"
+      ],
+      "apiType": "embeddable-page",
+      "bytes": 22198,
+      "controls": {
+        "inputs": 0,
+        "textareas": 0,
+        "buttons": 5,
+        "canvases": 0,
+        "iframes": 0
+      },
+      "externalOrigins": [
+        "https://cdn.tailwindcss.com",
+        "https://fonts.googleapis.com"
+      ],
+      "externalApiEndpoints": [],
+      "hasLocalReferences": false,
+      "localReferences": [],
+      "resourceId": "p204",
+      "categoryPath": ""
+    },
+    {
+      "id": "refractive-optics-lab-html",
+      "path": "Refractive Optics Lab.html",
+      "title": "Refractive Error & Laser Surgery Lab",
+      "tags": [
+        "lab",
+        "physics"
+      ],
+      "apiType": "embeddable-page",
+      "bytes": 28926,
+      "controls": {
+        "inputs": 1,
+        "textareas": 0,
+        "buttons": 2,
+        "canvases": 0,
+        "iframes": 0
+      },
+      "externalOrigins": [
+        "https://cdn.tailwindcss.com",
+        "https://fonts.googleapis.com",
+        "http://www.w3.org"
+      ],
+      "externalApiEndpoints": [],
+      "hasLocalReferences": false,
+      "localReferences": [],
+      "resourceId": "p205",
+      "categoryPath": ""
+    },
+    {
+      "id": "reifver-html",
+      "path": "reifver.html",
+      "title": "ClonBrow OS | The Ultimate Student Browser",
+      "tags": [
+        "external-api"
+      ],
+      "apiType": "interactive-page",
+      "bytes": 166410,
+      "controls": {
+        "inputs": 38,
+        "textareas": 2,
+        "buttons": 78,
+        "canvases": 0,
+        "iframes": 0
+      },
+      "externalOrigins": [
+        "https://cdn.tailwindcss.com",
+        "https://cdnjs.cloudflare.com",
+        "https://fonts.googleapis.com",
+        "https://cdn.jsdelivr.net",
+        "https://api.dicebear.com",
+        "https://res.cloudinary.com",
+        "https://www.transparenttextures.com",
+        "https://clonexxshree.pythonanywhere.com",
+        "https://www.google.com",
+        "https://en.wikipedia.org"
+      ],
+      "externalApiEndpoints": [
+        "https://en.wikipedia.org/w/api.php?action=query&list=search&srsearch=${encodeURIComponent(query)}&utf8=&format=json&origin=*",
+        "https://en.wikipedia.org/w/api.php?action=query&prop=extracts&titles=${encodeURIComponent(title)}&format=json&origin=*"
+      ],
+      "hasLocalReferences": true,
+      "localReferences": [
+        "${faviconUrl}",
+        "about:blank",
+        "url",
+        "tab.url"
+      ],
+      "resourceId": "p206",
+      "categoryPath": ""
+    },
+    {
+      "id": "rememberme-html",
+      "path": "rememberme.html",
+      "title": "Clonbrow saver - Play & Learn",
+      "tags": [
+        "prototype"
+      ],
+      "apiType": "interactive-page",
+      "bytes": 5489,
+      "controls": {
+        "inputs": 2,
+        "textareas": 0,
+        "buttons": 1,
+        "canvases": 0,
+        "iframes": 0
+      },
+      "externalOrigins": [
+        "https://cdn.tailwindcss.com",
+        "https://fonts.googleapis.com",
+        "https://unpkg.com",
+        "https://shreeclonexx.pythonanywhere.com"
+      ],
+      "externalApiEndpoints": [],
+      "hasLocalReferences": false,
+      "localReferences": [],
+      "resourceId": "p207",
+      "categoryPath": ""
+    },
+    {
+      "id": "rocket-html",
+      "path": "rocket.html",
+      "title": "Rocket Lab | CRC",
+      "tags": [
+        "lab"
+      ],
+      "apiType": "embeddable-page",
+      "bytes": 29331,
+      "controls": {
+        "inputs": 0,
+        "textareas": 0,
+        "buttons": 8,
+        "canvases": 0,
+        "iframes": 0
+      },
+      "externalOrigins": [
+        "https://cdn.tailwindcss.com",
+        "https://cdnjs.cloudflare.com",
+        "https://fonts.googleapis.com"
+      ],
+      "externalApiEndpoints": [],
+      "hasLocalReferences": true,
+      "localReferences": [
+        "laber.html"
+      ],
+      "resourceId": "p208",
+      "categoryPath": ""
+    },
+    {
+      "id": "rubix-cube-html",
+      "path": "rubix-cube.html",
+      "title": "3D Rubik's Cube",
+      "tags": [
+        "visualization"
+      ],
+      "apiType": "embeddable-page",
+      "bytes": 19653,
+      "controls": {
+        "inputs": 0,
+        "textareas": 0,
+        "buttons": 2,
+        "canvases": 1,
+        "iframes": 0
+      },
+      "externalOrigins": [
+        "https://cdn.tailwindcss.com",
+        "https://cdnjs.cloudflare.com",
+        "https://cdn.jsdelivr.net",
+        "https://fonts.googleapis.com"
+      ],
+      "externalApiEndpoints": [],
+      "hasLocalReferences": false,
+      "localReferences": [],
+      "resourceId": "p209",
+      "categoryPath": ""
+    },
+    {
+      "id": "sanskoder-html",
+      "path": "SansKoder.html",
+      "title": "sansKoder",
+      "tags": [
+        "prototype"
+      ],
+      "apiType": "interactive-page",
+      "bytes": 47535,
+      "controls": {
+        "inputs": 1,
+        "textareas": 0,
+        "buttons": 0,
+        "canvases": 1,
+        "iframes": 0
+      },
+      "externalOrigins": [
+        "https://cdn.tailwindcss.com",
+        "https://fonts.googleapis.com"
+      ],
+      "externalApiEndpoints": [],
+      "hasLocalReferences": false,
+      "localReferences": [
+        "blob",
+        "url"
+      ],
+      "resourceId": "p210",
+      "categoryPath": ""
+    },
+    {
+      "id": "school-html",
+      "path": "school.html",
+      "title": "School Management | Education Portal",
+      "tags": [
+        "prototype"
+      ],
+      "apiType": "interactive-page",
+      "bytes": 24459,
+      "controls": {
+        "inputs": 6,
+        "textareas": 0,
+        "buttons": 10,
+        "canvases": 0,
+        "iframes": 0
+      },
+      "externalOrigins": [
+        "https://cdn.tailwindcss.com",
+        "https://cdnjs.cloudflare.com",
+        "https://fonts.googleapis.com",
+        "https://clonexxshree.pythonanywhere.com"
+      ],
+      "externalApiEndpoints": [],
+      "hasLocalReferences": true,
+      "localReferences": [
+        "index.html"
+      ],
+      "resourceId": "p211",
+      "categoryPath": ""
+    },
+    {
+      "id": "schooler-html",
+      "path": "schooler.html",
+      "title": "School Admin Master | ClonBrow Schools",
+      "tags": [
+        "prototype"
+      ],
+      "apiType": "interactive-page",
+      "bytes": 31618,
+      "controls": {
+        "inputs": 5,
+        "textareas": 1,
+        "buttons": 6,
+        "canvases": 0,
+        "iframes": 0
+      },
+      "externalOrigins": [
+        "https://cdn.tailwindcss.com",
+        "https://cdnjs.cloudflare.com",
+        "https://fonts.googleapis.com",
+        "https://api.dicebear.com",
+        "https://www.ourschool.edu",
+        "https://clonexxshree.pythonanywhere.com"
+      ],
+      "externalApiEndpoints": [],
+      "hasLocalReferences": true,
+      "localReferences": [
+        "derily.html",
+        "teachero.html",
+        "schedulo.html",
+        "rankie.html",
+        "susty.html",
+        "mang.html",
+        "transpo.html",
+        "booker.html",
+        "docer.html",
+        "groupie.html",
+        "newsie.html"
+      ],
+      "resourceId": "p212",
+      "categoryPath": ""
+    },
+    {
+      "id": "serotonin-level-balancer-html",
+      "path": "Serotonin Level Balancer.html",
+      "title": "Neuro-Dashboard | Serotonin Balancer",
+      "tags": [
+        "biology",
+        "dashboard"
+      ],
+      "apiType": "interactive-page",
+      "bytes": 11626,
+      "controls": {
+        "inputs": 1,
+        "textareas": 0,
+        "buttons": 0,
+        "canvases": 1,
+        "iframes": 0
+      },
+      "externalOrigins": [
+        "https://cdn.tailwindcss.com",
+        "https://fonts.googleapis.com"
+      ],
+      "externalApiEndpoints": [],
+      "hasLocalReferences": false,
+      "localReferences": [],
+      "resourceId": "p213",
+      "categoryPath": ""
+    },
+    {
+      "id": "shadows-html",
+      "path": "shadows.html",
+      "title": "Physics Lab - Light & Magnets",
+      "tags": [
+        "lab",
+        "chemistry",
+        "physics"
+      ],
+      "apiType": "embeddable-page",
+      "bytes": 29154,
+      "controls": {
+        "inputs": 5,
+        "textareas": 0,
+        "buttons": 0,
+        "canvases": 1,
+        "iframes": 0
+      },
+      "externalOrigins": [
+        "https://cdn.tailwindcss.com",
+        "https://fonts.googleapis.com",
+        "http://www.w3.org",
+        "https://res.cloudinary.com"
+      ],
+      "externalApiEndpoints": [],
+      "hasLocalReferences": false,
+      "localReferences": [],
+      "resourceId": "p214",
+      "categoryPath": ""
+    },
+    {
+      "id": "shean-html",
+      "path": "shean.html",
+      "title": "Laner Chat | SQL Compatible UI",
+      "tags": [
+        "prototype"
+      ],
+      "apiType": "interactive-page",
+      "bytes": 33531,
+      "controls": {
+        "inputs": 8,
+        "textareas": 0,
+        "buttons": 12,
+        "canvases": 0,
+        "iframes": 0
+      },
+      "externalOrigins": [
+        "https://cdn.tailwindcss.com",
+        "https://unpkg.com",
+        "https://fonts.googleapis.com",
+        "https://api.dicebear.com"
+      ],
+      "externalApiEndpoints": [],
+      "hasLocalReferences": true,
+      "localReferences": [
+        "${getAvatar(user.Username)}",
+        "${getAvatar(friend.Username)}",
+        "${getAvatar(sender.Username)}"
+      ],
+      "resourceId": "p215",
+      "categoryPath": ""
+    },
+    {
+      "id": "shreet-html",
+      "path": "shreet.html",
+      "title": "Mathematics Lab | Clonexx Research Centre",
+      "tags": [
+        "lab",
+        "math"
+      ],
+      "apiType": "embeddable-page",
+      "bytes": 48355,
+      "controls": {
+        "inputs": 0,
+        "textareas": 0,
+        "buttons": 2,
+        "canvases": 0,
+        "iframes": 1
+      },
+      "externalOrigins": [
+        "https://cdn.tailwindcss.com",
+        "https://cdnjs.cloudflare.com",
+        "https://fonts.googleapis.com"
+      ],
+      "externalApiEndpoints": [],
+      "hasLocalReferences": false,
+      "localReferences": [],
+      "resourceId": "p216",
+      "categoryPath": ""
+    },
+    {
+      "id": "simple-circuits-html",
+      "path": "simple-circuits.html",
+      "title": "Physics Lab - Electric Circuits",
+      "tags": [
+        "lab",
+        "chemistry",
+        "physics"
+      ],
+      "apiType": "embeddable-page",
+      "bytes": 26485,
+      "controls": {
+        "inputs": 4,
+        "textareas": 0,
+        "buttons": 0,
+        "canvases": 3,
+        "iframes": 0
+      },
+      "externalOrigins": [
+        "https://cdn.tailwindcss.com",
+        "https://fonts.googleapis.com"
+      ],
+      "externalApiEndpoints": [],
+      "hasLocalReferences": false,
+      "localReferences": [],
+      "resourceId": "p217",
+      "categoryPath": ""
+    },
+    {
+      "id": "simple-machines-levers-html",
+      "path": "simple-machines-levers.html",
+      "title": "Physics Lab - Lever & Fulcrum",
+      "tags": [
+        "lab",
+        "chemistry",
+        "physics"
+      ],
+      "apiType": "embeddable-page",
+      "bytes": 26571,
+      "controls": {
+        "inputs": 4,
+        "textareas": 0,
+        "buttons": 0,
+        "canvases": 1,
+        "iframes": 0
+      },
+      "externalOrigins": [
+        "https://cdn.tailwindcss.com",
+        "https://fonts.googleapis.com"
+      ],
+      "externalApiEndpoints": [],
+      "hasLocalReferences": false,
+      "localReferences": [],
+      "resourceId": "p218",
+      "categoryPath": ""
+    },
+    {
+      "id": "simple-machines-pulleys-html",
+      "path": "simple-machines-pulleys.html",
+      "title": "Physics Lab - Pulleys & Mechanical Advantage",
+      "tags": [
+        "lab",
+        "chemistry",
+        "physics"
+      ],
+      "apiType": "embeddable-page",
+      "bytes": 26157,
+      "controls": {
+        "inputs": 3,
+        "textareas": 0,
+        "buttons": 0,
+        "canvases": 1,
+        "iframes": 0
+      },
+      "externalOrigins": [
+        "https://cdn.tailwindcss.com",
+        "https://fonts.googleapis.com"
+      ],
+      "externalApiEndpoints": [],
+      "hasLocalReferences": false,
+      "localReferences": [],
+      "resourceId": "p219",
+      "categoryPath": ""
+    },
+    {
+      "id": "snakes-and-ladders-html",
+      "path": "snakes and ladders.html",
+      "title": "Snakes and Ladders Master",
+      "tags": [
+        "prototype"
+      ],
+      "apiType": "interactive-page",
+      "bytes": 27497,
+      "controls": {
+        "inputs": 0,
+        "textareas": 0,
+        "buttons": 2,
+        "canvases": 1,
+        "iframes": 0
+      },
+      "externalOrigins": [
+        "https://cdn.tailwindcss.com",
+        "https://fonts.googleapis.com"
+      ],
+      "externalApiEndpoints": [],
+      "hasLocalReferences": false,
+      "localReferences": [],
+      "resourceId": "p220",
+      "categoryPath": ""
+    },
+    {
+      "id": "solar-system-html",
+      "path": "solar-system.html",
+      "title": "Solar System Explorer",
+      "tags": [
+        "prototype"
+      ],
+      "apiType": "interactive-page",
+      "bytes": 26240,
+      "controls": {
+        "inputs": 1,
+        "textareas": 0,
+        "buttons": 1,
+        "canvases": 1,
+        "iframes": 0
+      },
+      "externalOrigins": [
+        "https://cdn.tailwindcss.com",
+        "https://fonts.googleapis.com",
+        "http://www.w3.org",
+        "https://res.cloudinary.com"
+      ],
+      "externalApiEndpoints": [],
+      "hasLocalReferences": false,
+      "localReferences": [],
+      "resourceId": "p221",
+      "categoryPath": ""
+    },
+    {
+      "id": "spectrophotometer-simulation-html",
+      "path": "Spectrophotometer Simulation.html",
+      "title": "Professional Spectrophotometer Simulation",
+      "tags": [
+        "simulation",
+        "chemistry"
+      ],
+      "apiType": "embeddable-page",
+      "bytes": 14448,
+      "controls": {
+        "inputs": 1,
+        "textareas": 0,
+        "buttons": 1,
+        "canvases": 0,
+        "iframes": 0
+      },
+      "externalOrigins": [],
+      "externalApiEndpoints": [],
+      "hasLocalReferences": false,
+      "localReferences": [],
+      "resourceId": "p222",
+      "categoryPath": ""
+    },
+    {
+      "id": "spinal-compression-simulator-html",
+      "path": "Spinal Compression Simulator.html",
+      "title": "Spinal Compression: Biomechanics Sim",
+      "tags": [
+        "simulation",
+        "biology",
+        "tool"
+      ],
+      "apiType": "embeddable-page",
+      "bytes": 14421,
+      "controls": {
+        "inputs": 2,
+        "textareas": 0,
+        "buttons": 0,
+        "canvases": 0,
+        "iframes": 0
+      },
+      "externalOrigins": [],
+      "externalApiEndpoints": [],
+      "hasLocalReferences": false,
+      "localReferences": [],
+      "resourceId": "p223",
+      "categoryPath": ""
+    },
+    {
+      "id": "spirometry-boyle-s-law-lab-html",
+      "path": "Spirometry & Boyle_s Law Lab.html",
+      "title": "Spirometry & Boyle's Law Lab",
+      "tags": [
+        "lab"
+      ],
+      "apiType": "embeddable-page",
+      "bytes": 28032,
+      "controls": {
+        "inputs": 1,
+        "textareas": 0,
+        "buttons": 2,
+        "canvases": 2,
+        "iframes": 0
+      },
+      "externalOrigins": [
+        "https://cdn.tailwindcss.com",
+        "https://fonts.googleapis.com"
+      ],
+      "externalApiEndpoints": [],
+      "hasLocalReferences": false,
+      "localReferences": [],
+      "resourceId": "p224",
+      "categoryPath": ""
+    },
+    {
+      "id": "stability-cog-lab-html",
+      "path": "Stability & COG Lab.html",
+      "title": "Stability Lab: Center of Gravity",
+      "tags": [
+        "lab"
+      ],
+      "apiType": "embeddable-page",
+      "bytes": 13510,
+      "controls": {
+        "inputs": 2,
+        "textareas": 0,
+        "buttons": 0,
+        "canvases": 0,
+        "iframes": 0
+      },
+      "externalOrigins": [],
+      "externalApiEndpoints": [],
+      "hasLocalReferences": false,
+      "localReferences": [],
+      "resourceId": "p225",
+      "categoryPath": ""
+    },
+    {
+      "id": "states-of-matter-html",
+      "path": "states-of-matter.html",
+      "title": "States of Matter - Minimalist Physics",
+      "tags": [
+        "chemistry",
+        "physics"
+      ],
+      "apiType": "interactive-page",
+      "bytes": 20691,
+      "controls": {
+        "inputs": 1,
+        "textareas": 0,
+        "buttons": 3,
+        "canvases": 0,
+        "iframes": 0
+      },
+      "externalOrigins": [
+        "https://cdn.tailwindcss.com",
+        "https://fonts.googleapis.com",
+        "https://cdn.jsdelivr.net"
+      ],
+      "externalApiEndpoints": [],
+      "hasLocalReferences": false,
+      "localReferences": [],
+      "resourceId": "p226",
+      "categoryPath": ""
+    },
+    {
+      "id": "statistics-html",
+      "path": "statistics.html",
+      "title": "Math Lab - Sequences & Statistics",
+      "tags": [
+        "lab",
+        "math"
+      ],
+      "apiType": "embeddable-page",
+      "bytes": 37536,
+      "controls": {
+        "inputs": 12,
+        "textareas": 0,
+        "buttons": 5,
+        "canvases": 1,
+        "iframes": 0
+      },
+      "externalOrigins": [
+        "https://cdn.tailwindcss.com",
+        "https://fonts.googleapis.com",
+        "http://www.w3.org"
+      ],
+      "externalApiEndpoints": [],
+      "hasLocalReferences": false,
+      "localReferences": [],
+      "resourceId": "p227",
+      "categoryPath": ""
+    },
+    {
+      "id": "student-html",
+      "path": "student.html",
+      "title": "Student Portal | ClonBrow Schools",
+      "tags": [
+        "prototype"
+      ],
+      "apiType": "interactive-page",
+      "bytes": 35212,
+      "controls": {
+        "inputs": 5,
+        "textareas": 0,
+        "buttons": 6,
+        "canvases": 0,
+        "iframes": 0
+      },
+      "externalOrigins": [
+        "https://cdn.tailwindcss.com",
+        "https://cdnjs.cloudflare.com",
+        "https://fonts.googleapis.com",
+        "https://clonexxshree.pythonanywhere.com",
+        "https://api.dicebear.com"
+      ],
+      "externalApiEndpoints": [],
+      "hasLocalReferences": true,
+      "localReferences": [
+        "s_timetable.html",
+        "s_homework.html",
+        "s_grades.html",
+        "s_materials.html",
+        "s_fees.html",
+        "s_wallet.html",
+        "s_../frontend/library.html",
+        "s_bus.html",
+        "s_clubs.html",
+        "announcement_hub.html",
+        "file"
+      ],
+      "resourceId": "p228",
+      "categoryPath": ""
+    },
+    {
+      "id": "surface-tension-alveoli-lab-html",
+      "path": "Surface Tension & Alveoli Lab.html",
+      "title": "Alveolar Surface Tension & Laplace's Law Lab",
+      "tags": [
+        "lab"
+      ],
+      "apiType": "embeddable-page",
+      "bytes": 27000,
+      "controls": {
+        "inputs": 2,
+        "textareas": 0,
+        "buttons": 0,
+        "canvases": 0,
+        "iframes": 0
+      },
+      "externalOrigins": [
+        "https://cdn.tailwindcss.com",
+        "https://fonts.googleapis.com"
+      ],
+      "externalApiEndpoints": [],
+      "hasLocalReferences": false,
+      "localReferences": [],
+      "resourceId": "p229",
+      "categoryPath": ""
+    },
+    {
+      "id": "surface-area-html",
+      "path": "surface-area.html",
+      "title": "Math Lab - Statistics & Advanced Geometry",
+      "tags": [
+        "lab",
+        "math"
+      ],
+      "apiType": "embeddable-page",
+      "bytes": 38661,
+      "controls": {
+        "inputs": 2,
+        "textareas": 0,
+        "buttons": 11,
+        "canvases": 1,
+        "iframes": 0
+      },
+      "externalOrigins": [
+        "https://cdn.tailwindcss.com",
+        "https://fonts.googleapis.com",
+        "https://cdn.jsdelivr.net",
+        "http://www.w3.org"
+      ],
+      "externalApiEndpoints": [],
+      "hasLocalReferences": false,
+      "localReferences": [],
+      "resourceId": "p230",
+      "categoryPath": ""
+    },
+    {
+      "id": "sustained-release-tablet-html",
+      "path": "Sustained-Release Tablet.html",
+      "title": "Sustained-Release Tablet Architecture",
+      "tags": [
+        "prototype"
+      ],
+      "apiType": "interactive-page",
+      "bytes": 17340,
+      "controls": {
+        "inputs": 0,
+        "textareas": 0,
+        "buttons": 0,
+        "canvases": 0,
+        "iframes": 0
+      },
+      "externalOrigins": [
+        "https://cdn.tailwindcss.com",
+        "https://fonts.googleapis.com",
+        "http://www.w3.org"
+      ],
+      "externalApiEndpoints": [],
+      "hasLocalReferences": false,
+      "localReferences": [],
+      "resourceId": "p231",
+      "categoryPath": ""
+    },
+    {
+      "id": "suture-tension-lab-html",
+      "path": "Suture Tension Lab.html",
+      "title": "Suture Tension & Tissue Integrity Lab",
+      "tags": [
+        "lab"
+      ],
+      "apiType": "embeddable-page",
+      "bytes": 22410,
+      "controls": {
+        "inputs": 1,
+        "textareas": 0,
+        "buttons": 1,
+        "canvases": 0,
+        "iframes": 0
+      },
+      "externalOrigins": [
+        "https://cdn.tailwindcss.com",
+        "https://fonts.googleapis.com"
+      ],
+      "externalApiEndpoints": [],
+      "hasLocalReferences": false,
+      "localReferences": [],
+      "resourceId": "p232",
+      "categoryPath": ""
+    },
+    {
+      "id": "symmetry-html",
+      "path": "symmetry.html",
+      "title": "Math Lab - Interactive Concepts",
+      "tags": [
+        "lab",
+        "math"
+      ],
+      "apiType": "embeddable-page",
+      "bytes": 35135,
+      "controls": {
+        "inputs": 9,
+        "textareas": 0,
+        "buttons": 7,
+        "canvases": 3,
+        "iframes": 0
+      },
+      "externalOrigins": [
+        "https://cdn.tailwindcss.com",
+        "https://fonts.googleapis.com"
+      ],
+      "externalApiEndpoints": [],
+      "hasLocalReferences": false,
+      "localReferences": [],
+      "resourceId": "p233",
+      "categoryPath": ""
+    },
+    {
+      "id": "synapse-html",
+      "path": "Synapse.html",
+      "title": "Synapse | Cognitive Architecture",
+      "tags": [
+        "prototype"
+      ],
+      "apiType": "interactive-page",
+      "bytes": 57590,
+      "controls": {
+        "inputs": 8,
+        "textareas": 10,
+        "buttons": 8,
+        "canvases": 1,
+        "iframes": 0
+      },
+      "externalOrigins": [
+        "https://cdn.tailwindcss.com",
+        "https://cdnjs.cloudflare.com",
+        "https://fonts.googleapis.com",
+        "https://fonts.gstatic.com"
+      ],
+      "externalApiEndpoints": [],
+      "hasLocalReferences": false,
+      "localReferences": [],
+      "resourceId": "p234",
+      "categoryPath": ""
+    },
+    {
+      "id": "synaptic-delay-lab-html",
+      "path": "Synaptic Delay Lab.html",
+      "title": "Synaptic Delay Timer Lab",
+      "tags": [
+        "lab"
+      ],
+      "apiType": "embeddable-page",
+      "bytes": 23597,
+      "controls": {
+        "inputs": 1,
+        "textareas": 0,
+        "buttons": 1,
+        "canvases": 1,
+        "iframes": 0
+      },
+      "externalOrigins": [],
+      "externalApiEndpoints": [],
+      "hasLocalReferences": false,
+      "localReferences": [],
+      "resourceId": "p235",
+      "categoryPath": ""
+    },
+    {
+      "id": "teacher-html",
+      "path": "teacher.html",
+      "title": "Teacher Portal | ClonBrow Schools",
+      "tags": [
+        "prototype"
+      ],
+      "apiType": "interactive-page",
+      "bytes": 37802,
+      "controls": {
+        "inputs": 5,
+        "textareas": 0,
+        "buttons": 8,
+        "canvases": 0,
+        "iframes": 0
+      },
+      "externalOrigins": [
+        "https://cdn.tailwindcss.com",
+        "https://cdnjs.cloudflare.com",
+        "https://fonts.googleapis.com",
+        "https://clonexxshree.pythonanywhere.com",
+        "https://api.dicebear.com"
+      ],
+      "externalApiEndpoints": [],
+      "hasLocalReferences": true,
+      "localReferences": [
+        "t_classdata.html",
+        "t_attendance.html",
+        "t_diary.html",
+        "t_homework.html",
+        "t_grades.html",
+        "t_materials.html",
+        "announcement_hub.html",
+        "${avatarUrl}",
+        "file"
+      ],
+      "resourceId": "p236",
+      "categoryPath": ""
+    },
+    {
+      "id": "telemedicine-latency-lab-html",
+      "path": "Telemedicine Latency Lab.html",
+      "title": "Telesurgery & Network Latency Lab",
+      "tags": [
+        "lab"
+      ],
+      "apiType": "embeddable-page",
+      "bytes": 30509,
+      "controls": {
+        "inputs": 1,
+        "textareas": 0,
+        "buttons": 2,
+        "canvases": 1,
+        "iframes": 0
+      },
+      "externalOrigins": [
+        "https://cdn.tailwindcss.com",
+        "https://fonts.googleapis.com"
+      ],
+      "externalApiEndpoints": [],
+      "hasLocalReferences": false,
+      "localReferences": [],
+      "resourceId": "p237",
+      "categoryPath": ""
+    },
+    {
+      "id": "telomere-aging-lab-html",
+      "path": "Telomere Aging Lab.html",
+      "title": "Telomere Aging Clock & Hayflick Limit",
+      "tags": [
+        "lab"
+      ],
+      "apiType": "embeddable-page",
+      "bytes": 22490,
+      "controls": {
+        "inputs": 0,
+        "textareas": 0,
+        "buttons": 3,
+        "canvases": 0,
+        "iframes": 0
+      },
+      "externalOrigins": [
+        "https://cdn.tailwindcss.com",
+        "https://fonts.googleapis.com"
+      ],
+      "externalApiEndpoints": [],
+      "hasLocalReferences": false,
+      "localReferences": [],
+      "resourceId": "p238",
+      "categoryPath": ""
+    },
+    {
+      "id": "tessellations-html",
+      "path": "tessellations.html",
+      "title": "Math Lab - Applied Geometry & Data",
+      "tags": [
+        "lab",
+        "math"
+      ],
+      "apiType": "embeddable-page",
+      "bytes": 34207,
+      "controls": {
+        "inputs": 6,
+        "textareas": 0,
+        "buttons": 4,
+        "canvases": 1,
+        "iframes": 0
+      },
+      "externalOrigins": [
+        "https://cdn.tailwindcss.com",
+        "https://fonts.googleapis.com",
+        "https://cdn.jsdelivr.net",
+        "http://www.w3.org"
+      ],
+      "externalApiEndpoints": [],
+      "hasLocalReferences": false,
+      "localReferences": [],
+      "resourceId": "p239",
+      "categoryPath": ""
+    },
+    {
+      "id": "thermal-fever-mapping-lab-html",
+      "path": "Thermal Fever Mapping Lab.html",
+      "title": "Thermal Fever Mapping & Heat Transfer Lab",
+      "tags": [
+        "lab"
+      ],
+      "apiType": "embeddable-page",
+      "bytes": 28844,
+      "controls": {
+        "inputs": 3,
+        "textareas": 0,
+        "buttons": 0,
+        "canvases": 1,
+        "iframes": 0
+      },
+      "externalOrigins": [
+        "https://cdn.tailwindcss.com",
+        "https://fonts.googleapis.com"
+      ],
+      "externalApiEndpoints": [],
+      "hasLocalReferences": false,
+      "localReferences": [],
+      "resourceId": "p240",
+      "categoryPath": ""
+    },
+    {
+      "id": "tictactoe-html",
+      "path": "tictactoe.html",
+      "title": "Neon Tic Tac Toe",
+      "tags": [
+        "game"
+      ],
+      "apiType": "embeddable-page",
+      "bytes": 16021,
+      "controls": {
+        "inputs": 0,
+        "textareas": 0,
+        "buttons": 4,
+        "canvases": 0,
+        "iframes": 0
+      },
+      "externalOrigins": [
+        "https://cdn.tailwindcss.com",
+        "https://fonts.googleapis.com"
+      ],
+      "externalApiEndpoints": [],
+      "hasLocalReferences": false,
+      "localReferences": [],
+      "resourceId": "p241",
+      "categoryPath": ""
+    },
+    {
+      "id": "total-internal-reflection-html",
+      "path": "total-internal-reflection.html",
+      "title": "Physics Lab - Optics & Kinematics",
+      "tags": [
+        "lab",
+        "chemistry",
+        "physics"
+      ],
+      "apiType": "embeddable-page",
+      "bytes": 22004,
+      "controls": {
+        "inputs": 4,
+        "textareas": 0,
+        "buttons": 3,
+        "canvases": 3,
+        "iframes": 0
+      },
+      "externalOrigins": [
+        "https://cdn.tailwindcss.com",
+        "https://fonts.googleapis.com"
+      ],
+      "externalApiEndpoints": [],
+      "hasLocalReferences": false,
+      "localReferences": [],
+      "resourceId": "p242",
+      "categoryPath": ""
+    },
+    {
+      "id": "tourniquet-pressure-lab-html",
+      "path": "Tourniquet Pressure Lab.html",
+      "title": "Tourniquet Pressure & Hemodynamics Lab",
+      "tags": [
+        "lab"
+      ],
+      "apiType": "embeddable-page",
+      "bytes": 21988,
+      "controls": {
+        "inputs": 1,
+        "textareas": 0,
+        "buttons": 0,
+        "canvases": 1,
+        "iframes": 0
+      },
+      "externalOrigins": [
+        "https://cdn.tailwindcss.com",
+        "https://fonts.googleapis.com"
+      ],
+      "externalApiEndpoints": [],
+      "hasLocalReferences": false,
+      "localReferences": [],
+      "resourceId": "p243",
+      "categoryPath": ""
+    },
+    {
+      "id": "transformations-html",
+      "path": "transformations.html",
+      "title": "Math Lab - Geometry & Algebra",
+      "tags": [
+        "lab",
+        "math"
+      ],
+      "apiType": "embeddable-page",
+      "bytes": 35608,
+      "controls": {
+        "inputs": 7,
+        "textareas": 0,
+        "buttons": 4,
+        "canvases": 3,
+        "iframes": 0
+      },
+      "externalOrigins": [
+        "https://cdn.tailwindcss.com",
+        "https://fonts.googleapis.com",
+        "http://www.w3.org",
+        "https://res.cloudinary.com"
+      ],
+      "externalApiEndpoints": [],
+      "hasLocalReferences": false,
+      "localReferences": [],
+      "resourceId": "p244",
+      "categoryPath": ""
+    },
+    {
+      "id": "trecore-html",
+      "path": "trecore.html",
+      "title": "Trecore Hub | ClonBrow OS",
+      "tags": [
+        "dashboard"
+      ],
+      "apiType": "interactive-page",
+      "bytes": 25233,
+      "controls": {
+        "inputs": 1,
+        "textareas": 0,
+        "buttons": 2,
+        "canvases": 1,
+        "iframes": 0
+      },
+      "externalOrigins": [
+        "https://cdn.tailwindcss.com",
+        "https://cdnjs.cloudflare.com",
+        "https://fonts.googleapis.com",
+        "https://api.dicebear.com",
+        "https://clonexxshree.pythonanywhere.com"
+      ],
+      "externalApiEndpoints": [],
+      "hasLocalReferences": false,
+      "localReferences": [],
+      "resourceId": "p245",
+      "categoryPath": ""
+    },
+    {
+      "id": "tresure-hunt-html",
+      "path": "tresure-hunt.html",
+      "title": "Treasure Hunt Adventure",
+      "tags": [
+        "game"
+      ],
+      "apiType": "embeddable-page",
+      "bytes": 20305,
+      "controls": {
+        "inputs": 0,
+        "textareas": 0,
+        "buttons": 2,
+        "canvases": 0,
+        "iframes": 0
+      },
+      "externalOrigins": [
+        "https://cdn.tailwindcss.com",
+        "https://fonts.googleapis.com"
+      ],
+      "externalApiEndpoints": [],
+      "hasLocalReferences": false,
+      "localReferences": [],
+      "resourceId": "p246",
+      "categoryPath": ""
+    },
+    {
+      "id": "trigonometry-html",
+      "path": "trigonometry.html",
+      "title": "Math Lab - Proportions, Exponents & Trigonometry",
+      "tags": [
+        "lab",
+        "math"
+      ],
+      "apiType": "embeddable-page",
+      "bytes": 40697,
+      "controls": {
+        "inputs": 6,
+        "textareas": 0,
+        "buttons": 4,
+        "canvases": 1,
+        "iframes": 0
+      },
+      "externalOrigins": [
+        "https://cdn.tailwindcss.com",
+        "https://fonts.googleapis.com",
+        "http://www.w3.org",
+        "https://res.cloudinary.com"
+      ],
+      "externalApiEndpoints": [],
+      "hasLocalReferences": false,
+      "localReferences": [],
+      "resourceId": "p247",
+      "categoryPath": ""
+    },
+    {
+      "id": "ultrasound-echo-lab-html",
+      "path": "Ultrasound Echo Lab.html",
+      "title": "Ultrasound Echo Lab: Time of Flight",
+      "tags": [
+        "lab"
+      ],
+      "apiType": "embeddable-page",
+      "bytes": 27345,
+      "controls": {
+        "inputs": 1,
+        "textareas": 0,
+        "buttons": 1,
+        "canvases": 2,
+        "iframes": 0
+      },
+      "externalOrigins": [
+        "http://www.w3.org"
+      ],
+      "externalApiEndpoints": [],
+      "hasLocalReferences": false,
+      "localReferences": [],
+      "resourceId": "p248",
+      "categoryPath": ""
+    },
+    {
+      "id": "unit-circle-html",
+      "path": "unit-circle.html",
+      "title": "Math Lab - Proportions, Exponents & Trigonometry",
+      "tags": [
+        "lab",
+        "math"
+      ],
+      "apiType": "embeddable-page",
+      "bytes": 40697,
+      "controls": {
+        "inputs": 6,
+        "textareas": 0,
+        "buttons": 4,
+        "canvases": 1,
+        "iframes": 0
+      },
+      "externalOrigins": [
+        "https://cdn.tailwindcss.com",
+        "https://fonts.googleapis.com",
+        "http://www.w3.org",
+        "https://res.cloudinary.com"
+      ],
+      "externalApiEndpoints": [],
+      "hasLocalReferences": false,
+      "localReferences": [],
+      "resourceId": "p249",
+      "categoryPath": ""
+    },
+    {
+      "id": "urinalysis-dipstick-simulation-html",
+      "path": "Urinalysis Dipstick Simulation.html",
+      "title": "Clinical Urinalysis Simulation",
+      "tags": [
+        "simulation"
+      ],
+      "apiType": "embeddable-page",
+      "bytes": 19834,
+      "controls": {
+        "inputs": 0,
+        "textareas": 0,
+        "buttons": 3,
+        "canvases": 0,
+        "iframes": 0
+      },
+      "externalOrigins": [
+        "https://cdn.tailwindcss.com"
+      ],
+      "externalApiEndpoints": [],
+      "hasLocalReferences": false,
+      "localReferences": [],
+      "resourceId": "p250",
+      "categoryPath": ""
+    },
+    {
+      "id": "uv-mutation-lab-html",
+      "path": "UV Mutation Lab.html",
+      "title": "UV Mutation Lab: DNA Damage Sim",
+      "tags": [
+        "lab",
+        "biology"
+      ],
+      "apiType": "embeddable-page",
+      "bytes": 17006,
+      "controls": {
+        "inputs": 0,
+        "textareas": 0,
+        "buttons": 2,
+        "canvases": 1,
+        "iframes": 0
+      },
+      "externalOrigins": [
+        "https://cdn.tailwindcss.com",
+        "https://fonts.googleapis.com",
+        "http://www.w3.org"
+      ],
+      "externalApiEndpoints": [],
+      "hasLocalReferences": false,
+      "localReferences": [],
+      "resourceId": "p251",
+      "categoryPath": ""
+    },
+    {
+      "id": "vaccine-memory-lab-html",
+      "path": "Vaccine Memory Lab.html",
+      "title": "Immunological Memory Simulator",
+      "tags": [
+        "lab",
+        "simulation",
+        "tool"
+      ],
+      "apiType": "embeddable-page",
+      "bytes": 20986,
+      "controls": {
+        "inputs": 0,
+        "textareas": 0,
+        "buttons": 2,
+        "canvases": 2,
+        "iframes": 0
+      },
+      "externalOrigins": [
+        "https://cdn.tailwindcss.com",
+        "https://fonts.googleapis.com"
+      ],
+      "externalApiEndpoints": [],
+      "hasLocalReferences": false,
+      "localReferences": [],
+      "resourceId": "p252",
+      "categoryPath": ""
+    },
+    {
+      "id": "vascular-embolization-simulator-html",
+      "path": "Vascular Embolization Simulator.html",
+      "title": "IR Protocol: Vascular Embolization",
+      "tags": [
+        "simulation",
+        "tool"
+      ],
+      "apiType": "embeddable-page",
+      "bytes": 61000,
+      "controls": {
+        "inputs": 5,
+        "textareas": 0,
+        "buttons": 8,
+        "canvases": 1,
+        "iframes": 0
+      },
+      "externalOrigins": [
+        "https://cdn.tailwindcss.com",
+        "https://cdnjs.cloudflare.com",
+        "https://fonts.googleapis.com"
+      ],
+      "externalApiEndpoints": [],
+      "hasLocalReferences": false,
+      "localReferences": [],
+      "resourceId": "p253",
+      "categoryPath": ""
+    },
+    {
+      "id": "velocity-vs-time-graph-html",
+      "path": "velocity-vs-time-graph.html",
+      "title": "Physics Lab - Velocity vs Time Graphs",
+      "tags": [
+        "lab",
+        "math",
+        "chemistry",
+        "physics",
+        "visualization"
+      ],
+      "apiType": "embeddable-page",
+      "bytes": 17323,
+      "controls": {
+        "inputs": 0,
+        "textareas": 0,
+        "buttons": 3,
+        "canvases": 3,
+        "iframes": 0
+      },
+      "externalOrigins": [
+        "https://cdn.tailwindcss.com",
+        "https://fonts.googleapis.com"
+      ],
+      "externalApiEndpoints": [],
+      "hasLocalReferences": false,
+      "localReferences": [],
+      "resourceId": "p254",
+      "categoryPath": ""
+    },
+    {
+      "id": "venn-diagrams-html",
+      "path": "venn-diagrams.html",
+      "title": "Math Lab - Statistics & Advanced Geometry",
+      "tags": [
+        "lab",
+        "math",
+        "visualization"
+      ],
+      "apiType": "embeddable-page",
+      "bytes": 38661,
+      "controls": {
+        "inputs": 2,
+        "textareas": 0,
+        "buttons": 11,
+        "canvases": 1,
+        "iframes": 0
+      },
+      "externalOrigins": [
+        "https://cdn.tailwindcss.com",
+        "https://fonts.googleapis.com",
+        "https://cdn.jsdelivr.net",
+        "http://www.w3.org"
+      ],
+      "externalApiEndpoints": [],
+      "hasLocalReferences": false,
+      "localReferences": [],
+      "resourceId": "p255",
+      "categoryPath": ""
+    },
+    {
+      "id": "viewer-html",
+      "path": "viewer.html",
+      "title": "CLONMED Lab Viewer - 5 Tab Display",
+      "tags": [
+        "lab"
+      ],
+      "apiType": "embeddable-page",
+      "bytes": 10998,
+      "controls": {
+        "inputs": 0,
+        "textareas": 0,
+        "buttons": 7,
+        "canvases": 0,
+        "iframes": 5
+      },
+      "externalOrigins": [
+        "https://super-crisp-af6236.netlify.app"
+      ],
+      "externalApiEndpoints": [],
+      "hasLocalReferences": true,
+      "localReferences": [
+        "about:blank"
+      ],
+      "resourceId": "p256",
+      "categoryPath": ""
+    },
+    {
+      "id": "viral-hijack-lab-html",
+      "path": "Viral Hijack Lab.html",
+      "title": "Viral RNA Injection: Cell Hijack Sim",
+      "tags": [
+        "lab",
+        "biology"
+      ],
+      "apiType": "embeddable-page",
+      "bytes": 18578,
+      "controls": {
+        "inputs": 0,
+        "textareas": 0,
+        "buttons": 2,
+        "canvases": 1,
+        "iframes": 0
+      },
+      "externalOrigins": [
+        "https://cdn.tailwindcss.com",
+        "https://fonts.googleapis.com",
+        "http://www.w3.org"
+      ],
+      "externalApiEndpoints": [],
+      "hasLocalReferences": false,
+      "localReferences": [],
+      "resourceId": "p257",
+      "categoryPath": ""
+    },
+    {
+      "id": "visualized-pi-html",
+      "path": "visualized-pi.html",
+      "title": "Math Lab - Geometry & Algebra",
+      "tags": [
+        "lab",
+        "math",
+        "visualization"
+      ],
+      "apiType": "embeddable-page",
+      "bytes": 35608,
+      "controls": {
+        "inputs": 7,
+        "textareas": 0,
+        "buttons": 4,
+        "canvases": 3,
+        "iframes": 0
+      },
+      "externalOrigins": [
+        "https://cdn.tailwindcss.com",
+        "https://fonts.googleapis.com",
+        "http://www.w3.org",
+        "https://res.cloudinary.com"
+      ],
+      "externalApiEndpoints": [],
+      "hasLocalReferences": false,
+      "localReferences": [],
+      "resourceId": "p258",
+      "categoryPath": ""
+    },
+    {
+      "id": "volume-of-cylinders-html",
+      "path": "volume-of-cylinders.html",
+      "title": "Math Lab - Statistics & Advanced Geometry",
+      "tags": [
+        "lab",
+        "math"
+      ],
+      "apiType": "embeddable-page",
+      "bytes": 38661,
+      "controls": {
+        "inputs": 2,
+        "textareas": 0,
+        "buttons": 11,
+        "canvases": 1,
+        "iframes": 0
+      },
+      "externalOrigins": [
+        "https://cdn.tailwindcss.com",
+        "https://fonts.googleapis.com",
+        "https://cdn.jsdelivr.net",
+        "http://www.w3.org"
+      ],
+      "externalApiEndpoints": [],
+      "hasLocalReferences": false,
+      "localReferences": [],
+      "resourceId": "p259",
+      "categoryPath": ""
+    },
+    {
+      "id": "waves-lab-html",
+      "path": "waves-lab.html",
+      "title": "Physics Lab - Wave Mechanics",
+      "tags": [
+        "lab",
+        "chemistry",
+        "physics"
+      ],
+      "apiType": "embeddable-page",
+      "bytes": 19627,
+      "controls": {
+        "inputs": 3,
+        "textareas": 0,
+        "buttons": 3,
+        "canvases": 3,
+        "iframes": 0
+      },
+      "externalOrigins": [
+        "https://cdn.tailwindcss.com",
+        "https://fonts.googleapis.com",
+        "http://www.w3.org",
+        "https://res.cloudinary.com"
+      ],
+      "externalApiEndpoints": [],
+      "hasLocalReferences": false,
+      "localReferences": [],
+      "resourceId": "p260",
+      "categoryPath": ""
+    },
+    {
+      "id": "worder-html",
+      "path": "worder.html",
+      "title": "Clonexx AI - Worder",
+      "tags": [
+        "prototype"
+      ],
+      "apiType": "interactive-page",
+      "bytes": 9761,
+      "controls": {
+        "inputs": 3,
+        "textareas": 0,
+        "buttons": 11,
+        "canvases": 0,
+        "iframes": 0
+      },
+      "externalOrigins": [
+        "https://cdn.tailwindcss.com",
+        "https://unpkg.com",
+        "https://fonts.googleapis.com"
+      ],
+      "externalApiEndpoints": [],
+      "hasLocalReferences": true,
+      "localReferences": [
+        "clonexx-chat.html",
+        "clonmage.html",
+        "worder.html",
+        "blob"
+      ],
+      "resourceId": "p261",
+      "categoryPath": ""
+    },
+    {
+      "id": "x-ray-density-map-lab-html",
+      "path": "X-Ray Density Map Lab.html",
+      "title": "X-Ray Density Map Lab",
+      "tags": [
+        "lab"
+      ],
+      "apiType": "embeddable-page",
+      "bytes": 26025,
+      "controls": {
+        "inputs": 1,
+        "textareas": 0,
+        "buttons": 5,
+        "canvases": 1,
+        "iframes": 0
+      },
+      "externalOrigins": [],
+      "externalApiEndpoints": [],
+      "hasLocalReferences": false,
+      "localReferences": [],
+      "resourceId": "p262",
+      "categoryPath": ""
+    }
+  ]
+}

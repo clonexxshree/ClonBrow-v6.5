@@ -1,0 +1,844 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Math Lab - Fundamentals & Geometry</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Fira+Code:wght@400;500&display=swap" rel="stylesheet">
+    <style>
+        body, html {
+            margin: 0; padding: 0; width: 100%; height: 100%; overflow: hidden;
+            background-color: #020617; font-family: 'Inter', sans-serif;
+            touch-action: none; user-select: none;
+        }
+
+        .main-shell { display: flex; width: 100%; height: 100%; }
+        .workspace { flex-grow: 1; position: relative; overflow: hidden; }
+        
+        #canvas-2d {
+            position: absolute; top: 0; left: 0; width: 100%; height: 100%;
+            z-index: 10; cursor: default;
+        }
+
+        .glass-panel {
+            background: linear-gradient(145deg, rgba(15, 23, 42, 0.9) 0%, rgba(2, 6, 23, 0.98) 100%);
+            backdrop-filter: blur(40px); -webkit-backdrop-filter: blur(40px);
+            border-right: 1px solid rgba(255, 255, 255, 0.1);
+            box-shadow: 20px 0 50px rgba(0, 0, 0, 0.5);
+            display: flex; flex-direction: column; padding: 2rem; z-index: 100; width: 380px;
+        }
+
+        @media (max-width: 1024px) {
+            .glass-panel { width: 100%; height: 40%; border-right: none; border-bottom: 1px solid rgba(255,255,255,0.1); padding: 1rem; }
+            .main-shell { flex-direction: column; }
+        }
+
+        .tab-btn { transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1); }
+        .tab-btn.active { background-color: #ffffff; color: #020617; box-shadow: 0 4px 12px rgba(0,0,0,0.4); }
+
+        input[type=range] { -webkit-appearance: none; width: 100%; background: transparent; }
+        input[type=range]::-webkit-slider-thumb {
+            -webkit-appearance: none; height: 20px; width: 20px; border-radius: 50%;
+            background: #ffffff; cursor: pointer; margin-top: -8px;
+            box-shadow: 0 4px 10px rgba(0,0,0,0.5); border: 1px solid rgba(255,255,255,0.2);
+            transition: transform 0.2s cubic-bezier(0.2, 0.8, 0.2, 1);
+        }
+        input[type=range]::-webkit-slider-thumb:hover { transform: scale(1.15); }
+        input[type=range]::-webkit-slider-runnable-track {
+            width: 100%; height: 4px; cursor: pointer; background: rgba(255, 255, 255, 0.15); border-radius: 2px;
+        }
+
+        .formula-box { font-family: 'Fira Code', monospace; }
+        .scroll-area::-webkit-scrollbar { width: 4px; }
+        .scroll-area::-webkit-scrollbar-thumb { background: rgba(255, 255, 255, 0.2); border-radius: 4px; }
+
+        #loading-screen {
+            position: absolute; inset: 0; background: #020617; display: flex; flex-direction: column;
+            align-items: center; justify-content: center; color: white; z-index: 150; transition: opacity 0.6s ease;
+        }
+    </style>
+</head>
+<body>
+
+    <div id="loading-screen">
+        <svg class="animate-spin h-10 w-10 text-blue-500 mb-4" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="3"></circle><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path></svg>
+        <span class="text-xs font-bold tracking-widest text-gray-400 uppercase italic">Initializing 2D Mathematics Engine...</span>
+    </div>
+
+    <div class="main-shell">
+        <!-- UI Panel -->
+        <div class="glass-panel shrink-0">
+            <div class="mb-6 border-b border-white/10 pb-6 shrink-0 flex items-center justify-between">
+                <div>
+                    <h1 class="text-2xl font-bold tracking-tight text-white mb-1">Math Lab</h1>
+                    <p class="text-[11px] font-medium text-blue-400 uppercase tracking-widest">Base 10, Time & Logic</p>
+                </div>
+                <div class="w-10 h-10 rounded-full bg-blue-500/20 flex items-center justify-center text-blue-400 shadow-[0_0_15px_rgba(59,130,246,0.3)]">
+                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 7h6m0 10v-3m-3 3h.01M9 17h.01M9 14h.01M12 14h.01M15 11h.01M12 11h.01M9 11h.01M7 21h10a2 2 0 002-2V5a2 2 0 00-2-2H7a2 2 0 00-2 2v14a2 2 0 002 2z"></path></svg>
+                </div>
+            </div>
+
+            <!-- Tab Navigation -->
+            <div class="grid grid-cols-2 p-1 bg-black/40 rounded-xl shadow-inner gap-1 mb-6 shrink-0 border border-white/5">
+                <button data-tab="blocks" class="tab-btn active py-2 text-[10px] font-bold uppercase tracking-wider rounded-lg text-gray-400">Base-10 Blocks</button>
+                <button data-tab="clock" class="tab-btn py-2 text-[10px] font-bold uppercase tracking-wider rounded-lg text-gray-400">Clock Angles</button>
+                <button data-tab="numberline" class="tab-btn py-2 text-[10px] font-bold uppercase tracking-wider rounded-lg text-gray-400">Number Line</button>
+                <button data-tab="coords" class="tab-btn py-2 text-[10px] font-bold uppercase tracking-wider rounded-lg text-gray-400">Coordinates</button>
+            </div>
+
+            <div class="scroll-area overflow-y-auto pr-2 pb-2 flex-1">
+                
+                <div class="bg-black/30 p-4 rounded-xl border border-white/5 shadow-inner mb-6">
+                    <h2 id="info-title" class="text-sm font-bold text-white mb-2 italic">Place Value (Base 10)</h2>
+                    <p id="info-desc" class="text-xs text-gray-400 leading-relaxed">
+                        Numbers are built on groups of 10. 10 ones make a rod (10), 10 rods make a flat (100), and 10 flats make a massive block (1000). Visualizing large numbers using clean 2D grids!
+                    </p>
+                </div>
+
+                <!-- 1. BLOCKS CONTROLS -->
+                <div id="controls-blocks" class="space-y-5">
+                    <div class="space-y-2">
+                        <div class="flex justify-between items-end">
+                            <label class="text-[11px] font-semibold text-red-400 uppercase tracking-widest">Thousands (1000s)</label>
+                            <span id="blk-th-disp" class="text-[11px] font-mono bg-red-500/10 px-2 py-1 rounded text-red-300">1</span>
+                        </div>
+                        <input type="range" id="blk-th" min="0" max="5" value="1" style="accent-color: #ef4444;">
+                    </div>
+                    <div class="space-y-2">
+                        <div class="flex justify-between items-end">
+                            <label class="text-[11px] font-semibold text-blue-400 uppercase tracking-widest">Hundreds (100s)</label>
+                            <span id="blk-h-disp" class="text-[11px] font-mono bg-blue-500/10 px-2 py-1 rounded text-blue-300">2</span>
+                        </div>
+                        <input type="range" id="blk-h" min="0" max="9" value="2" style="accent-color: #3b82f6;">
+                    </div>
+                    <div class="space-y-2">
+                        <div class="flex justify-between items-end">
+                            <label class="text-[11px] font-semibold text-emerald-400 uppercase tracking-widest">Tens (10s)</label>
+                            <span id="blk-t-disp" class="text-[11px] font-mono bg-emerald-500/10 px-2 py-1 rounded text-emerald-300">3</span>
+                        </div>
+                        <input type="range" id="blk-t" min="0" max="9" value="3" style="accent-color: #10b981;">
+                    </div>
+                    <div class="space-y-2">
+                        <div class="flex justify-between items-end">
+                            <label class="text-[11px] font-semibold text-yellow-400 uppercase tracking-widest">Ones (1s)</label>
+                            <span id="blk-o-disp" class="text-[11px] font-mono bg-yellow-500/10 px-2 py-1 rounded text-yellow-300">4</span>
+                        </div>
+                        <input type="range" id="blk-o" min="0" max="9" value="4" style="accent-color: #facc15;">
+                    </div>
+                </div>
+
+                <!-- 2. CLOCK CONTROLS -->
+                <div id="controls-clock" class="space-y-6 hidden">
+                    <div class="space-y-2">
+                        <div class="flex justify-between items-end">
+                            <label class="text-[11px] font-semibold text-cyan-400 uppercase tracking-widest">Adjust Time</label>
+                            <span id="clk-time-disp" class="text-[11px] font-mono bg-cyan-500/10 px-2 py-1 rounded text-cyan-300">3:00</span>
+                        </div>
+                        <input type="range" id="clk-time" min="0" max="719" step="1" value="180" style="accent-color: #22d3ee;">
+                    </div>
+                    <div class="grid grid-cols-4 gap-2 pt-2">
+                        <button class="time-btn py-2 bg-white/5 rounded-lg text-[10px] text-white hover:bg-white/10 border border-white/10" data-time="180">3:00</button>
+                        <button class="time-btn py-2 bg-white/5 rounded-lg text-[10px] text-white hover:bg-white/10 border border-white/10" data-time="240">4:00</button>
+                        <button class="time-btn py-2 bg-white/5 rounded-lg text-[10px] text-white hover:bg-white/10 border border-white/10" data-time="360">6:00</button>
+                        <button class="time-btn py-2 bg-white/5 rounded-lg text-[10px] text-white hover:bg-white/10 border border-white/10" data-time="150">2:30</button>
+                    </div>
+                </div>
+
+                <!-- 3. NUMBER LINE CONTROLS -->
+                <div id="controls-numberline" class="space-y-6 hidden">
+                    <div class="space-y-2">
+                        <div class="flex justify-between items-end">
+                            <label class="text-[11px] font-semibold text-purple-400 uppercase tracking-widest">Start Value (A)</label>
+                            <span id="nl-a-disp" class="text-[11px] font-mono bg-purple-500/10 px-2 py-1 rounded text-purple-300">5</span>
+                        </div>
+                        <input type="range" id="nl-a" min="-10" max="10" step="1" value="5" style="accent-color: #c084fc;">
+                    </div>
+                    <div class="space-y-2">
+                        <div class="flex justify-between items-end">
+                            <label class="text-[11px] font-semibold text-orange-400 uppercase tracking-widest">Add / Subtract (B)</label>
+                            <span id="nl-b-disp" class="text-[11px] font-mono bg-orange-500/10 px-2 py-1 rounded text-orange-300">-8</span>
+                        </div>
+                        <input type="range" id="nl-b" min="-15" max="15" step="1" value="-8" style="accent-color: #fb923c;">
+                    </div>
+                    <div class="pt-4">
+                        <button id="btn-nl-solve" class="w-full py-3 bg-white/10 hover:bg-white/20 text-white text-xs font-bold uppercase tracking-widest rounded-xl transition-all border border-white/10">Animate Solution</button>
+                    </div>
+                </div>
+
+                <!-- 4. COORDINATE PLANE CONTROLS -->
+                <div id="controls-coords" class="space-y-6 hidden">
+                    <div class="bg-blue-500/10 p-3 rounded-lg border border-blue-500/20 mb-4">
+                        <p class="text-xs text-blue-200">
+                            <strong>Drag the vertices (dots)</strong> on the grid to change the shape's coordinates. Notice how $(x, y)$ updates in the HUD!
+                        </p>
+                    </div>
+                    <div class="pt-2">
+                        <button id="btn-coord-reset" class="w-full py-2 bg-white/5 hover:bg-white/10 text-gray-300 text-xs font-bold uppercase tracking-widest rounded-xl transition-all border border-white/5">Reset Shape</button>
+                    </div>
+                </div>
+
+            </div>
+            
+            <div class="pt-6 border-t border-white/5 text-[10px] text-gray-600 font-medium text-center shrink-0 mt-4 uppercase tracking-tighter">
+                Dynamic 2D Math Visualizer
+            </div>
+        </div>
+
+        <!-- Simulation Workspace -->
+        <div class="workspace" id="workspace">
+            
+            <canvas id="canvas-2d"></canvas>
+            
+            <!-- Real-Time HUD -->
+            <div id="hud" class="absolute bottom-8 right-8 z-20 glass-panel !w-[260px] !p-5 !border !rounded-2xl pointer-events-none shadow-2xl">
+                <div class="text-[10px] font-bold uppercase tracking-widest text-gray-500 mb-3 border-b border-white/5 pb-1">Mathematical Result</div>
+                <div class="space-y-3">
+                    <div class="flex justify-between items-center">
+                        <span class="text-[12px] text-gray-400 font-medium" id="hud-label-1">Data 1</span>
+                        <span id="hud-val-1" class="text-base font-mono font-bold text-white">---</span>
+                    </div>
+                    <div class="flex justify-between items-center">
+                        <span class="text-[12px] text-gray-400 font-medium" id="hud-label-2">Data 2</span>
+                        <span id="hud-val-2" class="text-base font-mono font-bold text-white">---</span>
+                    </div>
+                    <div id="hud-status" class="pt-2 text-center text-[12px] font-bold tracking-widest text-emerald-400 hidden border-t border-white/5 font-mono">
+                        RESULT
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- MAIN ENGINE SCRIPT -->
+    <script>
+        // --- DOM Elements ---
+        const canvas2D = document.getElementById('canvas-2d');
+        const ctx = canvas2D.getContext('2d');
+        const workspace = document.getElementById('workspace');
+
+        // --- GLOBAL STATE ---
+        let currentMode = 'blocks'; 
+        let cx, cy, wsWidth, wsHeight;
+        let time = 0;
+
+        const M = {
+            blk: { th: 1, h: 2, t: 3, o: 4 },
+            clk: { time: 180 }, // in minutes. 180 = 3:00
+            nl:  { a: 5, b: -8, animTime: 0, isAnimating: false },
+            crd: { pts: [{x: 2, y: 3}, {x: -3, y: 1}, {x: -2, y: -4}, {x: 4, y: -2}], draggedIdx: -1 }
+        };
+
+        // --- 2D CANVAS SETUP ---
+        function resize2D() {
+            canvas2D.width = workspace.clientWidth;
+            canvas2D.height = workspace.clientHeight;
+            wsWidth = canvas2D.width;
+            wsHeight = canvas2D.height;
+            cx = wsWidth / 2;
+            cy = wsHeight / 2;
+        }
+        window.addEventListener('resize', resize2D);
+        resize2D();
+
+        // --- UI BINDINGS ---
+        const bindSlider = (id, obj, key, displayId, callback=null) => {
+            const el = document.getElementById(id);
+            if(!el) return;
+            el.addEventListener('input', (e) => {
+                obj[key] = parseFloat(e.target.value);
+                document.getElementById(displayId).innerText = obj[key];
+                if(callback) callback();
+            });
+        };
+
+        bindSlider('blk-th', M.blk, 'th', 'blk-th-disp');
+        bindSlider('blk-h', M.blk, 'h', 'blk-h-disp');
+        bindSlider('blk-t', M.blk, 't', 'blk-t-disp');
+        bindSlider('blk-o', M.blk, 'o', 'blk-o-disp');
+
+        bindSlider('clk-time', M.clk, 'time', 'clk-time-disp', () => {
+            let h = Math.floor(M.clk.time / 60);
+            if(h === 0) h = 12;
+            let m = M.clk.time % 60;
+            document.getElementById('clk-time-disp').innerText = `${h}:${m.toString().padStart(2, '0')}`;
+        });
+        document.querySelectorAll('.time-btn').forEach(btn => {
+            btn.addEventListener('click', (e) => {
+                const val = parseInt(e.target.getAttribute('data-time'));
+                M.clk.time = val;
+                document.getElementById('clk-time').value = val;
+                document.getElementById('clk-time').dispatchEvent(new Event('input'));
+            });
+        });
+
+        bindSlider('nl-a', M.nl, 'a', 'nl-a-disp');
+        bindSlider('nl-b', M.nl, 'b', 'nl-b-disp');
+        document.getElementById('btn-nl-solve').addEventListener('click', () => {
+            M.nl.animTime = 0;
+            M.nl.isAnimating = true;
+        });
+
+        document.getElementById('btn-coord-reset').addEventListener('click', () => {
+            M.crd.pts = [{x: 2, y: 3}, {x: -3, y: 1}, {x: -2, y: -4}, {x: 4, y: -2}];
+        });
+
+        // --- 2D RENDER FUNCTIONS ---
+
+        // 1. PLACE VALUE BLOCKS (2D Replacement)
+        function drawGridRect(x, y, cols, rows, u, fill, stroke) {
+            ctx.fillStyle = fill;
+            ctx.fillRect(x, y, cols * u, rows * u);
+            ctx.strokeStyle = stroke;
+            ctx.lineWidth = 1;
+            ctx.beginPath();
+            for(let c=0; c<=cols; c++) { ctx.moveTo(x + c*u, y); ctx.lineTo(x + c*u, y + rows*u); }
+            for(let r=0; r<=rows; r++) { ctx.moveTo(x, y + r*u); ctx.lineTo(x + cols*u, y + r*u); }
+            ctx.stroke();
+        }
+
+        function drawThousandCube(x, y, u) {
+            const s = 10 * u;
+            const d = 4 * u; 
+            
+            ctx.lineWidth = 1;
+            
+            // Top Face
+            ctx.fillStyle = '#b91c1c';
+            ctx.beginPath();
+            ctx.moveTo(x, y); ctx.lineTo(x + d, y - d); ctx.lineTo(x + s + d, y - d); ctx.lineTo(x + s, y);
+            ctx.closePath();
+            ctx.fill(); ctx.strokeStyle = '#7f1d1d'; ctx.stroke();
+
+            // Right Face
+            ctx.fillStyle = '#991b1b';
+            ctx.beginPath();
+            ctx.moveTo(x + s, y); ctx.lineTo(x + s + d, y - d); ctx.lineTo(x + s + d, y + s - d); ctx.lineTo(x + s, y + s);
+            ctx.closePath();
+            ctx.fill(); ctx.stroke();
+
+            // Top Grids
+            ctx.beginPath();
+            for(let i=1; i<10; i++) {
+                const oy = (i/10)*d;
+                ctx.moveTo(x + oy, y - oy); ctx.lineTo(x + s + oy, y - oy);
+                const ox = i*u;
+                ctx.moveTo(x + ox, y); ctx.lineTo(x + ox + d, y - d);
+            }
+            ctx.stroke();
+
+            // Right Grids
+            ctx.beginPath();
+            for(let i=1; i<10; i++) {
+                const rx = (i/10)*d;
+                ctx.moveTo(x + s + rx, y - rx); ctx.lineTo(x + s + rx, y + s - rx);
+                const ry = i*u;
+                ctx.moveTo(x + s, y + ry); ctx.lineTo(x + s + d, y + ry - d);
+            }
+            ctx.stroke();
+
+            // Front Face (Grid)
+            drawGridRect(x, y, 10, 10, u, '#ef4444', '#7f1d1d');
+        }
+
+        function drawBlocks() {
+            ctx.clearRect(0, 0, wsWidth, wsHeight);
+
+            // Background Grid
+            ctx.strokeStyle = 'rgba(255, 255, 255, 0.02)';
+            ctx.lineWidth = 1;
+            ctx.beginPath();
+            for(let i=0; i<canvas2D.width; i+=40) { ctx.moveTo(i,0); ctx.lineTo(i,canvas2D.height); }
+            for(let i=0; i<canvas2D.height; i+=40) { ctx.moveTo(0,i); ctx.lineTo(canvas2D.width,i); }
+            ctx.stroke();
+
+            const {th, h, t, o} = M.blk;
+            
+            const uiWidth = window.innerWidth >= 1024 ? 380 : 0;
+            const W = wsWidth - uiWidth;
+            
+            // Dynamic sizing based on available space to prevent clipping
+            const u = Math.max(4, Math.min(8, W / 180)); 
+            const s = 10 * u; 
+            const d = 4 * u;  
+
+            // Establish 4 distinct Columns/Zones
+            const zoneTh = uiWidth + W * 0.18;
+            const zoneH  = uiWidth + W * 0.45;
+            const zoneT  = uiWidth + W * 0.68;
+            const zoneO  = uiWidth + W * 0.85;
+            
+            const startY = cy - (s * 1.5); 
+
+            // Draw Thousands (Max 5)
+            for(let i=0; i<th; i++) {
+                const bx = zoneTh - s/2 - d/2 + (i%2)*(s+d+15) - ((th>1)?(s/2):0);
+                const by = startY - d + Math.floor(i/2)*(s+d+10);
+                drawThousandCube(bx, by, u);
+            }
+
+            // Draw Hundreds (Max 9)
+            for(let i=0; i<h; i++) {
+                const bx = zoneH - (s*1.5) + (i%3)*(s+10);
+                const by = startY + Math.floor(i/3)*(s+10);
+                drawGridRect(bx, by, 10, 10, u, '#3b82f6', '#1e3a8a');
+            }
+
+            // Draw Tens (Max 9)
+            for(let i=0; i<t; i++) {
+                const bx = zoneT - (t*(u+8))/2 + i*(u+8);
+                const by = startY + s/2;
+                drawGridRect(bx, by, 1, 10, u, '#10b981', '#064e3b');
+            }
+
+            // Draw Ones (Max 9)
+            for(let i=0; i<o; i++) {
+                const bx = zoneO - u*1.5 + (i%3)*(u+10);
+                const by = startY + s + Math.floor(i/3)*(u+10);
+                drawGridRect(bx, by, 1, 1, u, '#facc15', '#b45309');
+            }
+
+            // Draw Zone Labels
+            const labelY = wsHeight - 60;
+            ctx.fillStyle = 'rgba(255,255,255,0.4)';
+            ctx.font = 'bold 12px Inter';
+            ctx.textAlign = 'center';
+            ctx.fillText("THOUSANDS", zoneTh, labelY);
+            ctx.fillText("HUNDREDS", zoneH, labelY);
+            ctx.fillText("TENS", zoneT, labelY);
+            ctx.fillText("ONES", zoneO, labelY);
+
+            // Update HUD
+            const totalNum = (th * 1000) + (h * 100) + (t * 10) + o;
+            document.getElementById('hud-label-1').innerText = "Total Blocks";
+            document.getElementById('hud-val-1').innerText = totalNum;
+            document.getElementById('hud-val-1').style.color = "#ffffff";
+            
+            document.getElementById('hud-label-2').innerText = "Expanded Form";
+            document.getElementById('hud-val-2').innerText = `${th*1000} + ${h*100} + ${t*10} + ${o}`;
+            document.getElementById('hud-val-2').style.color = "#a1a1aa";
+            document.getElementById('hud-status').classList.add('hidden');
+        }
+
+        // 2. CLOCK
+        function drawClock() {
+            ctx.clearRect(0, 0, wsWidth, wsHeight);
+            const radius = Math.min(wsWidth, wsHeight) * 0.35;
+            
+            ctx.save();
+            ctx.translate(cx, cy);
+
+            // Clock Face
+            ctx.shadowBlur = 30; ctx.shadowColor = 'rgba(0,0,0,0.8)';
+            ctx.fillStyle = '#0f172a';
+            ctx.beginPath(); ctx.arc(0, 0, radius, 0, Math.PI*2); ctx.fill();
+            ctx.lineWidth = 4; ctx.strokeStyle = '#334155'; ctx.stroke();
+            ctx.shadowBlur = 0;
+
+            // Tick Marks
+            ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+            for (let i = 0; i < 60; i++) {
+                const angle = (i / 60) * Math.PI * 2 - Math.PI/2;
+                const isHour = i % 5 === 0;
+                const r1 = isHour ? radius - 15 : radius - 8;
+                const r2 = radius;
+                
+                ctx.strokeStyle = isHour ? '#94a3b8' : '#475569';
+                ctx.lineWidth = isHour ? 3 : 1;
+                ctx.beginPath();
+                ctx.moveTo(Math.cos(angle)*r1, Math.sin(angle)*r1);
+                ctx.lineTo(Math.cos(angle)*r2, Math.sin(angle)*r2);
+                ctx.stroke();
+
+                if (isHour) {
+                    const num = i === 0 ? 12 : i / 5;
+                    ctx.fillStyle = '#ffffff';
+                    ctx.font = 'bold 20px Inter';
+                    ctx.fillText(num, Math.cos(angle)*(radius-35), Math.sin(angle)*(radius-35));
+                }
+            }
+
+            // Math
+            const h = M.clk.time / 60;
+            const m = M.clk.time % 60;
+            // Angles in degrees
+            const mDeg = (m / 60) * 360;
+            const hDeg = ((h % 12) / 12) * 360 + (m / 60) * 30;
+            
+            // Angles in Rads for drawing (subtract 90 deg for top 12)
+            const mRad = (mDeg - 90) * Math.PI / 180;
+            const hRad = (hDeg - 90) * Math.PI / 180;
+
+            // Draw Angle Arc
+            let diffDeg = Math.abs(hDeg - mDeg);
+            let isReflex = false;
+            if (diffDeg > 180) {
+                diffDeg = 360 - diffDeg;
+                isReflex = true;
+            }
+
+            // Figure out arc drawing logic strictly between the two hands
+            let startRad = Math.min(mRad, hRad);
+            let endRad = Math.max(mRad, hRad);
+            if ((endRad - startRad) > Math.PI) {
+                const temp = startRad;
+                startRad = endRad;
+                endRad = temp + Math.PI * 2;
+            }
+
+            ctx.fillStyle = 'rgba(34, 211, 238, 0.2)';
+            ctx.strokeStyle = '#22d3ee';
+            ctx.lineWidth = 2;
+            ctx.beginPath();
+            ctx.moveTo(0, 0);
+            ctx.arc(0, 0, radius * 0.3, startRad, endRad, false);
+            ctx.closePath();
+            ctx.fill(); ctx.stroke();
+
+            // Hour Hand
+            ctx.strokeStyle = '#f8fafc';
+            ctx.lineWidth = 6; ctx.lineCap = 'round';
+            ctx.beginPath(); ctx.moveTo(0,0);
+            ctx.lineTo(Math.cos(hRad)*radius*0.5, Math.sin(hRad)*radius*0.5);
+            ctx.stroke();
+
+            // Minute Hand
+            ctx.strokeStyle = '#38bdf8';
+            ctx.lineWidth = 4;
+            ctx.beginPath(); ctx.moveTo(0,0);
+            ctx.lineTo(Math.cos(mRad)*radius*0.8, Math.sin(mRad)*radius*0.8);
+            ctx.stroke();
+
+            // Center Pin
+            ctx.fillStyle = '#ef4444';
+            ctx.beginPath(); ctx.arc(0,0, 6, 0, Math.PI*2); ctx.fill();
+
+            ctx.restore();
+
+            // Classify
+            let type = "Acute";
+            let color = "#22d3ee";
+            if (Math.abs(diffDeg - 90) < 0.5) { type = "Right Angle"; color = "#4ade80"; }
+            else if (Math.abs(diffDeg - 180) < 0.5) { type = "Straight"; color = "#facc15"; }
+            else if (diffDeg > 90) { type = "Obtuse"; color = "#f472b6"; }
+            else if (diffDeg === 0) { type = "Zero"; color = "#94a3b8"; }
+
+            document.getElementById('hud-label-1').innerText = "Angle Formed";
+            document.getElementById('hud-val-1').innerText = diffDeg.toFixed(1) + "°";
+            document.getElementById('hud-val-1').style.color = "#ffffff";
+            document.getElementById('hud-label-2').innerText = "Classification";
+            document.getElementById('hud-val-2').innerText = type;
+            document.getElementById('hud-val-2').style.color = color;
+            document.getElementById('hud-status').classList.add('hidden');
+        }
+
+        // 3. NUMBER LINE
+        function drawNumberLine(dt) {
+            ctx.clearRect(0, 0, wsWidth, wsHeight);
+            
+            const lineW = Math.min(wsWidth * 0.8, 800);
+            const startX = cx - lineW/2;
+            const endX = cx + lineW/2;
+            const spacing = lineW / 20; // -10 to 10
+            
+            const getX = (val) => cx + val * spacing;
+
+            ctx.save();
+            
+            // Draw Main Axis
+            ctx.strokeStyle = '#cbd5e1'; ctx.lineWidth = 3;
+            ctx.beginPath(); ctx.moveTo(startX - 20, cy); ctx.lineTo(endX + 20, cy); ctx.stroke();
+
+            // Tick Marks
+            ctx.textAlign = 'center'; ctx.textBaseline = 'top';
+            for(let v = -10; v <= 10; v++) {
+                const px = getX(v);
+                ctx.beginPath(); ctx.moveTo(px, cy - 10); ctx.lineTo(px, cy + 10); ctx.stroke();
+                
+                ctx.fillStyle = v === 0 ? '#facc15' : '#94a3b8';
+                ctx.font = v === 0 ? 'bold 16px Inter' : '14px Inter';
+                ctx.fillText(v, px, cy + 15);
+            }
+
+            // Animation Logic
+            let currPos = 0;
+            if (M.nl.isAnimating) {
+                M.nl.animTime += dt;
+                const totalDur = 3.0; // seconds
+                
+                if (M.nl.animTime < 1.0) {
+                    const t = M.nl.animTime;
+                    currPos = M.nl.a * t;
+                    drawJumpArc(0, currPos, '#c084fc');
+                } else if (M.nl.animTime < 2.0) {
+                    currPos = M.nl.a;
+                    drawJumpArc(0, M.nl.a, '#c084fc');
+                } else if (M.nl.animTime < 3.0) {
+                    const t = M.nl.animTime - 2.0;
+                    currPos = M.nl.a + M.nl.b * t;
+                    drawJumpArc(0, M.nl.a, 'rgba(192, 132, 252, 0.4)');
+                    drawJumpArc(M.nl.a, currPos, '#fb923c');
+                } else {
+                    currPos = M.nl.a + M.nl.b;
+                    drawJumpArc(0, M.nl.a, 'rgba(192, 132, 252, 0.4)');
+                    drawJumpArc(M.nl.a, M.nl.a + M.nl.b, '#fb923c');
+                    
+                    ctx.fillStyle = '#4ade80'; ctx.font = 'bold 32px Fira Code';
+                    ctx.fillText(`${M.nl.a} + (${M.nl.b}) = ${M.nl.a + M.nl.b}`, cx, cy - 180);
+                }
+            } else {
+                currPos = M.nl.a;
+                drawJumpArc(0, M.nl.a, 'rgba(192, 132, 252, 0.8)');
+            }
+
+            // Draw Character (Glowing Orb)
+            const pX = getX(currPos);
+            ctx.shadowBlur = 20; ctx.shadowColor = '#38bdf8';
+            ctx.fillStyle = '#38bdf8';
+            ctx.beginPath(); ctx.arc(pX, cy, 15, 0, Math.PI*2); ctx.fill();
+            ctx.strokeStyle = '#ffffff'; ctx.lineWidth=2; ctx.stroke();
+            ctx.shadowBlur = 0;
+
+            ctx.restore();
+
+            function drawJumpArc(vStart, vEnd, color) {
+                if (Math.abs(vEnd - vStart) < 0.1) return;
+                const x1 = getX(vStart);
+                const x2 = getX(vEnd);
+                const dist = Math.abs(x2 - x1);
+                const midX = (x1 + x2) / 2;
+                const height = dist * 0.4;
+
+                ctx.strokeStyle = color; ctx.lineWidth = 4; ctx.lineCap = 'round';
+                ctx.beginPath();
+                ctx.moveTo(x1, cy - 15);
+                ctx.quadraticCurveTo(midX, cy - 15 - height * 2, x2, cy - 15);
+                ctx.stroke();
+
+                const dir = Math.sign(vEnd - vStart);
+                ctx.fillStyle = color;
+                ctx.beginPath();
+                ctx.moveTo(x2, cy - 15);
+                ctx.lineTo(x2 - dir * 10, cy - 25);
+                ctx.lineTo(x2 - dir * 15, cy - 15);
+                ctx.fill();
+            }
+
+            document.getElementById('hud-label-1').innerText = "Value A";
+            document.getElementById('hud-val-1').innerText = M.nl.a;
+            document.getElementById('hud-val-1').style.color = "#c084fc";
+            document.getElementById('hud-label-2').innerText = "Value B";
+            document.getElementById('hud-val-2').innerText = M.nl.b;
+            document.getElementById('hud-val-2').style.color = "#fb923c";
+            
+            const st = document.getElementById('hud-status');
+            st.classList.remove('hidden');
+            if(M.nl.isAnimating && M.nl.animTime > 3.0) {
+                st.innerText = `${M.nl.a} + (${M.nl.b}) = ${M.nl.a + M.nl.b}`;
+                st.style.color = "#4ade80";
+            } else {
+                st.innerText = "Awaiting Evaluation...";
+                st.style.color = "#94a3b8";
+            }
+        }
+
+        // 4. COORDINATES
+        function drawCoords() {
+            ctx.clearRect(0, 0, wsWidth, wsHeight);
+            
+            const scale = 40; // px per unit
+            
+            ctx.save();
+            ctx.translate(cx, cy);
+
+            // Grid Lines
+            ctx.strokeStyle = 'rgba(255,255,255,0.05)'; ctx.lineWidth = 1;
+            for(let i = -15; i <= 15; i++) {
+                ctx.beginPath(); ctx.moveTo(i*scale, -600); ctx.lineTo(i*scale, 600); ctx.stroke();
+                ctx.beginPath(); ctx.moveTo(-600, i*scale); ctx.lineTo(600, i*scale); ctx.stroke();
+            }
+
+            // Axes
+            ctx.strokeStyle = 'rgba(255,255,255,0.3)'; ctx.lineWidth = 2;
+            ctx.beginPath(); ctx.moveTo(-600, 0); ctx.lineTo(600, 0); ctx.stroke(); // X
+            ctx.beginPath(); ctx.moveTo(0, -600); ctx.lineTo(0, 600); ctx.stroke(); // Y
+
+            // Axis Labels
+            ctx.fillStyle = '#94a3b8'; ctx.font = '12px Inter'; ctx.textAlign='center';
+            for(let i = -10; i <= 10; i++) {
+                if(i===0) continue;
+                ctx.fillText(i, i*scale, 15);
+                ctx.fillText(i, -10, -i*scale + 5);
+            }
+            ctx.fillStyle = '#ffffff'; ctx.font = 'bold 16px Inter';
+            ctx.fillText("X", 380, 20); ctx.fillText("Y", 15, -380);
+
+            // Draw Shape (Connect points)
+            if(M.crd.pts.length > 2) {
+                ctx.fillStyle = 'rgba(56, 189, 248, 0.2)';
+                ctx.strokeStyle = '#38bdf8'; ctx.lineWidth = 3;
+                ctx.beginPath();
+                M.crd.pts.forEach((p, i) => {
+                    const px = p.x * scale; const py = -p.y * scale;
+                    if(i===0) ctx.moveTo(px, py); else ctx.lineTo(px, py);
+                });
+                ctx.closePath();
+                ctx.fill(); ctx.stroke();
+            }
+
+            // Draw Points
+            M.crd.pts.forEach((p, i) => {
+                const px = p.x * scale; const py = -p.y * scale;
+                ctx.fillStyle = (i === M.crd.draggedIdx) ? '#facc15' : '#ef4444';
+                ctx.beginPath(); ctx.arc(px, py, 8, 0, Math.PI*2); ctx.fill();
+                ctx.strokeStyle = '#ffffff'; ctx.lineWidth=2; ctx.stroke();
+
+                // Coordinates label
+                ctx.fillStyle = '#ffffff'; ctx.font = 'bold 12px Fira Code'; ctx.textAlign = 'left';
+                ctx.fillText(`(${p.x}, ${p.y})`, px + 12, py - 12);
+            });
+
+            ctx.restore();
+
+            // HUD
+            document.getElementById('hud-label-1').innerText = "Selected Point";
+            document.getElementById('hud-label-2').innerText = "Quadrant";
+            
+            if(M.crd.draggedIdx >= 0) {
+                const p = M.crd.pts[M.crd.draggedIdx];
+                document.getElementById('hud-val-1').innerText = `(${p.x}, ${p.y})`;
+                document.getElementById('hud-val-1').style.color = "#facc15";
+                
+                let quad = "Axis";
+                if(p.x > 0 && p.y > 0) quad = "I (+, +)";
+                else if(p.x < 0 && p.y > 0) quad = "II (-, +)";
+                else if(p.x < 0 && p.y < 0) quad = "III (-, -)";
+                else if(p.x > 0 && p.y < 0) quad = "IV (+, -)";
+                else if(p.x === 0 && p.y === 0) quad = "Origin";
+                
+                document.getElementById('hud-val-2').innerText = quad;
+            } else {
+                document.getElementById('hud-val-1').innerText = "None";
+                document.getElementById('hud-val-2').innerText = "---";
+            }
+            document.getElementById('hud-status').classList.add('hidden');
+        }
+
+        // --- MOUSE / DRAG INTERACTION ---
+        function getMousePos(e) {
+            const rect = canvas2D.getBoundingClientRect();
+            const clientX = e.touches ? e.touches[0].clientX : e.clientX;
+            const clientY = e.touches ? e.touches[0].clientY : e.clientY;
+            return { x: clientX - rect.left, y: clientY - rect.top };
+        }
+
+        canvas2D.addEventListener('mousedown', (e) => {
+            if(currentMode !== 'coords') return;
+            const pos = getMousePos(e);
+            const scale = 40;
+            
+            // Check hit
+            for(let i=0; i<M.crd.pts.length; i++) {
+                const p = M.crd.pts[i];
+                const px = cx + p.x * scale;
+                const py = cy - p.y * scale;
+                if(Math.hypot(pos.x - px, pos.y - py) < 20) {
+                    M.crd.draggedIdx = i;
+                    canvas2D.style.cursor = 'grabbing';
+                    break;
+                }
+            }
+        });
+
+        canvas2D.addEventListener('mousemove', (e) => {
+            if(currentMode !== 'coords') return;
+            const pos = getMousePos(e);
+            
+            if(M.crd.draggedIdx >= 0) {
+                const scale = 40;
+                // Snap to mathematical grid integers
+                let gridX = Math.round((pos.x - cx) / scale);
+                let gridY = Math.round((cy - pos.y) / scale);
+                
+                // Bounds
+                if(gridX > 10) gridX = 10; if(gridX < -10) gridX = -10;
+                if(gridY > 10) gridY = 10; if(gridY < -10) gridY = -10;
+
+                M.crd.pts[M.crd.draggedIdx].x = gridX;
+                M.crd.pts[M.crd.draggedIdx].y = gridY;
+            } else {
+                // Hover check
+                const scale = 40;
+                let hover = false;
+                for(let i=0; i<M.crd.pts.length; i++) {
+                    const p = M.crd.pts[i];
+                    if(Math.hypot(pos.x - (cx + p.x*scale), pos.y - (cy - p.y*scale)) < 20) {
+                        hover = true; break;
+                    }
+                }
+                canvas2D.style.cursor = hover ? 'grab' : 'default';
+            }
+        });
+
+        window.addEventListener('mouseup', () => {
+            M.crd.draggedIdx = -1;
+            canvas2D.style.cursor = 'default';
+        });
+
+        canvas2D.addEventListener('touchstart', (e) => { e.preventDefault(); window.dispatchEvent(new MouseEvent('mousedown', {clientX: e.touches[0].clientX, clientY: e.touches[0].clientY})); }, {passive: false});
+        canvas2D.addEventListener('touchmove', (e) => { e.preventDefault(); window.dispatchEvent(new MouseEvent('mousemove', {clientX: e.touches[0].clientX, clientY: e.touches[0].clientY})); }, {passive: false});
+        window.addEventListener('touchend', () => window.dispatchEvent(new MouseEvent('mouseup')));
+
+        // --- MASTER RENDER LOOP ---
+        let lastTime = 0;
+        function renderLoop(timestamp) {
+            const dt = (timestamp - lastTime) / 1000 || 0.016;
+            lastTime = timestamp;
+            time += dt;
+
+            if (currentMode === 'blocks') drawBlocks();
+            else if (currentMode === 'clock') drawClock();
+            else if (currentMode === 'numberline') drawNumberLine(dt);
+            else if (currentMode === 'coords') drawCoords();
+
+            requestAnimationFrame(renderLoop);
+        }
+
+        // --- TAB SWITCHING ---
+        const tabs = document.querySelectorAll('.tab-btn');
+        tabs.forEach(btn => {
+            btn.addEventListener('click', (e) => {
+                tabs.forEach(t => t.classList.remove('active', 'bg-white', 'text-gray-900'));
+                tabs.forEach(t => t.classList.add('text-gray-400'));
+                btn.classList.add('active', 'bg-white', 'text-gray-900');
+                
+                currentMode = btn.dataset.tab;
+
+                const info = {
+                    blocks: { title: "Place Value (Base 10)", desc: "Numbers are built on groups of 10. Visualizing large numbers using flat and isometric grids prevents overlapping and cleanly models exact values." },
+                    clock: { title: "Time & Angles", desc: "The hands of an analog clock form geometric angles based on the time. Watch how the continuous motion changes the angle from Acute, to Right, to Obtuse!" },
+                    numberline: { title: "Integers & Operations", desc: "Addition and subtraction are just physical movements on the number line. Moving right is positive, moving left is negative. Animate the equation to solve it." },
+                    coords: { title: "Coordinate Plane", desc: "A Cartesian grid uses two axes (X horizontal, Y vertical) to map exact locations. Drag the vertices of the shape to see their $(x, y)$ coordinates update live!" }
+                };
+                
+                document.getElementById('info-title').innerText = info[currentMode].title;
+                document.getElementById('info-desc').innerText = info[currentMode].desc;
+                
+                ['blocks', 'clock', 'numberline', 'coords'].forEach(id => document.getElementById(`controls-${id}`).classList.add('hidden'));
+                document.getElementById(`controls-${currentMode}`).classList.remove('hidden');
+
+                if (currentMode === 'clock') document.getElementById('clk-time').dispatchEvent(new Event('input'));
+            });
+        });
+
+        // Initialize
+        setTimeout(() => {
+            const ls = document.getElementById('loading-screen');
+            ls.style.opacity = '0';
+            setTimeout(() => ls.style.display = 'none', 600);
+            requestAnimationFrame(renderLoop);
+        }, 500);
+
+    </script>
+</body>
+</html>

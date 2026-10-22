@@ -1,0 +1,668 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Math Lab - Interactive Concepts</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Fira+Code:wght@400;500&display=swap" rel="stylesheet">
+    <style>
+        body, html {
+            margin: 0;
+            padding: 0;
+            width: 100%;
+            height: 100%;
+            overflow: hidden;
+            background-color: #020617; /* Slate 950 */
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+            touch-action: none;
+            user-select: none;
+        }
+
+        .main-shell { display: flex; width: 100%; height: 100%; }
+
+        .workspace {
+            flex-grow: 1;
+            position: relative;
+            overflow: hidden;
+        }
+        
+        #math-canvas {
+            display: block;
+            width: 100%;
+            height: 100%;
+        }
+
+        .glass-panel {
+            background: linear-gradient(145deg, rgba(15, 23, 42, 0.9) 0%, rgba(2, 6, 23, 0.98) 100%);
+            backdrop-filter: blur(40px);
+            -webkit-backdrop-filter: blur(40px);
+            border-right: 1px solid rgba(255, 255, 255, 0.1);
+            box-shadow: 20px 0 50px rgba(0, 0, 0, 0.5);
+            display: flex;
+            flex-direction: column;
+            padding: 2rem;
+            z-index: 100;
+            width: 380px;
+        }
+
+        @media (max-width: 1024px) {
+            .glass-panel { width: 100%; height: 38%; border-right: none; border-bottom: 1px solid rgba(255,255,255,0.1); padding: 1rem; }
+            .main-shell { flex-direction: column; }
+        }
+
+        .tab-btn { transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1); }
+        .tab-btn.active {
+            background-color: #ffffff; color: #020617; box-shadow: 0 4px 12px rgba(0,0,0,0.4);
+        }
+
+        input[type=range] { -webkit-appearance: none; width: 100%; background: transparent; }
+        input[type=range]::-webkit-slider-thumb {
+            -webkit-appearance: none; height: 20px; width: 20px; border-radius: 50%;
+            background: #ffffff; cursor: pointer; margin-top: -8px;
+            box-shadow: 0 4px 10px rgba(0,0,0,0.5); border: 1px solid rgba(255,255,255,0.2);
+            transition: transform 0.2s cubic-bezier(0.2, 0.8, 0.2, 1);
+        }
+        input[type=range]::-webkit-slider-thumb:hover { transform: scale(1.15); }
+        input[type=range]::-webkit-slider-runnable-track {
+            width: 100%; height: 4px; cursor: pointer;
+            background: rgba(255, 255, 255, 0.15); border-radius: 2px;
+        }
+
+        .formula-box { font-family: 'Fira Code', monospace; }
+        .scroll-area::-webkit-scrollbar { width: 4px; }
+        .scroll-area::-webkit-scrollbar-thumb { background: rgba(255, 255, 255, 0.2); border-radius: 4px; }
+    </style>
+</head>
+<body>
+
+    <div class="main-shell">
+        <!-- UI Panel -->
+        <div class="glass-panel shrink-0">
+            <div class="mb-6 border-b border-white/10 pb-6 shrink-0 flex items-center justify-between">
+                <div>
+                    <h1 class="text-2xl font-bold tracking-tight text-white mb-1">Math Visualizer</h1>
+                    <p class="text-[11px] font-medium text-emerald-400 uppercase tracking-widest">Interactive Geometry & Logic</p>
+                </div>
+                <div class="w-10 h-10 rounded-full bg-emerald-500/20 flex items-center justify-center text-emerald-400 shadow-[0_0_15px_rgba(16,185,129,0.3)]">
+                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 7h6m0 10v-3m-3 3h.01M9 17h.01M9 14h.01M12 14h.01M15 11h.01M12 11h.01M9 11h.01M7 21h10a2 2 0 002-2V5a2 2 0 00-2-2H7a2 2 0 00-2 2v14a2 2 0 002 2z"></path></svg>
+                </div>
+            </div>
+
+            <!-- Tab Navigation -->
+            <div class="grid grid-cols-2 p-1 bg-black/40 rounded-xl shadow-inner gap-1 mb-6 shrink-0 border border-white/5">
+                <button data-tab="fractions" class="tab-btn active py-2 text-[10px] font-bold uppercase tracking-wider rounded-lg text-gray-400">Fractions</button>
+                <button data-tab="area" class="tab-btn py-2 text-[10px] font-bold uppercase tracking-wider rounded-lg text-gray-400">Area/Perim</button>
+                <button data-tab="arrays" class="tab-btn py-2 text-[10px] font-bold uppercase tracking-wider rounded-lg text-gray-400">Arrays</button>
+                <button data-tab="symmetry" class="tab-btn py-2 text-[10px] font-bold uppercase tracking-wider rounded-lg text-gray-400">Symmetry</button>
+            </div>
+
+            <div class="scroll-area overflow-y-auto pr-2 pb-2 flex-1">
+                
+                <!-- Dynamic Info Box -->
+                <div class="bg-black/30 p-4 rounded-xl border border-white/5 shadow-inner mb-6">
+                    <h2 id="info-title" class="text-sm font-bold text-white mb-2 italic">Equivalent Fractions</h2>
+                    <div id="formula-display" class="formula-box bg-white/5 p-2 rounded text-[11px] text-emerald-300 mb-3 border border-white/10 text-center">
+                        1/2 = 2/4 = 4/8
+                    </div>
+                    <p id="info-desc" class="text-xs text-gray-400 leading-relaxed">
+                        Fractions represent parts of a whole. Adjust the numerators and denominators below to visually prove when two different fractions are exactly the same size.
+                    </p>
+                </div>
+
+                <!-- 1. FRACTION CONTROLS -->
+                <div id="controls-fractions" class="space-y-6">
+                    <div class="space-y-3 p-4 rounded-xl border border-blue-500/20 bg-blue-500/5">
+                        <h3 class="text-[10px] font-bold uppercase tracking-widest text-blue-400">Fraction A</h3>
+                        <div class="space-y-2">
+                            <div class="flex justify-between"><span class="text-xs text-gray-400">Numerator</span><span id="f1-num-disp" class="text-xs font-bold text-white">1</span></div>
+                            <input type="range" id="f1-num" min="0" max="8" value="1" style="accent-color: #3b82f6;">
+                        </div>
+                        <div class="space-y-2 pt-2 border-t border-white/10">
+                            <div class="flex justify-between"><span class="text-xs text-gray-400">Denominator</span><span id="f1-den-disp" class="text-xs font-bold text-white">2</span></div>
+                            <input type="range" id="f1-den" min="1" max="12" value="2" style="accent-color: #3b82f6;">
+                        </div>
+                    </div>
+
+                    <div class="space-y-3 p-4 rounded-xl border border-orange-500/20 bg-orange-500/5">
+                        <h3 class="text-[10px] font-bold uppercase tracking-widest text-orange-400">Fraction B</h3>
+                        <div class="space-y-2">
+                            <div class="flex justify-between"><span class="text-xs text-gray-400">Numerator</span><span id="f2-num-disp" class="text-xs font-bold text-white">2</span></div>
+                            <input type="range" id="f2-num" min="0" max="12" value="2" style="accent-color: #f97316;">
+                        </div>
+                        <div class="space-y-2 pt-2 border-t border-white/10">
+                            <div class="flex justify-between"><span class="text-xs text-gray-400">Denominator</span><span id="f2-den-disp" class="text-xs font-bold text-white">4</span></div>
+                            <input type="range" id="f2-den" min="1" max="12" value="4" style="accent-color: #f97316;">
+                        </div>
+                    </div>
+                </div>
+
+                <!-- 2. AREA / PERIMETER CONTROLS -->
+                <div id="controls-area" class="space-y-6 hidden">
+                    <div class="space-y-4">
+                        <div class="space-y-2">
+                            <div class="flex justify-between items-end">
+                                <label class="text-[11px] font-semibold text-purple-400 uppercase tracking-widest">Width (W)</label>
+                                <span id="area-w-disp" class="text-[11px] font-mono bg-purple-500/10 px-2 py-1 rounded text-purple-300">5 units</span>
+                            </div>
+                            <input type="range" id="area-w" min="1" max="10" step="1" value="5" class="w-full" style="accent-color: #c084fc;">
+                        </div>
+                        <div class="space-y-2 pt-3">
+                            <div class="flex justify-between items-end">
+                                <label class="text-[11px] font-semibold text-cyan-400 uppercase tracking-widest">Height (H)</label>
+                                <span id="area-h-disp" class="text-[11px] font-mono bg-cyan-500/10 px-2 py-1 rounded text-cyan-300">4 units</span>
+                            </div>
+                            <input type="range" id="area-h" min="1" max="10" step="1" value="4" class="w-full" style="accent-color: #22d3ee;">
+                        </div>
+                    </div>
+                </div>
+
+                <!-- 3. ARRAYS CONTROLS -->
+                <div id="controls-arrays" class="space-y-6 hidden">
+                    <div class="space-y-4">
+                        <div class="space-y-2">
+                            <div class="flex justify-between items-end">
+                                <label class="text-[11px] font-semibold text-yellow-400 uppercase tracking-widest">Rows (A)</label>
+                                <span id="arr-r-disp" class="text-[11px] font-mono bg-yellow-500/10 px-2 py-1 rounded text-yellow-300">3</span>
+                            </div>
+                            <input type="range" id="arr-r" min="1" max="8" step="1" value="3" class="w-full" style="accent-color: #facc15;">
+                        </div>
+                        <div class="space-y-2 pt-3">
+                            <div class="flex justify-between items-end">
+                                <label class="text-[11px] font-semibold text-red-400 uppercase tracking-widest">Columns (B)</label>
+                                <span id="arr-c-disp" class="text-[11px] font-mono bg-red-500/10 px-2 py-1 rounded text-red-300">4</span>
+                            </div>
+                            <input type="range" id="arr-c" min="1" max="8" step="1" value="4" class="w-full" style="accent-color: #ef4444;">
+                        </div>
+                    </div>
+                    <div class="pt-4 border-t border-white/5">
+                        <button id="btn-rotate-array" class="w-full py-3 bg-white/10 hover:bg-white/20 text-white text-xs font-bold uppercase tracking-widest rounded-xl transition-all border border-white/10 flex justify-center items-center gap-2">
+                            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"></path></svg>
+                            Rotate 90° (Commutative)
+                        </button>
+                    </div>
+                </div>
+
+                <!-- 4. SYMMETRY CONTROLS -->
+                <div id="controls-symmetry" class="space-y-6 hidden">
+                    <div class="space-y-4">
+                        <div class="space-y-2">
+                            <div class="flex justify-between items-end">
+                                <label class="text-[11px] font-semibold text-pink-400 uppercase tracking-widest">Fold Shape</label>
+                                <span id="sym-fold-disp" class="text-[11px] font-mono bg-pink-500/10 px-2 py-1 rounded text-pink-300">0° (Flat)</span>
+                            </div>
+                            <input type="range" id="sym-fold" min="0" max="180" step="1" value="0" class="w-full" style="accent-color: #f472b6;">
+                        </div>
+                    </div>
+                    <div class="pt-4 border-t border-white/5">
+                        <label class="text-[10px] font-bold uppercase tracking-widest text-gray-500 block mb-2">Base Shape</label>
+                        <div class="grid grid-cols-2 gap-2">
+                            <button class="sym-shape-btn active py-2 bg-white/10 rounded-lg text-xs text-white font-medium border border-white/20" data-shape="butterfly">Butterfly</button>
+                            <button class="sym-shape-btn py-2 bg-white/5 rounded-lg text-xs text-gray-400 font-medium border border-transparent" data-shape="hexagon">Hexagon</button>
+                        </div>
+                    </div>
+                </div>
+
+            </div>
+        </div>
+
+        <!-- Dynamic Visualization Workspace -->
+        <div class="workspace" id="workspace">
+            <canvas id="math-canvas"></canvas>
+            
+            <!-- Contextual Math HUD -->
+            <div id="hud" class="absolute bottom-6 right-6 z-10 glass-panel !w-[240px] !p-5 !border !rounded-2xl pointer-events-none shadow-2xl">
+                <div class="text-[10px] font-bold uppercase tracking-widest text-gray-500 mb-3 border-b border-white/5 pb-1">Mathematical Result</div>
+                <div class="space-y-3">
+                    <div class="flex justify-between items-center">
+                        <span class="text-[12px] text-gray-400 font-medium" id="hud-label-1">Value A</span>
+                        <span id="hud-val-1" class="text-base font-mono font-bold text-white">---</span>
+                    </div>
+                    <div class="flex justify-between items-center">
+                        <span class="text-[12px] text-gray-400 font-medium" id="hud-label-2">Value B</span>
+                        <span id="hud-val-2" class="text-base font-mono font-bold text-white">---</span>
+                    </div>
+                    <div id="hud-status" class="pt-2 text-center text-[10px] font-bold uppercase tracking-widest text-emerald-400 hidden border-t border-white/5">Perfect Match!</div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const canvas = document.getElementById('math-canvas');
+        const ctx = canvas.getContext('2d');
+        const workspace = document.getElementById('workspace');
+
+        // --- GLOBAL SETTINGS ---
+        let currentMode = 'fractions';
+        let cx, cy, wsWidth, wsHeight;
+        let time = 0;
+
+        function resize() {
+            canvas.width = workspace.clientWidth;
+            canvas.height = workspace.clientHeight;
+            wsWidth = canvas.width;
+            wsHeight = canvas.height;
+            
+            const uiWidth = window.innerWidth >= 1024 ? 380 : 0;
+            cx = wsWidth / 2;
+            cy = wsHeight / 2;
+        }
+        window.addEventListener('resize', resize);
+        resize();
+
+        // --- MODULE STATES ---
+        const M = {
+            frac: { n1: 1, d1: 2, n2: 2, d2: 4 },
+            area: { w: 5, h: 4, gridSize: 40 },
+            arr:  { r: 3, c: 4, rotOffset: 0, targetRot: 0, isRotating: false },
+            sym:  { fold: 0, shape: 'butterfly' }
+        };
+
+        // --- UI BINDINGS ---
+        // Fractions
+        const bindSlider = (id, obj, key, displayId, suffix="", callback=null) => {
+            document.getElementById(id).addEventListener('input', (e) => {
+                obj[key] = parseFloat(e.target.value);
+                document.getElementById(displayId).innerText = obj[key] + suffix;
+                if(callback) callback();
+            });
+        };
+
+        bindSlider('f1-num', M.frac, 'n1', 'f1-num-disp');
+        bindSlider('f1-den', M.frac, 'd1', 'f1-den-disp', "", () => {
+            // Constrain numerator to denominator
+            if(M.frac.n1 > M.frac.d1) { M.frac.n1 = M.frac.d1; document.getElementById('f1-num').value = M.frac.n1; document.getElementById('f1-num-disp').innerText = M.frac.n1; }
+            document.getElementById('f1-num').max = M.frac.d1;
+        });
+        bindSlider('f2-num', M.frac, 'n2', 'f2-num-disp');
+        bindSlider('f2-den', M.frac, 'd1', 'f2-den-disp', "", () => {
+            M.frac.d2 = M.frac.d1; // hack for standardizing binding
+        });
+        // Override D2 binding properly
+        document.getElementById('f2-den').addEventListener('input', (e) => {
+            M.frac.d2 = parseInt(e.target.value);
+            document.getElementById('f2-den-disp').innerText = M.frac.d2;
+            if(M.frac.n2 > M.frac.d2) { M.frac.n2 = M.frac.d2; document.getElementById('f2-num').value = M.frac.n2; document.getElementById('f2-num-disp').innerText = M.frac.n2; }
+            document.getElementById('f2-num').max = M.frac.d2;
+        });
+
+        // Area
+        bindSlider('area-w', M.area, 'w', 'area-w-disp', ' units');
+        bindSlider('area-h', M.area, 'h', 'area-h-disp', ' units');
+
+        // Arrays
+        bindSlider('arr-r', M.arr, 'r', 'arr-r-disp');
+        bindSlider('arr-c', M.arr, 'c', 'arr-c-disp');
+        document.getElementById('btn-rotate-array').addEventListener('click', () => {
+            M.arr.targetRot += Math.PI / 2;
+            M.arr.isRotating = true;
+        });
+
+        // Symmetry
+        bindSlider('sym-fold', M.sym, 'fold', 'sym-fold-disp', '°');
+        document.querySelectorAll('.sym-shape-btn').forEach(btn => {
+            btn.addEventListener('click', (e) => {
+                document.querySelectorAll('.sym-shape-btn').forEach(b => {
+                    b.classList.remove('bg-white/10', 'text-white', 'border-white/20');
+                    b.classList.add('bg-white/5', 'text-gray-400', 'border-transparent');
+                });
+                e.target.classList.remove('bg-white/5', 'text-gray-400', 'border-transparent');
+                e.target.classList.add('bg-white/10', 'text-white', 'border-white/20');
+                M.sym.shape = e.target.getAttribute('data-shape');
+            });
+        });
+
+        // --- DRAWING: FRACTIONS ---
+        function drawFractions() {
+            const r = Math.min(wsWidth, wsHeight) * 0.2;
+            const x1 = cx - r - 40;
+            const x2 = cx + r + 40;
+
+            const drawPie = (x, y, radius, num, den, color, glow) => {
+                ctx.save();
+                ctx.translate(x, y);
+                
+                // Shadow
+                if (glow) {
+                    ctx.shadowBlur = 40; ctx.shadowColor = color;
+                }
+
+                // Background Empty Pie
+                ctx.fillStyle = 'rgba(255,255,255,0.05)';
+                ctx.strokeStyle = 'rgba(255,255,255,0.2)';
+                ctx.lineWidth = 2;
+                ctx.beginPath(); ctx.arc(0, 0, radius, 0, Math.PI*2); ctx.fill(); ctx.stroke();
+
+                // Filled Slices
+                ctx.fillStyle = color;
+                const sliceAngle = (Math.PI * 2) / den;
+                for(let i=0; i<num; i++) {
+                    ctx.beginPath();
+                    ctx.moveTo(0,0);
+                    // Start at top (-PI/2)
+                    ctx.arc(0, 0, radius, -Math.PI/2 + i*sliceAngle, -Math.PI/2 + (i+1)*sliceAngle);
+                    ctx.closePath();
+                    ctx.fill();
+                }
+
+                // Grid Lines
+                ctx.strokeStyle = 'rgba(0,0,0,0.5)';
+                ctx.lineWidth = 3;
+                for(let i=0; i<den; i++) {
+                    ctx.beginPath(); ctx.moveTo(0,0);
+                    ctx.lineTo(Math.cos(-Math.PI/2 + i*sliceAngle)*radius, Math.sin(-Math.PI/2 + i*sliceAngle)*radius);
+                    ctx.stroke();
+                }
+                
+                // Labels
+                ctx.shadowBlur = 0;
+                ctx.fillStyle = 'white'; ctx.font = 'bold 36px Inter'; ctx.textAlign = 'center';
+                ctx.fillText(`${num}/${den}`, 0, radius + 50);
+
+                ctx.restore();
+            };
+
+            const val1 = M.frac.n1 / M.frac.d1;
+            const val2 = M.frac.n2 / M.frac.d2;
+            const isMatch = Math.abs(val1 - val2) < 0.001 && M.frac.d1 > 0 && M.frac.d2 > 0;
+
+            drawPie(x1, cy - 20, r, M.frac.n1, M.frac.d1, '#3b82f6', isMatch); // Blue
+            drawPie(x2, cy - 20, r, M.frac.n2, M.frac.d2, '#f97316', isMatch); // Orange
+
+            // Match Symbol
+            if (isMatch) {
+                ctx.fillStyle = '#10b981'; ctx.font = 'bold 60px Inter'; ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+                ctx.fillText("=", cx, cy - 20);
+            }
+
+            document.getElementById('hud-label-1').innerText = "Fraction A (Decimal)";
+            document.getElementById('hud-val-1').innerText = (M.frac.d1===0?0:val1).toFixed(2);
+            document.getElementById('hud-val-1').style.color = "#3b82f6";
+            document.getElementById('hud-label-2').innerText = "Fraction B (Decimal)";
+            document.getElementById('hud-val-2').innerText = (M.frac.d2===0?0:val2).toFixed(2);
+            document.getElementById('hud-val-2').style.color = "#f97316";
+
+            const status = document.getElementById('hud-status');
+            if(isMatch) status.classList.remove('hidden'); else status.classList.add('hidden');
+        }
+
+        // --- DRAWING: AREA / PERIMETER ---
+        function drawArea() {
+            const gs = M.area.gridSize;
+            const w = M.area.w; const h = M.area.h;
+            const totalW = w * gs; const totalH = h * gs;
+            const startX = cx - totalW/2; const startY = cy - totalH/2;
+
+            // Draw Background Grid Pattern
+            ctx.strokeStyle = 'rgba(255,255,255,0.05)'; ctx.lineWidth = 1;
+            ctx.beginPath();
+            for(let x = 0; x < wsWidth; x += gs) { ctx.moveTo(x, 0); ctx.lineTo(x, wsHeight); }
+            for(let y = 0; y < wsHeight; y += gs) { ctx.moveTo(0, y); ctx.lineTo(wsWidth, y); }
+            ctx.stroke();
+
+            // Draw Area Blocks (Filled)
+            for(let r=0; r<h; r++) {
+                for(let c=0; c<w; c++) {
+                    // Staggered coloring
+                    const col = (r+c)%2===0 ? 'rgba(192, 132, 252, 0.4)' : 'rgba(192, 132, 252, 0.2)'; // Purple
+                    ctx.fillStyle = col;
+                    ctx.fillRect(startX + c*gs, startY + r*gs, gs, gs);
+                    ctx.strokeStyle = 'rgba(192, 132, 252, 0.8)'; ctx.lineWidth = 1;
+                    ctx.strokeRect(startX + c*gs, startY + r*gs, gs, gs);
+                }
+            }
+
+            // Outline (Perimeter Path)
+            ctx.strokeStyle = '#22d3ee'; ctx.lineWidth = 4;
+            ctx.strokeRect(startX, startY, totalW, totalH);
+
+            // Perimeter Tracer (Walking Dot)
+            const perimeter = (w * 2 + h * 2) * gs;
+            const speed = 100; // px per second
+            const distanceWalked = (time * speed) % perimeter;
+
+            let tracerX = startX, tracerY = startY;
+            if (distanceWalked < totalW) { // Top edge
+                tracerX += distanceWalked;
+            } else if (distanceWalked < totalW + totalH) { // Right edge
+                tracerX += totalW;
+                tracerY += (distanceWalked - totalW);
+            } else if (distanceWalked < totalW * 2 + totalH) { // Bottom edge
+                tracerX += totalW - (distanceWalked - totalW - totalH);
+                tracerY += totalH;
+            } else { // Left edge
+                tracerY += totalH - (distanceWalked - totalW * 2 - totalH);
+            }
+
+            // Glow tracer
+            ctx.shadowBlur = 20; ctx.shadowColor = '#22d3ee';
+            ctx.fillStyle = '#ffffff';
+            ctx.beginPath(); ctx.arc(tracerX, tracerY, 8, 0, Math.PI*2); ctx.fill();
+            ctx.shadowBlur = 0;
+
+            // Dimensions Labels
+            ctx.fillStyle = 'rgba(255,255,255,0.8)'; ctx.font = 'bold 16px Inter'; ctx.textAlign='center';
+            ctx.fillText(`${w} W`, cx, startY - 15);
+            ctx.textAlign='left'; ctx.textBaseline='middle';
+            ctx.fillText(`${h} H`, startX + totalW + 15, cy);
+
+            document.getElementById('hud-label-1').innerText = "Area (Inside)";
+            document.getElementById('hud-val-1').innerText = `${w * h} sq units`;
+            document.getElementById('hud-val-1').style.color = "#c084fc";
+            document.getElementById('hud-label-2').innerText = "Perimeter (Boundary)";
+            document.getElementById('hud-val-2').innerText = `${w*2 + h*2} units`;
+            document.getElementById('hud-val-2').style.color = "#22d3ee";
+            document.getElementById('hud-status').classList.add('hidden');
+        }
+
+        // --- DRAWING: ARRAYS (Multiplication) ---
+        function drawArrays(dt) {
+            if (M.arr.isRotating) {
+                M.arr.rotOffset += (M.arr.targetRot - M.arr.rotOffset) * 0.1;
+                if (Math.abs(M.arr.targetRot - M.arr.rotOffset) < 0.01) {
+                    M.arr.rotOffset = M.arr.targetRot;
+                    M.arr.isRotating = false;
+                }
+            }
+
+            const spacing = 50;
+            // Draw A x B
+            const r = M.arr.r; const c = M.arr.c;
+            const w = (c - 1) * spacing; const h = (r - 1) * spacing;
+
+            ctx.save();
+            ctx.translate(cx, cy);
+            ctx.rotate(M.arr.rotOffset);
+            
+            // Draw backing plate
+            ctx.fillStyle = 'rgba(255, 255, 255, 0.05)';
+            ctx.beginPath(); ctx.roundRect(-w/2 - 30, -h/2 - 30, w + 60, h + 60, 16); ctx.fill();
+            ctx.strokeStyle = 'rgba(255, 255, 255, 0.1)'; ctx.lineWidth = 2; ctx.stroke();
+
+            // Draw Dots
+            ctx.shadowBlur = 15; ctx.shadowColor = '#facc15'; ctx.fillStyle = '#facc15';
+            for(let row=0; row<r; row++) {
+                for(let col=0; col<c; col++) {
+                    const px = -w/2 + col*spacing;
+                    const py = -h/2 + row*spacing;
+                    ctx.beginPath(); ctx.arc(px, py, 8, 0, Math.PI*2); ctx.fill();
+                }
+            }
+            ctx.shadowBlur = 0;
+
+            // Labels that stay upright by countering rotation
+            ctx.rotate(-M.arr.rotOffset);
+            ctx.fillStyle = '#ffffff'; ctx.font = 'bold 24px Inter'; ctx.textAlign='center'; ctx.textBaseline='middle';
+            
+            // Determine visual rows/cols based on rotation state
+            const isSwapped = Math.round(M.arr.rotOffset / (Math.PI/2)) % 2 !== 0;
+            const visR = isSwapped ? c : r;
+            const visC = isSwapped ? r : c;
+            
+            ctx.fillText(`${visR} × ${visC} = ${r*c}`, 0, (Math.max(w,h)/2) + 60);
+            
+            ctx.restore();
+
+            document.getElementById('hud-label-1').innerText = "Rows × Columns";
+            document.getElementById('hud-val-1').innerText = `${visR} × ${visC}`;
+            document.getElementById('hud-val-1').style.color = "#facc15";
+            document.getElementById('hud-label-2').innerText = "Total Objects";
+            document.getElementById('hud-val-2').innerText = `${r * c}`;
+            document.getElementById('hud-val-2').style.color = "#ffffff";
+            
+            const status = document.getElementById('hud-status');
+            status.innerText = "A × B = B × A";
+            status.classList.remove('hidden');
+        }
+
+        // --- DRAWING: SYMMETRY ---
+        function drawSymmetry() {
+            // Mirror Line
+            ctx.strokeStyle = 'rgba(255, 255, 255, 0.5)';
+            ctx.lineWidth = 2; ctx.setLineDash([10, 10]);
+            ctx.beginPath(); ctx.moveTo(cx, cy - 200); ctx.lineTo(cx, cy + 200); ctx.stroke();
+            ctx.setLineDash([]);
+
+            const foldRad = M.sym.fold * Math.PI / 180;
+            // Scale X simulates 3D rotation fold
+            const foldScaleX = Math.cos(foldRad);
+
+            // Shape Generators (Left half only)
+            function getButterfly() {
+                return [
+                    {x: 0, y: -80}, {x: -60, y: -120}, {x: -120, y: -60}, 
+                    {x: -40, y: 0}, {x: -100, y: 80}, {x: -30, y: 100}, {x: 0, y: 40}
+                ];
+            }
+            function getHexagon() {
+                return [
+                    {x: 0, y: -100}, {x: -86.6, y: -50}, {x: -86.6, y: 50}, {x: 0, y: 100}
+                ];
+            }
+
+            const pts = M.sym.shape === 'butterfly' ? getButterfly() : getHexagon();
+
+            // Draw Left Half (Static)
+            ctx.save();
+            ctx.translate(cx, cy);
+            
+            ctx.fillStyle = 'rgba(244, 114, 182, 0.4)'; // Pink
+            ctx.strokeStyle = '#f472b6'; ctx.lineWidth = 3;
+            ctx.beginPath();
+            ctx.moveTo(pts[0].x, pts[0].y);
+            for(let i=1; i<pts.length; i++) ctx.lineTo(pts[i].x, pts[i].y);
+            ctx.closePath();
+            ctx.fill(); ctx.stroke();
+
+            // Draw Right Half (Folding)
+            // Mirrors left half, then scales X to simulate fold
+            ctx.fillStyle = 'rgba(96, 165, 250, 0.4)'; // Blue
+            ctx.strokeStyle = '#60a5fa'; 
+            
+            // Apply fold transformation
+            ctx.scale(foldScaleX, 1); 
+            
+            ctx.beginPath();
+            // Invert X of original points to make the right half
+            ctx.moveTo(-pts[0].x, pts[0].y);
+            for(let i=1; i<pts.length; i++) ctx.lineTo(-pts[i].x, pts[i].y);
+            ctx.closePath();
+            ctx.fill(); ctx.stroke();
+            
+            ctx.restore();
+
+            const isFolded = M.sym.fold === 180;
+
+            document.getElementById('hud-label-1').innerText = "Fold Angle";
+            document.getElementById('hud-val-1').innerText = M.sym.fold + "°";
+            document.getElementById('hud-val-1').style.color = "#f472b6";
+            document.getElementById('hud-label-2').innerText = "Status";
+            document.getElementById('hud-val-2').innerText = isFolded ? "Overlapped" : "Open";
+            document.getElementById('hud-val-2').style.color = isFolded ? "#10b981" : "#ffffff";
+
+            const status = document.getElementById('hud-status');
+            status.innerText = "Perfect Reflection";
+            if(isFolded) status.classList.remove('hidden'); else status.classList.add('hidden');
+        }
+
+        // --- MAIN RENDER LOOP ---
+        let lastTime = 0;
+
+        function render(timestamp) {
+            const dt = (timestamp - lastTime) / 1000 || 0.016;
+            lastTime = timestamp;
+            time += dt;
+
+            // Clear Background
+            ctx.fillStyle = '#020617';
+            ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+            // Subtle Background Grid
+            ctx.strokeStyle = 'rgba(255,255,255,0.02)';
+            ctx.lineWidth = 1;
+            ctx.beginPath();
+            for(let i=0; i<canvas.width; i+=40) { ctx.moveTo(i,0); ctx.lineTo(i,canvas.height); }
+            for(let i=0; i<canvas.height; i+=40) { ctx.moveTo(0,i); ctx.lineTo(canvas.width,i); }
+            ctx.stroke();
+
+            // Module Routing
+            if (currentMode === 'fractions') drawFractions();
+            else if (currentMode === 'area') drawArea();
+            else if (currentMode === 'arrays') drawArrays(dt);
+            else if (currentMode === 'symmetry') drawSymmetry();
+
+            requestAnimationFrame(render);
+        }
+        requestAnimationFrame(render);
+
+        // --- TAB LOGIC ---
+        const tabs = document.querySelectorAll('.tab-btn');
+        tabs.forEach(btn => {
+            btn.addEventListener('click', (e) => {
+                tabs.forEach(t => t.classList.remove('active', 'bg-white', 'text-gray-900'));
+                tabs.forEach(t => t.classList.add('text-gray-400'));
+                btn.classList.add('active', 'bg-white', 'text-gray-900');
+                
+                currentMode = btn.dataset.tab;
+
+                const info = {
+                    fractions: { 
+                        title: "Equivalent Fractions", 
+                        formula: "1/2 = 2/4 = 4/8",
+                        desc: "Fractions represent parts of a whole. Adjust the numerators and denominators below to visually prove when two different fractions are exactly the same size." 
+                    },
+                    area: { 
+                        title: "Area vs. Perimeter", 
+                        formula: "A = W×H, P = 2W+2H",
+                        desc: "<b>Area</b> is the 2D space inside a shape (colored tiles). <b>Perimeter</b> is the total length of the outside boundary (glowing outline path)." 
+                    },
+                    arrays: { 
+                        title: "Multiplication Arrays", 
+                        formula: "A × B = B × A",
+                        desc: "Multiplication is just repeated addition arranged in a grid. Rotate the array 90° to visually prove the <b>Commutative Property</b>: order doesn't matter!" 
+                    },
+                    symmetry: { 
+                        title: "Symmetry & Reflections", 
+                        formula: "Line Symmetry",
+                        desc: "A shape is symmetrical if it can be folded along a mirror line and both halves perfectly overlap. Fold the shapes below to test them!" 
+                    }
+                };
+                
+                document.getElementById('info-title').innerText = info[currentMode].title;
+                document.getElementById('info-desc').innerHTML = info[currentMode].desc;
+                document.getElementById('formula-display').innerText = info[currentMode].formula;
+                
+                document.getElementById('controls-fractions').classList.add('hidden');
+                document.getElementById('controls-area').classList.add('hidden');
+                document.getElementById('controls-arrays').classList.add('hidden');
+                document.getElementById('controls-symmetry').classList.add('hidden');
+                
+                document.getElementById(`controls-${currentMode}`).classList.remove('hidden');
+                document.getElementById('hud-status').classList.add('hidden');
+            });
+        });
+
+    </script>
+</body>
+</html>

@@ -1,0 +1,467 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Treasure Hunt Adventure</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Rye&family=Nunito:wght@700;900&display=swap');
+
+        body { 
+            margin: 0; overflow: hidden; background: #082f49; /* Deep ocean blue */
+            font-family: 'Nunito', sans-serif; user-select: none;
+            display: flex; flex-direction: column; align-items: center; justify-content: center; height: 100vh;
+            color: white;
+        }
+
+        /* --- LAYOUT --- */
+        #game-wrapper {
+            display: flex; width: 100%; max-width: 1200px; height: 100%;
+            padding: 20px; box-sizing: border-box; gap: 30px;
+            align-items: center; justify-content: center;
+        }
+
+        /* --- UI PANEL --- */
+        #ui-panel {
+            width: 350px; background: #fef3c7; border: 8px solid #b45309; border-radius: 16px;
+            padding: 20px; color: #451a03; box-shadow: 0 20px 40px rgba(0,0,0,0.5);
+            display: flex; flex-direction: column; gap: 20px; position: relative;
+            background-image: radial-gradient(#fde68a 1px, transparent 1px);
+            background-size: 20px 20px;
+        }
+
+        h1 { font-family: 'Rye', cursive; font-size: 42px; text-align: center; margin: 0; color: #78350f; text-shadow: 2px 2px 0px #fcd34d;}
+
+        .status-box {
+            background: #fffbeb; border: 4px dashed #d97706; border-radius: 12px; padding: 15px;
+            text-align: center; font-size: 24px; font-weight: 900;
+        }
+
+        .clue-list {
+            background: rgba(255,255,255,0.6); border: 2px solid #b45309; border-radius: 8px;
+            padding: 15px; font-size: 16px; font-weight: 700; line-height: 1.5;
+        }
+        .clue-list li { margin-bottom: 8px; padding-left: 5px; border-left: 4px solid #b45309; }
+
+        .radar-box {
+            background: #1e293b; color: white; border-radius: 8px; padding: 15px; text-align: center;
+            border: 4px solid #334155;
+        }
+
+        /* --- THE MAP --- */
+        #map-container {
+            position: relative; background: #0284c7; padding: 15px; border-radius: 16px;
+            box-shadow: 0 20px 50px rgba(0,0,0,0.8), inset 0 0 30px rgba(0,0,0,0.4);
+            border: 8px solid #0c4a6e; flex-shrink: 0;
+        }
+
+        #map-grid {
+            display: grid; grid-template-columns: repeat(12, 1fr); grid-template-rows: repeat(12, 1fr);
+            gap: 2px; background: #0369a1; width: 85vmin; max-width: 600px; height: 85vmin; max-height: 600px;
+        }
+
+        .tile {
+            position: relative; width: 100%; height: 100%; cursor: pointer;
+            display: flex; align-items: center; justify-content: center; font-size: 24px;
+            transition: transform 0.1s; box-shadow: inset 0 0 10px rgba(0,0,0,0.1);
+        }
+        
+        .tile:hover { filter: brightness(1.2); transform: scale(1.05); z-index: 5; box-shadow: 0 0 10px rgba(0,0,0,0.5); }
+        .tile:active { transform: scale(0.95); }
+        
+        .tile.dug { cursor: not-allowed; opacity: 0.8; transform: none !important; box-shadow: inset 0 0 15px rgba(0,0,0,0.5);}
+
+        /* Terrain Colors */
+        .type-water { background: #3b82f6; cursor: not-allowed; }
+        .type-water:hover { transform: none; filter: none; box-shadow: none; }
+        .type-sand { background: #fcd34d; }
+        .type-grass { background: #4ade80; }
+        .type-forest { background: #166534; }
+        .type-mountain { background: #64748b; }
+
+        /* Dig Animation */
+        @keyframes digShake {
+            0% { transform: translate(1px, 1px) rotate(0deg); }
+            20% { transform: translate(-1px, -2px) rotate(-5deg); }
+            40% { transform: translate(-3px, 0px) rotate(5deg); }
+            60% { transform: translate(3px, 2px) rotate(0deg); }
+            80% { transform: translate(1px, -1px) rotate(5deg); }
+            100% { transform: translate(0, 0) rotate(0deg); }
+        }
+        .shaking { animation: digShake 0.3s; pointer-events: none; }
+
+        /* --- MODALS --- */
+        .modal {
+            position: absolute; top: 0; left: 0; width: 100vw; height: 100vh;
+            background: rgba(0,0,0,0.8); display: flex; flex-direction: column;
+            align-items: center; justify-content: center; z-index: 100; backdrop-filter: blur(5px);
+        }
+        .modal-box {
+            background: #fef3c7; padding: 40px 60px; border-radius: 24px; text-align: center;
+            border: 8px solid #b45309; box-shadow: 0 20px 50px rgba(0,0,0,0.8);
+            color: #451a03; max-width: 600px;
+        }
+        .modal-title { font-family: 'Rye', cursive; font-size: 54px; margin-bottom: 10px; color: #b45309; }
+        
+        .btn {
+            background: #b45309; color: white; border: none; padding: 15px 40px; font-size: 24px;
+            font-family: 'Nunito'; font-weight: 900; border-radius: 12px; cursor: pointer; transition: 0.1s;
+            box-shadow: 0 6px 0 #78350f; margin-top: 20px;
+        }
+        .btn:hover { background: #d97706; transform: translateY(-2px); box-shadow: 0 8px 0 #78350f; }
+        .btn:active { transform: translateY(6px); box-shadow: 0 0 0 #78350f; }
+
+        @media (max-width: 900px) {
+            #game-wrapper { flex-direction: column; padding: 10px; gap: 10px;}
+            #ui-panel { width: 100%; max-width: 600px; padding: 15px; gap: 10px; flex-direction: row; flex-wrap: wrap; justify-content: space-between;}
+            h1 { font-size: 28px; width: 100%; }
+            .status-box { font-size: 18px; padding: 10px; flex: 1; }
+            .radar-box { flex: 1; }
+            .clue-list { width: 100%; font-size: 14px; padding: 10px; }
+            .tile { font-size: 18px; }
+        }
+
+    </style>
+</head>
+<body>
+
+    <!-- START MENU -->
+    <div id="start-menu" class="modal">
+        <div class="modal-box">
+            <h1 class="modal-title" style="font-size: 64px;">TREASURE HUNT</h1>
+            <p style="font-size: 20px; font-weight: bold; margin-bottom: 20px;">Use the map clues and your proximity radar to find the buried treasure before your shovels break!</p>
+            <button class="btn" onclick="startGame()">START ADVENTURE</button>
+        </div>
+    </div>
+
+    <!-- GAME OVER / WIN MODAL -->
+    <div id="end-modal" class="modal" style="display: none;">
+        <div class="modal-box">
+            <h1 class="modal-title" id="end-title">YOU FOUND IT!</h1>
+            <p id="end-desc" style="font-size: 24px; font-weight: bold; margin-bottom: 20px;">The legendary treasure is yours!</p>
+            <div style="font-size: 80px;" id="end-icon">👑</div>
+            <button class="btn" onclick="startGame()">PLAY AGAIN</button>
+        </div>
+    </div>
+
+    <div id="game-wrapper">
+        <!-- Map Area -->
+        <div id="map-container">
+            <div id="map-grid">
+                <!-- Tiles injected by JS -->
+            </div>
+        </div>
+
+        <!-- UI Panel -->
+        <div id="ui-panel">
+            <h1>ISLAND MAP</h1>
+            
+            <div class="status-box">
+                Shovels Remaining: <span id="shovels-count" style="color: #ef4444; font-size: 32px;">15</span> ⛏️
+            </div>
+
+            <div class="radar-box">
+                <div style="font-size: 14px; text-transform: uppercase; color: #94a3b8; margin-bottom: 5px;">Proximity Radar</div>
+                <div id="radar-text" style="font-size: 28px; font-weight: 900; color: #cbd5e1;">AWAITING DIG...</div>
+            </div>
+
+            <div>
+                <div style="font-family: 'Rye'; font-size: 24px; margin-bottom: 5px;">📜 Map Clues:</div>
+                <ul class="clue-list" id="clue-list">
+                    <!-- Clues injected by JS -->
+                </ul>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // --- AUDIO ENGINE ---
+        const AudioContext = window.AudioContext || window.webkitAudioContext;
+        let audioCtx;
+        function initAudio() { if(!audioCtx) audioCtx = new AudioContext(); }
+        
+        function playSound(type) {
+            if(!audioCtx) return;
+            const t = audioCtx.currentTime;
+            const osc = audioCtx.createOscillator(); const gain = audioCtx.createGain();
+            
+            if(type === 'dig') {
+                osc.type = 'square'; osc.frequency.setValueAtTime(100, t); osc.frequency.exponentialRampToValueAtTime(40, t+0.15);
+                gain.gain.setValueAtTime(0.4, t); gain.gain.exponentialRampToValueAtTime(0.01, t+0.15);
+            } else if(type === 'error') {
+                osc.type = 'sawtooth'; osc.frequency.setValueAtTime(150, t); osc.frequency.linearRampToValueAtTime(100, t+0.2);
+                gain.gain.setValueAtTime(0.3, t); gain.gain.exponentialRampToValueAtTime(0.01, t+0.2);
+            } else if(type === 'win') {
+                osc.type = 'sine'; osc.frequency.setValueAtTime(400, t); osc.frequency.setValueAtTime(600, t+0.2); osc.frequency.setValueAtTime(800, t+0.4);
+                gain.gain.setValueAtTime(0.5, t); gain.gain.exponentialRampToValueAtTime(0.01, t+1.0);
+            } else if(type === 'lose') {
+                osc.type = 'sawtooth'; osc.frequency.setValueAtTime(200, t); osc.frequency.exponentialRampToValueAtTime(50, t+0.8);
+                gain.gain.setValueAtTime(0.5, t); gain.gain.exponentialRampToValueAtTime(0.01, t+0.8);
+            }
+            
+            osc.connect(gain); gain.connect(audioCtx.destination);
+            osc.start(t); osc.stop(t + 1);
+        }
+
+        // --- GAME STATE & CONSTANTS ---
+        const GRID_SIZE = 12;
+        let mapData = []; // Array of objects {x, y, type, hasTreasure, dug}
+        let treasureCoords = { x: 0, y: 0 };
+        let shovels = 15;
+        let isGameOver = false;
+
+        const TERRAIN = {
+            WATER: { id: 'water', icon: '🌊', walkable: false },
+            SAND: { id: 'sand', icon: '', walkable: true },
+            GRASS: { id: 'grass', icon: '🟩', walkable: true },
+            FOREST: { id: 'forest', icon: '🌴', walkable: true },
+            MOUNTAIN: { id: 'mountain', icon: '⛰️', walkable: true }
+        };
+
+        // --- MAP GENERATION ---
+
+        function startGame() {
+            initAudio();
+            document.getElementById('start-menu').style.display = 'none';
+            document.getElementById('end-modal').style.display = 'none';
+            
+            shovels = 15;
+            isGameOver = false;
+            updateShovels();
+            setRadar("AWAITING DIG...", "#cbd5e1");
+
+            generateMap();
+            placeTreasure();
+            generateClues();
+            renderMap();
+        }
+
+        function generateMap() {
+            mapData = [];
+            const center = (GRID_SIZE - 1) / 2;
+
+            for (let y = 0; y < GRID_SIZE; y++) {
+                let row = [];
+                for (let x = 0; x < GRID_SIZE; x++) {
+                    // Distance from center determines island shape
+                    const dist = Math.hypot(x - center, y - center);
+                    
+                    let type;
+                    // Add some noise to make the island organically shaped
+                    const noise = (Math.random() - 0.5) * 1.5;
+                    const finalDist = dist + noise;
+
+                    if (finalDist > 5.5) {
+                        type = TERRAIN.WATER;
+                    } else if (finalDist > 4.2) {
+                        type = TERRAIN.SAND;
+                    } else {
+                        // Inner island randomly grass, forest, or mountain
+                        const r = Math.random();
+                        if (r < 0.15) type = TERRAIN.MOUNTAIN;
+                        else if (r < 0.45) type = TERRAIN.FOREST;
+                        else type = TERRAIN.GRASS;
+                    }
+
+                    // Remove Emojis from Grass/Sand so it looks cleaner as pure color blocks, keep props
+                    let icon = '';
+                    if (type === TERRAIN.MOUNTAIN && Math.random() > 0.3) icon = '⛰️';
+                    if (type === TERRAIN.FOREST && Math.random() > 0.2) icon = '🌴';
+
+                    row.push({ x, y, type, icon, hasTreasure: false, dug: false });
+                }
+                mapData.push(row);
+            }
+        }
+
+        function placeTreasure() {
+            let placed = false;
+            while (!placed) {
+                const x = Math.floor(Math.random() * GRID_SIZE);
+                const y = Math.floor(Math.random() * GRID_SIZE);
+                const tile = mapData[y][x];
+
+                // Treasure must be on land
+                if (tile.type.walkable) {
+                    tile.hasTreasure = true;
+                    treasureCoords = { x, y };
+                    placed = true;
+                }
+            }
+        }
+
+        function generateClues() {
+            const tx = treasureCoords.x;
+            const ty = treasureCoords.y;
+            const tTile = mapData[ty][tx];
+            
+            let possibleClues = [];
+
+            // 1. Regional Clues (N/S/E/W)
+            if (ty < 4) possibleClues.push("Buried in the northern reaches of the island.");
+            if (ty > 7) possibleClues.push("Hidden in the southern expanse.");
+            if (tx < 4) possibleClues.push("Travel west to find the gold.");
+            if (tx > 7) possibleClues.push("The eastern winds blow over the treasure.");
+            if (tx >= 4 && tx <= 7 && ty >= 4 && ty <= 7) possibleClues.push("The treasure lies near the very heart of the island.");
+
+            // 2. Terrain Clues
+            if (tTile.type === TERRAIN.SAND) possibleClues.push("Buried under the soft, golden sands.");
+            if (tTile.type === TERRAIN.GRASS) possibleClues.push("Hidden beneath the grassy plains.");
+            if (tTile.type === TERRAIN.FOREST) possibleClues.push("Concealed within a dense forest of palms.");
+            if (tTile.type === TERRAIN.MOUNTAIN) possibleClues.push("Buried in the rocky terrain of a mountain.");
+
+            // 3. Adjacency Clues
+            let adjacentWater = false;
+            let adjacentMountain = false;
+            let adjacentForest = false;
+
+            const neighbors = [ [0,-1], [0,1], [-1,0], [1,0] ];
+            neighbors.forEach(n => {
+                const nx = tx + n[0]; const ny = ty + n[1];
+                if(nx >= 0 && nx < GRID_SIZE && ny >= 0 && ny < GRID_SIZE) {
+                    const type = mapData[ny][nx].type;
+                    if(type === TERRAIN.WATER) adjacentWater = true;
+                    if(type === TERRAIN.MOUNTAIN) adjacentMountain = true;
+                    if(type === TERRAIN.FOREST) adjacentForest = true;
+                }
+            });
+
+            if (adjacentWater) possibleClues.push("Listen to the ocean waves crashing right beside it.");
+            if (adjacentMountain) possibleClues.push("Nestled beside a towering mountain peak.");
+            if (adjacentForest) possibleClues.push("Just a step away from a thick cluster of trees.");
+
+            // Shuffle and pick 3 unique clues
+            possibleClues = possibleClues.sort(() => 0.5 - Math.random());
+            const finalClues = possibleClues.slice(0, 3);
+
+            const listEl = document.getElementById('clue-list');
+            listEl.innerHTML = '';
+            finalClues.forEach(clue => {
+                listEl.innerHTML += `<li>${clue}</li>`;
+            });
+        }
+
+        // --- RENDERING & INTERACTION ---
+
+        function renderMap() {
+            const gridEl = document.getElementById('map-grid');
+            gridEl.innerHTML = '';
+
+            for (let y = 0; y < GRID_SIZE; y++) {
+                for (let x = 0; x < GRID_SIZE; x++) {
+                    const tile = mapData[y][x];
+                    
+                    const el = document.createElement('div');
+                    el.className = `tile type-${tile.type.id}`;
+                    el.id = `tile-${x}-${y}`;
+                    el.innerHTML = tile.icon;
+
+                    if (tile.type.walkable) {
+                        el.onclick = () => handleDig(x, y);
+                    }
+
+                    gridEl.appendChild(el);
+                }
+            }
+        }
+
+        function handleDig(x, y) {
+            if (isGameOver) return;
+            const tile = mapData[y][x];
+            
+            if (tile.dug) {
+                playSound('error');
+                return; // Already dug
+            }
+
+            // Perform Dig
+            tile.dug = true;
+            shovels--;
+            updateShovels();
+
+            const el = document.getElementById(`tile-${x}-${y}`);
+            el.classList.add('dug');
+            el.classList.add('shaking');
+            
+            setTimeout(() => el.classList.remove('shaking'), 300);
+
+            if (tile.hasTreasure) {
+                playSound('win');
+                el.innerHTML = '👑';
+                el.style.fontSize = '40px';
+                triggerGameOver(true);
+            } else {
+                playSound('dig');
+                el.innerHTML = '🕳️';
+                calculateProximity(x, y);
+
+                if (shovels <= 0) {
+                    triggerGameOver(false);
+                }
+            }
+        }
+
+        function calculateProximity(x, y) {
+            // Manhattan distance
+            const dist = Math.abs(x - treasureCoords.x) + Math.abs(y - treasureCoords.y);
+            
+            if (dist <= 2) {
+                setRadar("BOILING HOT! 🔥", "#ef4444");
+            } else if (dist <= 4) {
+                setRadar("WARM ☀️", "#f59e0b");
+            } else if (dist <= 6) {
+                setRadar("COLD ❄️", "#38bdf8");
+            } else {
+                setRadar("FREEZING 🧊", "#94a3b8");
+            }
+        }
+
+        function setRadar(text, color) {
+            const radar = document.getElementById('radar-text');
+            radar.innerText = text;
+            radar.style.color = color;
+            // Pop animation
+            radar.style.transform = 'scale(1.2)';
+            setTimeout(() => radar.style.transform = 'scale(1)', 200);
+        }
+
+        function updateShovels() {
+            document.getElementById('shovels-count').innerText = shovels;
+        }
+
+        function triggerGameOver(isWin) {
+            isGameOver = true;
+            
+            setTimeout(() => {
+                const modal = document.getElementById('end-modal');
+                const title = document.getElementById('end-title');
+                const desc = document.getElementById('end-desc');
+                const icon = document.getElementById('end-icon');
+
+                if (isWin) {
+                    title.innerText = "YOU FOUND IT!";
+                    title.style.color = "#16a34a";
+                    desc.innerText = `You dug up the treasure with ${shovels} shovels left!`;
+                    icon.innerText = "👑";
+                } else {
+                    playSound('lose');
+                    title.innerText = "GAME OVER";
+                    title.style.color = "#ef4444";
+                    desc.innerText = "You ran out of shovels!";
+                    icon.innerText = "💀";
+                    
+                    // Reveal treasure
+                    const tEl = document.getElementById(`tile-${treasureCoords.x}-${treasureCoords.y}`);
+                    tEl.innerHTML = '👑';
+                    tEl.style.fontSize = '40px';
+                    tEl.style.background = '#facc15';
+                }
+
+                modal.style.display = 'flex';
+            }, 500); // Slight delay so animation finishes
+        }
+
+    </script>
+</body>
+</html>

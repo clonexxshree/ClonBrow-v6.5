@@ -1,0 +1,374 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Neon Tic Tac Toe</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Fredoka+One&family=Nunito:wght@700;900&display=swap');
+
+        body { 
+            margin: 0; overflow: hidden; background-color: #0f172a; 
+            font-family: 'Nunito', sans-serif; user-select: none;
+            display: flex; flex-direction: column; align-items: center; justify-content: center;
+            height: 100vh; color: white; touch-action: manipulation;
+        }
+
+        h1 { font-family: 'Fredoka One', cursive; font-size: 48px; margin-bottom: 10px; color: #f8fafc; letter-spacing: 2px;}
+
+        /* --- UI CONTROLS --- */
+        .controls-top {
+            display: flex; gap: 20px; margin-bottom: 20px;
+        }
+
+        .mode-btn {
+            background: #1e293b; color: #94a3b8; border: 2px solid #334155; padding: 10px 20px;
+            border-radius: 12px; font-family: 'Fredoka One'; font-size: 18px; cursor: pointer;
+            transition: all 0.2s;
+        }
+        .mode-btn.active {
+            background: #3b82f6; color: white; border-color: #60a5fa;
+            box-shadow: 0 0 15px rgba(59, 130, 246, 0.5);
+        }
+
+        .score-board {
+            display: flex; gap: 40px; background: rgba(30, 41, 59, 0.8); padding: 15px 40px;
+            border-radius: 16px; border: 2px solid #334155; box-shadow: 0 10px 30px rgba(0,0,0,0.5);
+            margin-bottom: 30px;
+        }
+
+        .score-box { display: flex; flex-direction: column; align-items: center; }
+        .score-label { font-size: 14px; color: #94a3b8; text-transform: uppercase; font-weight: 900; }
+        .score-val { font-family: 'Fredoka One'; font-size: 36px; line-height: 1.2; }
+        
+        .score-x { color: #38bdf8; text-shadow: 0 0 10px rgba(56, 189, 248, 0.5); }
+        .score-o { color: #f43f5e; text-shadow: 0 0 10px rgba(244, 63, 94, 0.5); }
+
+        /* --- THE BOARD --- */
+        #board {
+            display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px;
+            background: #334155; padding: 10px; border-radius: 16px;
+            box-shadow: 0 20px 50px rgba(0,0,0,0.5);
+            position: relative;
+        }
+
+        .cell {
+            width: 100px; height: 100px; background: #0f172a; border-radius: 8px;
+            display: flex; align-items: center; justify-content: center;
+            font-family: 'Fredoka One'; font-size: 72px; cursor: pointer;
+            transition: background 0.2s; box-shadow: inset 0 0 15px rgba(0,0,0,0.8);
+        }
+
+        @media (max-width: 400px) {
+            .cell { width: 80px; height: 80px; font-size: 56px; }
+        }
+
+        .cell:hover { background: #1e293b; }
+        .cell:active { transform: scale(0.95); }
+
+        .mark-x { color: #38bdf8; text-shadow: 0 0 20px #38bdf8; animation: popIn 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275); }
+        .mark-o { color: #f43f5e; text-shadow: 0 0 20px #f43f5e; animation: popIn 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275); }
+
+        @keyframes popIn {
+            0% { transform: scale(0); opacity: 0; }
+            100% { transform: scale(1); opacity: 1; }
+        }
+
+        /* Winning Line */
+        #win-line {
+            position: absolute; background: white; border-radius: 4px;
+            transform-origin: left center; z-index: 10; display: none;
+            box-shadow: 0 0 15px white; pointer-events: none;
+            transition: width 0.3s ease-out;
+        }
+
+        /* --- MODAL --- */
+        .modal {
+            position: absolute; top: 0; left: 0; width: 100vw; height: 100vh;
+            background: rgba(0,0,0,0.8); display: flex; flex-direction: column;
+            align-items: center; justify-content: center; z-index: 100; backdrop-filter: blur(5px);
+            opacity: 0; pointer-events: none; transition: opacity 0.3s;
+        }
+        .modal.active { opacity: 1; pointer-events: auto; }
+
+        .modal-box {
+            background: #1e293b; padding: 40px 60px; border-radius: 24px; text-align: center;
+            border: 4px solid #334155; box-shadow: 0 20px 50px rgba(0,0,0,0.8);
+            transform: translateY(20px); transition: transform 0.3s;
+        }
+        .modal.active .modal-box { transform: translateY(0); }
+
+        #win-text { font-family: 'Fredoka One'; font-size: 64px; margin-bottom: 20px; line-height: 1.1;}
+
+        .btn-action {
+            background: #facc15; color: #0f172a; border: none; padding: 15px 40px; font-size: 24px;
+            font-family: 'Fredoka One'; border-radius: 12px; cursor: pointer; transition: 0.1s;
+            box-shadow: 0 6px 0 #ca8a04;
+        }
+        .btn-action:hover { transform: translateY(-2px); box-shadow: 0 8px 0 #ca8a04; background: #fef08a;}
+        .btn-action:active { transform: translateY(6px); box-shadow: 0 0 0 #ca8a04; }
+
+    </style>
+</head>
+<body>
+
+    <h1>TIC TAC TOE</h1>
+
+    <div class="controls-top">
+        <button class="mode-btn active" id="btn-1p" onclick="setMode('1P')">1 PLAYER (VS AI)</button>
+        <button class="mode-btn" id="btn-2p" onclick="setMode('2P')">2 PLAYERS</button>
+    </div>
+
+    <div class="score-board">
+        <div class="score-box">
+            <div class="score-label" id="label-x">Player (X)</div>
+            <div class="score-val score-x" id="score-x">0</div>
+        </div>
+        <div style="width: 2px; background: #334155;"></div>
+        <div class="score-box">
+            <div class="score-label" id="label-o">Computer (O)</div>
+            <div class="score-val score-o" id="score-o">0</div>
+        </div>
+    </div>
+
+    <div id="board">
+        <div id="win-line"></div>
+        <div class="cell" onclick="handleCellClick(0)" id="cell-0"></div>
+        <div class="cell" onclick="handleCellClick(1)" id="cell-1"></div>
+        <div class="cell" onclick="handleCellClick(2)" id="cell-2"></div>
+        <div class="cell" onclick="handleCellClick(3)" id="cell-3"></div>
+        <div class="cell" onclick="handleCellClick(4)" id="cell-4"></div>
+        <div class="cell" onclick="handleCellClick(5)" id="cell-5"></div>
+        <div class="cell" onclick="handleCellClick(6)" id="cell-6"></div>
+        <div class="cell" onclick="handleCellClick(7)" id="cell-7"></div>
+        <div class="cell" onclick="handleCellClick(8)" id="cell-8"></div>
+    </div>
+
+    <button onclick="resetBoard()" style="background: transparent; color: #94a3b8; border: 2px solid #334155; padding: 10px 20px; border-radius: 8px; font-family: 'Fredoka One'; margin-top: 30px; cursor: pointer; transition: 0.2s;" onmouseover="this.style.color='white'; this.style.borderColor='#64748b';" onmouseout="this.style.color='#94a3b8'; this.style.borderColor='#334155';">RESET BOARD</button>
+
+    <div id="end-modal" class="modal">
+        <div class="modal-box">
+            <div id="win-text">X WINS!</div>
+            <button class="btn-action" onclick="resetBoard()">PLAY AGAIN</button>
+        </div>
+    </div>
+
+    <script>
+        // --- AUDIO ENGINE ---
+        const AudioContext = window.AudioContext || window.webkitAudioContext;
+        let audioCtx;
+        function initAudio() { if(!audioCtx) audioCtx = new AudioContext(); }
+        
+        function playSound(type) {
+            if(!audioCtx) return;
+            const t = audioCtx.currentTime;
+            const osc = audioCtx.createOscillator(); const gain = audioCtx.createGain();
+            
+            if (type === 'x') {
+                osc.type = 'sine'; osc.frequency.setValueAtTime(600, t); osc.frequency.exponentialRampToValueAtTime(1200, t+0.1);
+                gain.gain.setValueAtTime(0.5, t); gain.gain.exponentialRampToValueAtTime(0.01, t+0.1);
+            } else if (type === 'o') {
+                osc.type = 'triangle'; osc.frequency.setValueAtTime(400, t); osc.frequency.exponentialRampToValueAtTime(200, t+0.15);
+                gain.gain.setValueAtTime(0.5, t); gain.gain.exponentialRampToValueAtTime(0.01, t+0.15);
+            } else if (type === 'win') {
+                osc.type = 'square'; osc.frequency.setValueAtTime(400, t); osc.frequency.setValueAtTime(600, t+0.1); osc.frequency.setValueAtTime(800, t+0.2);
+                gain.gain.setValueAtTime(0.3, t); gain.gain.exponentialRampToValueAtTime(0.01, t+0.6);
+            } else if (type === 'draw') {
+                osc.type = 'sawtooth'; osc.frequency.setValueAtTime(300, t); osc.frequency.exponentialRampToValueAtTime(100, t+0.4);
+                gain.gain.setValueAtTime(0.3, t); gain.gain.exponentialRampToValueAtTime(0.01, t+0.4);
+            }
+            
+            osc.connect(gain); gain.connect(audioCtx.destination);
+            osc.start(t); osc.stop(t + 1);
+        }
+
+        // --- GAME STATE ---
+        let board = Array(9).fill(null);
+        let currentPlayer = 'X';
+        let gameActive = true;
+        let mode = '1P'; // '1P' or '2P'
+        let scores = { X: 0, O: 0 };
+
+        const WINNING_COMBINATIONS = [
+            [0, 1, 2], [3, 4, 5], [6, 7, 8], // Rows
+            [0, 3, 6], [1, 4, 7], [2, 5, 8], // Cols
+            [0, 4, 8], [2, 4, 6]             // Diagonals
+        ];
+
+        // --- GAME LOGIC ---
+
+        function setMode(newMode) {
+            initAudio();
+            mode = newMode;
+            document.getElementById('btn-1p').classList.toggle('active', mode === '1P');
+            document.getElementById('btn-2p').classList.toggle('active', mode === '2P');
+            
+            document.getElementById('label-x').innerText = mode === '1P' ? 'Player (X)' : 'Player 1 (X)';
+            document.getElementById('label-o').innerText = mode === '1P' ? 'Computer (O)' : 'Player 2 (O)';
+            
+            scores = { X: 0, O: 0 };
+            updateScores();
+            resetBoard();
+        }
+
+        function handleCellClick(index) {
+            initAudio();
+            if (!gameActive || board[index]) return;
+
+            makeMove(index, currentPlayer);
+
+            if (gameActive && mode === '1P' && currentPlayer === 'O') {
+                // Trigger AI Turn
+                gameActive = false; // Temporarily lock board
+                setTimeout(makeAIMove, 500);
+            }
+        }
+
+        function makeMove(index, player) {
+            board[index] = player;
+            const cell = document.getElementById(`cell-${index}`);
+            
+            if (player === 'X') {
+                cell.innerHTML = `<span class="mark-x">X</span>`;
+                playSound('x');
+            } else {
+                cell.innerHTML = `<span class="mark-o">O</span>`;
+                playSound('o');
+            }
+
+            checkResult();
+
+            if (gameActive) {
+                currentPlayer = currentPlayer === 'X' ? 'O' : 'X';
+            }
+        }
+
+        function checkResult() {
+            let roundWon = false;
+            let winningCombo = null;
+
+            for (let i = 0; i < WINNING_COMBINATIONS.length; i++) {
+                const [a, b, c] = WINNING_COMBINATIONS[i];
+                if (board[a] && board[a] === board[b] && board[a] === board[c]) {
+                    roundWon = true;
+                    winningCombo = WINNING_COMBINATIONS[i];
+                    break;
+                }
+            }
+
+            if (roundWon) {
+                gameActive = false;
+                scores[currentPlayer]++;
+                updateScores();
+                drawWinLine(winningCombo);
+                playSound('win');
+                showModal(`${currentPlayer} WINS!`, currentPlayer === 'X' ? '#38bdf8' : '#f43f5e');
+                return;
+            }
+
+            if (!board.includes(null)) {
+                gameActive = false;
+                playSound('draw');
+                showModal("IT'S A DRAW!", '#cbd5e1');
+                return;
+            }
+        }
+
+        // --- AI LOGIC ---
+        function makeAIMove() {
+            if (!board.includes(null)) return;
+
+            let moveIndex = -1;
+
+            // 1. Try to Win
+            moveIndex = findBestMove('O');
+            
+            // 2. Try to Block
+            if (moveIndex === -1) moveIndex = findBestMove('X');
+
+            // 3. Take Center if free
+            if (moveIndex === -1 && !board[4]) moveIndex = 4;
+
+            // 4. Take random corner or edge
+            if (moveIndex === -1) {
+                const available = board.map((val, idx) => val === null ? idx : null).filter(val => val !== null);
+                moveIndex = available[Math.floor(Math.random() * available.length)];
+            }
+
+            gameActive = true; // Unlock
+            makeMove(moveIndex, 'O');
+        }
+
+        function findBestMove(player) {
+            for (let i = 0; i < WINNING_COMBINATIONS.length; i++) {
+                const [a, b, c] = WINNING_COMBINATIONS[i];
+                const vals = [board[a], board[b], board[c]];
+                if (vals.filter(v => v === player).length === 2 && vals.includes(null)) {
+                    if (!board[a]) return a;
+                    if (!board[b]) return b;
+                    if (!board[c]) return c;
+                }
+            }
+            return -1;
+        }
+
+        // --- VISUALS & UI ---
+
+        function drawWinLine(combo) {
+            const line = document.getElementById('win-line');
+            const c1 = document.getElementById(`cell-${combo[0]}`).getBoundingClientRect();
+            const c3 = document.getElementById(`cell-${combo[2]}`).getBoundingClientRect();
+            const boardRect = document.getElementById('board').getBoundingClientRect();
+
+            const x1 = c1.left - boardRect.left + c1.width / 2;
+            const y1 = c1.top - boardRect.top + c1.height / 2;
+            const x2 = c3.left - boardRect.left + c3.width / 2;
+            const y2 = c3.top - boardRect.top + c3.height / 2;
+
+            const length = Math.hypot(x2 - x1, y2 - y1);
+            const angle = Math.atan2(y2 - y1, x2 - x1) * (180 / Math.PI);
+
+            line.style.width = '0px';
+            line.style.height = '8px';
+            line.style.background = currentPlayer === 'X' ? '#38bdf8' : '#f43f5e';
+            line.style.boxShadow = `0 0 15px ${currentPlayer === 'X' ? '#38bdf8' : '#f43f5e'}`;
+            line.style.left = `${x1}px`;
+            line.style.top = `${y1 - 4}px`;
+            line.style.transform = `rotate(${angle}deg)`;
+            line.style.display = 'block';
+
+            // Animate width
+            setTimeout(() => { line.style.width = `${length}px`; }, 10);
+        }
+
+        function showModal(text, color) {
+            setTimeout(() => {
+                const modal = document.getElementById('end-modal');
+                const winText = document.getElementById('win-text');
+                winText.innerText = text;
+                winText.style.color = color;
+                winText.style.textShadow = `0 0 20px ${color}`;
+                modal.classList.add('active');
+            }, 600);
+        }
+
+        function resetBoard() {
+            initAudio();
+            board = Array(9).fill(null);
+            currentPlayer = 'X';
+            gameActive = true;
+            
+            document.querySelectorAll('.cell').forEach(cell => cell.innerHTML = '');
+            document.getElementById('win-line').style.display = 'none';
+            document.getElementById('end-modal').classList.remove('active');
+        }
+
+        function updateScores() {
+            document.getElementById('score-x').innerText = scores.X;
+            document.getElementById('score-o').innerText = scores.O;
+        }
+
+    </script>
+</body>
+</html>

@@ -1,0 +1,400 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Ligament Elasticity & Rupture Lab</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;700&family=Inter:wght@300;400;600;700&display=swap');
+
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: #020617;
+            color: #f1f5f9;
+            overflow: hidden;
+        }
+
+        .font-mono { font-family: 'JetBrains Mono', monospace; }
+
+        .glass-card {
+            background: rgba(15, 23, 42, 0.7);
+            backdrop-filter: blur(12px);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.5);
+        }
+
+        .digital-readout {
+            background: #061021;
+            color: #f43f5e; /* Rose-500 for "Biological" feel */
+            text-shadow: 0 0 8px rgba(244, 63, 94, 0.4);
+            border: 1px solid #1e293b;
+        }
+
+        /* Tendon Visuals */
+        .tendon-tissue {
+            fill: #fda4af;
+            stroke: #f43f5e;
+            stroke-width: 1;
+            transition: all 0.1s linear;
+        }
+
+        .tendon-texture {
+            fill: none;
+            stroke: #fb7185;
+            stroke-width: 0.5;
+            opacity: 0.4;
+        }
+
+        .machine-part { fill: #334155; stroke: #475569; stroke-width: 2; }
+
+        /* Animation for Snap */
+        @keyframes snap-top {
+            0% { transform: translateY(0); }
+            100% { transform: translateY(-40px) rotate(-5deg); }
+        }
+        @keyframes snap-bottom {
+            0% { transform: translateY(0); }
+            100% { transform: translateY(40px) rotate(5deg); }
+        }
+
+        .rupture-top { animation: snap-top 0.3s ease-out forwards; }
+        .rupture-bottom { animation: snap-bottom 0.3s ease-out forwards; }
+
+        input[type=range] {
+            accent-color: #f43f5e;
+        }
+
+        .scanline {
+            width: 100%;
+            height: 2px;
+            background: rgba(244, 63, 94, 0.05);
+            position: absolute;
+            z-index: 10;
+            animation: scan 8s linear infinite;
+        }
+        @keyframes scan { 0% { top: 0%; } 100% { top: 100%; } }
+    </style>
+</head>
+<body class="min-h-screen p-4 md:p-8 flex items-center justify-center">
+
+    <div class="max-w-7xl w-full grid grid-cols-1 lg:grid-cols-12 gap-8 items-stretch">
+        
+        <!-- Simulation Stage -->
+        <div class="lg:col-span-8 flex flex-col gap-6">
+            <div id="sim-viewport" class="glass-card rounded-3xl p-8 relative flex-grow min-h-[500px] flex items-center justify-center overflow-hidden border border-slate-800">
+                <div class="scanline"></div>
+                
+                <!-- HUD Header -->
+                <div class="absolute top-6 left-8 flex items-center gap-3 z-20">
+                    <div id="status-dot" class="w-2.5 h-2.5 rounded-full bg-rose-500 shadow-[0_0_10px_#f43f5e]"></div>
+                    <span id="status-label" class="text-[10px] font-bold text-slate-400 uppercase tracking-widest font-mono">Tensile Stress Analysis Active</span>
+                </div>
+
+                <!-- SVG Layer: Universal Testing Machine & Tendon -->
+                <svg id="lab-svg" viewBox="0 0 600 500" class="w-full h-auto relative z-10">
+                    <!-- Machine Frame -->
+                    <rect x="200" y="50" width="200" height="400" rx="10" class="machine-part" fill-opacity="0.1" />
+                    <rect x="220" y="70" width="160" height="360" fill="#020617" />
+                    
+                    <!-- Fixed Bottom Clamp -->
+                    <rect x="240" y="380" width="120" height="40" rx="4" class="machine-part" />
+                    <text x="300" y="445" class="text-[10px] font-bold uppercase fill-slate-600" text-anchor="middle">Fixed Base</text>
+
+                    <!-- Movable Top Head -->
+                    <g id="movable-head" transform="translate(0, 0)">
+                        <rect x="240" y="80" width="120" height="40" rx="4" class="machine-part" />
+                        <rect x="290" y="40" width="20" height="40" class="machine-part" />
+                        <text x="300" y="70" class="text-[10px] font-bold uppercase fill-slate-600" text-anchor="middle">Actuator</text>
+                    </g>
+
+                    <!-- The Tendon Specimen -->
+                    <g id="tendon-group">
+                        <!-- Intact Tendon -->
+                        <path id="tendon-path" d="M 270 120 L 330 120 L 330 380 L 270 380 Z" class="tendon-tissue" />
+                        
+                        <!-- Fiber Texture (Dynamic) -->
+                        <g id="tendon-fibers"></g>
+
+                        <!-- Snapped Fragments (Hidden by default) -->
+                        <g id="snap-fragments" class="opacity-0">
+                            <path id="fragment-top" d="M 270 120 L 330 120 L 330 245 L 300 235 L 270 245 Z" class="tendon-tissue" />
+                            <path id="fragment-bottom" d="M 270 380 L 330 380 L 330 255 L 300 265 L 270 255 Z" class="tendon-tissue" />
+                        </g>
+                    </g>
+
+                    <!-- Measurement Markers -->
+                    <g stroke="#334155" stroke-width="1" stroke-dasharray="4 4">
+                        <line x1="380" y1="120" x2="420" y2="120" />
+                        <line id="marker-delta" x1="400" y1="120" x2="400" y2="120" stroke="#f43f5e" stroke-width="2" stroke-dasharray="0" />
+                    </g>
+                    <text id="label-delta" x="410" y="120" fill="#f43f5e" font-size="10" font-weight="bold" font-family="JetBrains Mono"></text>
+                </svg>
+
+                <!-- Tags -->
+                <div class="absolute bottom-6 left-8 flex flex-col gap-1">
+                    <span class="text-[9px] font-mono text-slate-500 uppercase">Specimen: ACL Synthetic Graft</span>
+                    <span class="text-[9px] font-mono text-slate-500 uppercase">Law: F = k · Δx (Elastic Region)</span>
+                </div>
+            </div>
+
+            <!-- Controls -->
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div class="glass-card p-6 rounded-2xl space-y-4">
+                    <div class="flex justify-between items-center">
+                        <label class="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Stiffness (k)</label>
+                        <span id="k-display" class="text-xs font-mono text-rose-400">500 N/m</span>
+                    </div>
+                    <input type="range" id="k-slider" min="100" max="2000" step="50" value="500" class="w-full h-1.5 bg-slate-800 rounded-lg appearance-none cursor-pointer">
+                    <div class="flex justify-between text-[9px] text-slate-500 uppercase">
+                        <span>Compliant</span>
+                        <span>Stiff (Fibrotic)</span>
+                    </div>
+                </div>
+                <div class="glass-card p-6 rounded-2xl space-y-4">
+                    <div class="flex justify-between items-center">
+                        <label class="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Applied Tension (F)</label>
+                        <span id="f-display" class="text-xs font-mono text-rose-400">0 N</span>
+                    </div>
+                    <input type="range" id="f-slider" min="0" max="1200" step="10" value="0" class="w-full h-1.5 bg-slate-800 rounded-lg appearance-none cursor-pointer">
+                    <div class="flex justify-between text-[9px] text-slate-500 uppercase">
+                        <span>Rest</span>
+                        <span>Overload</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Sidebar: Analytics -->
+        <div class="lg:col-span-4 flex flex-col gap-6">
+            
+            <!-- Digital Readout -->
+            <div class="digital-readout rounded-3xl p-6 space-y-6">
+                <div class="flex justify-between items-center border-b border-rose-900/30 pb-3">
+                    <span class="text-[10px] font-bold tracking-tighter opacity-60 uppercase">Biomechanic Telemetry</span>
+                    <span class="text-xs font-mono" id="live-status">STABLE</span>
+                </div>
+
+                <div class="space-y-6">
+                    <div class="space-y-1">
+                        <label class="text-[9px] uppercase font-bold opacity-50">Displacement (Δx)</label>
+                        <div id="data-dx" class="text-4xl font-bold font-mono">0.00 cm</div>
+                    </div>
+
+                    <div class="grid grid-cols-2 gap-4 pt-2 border-t border-rose-900/20">
+                        <div class="space-y-1">
+                            <label class="text-[9px] uppercase font-bold opacity-50">Integrity</label>
+                            <div id="data-integrity" class="text-xl font-bold font-mono text-emerald-400">100%</div>
+                        </div>
+                        <div class="space-y-1">
+                            <label class="text-[9px] uppercase font-bold opacity-50">Load Peak</label>
+                            <div id="data-peak" class="text-xl font-bold font-mono">0 N</div>
+                        </div>
+                    </div>
+
+                    <!-- Stress-Strain Canvas -->
+                    <div class="h-40 bg-black/40 rounded-xl border border-slate-800 p-2 relative">
+                        <canvas id="graph-canvas" class="w-full h-full"></canvas>
+                        <div class="absolute bottom-2 right-2 text-[8px] font-mono text-slate-600 uppercase">F vs Δx</div>
+                    </div>
+
+                    <button id="btn-reset" class="w-full py-3 bg-slate-800 hover:bg-slate-700 text-slate-300 font-bold rounded-xl text-xs uppercase tracking-widest transition-all">
+                        Reset Specimen
+                    </button>
+                </div>
+            </div>
+
+            <!-- Physics Logic Card -->
+            <div class="glass-card p-6 rounded-3xl space-y-4">
+                <h3 class="text-xs font-bold text-slate-400 uppercase tracking-widest">Hooke's Law in Biology</h3>
+                <div class="bg-slate-900/50 p-4 rounded-xl border border-slate-800 font-mono text-center text-rose-500 text-sm">
+                    F = k · Δx
+                </div>
+                <p class="text-[10px] text-slate-400 leading-relaxed">
+                    Ligaments act as biological springs. Within the <strong>Elastic Region</strong>, they return to their original length once tension is removed. 
+                </p>
+                <div class="p-3 bg-slate-900/50 rounded-xl border border-slate-800">
+                    <div class="text-[9px] font-bold text-rose-500 uppercase mb-1">Rupture Point</div>
+                    <p class="text-[9px] text-slate-500 leading-tight">
+                        Once the applied force exceeds the <strong>Ultimate Tensile Strength</strong> (approx. 800-1000N for this model), microscopic collagen tears lead to total failure.
+                    </p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', () => {
+            const kSlider = document.getElementById('k-slider');
+            const fSlider = document.getElementById('f-slider');
+            const kDisplay = document.getElementById('k-display');
+            const fDisplay = document.getElementById('f-display');
+            const btnReset = document.getElementById('btn-reset');
+            
+            const movableHead = document.getElementById('movable-head');
+            const tendonPath = document.getElementById('tendon-path');
+            const tendonFibers = document.getElementById('tendon-fibers');
+            const snapFragments = document.getElementById('snap-fragments');
+            const fragTop = document.getElementById('fragment-top');
+            const fragBottom = document.getElementById('fragment-bottom');
+            
+            const dataDx = document.getElementById('data-dx');
+            const dataIntegrity = document.getElementById('data-integrity');
+            const dataPeak = document.getElementById('data-peak');
+            const liveStatus = document.getElementById('live-status');
+            const statusDot = document.getElementById('status-dot');
+
+            const markerDelta = document.getElementById('marker-delta');
+            const labelDelta = document.getElementById('label-delta');
+
+            const canvas = document.getElementById('graph-canvas');
+            const ctx = canvas.getContext('2d');
+
+            let isSnapped = false;
+            let peakForce = 0;
+            let failureThreshold = 800; // N
+            let graphPoints = [];
+
+            function resizeCanvas() {
+                canvas.width = canvas.parentElement.clientWidth;
+                canvas.height = canvas.parentElement.clientHeight;
+                drawGraph();
+            }
+            window.addEventListener('resize', resizeCanvas);
+            resizeCanvas();
+
+            function drawGraph() {
+                ctx.clearRect(0, 0, canvas.width, canvas.height);
+                
+                // Draw Grid
+                ctx.strokeStyle = '#1e293b';
+                ctx.lineWidth = 1;
+                for(let i=0; i<canvas.width; i+=20) {
+                    ctx.beginPath(); ctx.moveTo(i, 0); ctx.lineTo(i, canvas.height); ctx.stroke();
+                }
+                for(let i=0; i<canvas.height; i+=20) {
+                    ctx.beginPath(); ctx.moveTo(0, i); ctx.lineTo(canvas.width, i); ctx.stroke();
+                }
+
+                // Draw Trace
+                if (graphPoints.length > 1) {
+                    ctx.beginPath();
+                    ctx.strokeStyle = '#f43f5e';
+                    ctx.lineWidth = 2;
+                    ctx.moveTo(graphPoints[0].x, graphPoints[0].y);
+                    for(let i=1; i<graphPoints.length; i++) {
+                        ctx.lineTo(graphPoints[i].x, graphPoints[i].y);
+                    }
+                    ctx.stroke();
+                }
+            }
+
+            function update() {
+                const k = parseInt(kSlider.value);
+                let f = parseInt(fSlider.value);
+                
+                kDisplay.textContent = `${k} N/m`;
+                fDisplay.textContent = `${f} N`;
+
+                if (isSnapped) {
+                    fSlider.disabled = true;
+                    return;
+                }
+
+                // Calculate displacement in meters, then scale for SVG (px)
+                // Let's say 1m = 1000px for visual purposes
+                const dx = f / k; // meters
+                const visualDx = dx * 1000; // px
+                
+                // Rupture Check
+                // Note: Failure threshold is slightly influenced by stiffness
+                const currentThreshold = failureThreshold + (k / 10);
+                
+                if (f > currentThreshold) {
+                    triggerSnap();
+                    return;
+                }
+
+                // Update Visuals
+                movableHead.setAttribute('transform', `translate(0, ${-visualDx})`);
+                
+                // Tendon thinning (Poisson effect)
+                const widthMod = Math.max(20, 60 - (visualDx * 0.4));
+                const xStart = 300 - (widthMod/2);
+                const xEnd = 300 + (widthMod/2);
+                
+                // Update path
+                const topY = 120 - visualDx;
+                tendonPath.setAttribute('d', `M ${xStart} ${topY} L ${xEnd} ${topY} L 330 380 L 270 380 Z`);
+                
+                // Update markers
+                markerDelta.setAttribute('y2', 120 - visualDx);
+                labelDelta.setAttribute('y', 120 - visualDx - 5);
+                labelDelta.textContent = `${(dx * 100).toFixed(2)} cm`;
+
+                // Update Telemetry
+                dataDx.textContent = `${(dx * 100).toFixed(2)} cm`;
+                if (f > peakForce) peakForce = f;
+                dataPeak.textContent = `${peakForce} N`;
+                
+                const integrity = Math.max(0, 100 - (f / currentThreshold * 100));
+                dataIntegrity.textContent = `${Math.round(integrity)}%`;
+                dataIntegrity.style.color = integrity < 30 ? '#f43f5e' : '#10b981';
+
+                // Graph mapping
+                const gx = (dx * 100 / 40) * canvas.width; // 40cm max range
+                const gy = canvas.height - (f / 1200 * canvas.height);
+                graphPoints.push({x: gx, y: gy});
+                if (graphPoints.length > 100) graphPoints.shift();
+                drawGraph();
+            }
+
+            function triggerSnap() {
+                isSnapped = true;
+                liveStatus.textContent = "RUPTURED";
+                liveStatus.classList.add("text-rose-500");
+                statusDot.classList.replace("bg-rose-500", "bg-slate-700");
+                statusDot.classList.remove("shadow-[0_0_10px_#f43f5e]");
+                
+                tendonPath.style.opacity = "0";
+                snapFragments.style.opacity = "1";
+                
+                fragTop.classList.add("rupture-top");
+                fragBottom.classList.add("rupture-bottom");
+                
+                // Add rupture point to graph (sharp drop)
+                const last = graphPoints[graphPoints.length - 1];
+                graphPoints.push({x: last.x, y: canvas.height});
+                drawGraph();
+            }
+
+            function reset() {
+                isSnapped = false;
+                peakForce = 0;
+                fSlider.value = 0;
+                fSlider.disabled = false;
+                graphPoints = [];
+                
+                tendonPath.style.opacity = "1";
+                snapFragments.style.opacity = "0";
+                fragTop.classList.remove("rupture-top");
+                fragBottom.classList.remove("rupture-bottom");
+                
+                liveStatus.textContent = "STABLE";
+                liveStatus.classList.remove("text-rose-500");
+                statusDot.classList.replace("bg-slate-700", "bg-rose-500");
+                statusDot.classList.add("shadow-[0_0_10px_#f43f5e]");
+                
+                update();
+            }
+
+            kSlider.addEventListener('input', update);
+            fSlider.addEventListener('input', update);
+            btnReset.addEventListener('click', reset);
+
+            // Init
+            update();
+        });
+    </script>
+</body>
+</html>

@@ -1,0 +1,453 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Tourniquet Pressure & Hemodynamics Lab</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;700&family=Inter:wght@300;400;600;700&display=swap');
+
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: #020617;
+            color: #f8fafc;
+            overflow-x: hidden;
+            user-select: none;
+        }
+
+        .font-mono { font-family: 'JetBrains Mono', monospace; }
+
+        .glass-card {
+            background: rgba(15, 23, 42, 0.75);
+            backdrop-filter: blur(16px);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.5);
+        }
+
+        .digital-readout {
+            background: #061021;
+            color: #38bdf8; /* Sky base */
+            text-shadow: 0 0 10px rgba(56, 189, 248, 0.4);
+            border: 1px solid #1e293b;
+            transition: all 0.3s ease;
+        }
+
+        .status-danger {
+            color: #f43f5e !important;
+            text-shadow: 0 0 12px rgba(244, 63, 94, 0.6) !important;
+            border-color: rgba(244, 63, 94, 0.4) !important;
+        }
+
+        .status-safe {
+            color: #10b981 !important;
+            text-shadow: 0 0 12px rgba(16, 185, 129, 0.6) !important;
+        }
+
+        /* Anatomy SVG Styles */
+        .limb-skin { fill: #1e293b; stroke: #334155; stroke-width: 2; }
+        
+        .artery-bg { fill: #450a0a; opacity: 0.3; }
+        .artery-wall { fill: none; stroke: #991b1b; stroke-width: 4; transition: d 0.2s ease; }
+        
+        .nerve-path { fill: none; stroke: #fef08a; stroke-width: 2; opacity: 0.5; }
+        
+        .tourniquet-cuff {
+            fill: #475569;
+            stroke: #64748b;
+            stroke-width: 2;
+            transition: transform 0.2s ease;
+        }
+
+        /* Physics Grid */
+        .lab-grid {
+            background-size: 50px 50px;
+            background-image: 
+                linear-gradient(to right, rgba(56, 189, 248, 0.03) 1px, transparent 1px),
+                linear-gradient(to bottom, rgba(56, 189, 248, 0.03) 1px, transparent 1px);
+        }
+
+        .scanline {
+            width: 100%;
+            height: 2px;
+            background: rgba(56, 189, 248, 0.05);
+            position: absolute;
+            z-index: 10;
+            animation: scan 8s linear infinite;
+        }
+        @keyframes scan { 0% { top: 0%; } 100% { top: 100%; } }
+
+        /* Custom Range Slider */
+        input[type=range] {
+            -webkit-appearance: none;
+            background: transparent;
+            cursor: pointer;
+        }
+
+        input[type=range]::-webkit-slider-runnable-track {
+            background: linear-gradient(to right, #10b981, #f59e0b, #f43f5e);
+            height: 8px;
+            border-radius: 4px;
+        }
+
+        input[type=range]::-webkit-slider-thumb {
+            -webkit-appearance: none;
+            height: 24px;
+            width: 24px;
+            border-radius: 50%;
+            background: #f8fafc;
+            border: 2px solid #3b82f6;
+            margin-top: -8px;
+            box-shadow: 0 0 10px rgba(0,0,0,0.5);
+        }
+    </style>
+</head>
+<body class="min-h-screen p-4 md:p-8 flex items-center justify-center">
+
+    <div class="max-w-7xl w-full grid grid-cols-1 lg:grid-cols-12 gap-8 items-stretch">
+        
+        <!-- Simulation Viewport -->
+        <div class="lg:col-span-8 flex flex-col gap-6">
+            <div id="sim-viewport" class="glass-card rounded-3xl p-0 relative flex-grow min-h-[500px] flex flex-col overflow-hidden border border-slate-800 lab-grid">
+                <div class="scanline"></div>
+                
+                <!-- HUD Header -->
+                <div class="absolute top-6 left-8 flex items-center gap-3 z-30">
+                    <div id="status-dot" class="w-2.5 h-2.5 rounded-full bg-emerald-500 shadow-[0_0_10px_#10b981]"></div>
+                    <span id="status-text" class="text-[10px] font-bold text-slate-400 uppercase tracking-widest font-mono">Triage Status: <span id="hud-mode" class="text-emerald-400">Arterial Flow Normal</span></span>
+                </div>
+
+                <!-- Simulation Area -->
+                <div class="relative w-full flex-grow flex items-center justify-center">
+                    
+                    <!-- SVG Anatomy Overlay -->
+                    <svg id="anatomy-svg" viewBox="0 0 800 400" class="w-full h-full relative z-10">
+                        <!-- Limb Silhouette (Arm section) -->
+                        <path class="limb-skin" d="M 0,100 L 800,100 L 800,300 L 0,300 Z" />
+
+                        <!-- Vessel Paths -->
+                        <rect x="0" y="180" width="800" height="40" class="artery-bg" />
+                        <path id="artery-top" class="artery-wall" d="M 0,180 L 800,180" />
+                        <path id="artery-bottom" class="artery-wall" d="M 0,220 L 800,220" />
+                        
+                        <path id="nerve-path" class="nerve-path" d="M 0,260 L 800,260" />
+
+                        <!-- Tourniquet Cuff -->
+                        <g id="cuff-group" transform="translate(300, 80)">
+                            <rect id="cuff-strap" x="0" y="0" width="100" height="240" class="tourniquet-cuff" rx="10" />
+                            <text x="50" y="125" text-anchor="middle" font-size="10" font-weight="bold" fill="#1e293b" font-family="monospace" transform="rotate(90, 50, 125)">TQ CUFF</text>
+                        </g>
+
+                        <!-- Wound/Bleed Point -->
+                        <g transform="translate(650, 200)">
+                            <path d="M -10,-10 L 10,10 M -10,10 L 10,-10" stroke="#f43f5e" stroke-width="3" stroke-linecap="round" />
+                            <text y="30" text-anchor="middle" font-size="10" font-weight="bold" fill="#f43f5e" font-family="monospace">LACERATION</text>
+                        </g>
+                    </svg>
+
+                    <!-- Canvas for Blood & Nerve Signals -->
+                    <canvas id="physics-canvas" class="absolute inset-0 w-full h-full z-20 pointer-events-none"></canvas>
+
+                </div>
+
+                <!-- Labels -->
+                <div class="absolute bottom-6 left-8 flex flex-col gap-1 z-30">
+                    <span class="text-[9px] font-mono text-slate-500 uppercase">Input: Compression Dial (Manual)</span>
+                    <span class="text-[9px] font-mono text-slate-500 uppercase">Target: 120 mmHg (Occlusion)</span>
+                </div>
+            </div>
+
+            <!-- Interaction Controls -->
+            <div class="glass-card p-6 rounded-2xl flex flex-col gap-4">
+                <div class="flex justify-between items-center">
+                    <div>
+                        <div class="text-xs font-bold text-slate-200 uppercase tracking-widest">Pneumatic Controller</div>
+                        <div class="text-[10px] text-slate-500 font-mono mt-1">Adjust dial to occlude the artery. Watch for nerve signal degradation.</div>
+                    </div>
+                    <div class="text-right">
+                        <div class="text-[10px] font-bold text-slate-400 uppercase">Pressure Reading</div>
+                        <div id="pressure-val" class="text-2xl font-bold font-mono text-emerald-400">0 mmHg</div>
+                    </div>
+                </div>
+                
+                <input type="range" id="pressure-slider" min="0" max="250" value="0" class="w-full">
+                <div class="flex justify-between text-[9px] font-mono text-slate-500 uppercase">
+                    <span>Lax</span>
+                    <span>Systolic (120)</span>
+                    <span>Over-tightened</span>
+                </div>
+            </div>
+        </div>
+
+        <!-- Sidebar: Analytics & Data -->
+        <div class="lg:col-span-4 flex flex-col gap-6">
+            
+            <!-- Digital Readout -->
+            <div id="telemetry-panel" class="digital-readout rounded-3xl p-6 space-y-6 flex-grow">
+                <div class="flex justify-between items-center border-b border-current pb-3 opacity-60">
+                    <span class="text-[10px] font-bold tracking-tighter uppercase">Biometric Telemetry</span>
+                    <span class="text-xs font-mono animate-pulse">LIVE</span>
+                </div>
+
+                <div class="space-y-6">
+                    <!-- Hemorrhage Status -->
+                    <div class="space-y-1">
+                        <label class="text-[10px] uppercase font-bold opacity-60">Arterial Flow Rate</label>
+                        <div class="flex items-baseline gap-2">
+                            <div id="data-flow" class="text-5xl font-bold font-mono">5.20</div>
+                            <span class="text-xl font-mono font-bold opacity-60">L/min</span>
+                        </div>
+                    </div>
+
+                    <div class="grid grid-cols-2 gap-4 pt-4 border-t border-current opacity-80">
+                        <div class="space-y-1">
+                            <label class="text-[9px] uppercase font-bold text-current">Hemorrhage</label>
+                            <div id="data-bleed" class="text-xl font-bold font-mono text-rose-500">ACTIVE</div>
+                        </div>
+                        <div class="space-y-1 text-right">
+                            <label class="text-[9px] uppercase font-bold text-current">Nerve Signal</label>
+                            <div id="data-nerve" class="text-xl font-bold font-mono">STABLE</div>
+                        </div>
+                    </div>
+
+                    <!-- Fidelity Bar -->
+                    <div class="p-4 bg-black/30 rounded-xl border border-current space-y-2">
+                        <div class="flex justify-between items-center">
+                            <label class="text-[9px] uppercase font-bold text-current">Nerve Conduction Integrity</label>
+                            <span id="data-nerve-pct" class="text-[10px] font-mono">100%</span>
+                        </div>
+                        <div class="h-1.5 w-full bg-slate-900 rounded-full overflow-hidden">
+                            <div id="nerve-bar" class="h-full bg-yellow-400 transition-all duration-300" style="width: 100%"></div>
+                        </div>
+                        <p class="text-[8px] opacity-60 leading-tight italic">
+                            High local pressure induces mechanical deformation of axons, slowing or blocking electrical impulses.
+                        </p>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Physiology Card -->
+            <div class="glass-card p-6 rounded-3xl space-y-4">
+                <h3 class="text-xs font-bold text-slate-400 uppercase tracking-widest flex items-center gap-2">
+                    <svg class="w-4 h-4 text-rose-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"></path></svg>
+                    Critical Physics
+                </h3>
+                <div class="space-y-4 text-[11px] text-slate-300 leading-relaxed">
+                    <p>
+                        A tourniquet must apply circumferential pressure greater than the internal blood pressure to collapse the arterial walls.
+                    </p>
+                    
+                    <div class="p-3 bg-emerald-900/20 rounded-xl border border-emerald-500/20">
+                        <strong class="text-emerald-400 block mb-1">Occlusion Threshold (120 mmHg)</strong>
+                        Flow stops ($0\text{ L/min}$). Hemorrhage is controlled.
+                    </div>
+
+                    <div class="p-3 bg-rose-900/20 rounded-xl border border-rose-500/20">
+                        <strong class="text-rose-400 block mb-1">Nerve Crush (>180 mmHg)</strong>
+                        Excessive pressure causes "Neuropraxia." Prolonged use leads to permanent limb paralysis.
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', () => {
+            const canvas = document.getElementById('physics-canvas');
+            const ctx = canvas.getContext('2d');
+            const slider = document.getElementById('pressure-slider');
+            const pressureVal = document.getElementById('pressure-val');
+            
+            const dataFlow = document.getElementById('data-flow');
+            const dataBleed = document.getElementById('data-bleed');
+            const dataNerve = document.getElementById('data-nerve');
+            const dataNervePct = document.getElementById('data-nerve-pct');
+            const nerveBar = document.getElementById('nerve-bar');
+            
+            const hudMode = document.getElementById('hud-mode');
+            const statusDot = document.getElementById('status-dot');
+            const telemetryPanel = document.getElementById('telemetry-panel');
+
+            const arteryTop = document.getElementById('artery-top');
+            const arteryBottom = document.getElementById('artery-bottom');
+
+            // --- State ---
+            let pressure = 0;
+            let bloodParticles = [];
+            let nerveParticles = [];
+            let bleedParticles = [];
+            let nerveTimer = 0;
+
+            function resize() {
+                canvas.width = canvas.parentElement.clientWidth;
+                canvas.height = canvas.parentElement.clientHeight;
+            }
+            window.addEventListener('resize', resize);
+            resize();
+
+            // --- Particle Engine ---
+            class Particle {
+                constructor(type) {
+                    this.type = type;
+                    this.reset();
+                }
+                reset() {
+                    if (this.type === 'blood') {
+                        this.x = 0;
+                        this.y = 185 + Math.random() * 30;
+                        this.vx = 2 + Math.random() * 3;
+                        this.size = 2 + Math.random() * 2;
+                    } else if (this.type === 'bleed') {
+                        this.x = canvas.width * 0.81; // Laceration site
+                        this.y = canvas.height * 0.5;
+                        this.vx = (Math.random() - 0.5) * 5;
+                        this.vy = 2 + Math.random() * 5;
+                        this.life = 1.0;
+                    } else if (this.type === 'nerve') {
+                        this.x = 0;
+                        this.y = 260; // Nerve path
+                        this.vx = 8;
+                        this.size = 4;
+                    }
+                }
+                update(flowSpeed, nerveFidelity) {
+                    if (this.type === 'blood') {
+                        // Occlusion zone check (x=300 to 400)
+                        if (this.x > canvas.width * 0.35 && this.x < canvas.width * 0.52) {
+                            // Squeeze factor
+                            const squeeze = Math.max(0, 1 - (pressure / 120));
+                            this.x += this.vx * flowSpeed * 2; // speed through narrow gap
+                            // Adjust Y to stay in squeezed vessel
+                        } else {
+                            this.x += this.vx * flowSpeed;
+                        }
+                        if (this.x > canvas.width) this.reset();
+                    } else if (this.type === 'bleed') {
+                        this.x += this.vx;
+                        this.y += this.vy;
+                        this.life -= 0.02;
+                        if (this.life <= 0) this.reset();
+                    } else if (this.type === 'nerve') {
+                        this.x += this.vx * (nerveFidelity > 0 ? 1 : 0);
+                        if (this.x > canvas.width) this.active = false;
+                    }
+                }
+            }
+
+            // Init particles
+            for(let i=0; i<80; i++) bloodParticles.push(new Particle('blood'));
+            for(let i=0; i<30; i++) bleedParticles.push(new Particle('bleed'));
+
+            function loop() {
+                ctx.clearRect(0, 0, canvas.width, canvas.height);
+                pressure = parseInt(slider.value);
+
+                // --- Physics Logic ---
+                // Blood Flow: Normal 5.2 L/min, stops at 120 mmHg
+                const flowMultiplier = Math.max(0, 1 - (pressure / 120));
+                const currentFlow = 5.2 * flowMultiplier;
+                
+                // Nerve Fidelity: Drops after 150 mmHg
+                let nerveFidelity = 100;
+                if (pressure > 150) {
+                    nerveFidelity = Math.max(0, 100 - (pressure - 150) * 3);
+                }
+
+                // --- Render Vessels ---
+                const cuffXStart = 300;
+                const cuffXEnd = 400;
+                const midY = 200;
+                const rBase = 20;
+                const rSqueezed = rBase * flowMultiplier;
+
+                // Simple path narrowing for SVG
+                const topD = `M 0,180 L ${cuffXStart},180 L ${cuffXStart + 50},${midY - rSqueezed} L ${cuffXEnd},180 L 800,180`;
+                const botD = `M 0,220 L ${cuffXStart},220 L ${cuffXStart + 50},${midY + rSqueezed} L ${cuffXEnd},220 L 800,220`;
+                arteryTop.setAttribute('d', topD);
+                arteryBottom.setAttribute('d', botD);
+
+                // --- Particles ---
+                bloodParticles.forEach(p => {
+                    p.update(flowMultiplier, 1);
+                    ctx.beginPath();
+                    ctx.arc(p.x, p.y, p.size, 0, Math.PI*2);
+                    ctx.fillStyle = '#f43f5e';
+                    ctx.fill();
+                });
+
+                if (currentFlow > 0.1) {
+                    bleedParticles.forEach(p => {
+                        p.update(1, 1);
+                        ctx.beginPath();
+                        ctx.arc(p.x, p.y, 2, 0, Math.PI*2);
+                        ctx.fillStyle = `rgba(244, 63, 94, ${p.life * flowMultiplier})`;
+                        ctx.fill();
+                    });
+                }
+
+                // Nerve Action Potential
+                nerveTimer++;
+                if (nerveTimer > 60 && nerveFidelity > 5) {
+                    if (Math.random() * 100 < nerveFidelity) {
+                        const np = new Particle('nerve');
+                        np.active = true;
+                        nerveParticles.push(np);
+                    }
+                    nerveTimer = 0;
+                }
+
+                nerveParticles.forEach((p, index) => {
+                    p.update(1, nerveFidelity);
+                    if (!p.active) {
+                        nerveParticles.splice(index, 1);
+                        return;
+                    }
+                    ctx.beginPath();
+                    ctx.arc(p.x, p.y, p.size, 0, Math.PI*2);
+                    ctx.fillStyle = '#fef08a';
+                    ctx.shadowBlur = 10;
+                    ctx.shadowColor = '#fef08a';
+                    ctx.fill();
+                    ctx.shadowBlur = 0;
+                });
+
+                // --- UI Update ---
+                pressureVal.textContent = `${pressure} mmHg`;
+                dataFlow.textContent = currentFlow.toFixed(2);
+                dataNervePct.textContent = `${Math.round(nerveFidelity)}%`;
+                nerveBar.style.width = `${nerveFidelity}%`;
+
+                if (pressure >= 120) {
+                    dataBleed.textContent = "CONTROLLED";
+                    dataBleed.className = "text-xl font-bold font-mono text-emerald-400";
+                    hudMode.textContent = "Hemorrhage Controlled";
+                    hudMode.className = "text-emerald-400";
+                    statusDot.className = "w-2.5 h-2.5 rounded-full bg-emerald-500 shadow-[0_0_10px_#10b981]";
+                    pressureVal.className = "text-2xl font-bold font-mono text-emerald-400";
+                } else {
+                    dataBleed.textContent = "ACTIVE";
+                    dataBleed.className = "text-xl font-bold font-mono text-rose-500";
+                    hudMode.textContent = "Arterial Bleeding Active";
+                    hudMode.className = "text-rose-500";
+                    statusDot.className = "w-2.5 h-2.5 rounded-full bg-rose-500 shadow-[0_0_10px_#f43f5e] animate-pulse";
+                    pressureVal.className = "text-2xl font-bold font-mono text-amber-400";
+                }
+
+                if (nerveFidelity < 100) {
+                    telemetryPanel.classList.add('status-danger');
+                    dataNerve.textContent = nerveFidelity > 0 ? "IMPEDED" : "CRUSHED";
+                    dataNerve.className = "text-xl font-bold font-mono text-rose-500";
+                } else {
+                    telemetryPanel.classList.remove('status-danger');
+                    dataNerve.textContent = "STABLE";
+                    dataNerve.className = "text-xl font-bold font-mono text-emerald-400";
+                }
+
+                requestAnimationFrame(loop);
+            }
+
+            loop();
+        });
+    </script>
+</body>
+</html>

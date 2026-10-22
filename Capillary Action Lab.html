@@ -1,0 +1,521 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Capillary Action: Blood Draw Lab</title>
+    <style>
+        :root {
+            --bg-color: #f8fafc;
+            --panel-bg: #ffffff;
+            --text-main: #0f172a;
+            --text-muted: #64748b;
+            --accent: #ef4444; /* Blood Red */
+            --blood-dark: #991b1b;
+            --glass: rgba(226, 232, 240, 0.4);
+            --border-color: #e2e8f0;
+            --success: #10b981;
+            --warning: #f59e0b;
+        }
+
+        * { box-sizing: border-box; margin: 0; padding: 0; }
+
+        body {
+            background-color: #f1f5f9;
+            color: var(--text-main);
+            font-family: 'Inter', -apple-system, system-ui, sans-serif;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            padding: 20px;
+        }
+
+        .app-container {
+            display: flex;
+            background: var(--panel-bg);
+            border-radius: 20px;
+            box-shadow: 0 20px 50px -12px rgba(0, 0, 0, 0.15);
+            width: 100%;
+            max-width: 1200px;
+            height: 800px;
+            overflow: hidden;
+            border: 1px solid var(--border-color);
+        }
+
+        /* Sidebar */
+        .sidebar {
+            width: 400px;
+            padding: 35px;
+            border-right: 1px solid var(--border-color);
+            display: flex;
+            flex-direction: column;
+            gap: 25px;
+            background: #fff;
+            z-index: 10;
+        }
+
+        .sidebar h1 { font-size: 24px; font-weight: 800; color: #991b1b; }
+        
+        .math-box {
+            background: #f8fafc;
+            padding: 15px;
+            border-radius: 12px;
+            font-size: 14px;
+            border: 1px solid var(--border-color);
+            line-height: 1.6;
+        }
+
+        .formula {
+            font-family: 'Times New Roman', Times, serif;
+            font-size: 22px;
+            text-align: center;
+            margin: 10px 0;
+            font-weight: bold;
+            color: #1e293b;
+        }
+
+        .control-group { display: flex; flex-direction: column; gap: 15px; }
+        label { font-size: 14px; font-weight: 700; display: flex; justify-content: space-between; align-items: center;}
+        
+        input[type="range"] {
+            width: 100%;
+            cursor: pointer;
+            accent-color: var(--accent);
+        }
+
+        .status-card {
+            background: #fef2f2;
+            padding: 20px;
+            border-radius: 12px;
+            font-size: 14px;
+            line-height: 1.5;
+            color: var(--text-main);
+            border-left: 4px solid var(--accent);
+            transition: all 0.3s;
+        }
+
+        /* Simulation Area */
+        .lab-area {
+            flex: 1;
+            background: radial-gradient(circle at center, #ffffff, #e2e8f0);
+            position: relative;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            overflow: hidden;
+        }
+
+        .data-overlay {
+            position: absolute;
+            top: 30px;
+            right: 30px;
+            background: rgba(15, 23, 42, 0.9);
+            color: white;
+            padding: 25px;
+            border-radius: 15px;
+            backdrop-filter: blur(8px);
+            min-width: 250px;
+            border: 1px solid rgba(255,255,255,0.1);
+            z-index: 10;
+        }
+
+        .data-row { margin-bottom: 15px; display: flex; flex-direction: column; }
+        .data-row:last-child { margin-bottom: 0; }
+        .data-label { font-size: 10px; text-transform: uppercase; color: #94a3b8; letter-spacing: 1px; }
+        .data-value { font-size: 28px; font-weight: 800; font-family: monospace; transition: color 0.3s; color: #38bdf8; }
+        .data-unit { font-size: 12px; color: #94a3b8; margin-left: 4px; font-family: 'Inter', sans-serif;}
+
+        /* Graphics */
+        .svg-canvas {
+            position: absolute;
+            top: 0; left: 0; width: 100%; height: 100%;
+            z-index: 2;
+            pointer-events: none;
+        }
+
+        #particleCanvas {
+            position: absolute;
+            top: 0; left: 0; width: 100%; height: 100%;
+            z-index: 1;
+            pointer-events: none;
+        }
+
+        .glass-tube {
+            fill: var(--glass);
+            stroke: #94a3b8;
+            stroke-width: 3;
+            filter: drop-shadow(0 10px 15px rgba(0,0,0,0.1));
+            transition: all 0.1s;
+        }
+
+        .blood-fluid {
+            fill: var(--accent);
+            opacity: 0.85;
+            transition: all 0.1s;
+        }
+
+        .blood-meniscus {
+            fill: var(--blood-dark);
+            transition: all 0.1s;
+        }
+
+        @media (max-width: 900px) {
+            .app-container { flex-direction: column; height: auto; }
+            .sidebar { width: 100%; border-right: none; }
+            .lab-area { height: 500px; }
+        }
+    </style>
+</head>
+<body>
+
+    <div class="app-container">
+        <aside class="sidebar">
+            <h1>Capillary Action</h1>
+            <p style="font-size: 14px; color: var(--text-muted);">
+                Observe how blood defies gravity and climbs up a narrow glass tube during a finger-prick test.
+            </p>
+
+            <div class="math-box">
+                <div style="font-size: 12px; color: var(--text-muted); text-transform: uppercase; letter-spacing: 1px;">Jurin's Law</div>
+                <div class="formula">
+                    h = (2γ cosθ) / (ρgr)
+                </div>
+                <div style="font-size: 12px; color: var(--text-muted); margin-top: 10px;">
+                    <strong>h</strong> = Height of fluid rise<br>
+                    <strong>γ (gamma)</strong> = Surface Tension<br>
+                    <strong>r</strong> = Tube Radius (The key variable)
+                </div>
+            </div>
+
+            <div class="control-group">
+                <label>
+                    Tube Radius (r)
+                    <span id="radiusVal" style="color: var(--accent); font-family: monospace; font-size: 16px;">1.0 mm</span>
+                </label>
+                <input type="range" id="radiusSlider" min="0.5" max="4.0" step="0.1" value="1.0">
+            </div>
+
+            <div class="status-card" id="diagnosticCard">
+                <strong id="diagTitle">Status: High Adhesion</strong><br>
+                <span id="diagText">The tube is narrow. The adhesive forces between the blood and the glass wall easily overpower the gravitational weight of the fluid column.</span>
+            </div>
+            
+            <div style="margin-top: auto; font-size: 12px; color: var(--text-muted); line-height: 1.4;">
+                <strong>The Physics:</strong> Adhesion pulls the liquid up the sides of the glass (forming a concave <em>meniscus</em>), while surface tension holds the surface intact, pulling the rest of the fluid up with it. The narrower the tube, the higher it climbs!
+            </div>
+        </aside>
+
+        <main class="lab-area">
+            <!-- Data Overlay -->
+            <div class="data-overlay">
+                <div class="data-row">
+                    <div class="data-label">Capillary Rise Height (h)</div>
+                    <div class="data-value" id="heightDisplay">40.0<span class="data-unit">mm</span></div>
+                </div>
+                <div class="data-row" style="margin-top: 10px; padding-top: 15px; border-top: 1px solid rgba(255,255,255,0.1);">
+                    <div class="data-label">Dominant Force</div>
+                    <div class="data-value" id="forceDisplay" style="font-size: 18px; color: #10b981;">Adhesion (Upward)</div>
+                </div>
+            </div>
+
+            <!-- Dynamic Particles (Canvas) -->
+            <canvas id="particleCanvas"></canvas>
+
+            <!-- SVG Anatomy -->
+            <svg class="svg-canvas" viewBox="0 0 800 800" id="mainSvg">
+                <defs>
+                    <filter id="glow">
+                        <feGaussianBlur stdDeviation="2" result="blur" />
+                        <feComposite in="SourceGraphic" in2="blur" operator="over" />
+                    </filter>
+                    <radialGradient id="fingerGrad" cx="50%" cy="50%" r="50%">
+                        <stop offset="0%" stop-color="#fca5a5" />
+                        <stop offset="100%" stop-color="#f87171" />
+                    </radialGradient>
+                    <!-- Clip path for the fluid inside the glass tube -->
+                    <clipPath id="tubeClip">
+                        <rect id="clipRect" x="380" y="100" width="40" height="500" />
+                    </clipPath>
+                </defs>
+
+                <!-- Background Finger -->
+                <g transform="translate(400, 750)">
+                    <ellipse cx="0" cy="0" rx="120" ry="80" fill="url(#fingerGrad)" />
+                    <!-- Blood Pool -->
+                    <ellipse cx="0" cy="-60" rx="40" ry="15" fill="#b91c1c" />
+                    <text x="140" y="20" font-size="14" font-weight="bold" fill="#94a3b8">PATIENT FINGER</text>
+                </g>
+
+                <!-- The Fluid Column (Clipped to tube) -->
+                <g clip-path="url(#tubeClip)">
+                    <!-- Main Fluid Body -->
+                    <rect id="fluidBody" class="blood-fluid" x="380" y="600" width="40" height="0" />
+                    <!-- Meniscus (Top surface curve) -->
+                    <path id="meniscus" class="blood-meniscus" d="M 380 600 Q 400 615 420 600 L 420 620 L 380 620 Z" />
+                </g>
+
+                <!-- Glass Tube (Drawn on top for gloss) -->
+                <rect id="glassTube" class="glass-tube" x="380" y="100" width="40" height="600" rx="4" />
+                
+                <!-- Glass Reflections -->
+                <rect id="glassReflect" x="385" y="105" width="5" height="590" fill="white" opacity="0.5" rx="2" />
+                <rect id="glassReflect2" x="410" y="105" width="2" height="590" fill="white" opacity="0.3" rx="1" />
+
+                <!-- Measurement Ticks -->
+                <g id="ticks" stroke="#94a3b8" stroke-width="2" opacity="0.5">
+                    <!-- Ticks will be adjusted in JS to align with the tube -->
+                </g>
+            </svg>
+        </main>
+    </div>
+
+    <script>
+        const radiusSlider = document.getElementById('radiusSlider');
+        const radiusVal = document.getElementById('radiusVal');
+        const heightDisplay = document.getElementById('heightDisplay');
+        const forceDisplay = document.getElementById('forceDisplay');
+        
+        const diagTitle = document.getElementById('diagTitle');
+        const diagText = document.getElementById('diagText');
+        const diagnosticCard = document.getElementById('diagnosticCard');
+        
+        const canvas = document.getElementById('particleCanvas');
+        const ctx = canvas.getContext('2d');
+
+        // SVG Elements to animate
+        const glassTube = document.getElementById('glassTube');
+        const clipRect = document.getElementById('clipRect');
+        const fluidBody = document.getElementById('fluidBody');
+        const meniscus = document.getElementById('meniscus');
+        const glassReflect = document.getElementById('glassReflect');
+        const glassReflect2 = document.getElementById('glassReflect2');
+        const ticksGroup = document.getElementById('ticks');
+
+        // Physics/Animation State
+        const BASE_Y = 680; // The bottom of the tube in the blood pool
+        const MAX_RISE_PX = 500; // Max visual rise
+        
+        let currentRadius = 1.0;
+        let targetHeightPx = 0;
+        let currentHeightPx = 0; // Smoothed animation variable
+        
+        let particles = [];
+
+        // Resize Canvas to match SVG overlay
+        function resizeCanvas() {
+            canvas.width = canvas.offsetWidth;
+            canvas.height = canvas.offsetHeight;
+        }
+        window.addEventListener('resize', resizeCanvas);
+        resizeCanvas();
+
+        // RBC Particle Class for the Canvas
+        class BloodCell {
+            constructor() {
+                this.reset(true);
+            }
+
+            reset(randomY = false) {
+                // Determine bounds based on current tube state
+                const tubeWidthPx = currentRadius * 40;
+                const tubeLeft = 400 - (tubeWidthPx / 2);
+                
+                // Spawn at the bottom pool
+                this.x = tubeLeft + Math.random() * tubeWidthPx;
+                this.targetX = this.x; // To handle tube width changes
+                
+                const minH = BASE_Y - currentHeightPx;
+                this.y = randomY ? BASE_Y - Math.random() * currentHeightPx : BASE_Y;
+                
+                if (this.y > BASE_Y) this.y = BASE_Y;
+                
+                this.radius = 2 + Math.random() * 2;
+                this.baseVy = -0.5 - Math.random() * 1.5; // Flow upwards
+                this.wobbleSpeed = 0.05 + Math.random() * 0.1;
+                this.wobbleOffset = Math.random() * Math.PI * 2;
+            }
+
+            update() {
+                // Match tube width boundaries dynamically
+                const tubeWidthPx = currentRadius * 40;
+                const tubeLeft = 400 - (tubeWidthPx / 2);
+                const tubeRight = 400 + (tubeWidthPx / 2);
+
+                // Keep particles inside the tube
+                if (this.x < tubeLeft + this.radius) this.x = tubeLeft + this.radius;
+                if (this.x > tubeRight - this.radius) this.x = tubeRight - this.radius;
+
+                const minH = BASE_Y - currentHeightPx + 15; // +15 to stay below meniscus
+
+                // Move upwards if we are below the fluid top
+                if (this.y > minH) {
+                    // Flow is faster when the column is actively rising
+                    const diff = targetHeightPx - currentHeightPx;
+                    const riseSpeedMultiplier = diff > 0 ? 1 + (diff * 0.05) : 1;
+                    
+                    this.y += this.baseVy * riseSpeedMultiplier;
+                    this.x += Math.sin(Date.now() * this.wobbleSpeed + this.wobbleOffset) * 0.5;
+                } else {
+                    // Reached the top, gently circulate downwards or reset
+                    this.y += 0.5;
+                    if (Math.random() < 0.02) this.reset(false); // Occasional reset to bottom to simulate new blood drawn in
+                }
+
+                // If fluid drops suddenly (wider tube), reset particles that are left hanging in the air
+                if (this.y < minH - 10) {
+                    this.y += 5; // Fall rapidly
+                }
+            }
+
+            draw() {
+                // Map SVG 800x800 coordinate space to actual Canvas pixel dimensions
+                const scaleX = canvas.width / 800;
+                const scaleY = canvas.height / 800;
+                
+                const cx = this.x * scaleX;
+                const cy = this.y * scaleY;
+                const cr = this.radius * scaleX;
+
+                // Don't draw if below the base
+                if (this.y > BASE_Y) return;
+
+                ctx.beginPath();
+                ctx.arc(cx, cy, cr, 0, Math.PI * 2);
+                ctx.fillStyle = 'rgba(153, 27, 27, 0.8)'; // Darker red for contrast
+                ctx.fill();
+            }
+        }
+
+        // Initialize particles
+        for(let i=0; i<100; i++) {
+            particles.push(new BloodCell());
+        }
+
+        // Draw static measuring ticks
+        function buildTicks() {
+            ticksGroup.innerHTML = '';
+            for (let i = 100; i <= 650; i += 50) {
+                const line = document.createElementNS("http://www.w3.org/2000/svg", "line");
+                // Will update X positions dynamically
+                line.setAttribute("y1", i);
+                line.setAttribute("y2", i);
+                line.classList.add('tick-mark');
+                ticksGroup.appendChild(line);
+            }
+        }
+        buildTicks();
+
+        function updatePhysicsTarget() {
+            currentRadius = parseFloat(radiusSlider.value);
+            radiusVal.textContent = `${currentRadius.toFixed(1)} mm`;
+
+            // Jurin's Law: h is proportional to 1/r.
+            // If r = 1.0, h = 40.0mm (Mapped to 400px visual rise)
+            // Height = K / r. So K = 40.
+            const calculatedHeightMm = 40.0 / currentRadius;
+            heightDisplay.innerHTML = `${calculatedHeightMm.toFixed(1)}<span class="data-unit">mm</span>`;
+
+            // Target Height in Pixels (Scaling factor: 10px per mm)
+            targetHeightPx = calculatedHeightMm * 10;
+
+            // Diagnostics and Status updates
+            if (currentRadius <= 1.5) {
+                diagnosticCard.style.borderLeftColor = "var(--success)";
+                diagnosticCard.style.backgroundColor = "#f0fdf4";
+                diagTitle.textContent = "Status: Rapid Capillary Action";
+                diagTitle.style.color = "var(--success)";
+                diagText.textContent = "Narrow micro-capillary selected. The high ratio of surface area (glass) to volume (blood) allows adhesion to easily pull the fluid high up the tube.";
+                forceDisplay.textContent = "Adhesion Dominant";
+                forceDisplay.style.color = "var(--success)";
+            } else if (currentRadius <= 3.0) {
+                diagnosticCard.style.borderLeftColor = "var(--warning)";
+                diagnosticCard.style.backgroundColor = "#fffbeb";
+                diagTitle.textContent = "Status: Moderate Rise";
+                diagTitle.style.color = "var(--warning)";
+                diagText.textContent = "As the tube widens, the weight of the central fluid column increases relative to the glass contact area. Gravity begins to counteract the rise.";
+                forceDisplay.textContent = "Forces Balancing";
+                forceDisplay.style.color = "var(--warning)";
+            } else {
+                diagnosticCard.style.borderLeftColor = "var(--accent)";
+                diagnosticCard.style.backgroundColor = "#fef2f2";
+                diagTitle.textContent = "Status: Minimal Action";
+                diagTitle.style.color = "var(--accent)";
+                diagText.textContent = "Wide tube. The mass of the blood is too heavy for the surface adhesive forces to pull it very far against gravity.";
+                forceDisplay.textContent = "Gravity Dominant";
+                forceDisplay.style.color = "var(--accent)";
+            }
+
+            updateSVGShape();
+        }
+
+        function updateSVGShape() {
+            // Visual width of the tube in SVG space (40px base * radius)
+            const tubeWidthPx = currentRadius * 40;
+            const tubeLeft = 400 - (tubeWidthPx / 2);
+
+            // Update Glass Tube geometry
+            glassTube.setAttribute("x", tubeLeft);
+            glassTube.setAttribute("width", tubeWidthPx);
+            
+            clipRect.setAttribute("x", tubeLeft);
+            clipRect.setAttribute("width", tubeWidthPx);
+            
+            fluidBody.setAttribute("x", tubeLeft);
+            fluidBody.setAttribute("width", tubeWidthPx);
+
+            // Update Reflections
+            glassReflect.setAttribute("x", tubeLeft + 5);
+            glassReflect2.setAttribute("x", tubeLeft + tubeWidthPx - 10);
+
+            // Update Ticks
+            const ticks = document.querySelectorAll('.tick-mark');
+            ticks.forEach(tick => {
+                tick.setAttribute("x1", tubeLeft - 15);
+                tick.setAttribute("x2", tubeLeft - 5);
+            });
+        }
+
+        // Animation Loop for smooth fluid rise and particle flow
+        function animate() {
+            // Smoothly interpolate current fluid height to target
+            const diff = targetHeightPx - currentHeightPx;
+            currentHeightPx += diff * 0.05; // Lerp factor
+
+            // Update SVG Fluid Rect
+            const currentY = BASE_Y - currentHeightPx;
+            fluidBody.setAttribute("y", currentY);
+            fluidBody.setAttribute("height", currentHeightPx + 50); // +50 to hide bottom edge in pool
+
+            // Update Meniscus Path (Concave curve)
+            // M left Y, Q center (Y+depth), right Y
+            const tubeWidthPx = currentRadius * 40;
+            const tubeLeft = 400 - (tubeWidthPx / 2);
+            const tubeRight = 400 + (tubeWidthPx / 2);
+            
+            // Meniscus depth is deeper on wider tubes
+            const meniscusDepth = currentRadius * 8; 
+            
+            const pathData = `M ${tubeLeft} ${currentY} Q 400 ${currentY + meniscusDepth} ${tubeRight} ${currentY} L ${tubeRight} ${currentY + 30} L ${tubeLeft} ${currentY + 30} Z`;
+            meniscus.setAttribute("d", pathData);
+
+            // Update & Draw Canvas Particles
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+            particles.forEach(p => {
+                p.update();
+                p.draw();
+            });
+
+            requestAnimationFrame(animate);
+        }
+
+        // Event Listeners
+        radiusSlider.addEventListener('input', updatePhysicsTarget);
+
+        // Init
+        updatePhysicsTarget();
+        requestAnimationFrame(animate);
+
+    </script>
+</body>
+</html>

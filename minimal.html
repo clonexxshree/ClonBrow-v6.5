@@ -1,0 +1,1500 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>clonbrow</title>
+<link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'><rect x='4' y='4' width='16' height='16' rx='3' fill='none' stroke='%2337352f' stroke-width='2'/><rect x='9' y='9' width='6' height='6' fill='%2337352f'/></svg>">
+
+<script src="https://cdn.tailwindcss.com"></script>
+<link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+
+<script>
+tailwind.config={theme:{extend:{fontFamily:{sans:['Inter','ui-sans-serif','-apple-system','sans-serif']},colors:{n:{ink:'#37352f',ink2:'#787774',mut:'#9b9a97',line:'#e9e9e7',side:'#f7f7f7',hover:'#f1f1ef',bg:'#ffffff'}}}}}
+</script>
+
+<style>
+:root{--ink:#37352f;--ink2:#787774;--mut:#9b9a97;--line:#e9e9e7;--side:#f7f7f7;--hover:#f1f1ef;--blue:#2383e2;--blue-dk:#1c76c9;--blue-bg:#e7f3f8;--green:#0f9960;--red:#eb5757}
+body{background:#fff;color:var(--ink);overscroll-behavior-y:none}
+.lowercase-ui{text-transform:lowercase}
+.aesthetic-title{font-weight:600;letter-spacing:-.01em}
+
+/* ---- cards / buttons / inputs ---- */
+.notion-card{background:#fff;border:1px solid var(--line);border-radius:6px;transition:border-color .15s,background .15s}
+.notion-card:hover{border-color:#dfdfdc}
+.notion-btn{background:#fff;border:1px solid var(--line);border-radius:4px;color:var(--ink);font-size:13px;font-weight:500;cursor:pointer;transition:all .12s;padding:5px 12px;line-height:1.4}
+.notion-btn:hover{background:var(--side);border-color:#dfdfdc}
+.notion-btn:active{background:#ececea}
+.notion-btn-primary{background:var(--blue);border-color:var(--blue-dk);color:#fff}
+.notion-btn-primary:hover{background:#1f7bd4;border-color:#1a6fbd}
+.notion-btn-primary:active{background:#1c72c6}
+.notion-btn-danger{color:var(--red)}
+.notion-btn-danger:hover{background:#fef3f2;border-color:#f2c8c4}
+.pro-input{background:#fff;border:1px solid var(--line);border-radius:4px;color:var(--ink);font-size:13.5px;padding:6px 10px;transition:all .12s}
+.pro-input:focus{border-color:var(--blue);outline:none;box-shadow:0 0 0 2px rgba(35,131,226,.18)}
+select.pro-input{appearance:none;background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='8' height='5'%3E%3Cpath d='M0 0l4 5 4-5z' fill='%239b9a97'/%3E%3C/svg%3E");background-repeat:no-repeat;background-position:right 10px center;padding-right:26px}
+
+::-webkit-scrollbar{width:8px;height:8px}
+::-webkit-scrollbar-track{background:transparent}
+::-webkit-scrollbar-thumb{background:#d6d5d2;border-radius:99px}
+::-webkit-scrollbar-thumb:hover{background:#b9b8b4}
+.no-scrollbar::-webkit-scrollbar{display:none}
+.no-scrollbar{-ms-overflow-style:none;scrollbar-width:none}
+::selection{background:rgba(35,131,226,.2)}
+@keyframes load-bar{0%{width:0;opacity:1}50%{width:70%;opacity:1}100%{width:100%;opacity:0}}
+#loading-bar{background:var(--blue);height:2px}
+.loading-active{animation:load-bar 1s cubic-bezier(.4,0,.2,1) forwards}
+
+/* ---- boot ---- */
+@keyframes bootIn{from{opacity:0;transform:translateY(6px)}}
+#os-boot-screen>div{animation:bootIn .35s ease}
+
+/* ---- sidebar ---- */
+#vertical-sidebar{width:64px;transition:width .25s cubic-bezier(.2,.8,.2,1);z-index:50;background:var(--side);border-right:1px solid var(--line)}
+#vertical-sidebar:hover{width:250px}
+.sidebar-text{opacity:0;transition:opacity .15s ease .06s;white-space:nowrap;font-size:13.5px;color:inherit;margin-left:8px}
+#vertical-sidebar:hover .sidebar-text{opacity:1}
+.sb-extra{display:none;align-items:center;margin-left:auto}
+#vertical-sidebar:hover .sb-extra{display:flex}
+.sb-label{display:none;font-size:11px;font-weight:600;color:var(--mut);padding:10px 12px 3px}
+#vertical-sidebar:hover .sb-label{display:block}
+.sb-item{display:flex;align-items:center;padding:5px 10px 5px 22px;border-radius:4px;color:var(--ink2);font-size:13.5px;cursor:pointer;transition:all .1s;width:100%;text-align:left}
+.sb-item i{width:20px;text-align:center;font-size:12.5px;color:var(--mut);transition:color .1s;flex-shrink:0}
+.sb-item:hover{background:var(--hover);color:var(--ink)}
+.sb-item:hover i{color:var(--ink2)}
+.sb-item.active{background:rgba(55,53,47,.08);color:var(--ink)}
+.sb-item.active i{color:var(--ink)}
+.sb-item.dim{color:var(--mut)}
+.sb-head{display:flex;align-items:center;padding:6px 10px 6px 22px;border-radius:4px;color:var(--ink2);font-size:13.5px;font-weight:500;cursor:pointer;width:100%;text-align:left;transition:all .1s}
+.sb-head i{width:20px;text-align:center;font-size:12.5px;color:var(--mut);flex-shrink:0}
+.sb-head:hover{background:var(--hover);color:var(--ink)}
+.sb-head:hover i{color:var(--ink2)}
+.sb-badge{font-size:10px;color:var(--mut);margin-right:6px}
+.sb-chev{font-size:8px;color:var(--mut);transition:transform .25s}
+.sb-group-body{max-height:0;overflow:hidden;opacity:0;transition:max-height .35s cubic-bezier(.2,.8,.2,1),opacity .2s}
+.sb-group.open .sb-group-body{max-height:440px;opacity:1}
+.sb-group.open .sb-chev{transform:rotate(180deg)}
+.tab-row{display:flex;align-items:center;gap:8px;padding:4px 10px;border-radius:4px;font-size:12.5px;color:var(--ink2);cursor:pointer;width:100%;transition:background .1s}
+.tab-row i:first-child{font-size:9.5px;width:15px;text-align:center;color:var(--mut);flex-shrink:0}
+.tab-row:hover{background:var(--hover)}
+.tab-row.on{background:rgba(55,53,47,.08);color:var(--ink)}
+.tab-x{margin-left:auto;font-size:9px;color:var(--mut);padding:2px 4px;border-radius:3px}
+.tab-x:hover{color:var(--red);background:#fef3f2}
+
+/* ---- views ---- */
+.view{position:absolute;inset:0;display:none;flex-direction:column;overflow-y:auto;padding:32px 40px 80px}
+.view.active{display:flex;animation:viewIn .2s ease}
+@keyframes viewIn{from{opacity:0;transform:translateY(4px)}}
+.hide{display:none!important}
+.sh{display:flex;align-items:flex-end;justify-content:space-between;gap:16px;border-bottom:1px solid var(--line);padding-bottom:12px;margin-bottom:20px;flex-wrap:wrap}
+.sh-sub{font-size:12px;color:var(--mut);margin-bottom:4px}
+.chip{padding:3px 12px;border-radius:99px;border:1px solid var(--line);background:#fff;color:var(--ink2);font-size:12.5px;cursor:pointer;transition:all .12s}
+.chip:hover{background:var(--side)}
+.chip.on{border-color:rgba(35,131,226,.5);background:var(--blue-bg);color:var(--blue-dk)}
+
+/* ---- toasts ---- */
+#toast-wrap{position:fixed;bottom:16px;right:16px;z-index:200;display:flex;flex-direction:column;gap:8px}
+.toast{display:flex;align-items:center;gap:9px;background:#fff;border:1px solid var(--line);border-radius:6px;padding:8px 14px;font-size:13px;color:var(--ink);box-shadow:0 4px 12px rgba(15,15,15,.08);animation:toastIn .2s ease}
+.toast i{color:var(--mut);font-size:11px}
+.toast.out{opacity:0;transform:translateY(4px);transition:all .3s}
+@keyframes toastIn{from{opacity:0;transform:translateY(4px)}}
+
+/* ---- tasks ---- */
+.task-card{background:#fff;border:1px solid var(--line);border-radius:4px;padding:6px 9px;font-size:13px;color:var(--ink);display:flex;flex-direction:column;gap:4px;transition:border-color .12s;animation:viewIn .15s backwards}
+.task-card:hover{border-color:#dfdfdc}
+.tc-actions{display:flex;gap:2px}
+.tc-btn{font-size:10px;color:var(--mut);padding:2px 5px;border-radius:3px;cursor:pointer;transition:all .1s}
+.tc-btn:hover{color:var(--ink);background:var(--side)}
+.mini-task{display:flex;align-items:center;gap:9px;padding:5px 9px;border:1px solid transparent;border-radius:4px;font-size:13px;color:var(--ink);cursor:pointer;transition:background .1s}
+.mini-task:hover{background:var(--side)}
+.mt-dot{width:6px;height:6px;border-radius:99px;background:#d3d1cd;flex-shrink:0}
+.mt-dot.on{background:var(--mut)}
+.mt-t{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+
+/* ---- flashcards ---- */
+.fc-card{perspective:1200px;cursor:pointer;position:relative}
+.fc-inner{position:absolute;inset:0;transition:transform .5s cubic-bezier(.2,.8,.2,1);transform-style:preserve-3d}
+.fc-card.flipped .fc-inner{transform:rotateY(180deg)}
+.fc-face{position:absolute;inset:0;backface-visibility:hidden;-webkit-backface-visibility:hidden;display:flex;align-items:center;justify-content:center;padding:24px;text-align:center;flex-direction:column;gap:10px;border-radius:6px}
+.fc-face.notion-card:hover{border-color:var(--line)}
+.fc-back{transform:rotateY(180deg);background:#fbfbfa!important}
+
+/* ---- quiz ---- */
+.opt-btn{display:flex;align-items:center;gap:12px;text-align:left;padding:10px 14px;font-size:14px;color:var(--ink)}
+.opt-btn:hover{background:var(--side);border-color:#dfdfdc}
+.opt-key{width:22px;height:22px;border:1px solid var(--line);border-radius:4px;display:flex;align-items:center;justify-content:center;font-size:11px;color:var(--mut);flex-shrink:0;background:#fff}
+.opt-right{border-color:rgba(15,153,96,.5)!important;background:#f0f9f4!important;color:var(--green)!important}
+.opt-right .opt-key{border-color:var(--green);color:var(--green)}
+.opt-wrong{border-color:rgba(235,87,87,.5)!important;background:#fdf3f2!important;color:var(--red)!important;animation:shake .35s}
+.opt-wrong .opt-key{border-color:var(--red);color:var(--red)}
+.opt-dim{opacity:.35}
+@keyframes shake{25%{transform:translateX(-5px)}75%{transform:translateX(5px)}}
+
+/* ---- search / article ---- */
+.result-card{padding:11px 13px;cursor:pointer;display:flex;gap:13px;align-items:flex-start}
+.result-card:hover{border-color:#dfdfdc;background:#fbfbfa}
+.result-card img{width:52px;height:36px;object-fit:cover;border-radius:4px;flex-shrink:0}
+#article-content h2{font-weight:600;font-size:1.45rem;border-bottom:1px solid var(--line);padding-bottom:.35rem;margin-top:2rem;margin-bottom:1rem;color:var(--ink)}
+#article-content h3{font-weight:600;font-size:1.15rem;margin-top:1.5rem;margin-bottom:.6rem;color:var(--ink)}
+#article-content p{margin-bottom:1.2rem;font-size:.96rem;line-height:1.75;color:#54524d}
+#article-content a{color:var(--blue-dk);text-decoration:none;border-bottom:1px solid rgba(35,131,226,.3)}
+#article-content img{max-width:280px;border-radius:4px;border:1px solid var(--line);margin:8px 0}
+#article-content table{border-collapse:collapse;font-size:12px;margin:12px 0;width:100%}
+#article-content td,#article-content th{border:1px solid var(--line);padding:5px 9px;color:#54524d}
+
+/* ---- activity ---- */
+.activity-grid{display:grid;grid-template-columns:repeat(14,1fr);gap:3px}
+.activity-cell{width:100%;aspect-ratio:1;background:#f1f0ee;border-radius:2px;transition:all .15s;animation:viewIn .25s backwards}
+.activity-cell:hover{transform:scale(1.18)}
+.activity-lvl-1{background:#d9d8d4}.activity-lvl-2{background:#a8a6a1}.activity-lvl-3{background:var(--ink)}
+.fade-card{animation:viewIn .2s backwards}
+
+/* ---- periodic ---- */
+.element-box{border:1px solid var(--line);border-radius:4px;display:flex;flex-direction:column;align-items:center;justify-content:center;cursor:pointer;transition:all .12s;background:#fff;color:var(--ink2);aspect-ratio:1;position:relative}
+.element-box:hover{border-color:#c9c8c4;background:#fbfbfa;color:var(--ink);transform:scale(1.12);z-index:10}
+.element-alkali{border-bottom:2px solid #e06c6c}.element-alkaline{border-bottom:2px solid #e0955c}
+.element-transition{border-bottom:2px solid #8e7cc3}.element-halogen{border-bottom:2px solid #6cb28e}
+.element-noble{border-bottom:2px solid #6ca6dd}.element-metalloid{border-bottom:2px solid #5fa8a0}
+.element-post{border-bottom:2px solid #5f9bc4}.element-other{border-bottom:2px solid #a9a7a2}
+.element-lanth{border-bottom:2px solid #c4a35a}.element-act{border-bottom:2px solid #b57fc0}
+.element-f{opacity:.35}
+.el-n{position:absolute;top:2px;left:4px;font-size:6.5px;color:var(--mut)}
+.el-s{font-size:10.5px;font-weight:600}
+
+/* ---- notes ---- */
+#note-body{min-height:260px;background:#fff;border:1px solid var(--line);border-radius:4px;padding:12px 14px;font-size:14px;color:var(--ink);line-height:1.7;outline:none;overflow-y:auto;transition:border-color .12s}
+#note-body:focus{border-color:#c9c8c4}
+#note-body h2{font-weight:600;font-size:19px;margin:12px 0 6px}
+#note-body blockquote{border-left:2px solid var(--line);padding-left:12px;color:var(--ink2);margin:8px 0}
+#note-body ul{list-style:square;padding-left:22px;color:#54524d}
+.note-row{display:flex;flex-direction:column;padding:6px 9px;border-radius:4px;font-size:13px;font-weight:500;color:var(--ink2);cursor:pointer;width:100%;text-align:left;transition:background .1s}
+.note-row span{font-size:11px;color:var(--mut);margin-top:1px}
+.note-row:hover{background:var(--side);color:var(--ink)}
+.note-row.on{background:rgba(55,53,47,.08);color:var(--ink)}
+
+/* ---- analytics ---- */
+.an-bar-col{flex:1;display:flex;flex-direction:column;align-items:center;gap:4px}
+.an-bar-track{width:100%;height:56px;display:flex;align-items:flex-end;justify-content:center;background:var(--side);border-radius:4px;overflow:hidden}
+.an-bar{width:100%;background:#c9c8c4;transition:height .5s cubic-bezier(.2,.8,.2,1)}
+.an-bar-col span{font-size:9px;color:var(--mut)}
+
+/* ---- timetable ---- */
+.tt-cell{aspect-ratio:1.6;background:#fff;border:1px solid var(--line);border-radius:4px;font-size:10px;color:var(--ink2);display:flex;align-items:center;justify-content:center;cursor:pointer;padding:2px;overflow:hidden;text-align:center;transition:border-color .12s}
+.tt-cell:hover{border-color:#c9c8c4;background:#fbfbfa}
+.tt-in{background:#fff;border:1px solid var(--blue);border-radius:3px;color:var(--ink);font-size:10px;width:100%;height:100%;text-align:center;outline:none}
+
+/* ---- misc ---- */
+.tag{padding:2px 9px;border-radius:99px;font-size:11.5px;background:var(--side);color:var(--ink2)}
+.empty-state{color:var(--mut);font-size:13px;text-align:center;padding:18px 6px}
+.fc-row{display:flex;align-items:center;gap:10px;background:#fff;border:1px solid var(--line);border-radius:4px;padding:7px 11px;font-size:13px;color:var(--ink2)}
+.fc-row:hover{border-color:#dfdfdc}
+.icon-tile{width:34px;height:34px;border-radius:6px;display:grid;place-items:center;color:var(--ink2);background:var(--side);font-size:14px;margin-bottom:9px}
+
+#inv-print{display:none}
+@media print{
+  body *{visibility:hidden}
+  #inv-print{display:block!important;visibility:visible;position:absolute;left:0;top:0;width:100%;background:#fff}
+  #inv-print *{visibility:visible}
+}
+</style>
+<link rel="stylesheet" href="theme-mobile.css"></head>
+
+<body class="h-[100dvh] w-screen overflow-hidden relative flex lowercase-ui font-sans">
+<div id="toast-wrap"></div>
+
+<!-- ============ failsafe login ============ -->
+<script>
+window.__bootDone=false;
+window.onerror=function(m){var d=document.getElementById('db-status');if(d)d.innerHTML='<span style="color:#eb5757">script error: '+String(m).slice(0,80)+'</span>';return false};
+window.__doLogin=function(){
+  if(window.__bootDone)return;
+  var i=document.getElementById('boot-username'),u=i?i.value.trim():'';
+  if(!u){i.style.borderColor='#eb5757';i.focus();setTimeout(function(){i.style.borderColor=''},900);return}
+  if(typeof window.__fullLogin!=='function'){
+    var st=document.getElementById('db-status');
+    if(st)st.innerHTML='<span style="color:#eb5757">app failed to load — refresh the page</span>';
+    return;
+  }
+  window.__bootDone=true;
+  try{localStorage.setItem('clonbrow_user',JSON.stringify(u))}catch(e){}
+  var b=document.getElementById('os-boot-screen');
+  if(b){b.style.opacity='0';setTimeout(function(){if(b.parentNode)b.remove()},450)}
+  try{window.__fullLogin(u)}catch(e){}
+};
+</script>
+
+<!-- ============ boot ============ -->
+<div id="os-boot-screen" class="absolute inset-0 z-[100] flex items-center justify-center transition-opacity duration-500" style="background:#fff">
+  <div class="notion-card max-w-xs w-full p-8">
+    <div class="mb-7">
+      <svg class="w-8 h-8 mb-4" viewBox="0 0 24 24" fill="none" stroke="#37352f" stroke-width="1.8"><rect x="4" y="4" width="16" height="16" rx="3"/><rect x="9" y="9" width="6" height="6" fill="#37352f" stroke="none"/></svg>
+      <h1 class="text-2xl aesthetic-title leading-tight">clonbrow</h1>
+      <p class="text-[13px] text-[#9b9a97] mt-1.5">your workspace, synced.</p>
+    </div>
+    <div class="space-y-3">
+      <input type="text" id="boot-username" placeholder="your name" class="w-full pro-input p-2.5 text-sm" onkeypress="if(event.key==='Enter')__doLogin()">
+      <button onclick="__doLogin()" id="login-btn" class="w-full notion-btn notion-btn-primary py-2 text-sm font-medium">enter workspace</button>
+      <div id="db-status" class="text-center text-[11.5px] text-[#9b9a97]"><i class="fas fa-cloud mr-1.5"></i>connected to pythonanywhere</div>
+    </div>
+  </div>
+</div>
+
+<!-- ============ sidebar ============ -->
+<aside id="vertical-sidebar" class="h-full flex flex-col py-2 shrink-0 absolute md:relative z-50">
+
+  <button onclick="goHome()" class="flex items-center pl-[20px] pr-2 py-1.5 mx-2 rounded hover:bg-[#f1f1ef] transition-colors group" style="width:calc(100% - 16px)">
+    <svg class="w-6 h-6 shrink-0" viewBox="0 0 24 24" fill="none" stroke="#37352f" stroke-width="1.6"><rect x="4" y="4" width="16" height="16" rx="3"/><rect x="9" y="9" width="6" height="6" fill="#37352f" stroke="none"/></svg>
+    <span class="sidebar-text text-[14px] font-medium text-[#37352f]">clonbrow</span>
+  </button>
+
+  <div class="px-2 my-2 border-b border-[#e4e4e2] pb-2 space-y-0.5">
+    <button onclick="goHome()" data-route="clonmedic://home" class="sb-item"><i class="fas fa-home"></i><span class="sidebar-text">home</span></button>
+    <button onclick="newTab('clonmedic://search')" data-route="clonmedic://search" class="sb-item"><i class="fas fa-search"></i><span class="sidebar-text">search</span></button>
+  </div>
+
+  <nav class="flex-1 overflow-y-auto no-scrollbar px-2 space-y-0.5">
+    <div class="sb-group open" id="g-learn">
+      <button class="sb-head" onclick="toggleGroup('g-learn')"><i class="fas fa-book"></i><span class="sidebar-text">learning</span><span class="sb-extra"><span class="sb-badge">6</span><i class="fas fa-chevron-down sb-chev"></i></span></button>
+      <div class="sb-group-body">
+        <button onclick="newTab('clonmedic://notes')" data-route="clonmedic://notes" class="sb-item"><i class="fas fa-file-lines"></i><span class="sidebar-text">notes</span></button>
+        <button onclick="newTab('clonmedic://tasks')" data-route="clonmedic://tasks" class="sb-item"><i class="fas fa-square-check"></i><span class="sidebar-text">tasks</span></button>
+        <button onclick="newTab('clonmedic://flashcards')" data-route="clonmedic://flashcards" class="sb-item"><i class="fas fa-clone"></i><span class="sidebar-text">flashcards</span></button>
+        <button onclick="newTab('clonmedic://quiz')" data-route="clonmedic://quiz" class="sb-item"><i class="fas fa-circle-question"></i><span class="sidebar-text">quiz</span></button>
+        <button onclick="newTab('clonmedic://bites')" data-route="clonmedic://bites" class="sb-item"><i class="fas fa-lightbulb"></i><span class="sidebar-text">quick bites</span></button>
+        <button onclick="newTab('clonmedic://english')" data-route="clonmedic://english" class="sb-item"><i class="fas fa-feather"></i><span class="sidebar-text">word lab</span></button>
+      </div>
+    </div>
+
+    <div class="sb-group" id="g-util">
+      <button class="sb-head" onclick="toggleGroup('g-util')"><i class="fas fa-toolbox"></i><span class="sidebar-text">utilities</span><span class="sb-extra"><span class="sb-badge">8</span><i class="fas fa-chevron-down sb-chev"></i></span></button>
+      <div class="sb-group-body">
+        <button onclick="newTab('clonmedic://formulas')" data-route="clonmedic://formulas" class="sb-item"><i class="fas fa-square-root-variable"></i><span class="sidebar-text">formulas</span></button>
+        <button onclick="newTab('clonmedic://periodic')" data-route="clonmedic://periodic" class="sb-item"><i class="fas fa-atom"></i><span class="sidebar-text">elements</span></button>
+        <button onclick="newTab('clonmedic://timetable')" data-route="clonmedic://timetable" class="sb-item"><i class="fas fa-calendar"></i><span class="sidebar-text">timetable</span></button>
+        <button onclick="newTab('clonmedic://converter')" data-route="clonmedic://converter" class="sb-item"><i class="fas fa-right-left"></i><span class="sidebar-text">converter</span></button>
+        <button onclick="newTab('clonmedic://gpa')" data-route="clonmedic://gpa" class="sb-item"><i class="fas fa-graduation-cap"></i><span class="sidebar-text">gpa</span></button>
+        <button onclick="newTab('clonmedic://invoice')" data-route="clonmedic://invoice" class="sb-item"><i class="fas fa-file-invoice"></i><span class="sidebar-text">invoice</span></button>
+        <button onclick="newTab('clonmedic://citations')" data-route="clonmedic://citations" class="sb-item"><i class="fas fa-quote-right"></i><span class="sidebar-text">citations</span></button>
+        <button onclick="newTab('clonmedic://calc')" data-route="clonmedic://calc" class="sb-item"><i class="fas fa-calculator"></i><span class="sidebar-text">calculator</span></button>
+      </div>
+    </div>
+
+    <div class="sb-group" id="g-pro">
+      <button class="sb-head" onclick="toggleGroup('g-pro')"><i class="fas fa-star"></i><span class="sidebar-text">tools</span><span class="sb-extra"><span class="sb-badge">6</span><i class="fas fa-chevron-down sb-chev"></i></span></button>
+      <div class="sb-group-body">
+        <button onclick="newTab('clonmedic://code')" data-route="clonmedic://code" class="sb-item"><i class="fas fa-code"></i><span class="sidebar-text">playground</span></button>
+        <button onclick="newTab('clonmedic://whiteboard')" data-route="clonmedic://whiteboard" class="sb-item"><i class="fas fa-pen"></i><span class="sidebar-text">whiteboard</span></button>
+        <button onclick="newTab('clonmedic://analytics')" data-route="clonmedic://analytics" class="sb-item"><i class="fas fa-chart-simple"></i><span class="sidebar-text">analytics</span></button>
+        <button onclick="newTab('clonmedic://habits')" data-route="clonmedic://habits" class="sb-item"><i class="fas fa-calendar-check"></i><span class="sidebar-text">habits</span></button>
+        <button onclick="newTab('clonmedic://pomodoro')" data-route="clonmedic://pomodoro" class="sb-item"><i class="fas fa-stopwatch"></i><span class="sidebar-text">pomodoro</span></button>
+        <button onclick="newTab('clonmedic://timer')" data-route="clonmedic://timer" class="sb-item"><i class="fas fa-hourglass-half"></i><span class="sidebar-text">timer</span></button>
+      </div>
+    </div>
+
+    <div class="sb-group" id="g-cbw">
+      <button class="sb-head" onclick="toggleGroup('g-cbw')"><i class="fas fa-cubes"></i><span class="sidebar-text">engines</span><span class="sb-extra"><span class="sb-badge">6</span><i class="fas fa-chevron-down sb-chev"></i></span></button>
+      <div class="sb-group-body">
+        <button onclick="newTab('heril.html')" data-route="heril.html" class="sb-item dim"><i class="fas fa-flask"></i><span class="sidebar-text">heril</span></button>
+        <button onclick="newTab('medicof all.html')" data-route="medicof all.html" class="sb-item dim"><i class="fas fa-vial"></i><span class="sidebar-text">medic</span></button>
+        <button onclick="newTab('SansKoder.html')" data-route="SansKoder.html" class="sb-item dim"><i class="fas fa-terminal"></i><span class="sidebar-text">koder</span></button>
+        <button onclick="newTab('trecore.html')" data-route="trecore.html" class="sb-item dim"><i class="fas fa-cube"></i><span class="sidebar-text">core</span></button>
+        <button onclick="newTab('brainboard.html')" data-route="brainboard.html" class="sb-item dim"><i class="fas fa-chalkboard"></i><span class="sidebar-text">board</span></button>
+        <button onclick="newTab('arcade.html')" data-route="arcade.html" class="sb-item dim"><i class="fas fa-gamepad"></i><span class="sidebar-text">arcade</span></button>
+      </div>
+    </div>
+  </nav>
+
+  <div class="px-2 border-t border-[#e4e4e2] pt-2 pb-1">
+    <div class="sb-label">sessions</div>
+    <div id="tabs-container" class="flex flex-col gap-0.5 max-h-[128px] overflow-y-auto no-scrollbar"></div>
+    <button onclick="newTab()" class="mt-1 sb-item"><i class="fas fa-plus" style="font-size:10px"></i><span class="sidebar-text" style="font-size:12.5px">new tab</span></button>
+  </div>
+
+  <div class="px-2 pt-2 pb-1 border-t border-[#e4e4e2]">
+    <div class="flex items-center gap-2 pl-[20px]">
+      <span class="w-1.5 h-1.5 rounded-full bg-[#d3d1cd] shrink-0 transition-colors" id="db-indicator"></span>
+      <span class="sidebar-text" style="margin-left:0;font-size:11px;color:#9b9a97"><span>db ·</span> <span id="db-indicator-text" class="text-[#787774]">standby</span></span>
+    </div>
+  </div>
+</aside>
+
+<!-- ============ main ============ -->
+<main class="flex-1 flex flex-col relative w-full h-full pl-[64px] md:pl-0">
+  <div id="loading-bar" class="absolute top-0 left-0 w-0 z-50"></div>
+
+  <header class="h-12 border-b border-[#e9e9e7] flex items-center px-4 gap-4 bg-white shrink-0 z-40">
+    <div class="flex gap-1">
+      <button onclick="goBack()" class="w-7 h-7 rounded hover:bg-[#f1f1ef] text-[#9b9a97] hover:text-[#37352f] transition-colors"><i class="fas fa-arrow-left text-[11px]"></i></button>
+      <button onclick="goForward()" class="w-7 h-7 rounded hover:bg-[#f1f1ef] text-[#9b9a97] hover:text-[#37352f] transition-colors"><i class="fas fa-arrow-right text-[11px]"></i></button>
+      <button onclick="reloadPage()" class="w-7 h-7 rounded hover:bg-[#f1f1ef] text-[#9b9a97] hover:text-[#37352f] transition-colors"><i class="fas fa-arrow-rotate-right text-[11px]"></i></button>
+    </div>
+
+    <div class="flex-1 flex justify-center max-w-xl mx-auto relative group">
+      <div class="absolute left-3 top-1/2 transform -translate-y-1/2 text-[#c4c2bc] group-focus-within:text-[#9b9a97] transition-colors"><i class="fas fa-search text-[10px]"></i></div>
+      <input type="text" id="address-bar" class="w-full pro-input rounded px-8 py-1.5 text-[13px]" placeholder="search or type a url..." onkeypress="if(event.key === 'Enter') processInput(this.value)">
+    </div>
+
+    <button onclick="goHome()" class="w-7 h-7 rounded hover:bg-[#f1f1ef] text-[#9b9a97] hover:text-[#37352f] transition-colors shrink-0"><i class="fas fa-home text-[11px]"></i></button>
+  </header>
+
+  <div class="flex-1 relative overflow-hidden">
+
+    <!-- ===== home ===== -->
+    <div id="home-screen" class="view">
+      <div class="max-w-4xl mx-auto w-full">
+        <div class="flex justify-between items-end mb-8 border-b border-[#e9e9e7] pb-5">
+          <div>
+            <div class="text-[12.5px] text-[#9b9a97] mb-1.5" id="dash-greet">good evening</div>
+            <h1 class="text-3xl aesthetic-title leading-tight">welcome to clonbrow</h1>
+          </div>
+          <div class="text-right pb-1">
+            <div class="text-xl font-medium tabular-nums" id="dash-time">00:00</div>
+            <div class="text-[11.5px] text-[#9b9a97] mt-0.5" id="dash-date">friday, sep 25</div>
+          </div>
+        </div>
+
+        <div class="grid grid-cols-1 lg:grid-cols-[1fr_2fr] gap-6">
+          <div class="space-y-6">
+            <div class="notion-card flex flex-col h-40">
+              <div class="flex justify-between items-center px-3.5 py-2.5 border-b border-[#e9e9e7]">
+                <span class="text-[12.5px] text-[#787774] flex items-center gap-2"><i class="fas fa-pen text-[#c4c2bc]"></i> scratchpad</span>
+                <span class="text-[10.5px] text-[#c4c2bc]">autosave</span>
+              </div>
+              <textarea id="scratchpad" class="w-full h-full bg-transparent border-none outline-none p-3.5 text-[13px] text-[#787774] resize-none leading-relaxed" placeholder="start typing..."></textarea>
+            </div>
+
+            <div class="notion-card flex flex-col">
+              <div class="flex justify-between items-center px-3.5 py-2.5 border-b border-[#e9e9e7]">
+                <span class="text-[12.5px] text-[#787774] flex items-center gap-2"><i class="fas fa-square-check text-[#c4c2bc]"></i> tasks</span>
+                <span class="text-[11px] text-[#9b9a97] cursor-pointer hover:text-[#37352f]" onclick="newTab('clonmedic://tasks')">view all</span>
+              </div>
+              <div id="mini-tasks-list" class="p-2 space-y-0.5"></div>
+            </div>
+
+            <div class="notion-card p-4">
+              <div class="flex justify-between items-center mb-3">
+                <span class="text-[12.5px] text-[#787774] flex items-center gap-2"><i class="fas fa-chart-simple text-[#c4c2bc]"></i> activity</span>
+                <span class="text-[10.5px] text-[#c4c2bc]">98 days</span>
+              </div>
+              <div id="activity-matrix" class="space-y-1"></div>
+            </div>
+          </div>
+
+          <div class="space-y-8">
+            <div>
+              <div class="text-[12px] text-[#9b9a97] mb-2.5">learning</div>
+              <div class="grid grid-cols-2 sm:grid-cols-3 gap-2.5">
+                <div class="notion-card p-3.5 cursor-pointer" onclick="newTab('clonmedic://notes')"><div class="icon-tile"><i class="fas fa-file-lines"></i></div><div class="text-[13px] font-medium">notes</div><div class="text-[11px] text-[#9b9a97] mt-0.5">rich text</div></div>
+                <div class="notion-card p-3.5 cursor-pointer" onclick="newTab('clonmedic://flashcards')"><div class="icon-tile"><i class="fas fa-clone"></i></div><div class="text-[13px] font-medium">flashcards</div><div class="text-[11px] text-[#9b9a97] mt-0.5">active recall</div></div>
+                <div class="notion-card p-3.5 cursor-pointer" onclick="newTab('clonmedic://quiz')"><div class="icon-tile"><i class="fas fa-circle-question"></i></div><div class="text-[13px] font-medium">quiz</div><div class="text-[11px] text-[#9b9a97] mt-0.5">assessments</div></div>
+                <div class="notion-card p-3.5 cursor-pointer" onclick="newTab('clonmedic://bites')"><div class="icon-tile"><i class="fas fa-lightbulb"></i></div><div class="text-[13px] font-medium">quick bites</div><div class="text-[11px] text-[#9b9a97] mt-0.5">micro notes</div></div>
+                <div class="notion-card p-3.5 cursor-pointer" onclick="newTab('clonmedic://english')"><div class="icon-tile"><i class="fas fa-feather"></i></div><div class="text-[13px] font-medium">word lab</div><div class="text-[11px] text-[#9b9a97] mt-0.5">text stats</div></div>
+                <div class="notion-card p-3.5 cursor-pointer" onclick="newTab('clonmedic://code')"><div class="icon-tile"><i class="fas fa-code"></i></div><div class="text-[13px] font-medium">playground</div><div class="text-[11px] text-[#9b9a97] mt-0.5">live editor</div></div>
+              </div>
+            </div>
+
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+              <div>
+                <div class="text-[12px] text-[#9b9a97] mb-2.5">utilities</div>
+                <div class="grid grid-cols-2 gap-1.5">
+                  <button class="notion-btn py-2 px-3 flex items-center justify-start gap-2 !text-[12.5px]" onclick="newTab('clonmedic://timetable')"><i class="fas fa-calendar w-4 text-center text-[10px] text-[#9b9a97]"></i><span>timetable</span></button>
+                  <button class="notion-btn py-2 px-3 flex items-center justify-start gap-2 !text-[12.5px]" onclick="newTab('clonmedic://converter')"><i class="fas fa-right-left w-4 text-center text-[10px] text-[#9b9a97]"></i><span>converter</span></button>
+                  <button class="notion-btn py-2 px-3 flex items-center justify-start gap-2 !text-[12.5px]" onclick="newTab('clonmedic://gpa')"><i class="fas fa-graduation-cap w-4 text-center text-[10px] text-[#9b9a97]"></i><span>gpa</span></button>
+                  <button class="notion-btn py-2 px-3 flex items-center justify-start gap-2 !text-[12.5px]" onclick="newTab('clonmedic://calc')"><i class="fas fa-calculator w-4 text-center text-[10px] text-[#9b9a97]"></i><span>calculator</span></button>
+                  <button class="notion-btn py-2 px-3 flex items-center justify-start gap-2 !text-[12.5px]" onclick="newTab('clonmedic://invoice')"><i class="fas fa-file-invoice w-4 text-center text-[10px] text-[#9b9a97]"></i><span>invoice</span></button>
+                  <button class="notion-btn py-2 px-3 flex items-center justify-start gap-2 !text-[12.5px]" onclick="newTab('clonmedic://formulas')"><i class="fas fa-square-root-variable w-4 text-center text-[10px] text-[#9b9a97]"></i><span>formulas</span></button>
+                  <button class="notion-btn py-2 px-3 flex items-center justify-start gap-2 !text-[12.5px]" onclick="newTab('clonmedic://citations')"><i class="fas fa-quote-right w-4 text-center text-[10px] text-[#9b9a97]"></i><span>citations</span></button>
+                  <button class="notion-btn py-2 px-3 flex items-center justify-start gap-2 !text-[12.5px]" onclick="newTab('clonmedic://periodic')"><i class="fas fa-atom w-4 text-center text-[10px] text-[#9b9a97]"></i><span>elements</span></button>
+                </div>
+              </div>
+              <div>
+                <div class="text-[12px] text-[#9b9a97] mb-2.5">tools</div>
+                <div class="grid grid-cols-2 gap-1.5">
+                  <button class="notion-btn py-2 px-3 flex items-center justify-start gap-2 !text-[12.5px]" onclick="newTab('clonmedic://whiteboard')"><i class="fas fa-pen w-4 text-center text-[10px] text-[#9b9a97]"></i><span>whiteboard</span></button>
+                  <button class="notion-btn py-2 px-3 flex items-center justify-start gap-2 !text-[12.5px]" onclick="newTab('clonmedic://analytics')"><i class="fas fa-chart-simple w-4 text-center text-[10px] text-[#9b9a97]"></i><span>analytics</span></button>
+                  <button class="notion-btn py-2 px-3 flex items-center justify-start gap-2 !text-[12.5px]" onclick="newTab('clonmedic://habits')"><i class="fas fa-calendar-check w-4 text-center text-[10px] text-[#9b9a97]"></i><span>habits</span></button>
+                  <button class="notion-btn py-2 px-3 flex items-center justify-start gap-2 !text-[12.5px]" onclick="newTab('clonmedic://timer')"><i class="fas fa-hourglass-half w-4 text-center text-[10px] text-[#9b9a97]"></i><span>timer</span></button>
+                  <button class="notion-btn py-2 px-3 flex items-center justify-start gap-2 !text-[12.5px]" onclick="newTab('clonmedic://pomodoro')"><i class="fas fa-stopwatch w-4 text-center text-[10px] text-[#9b9a97]"></i><span>pomodoro</span></button>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ===== search ===== -->
+    <div id="search-screen" class="view">
+      <div class="max-w-2xl mx-auto w-full">
+        <div class="flex items-center justify-between border-b border-[#e9e9e7] pb-3 mb-5">
+          <div class="text-[13px] text-[#787774] flex items-center gap-2"><i class="fas fa-search text-[#c4c2bc]"></i> search results</div>
+          <div class="text-[11.5px] text-[#9b9a97]" id="search-q"></div>
+        </div>
+        <div id="search-results-container" class="space-y-2"></div>
+      </div>
+    </div>
+
+    <!-- ===== article ===== -->
+    <div id="article-screen" class="view">
+      <div class="max-w-2xl mx-auto w-full">
+        <div class="mb-6 border-b border-[#e9e9e7] pb-5">
+          <span class="tag mb-3 inline-flex items-center gap-1.5"><i class="fas fa-check text-[10px]" style="color:#0f9960"></i> article</span>
+          <h1 class="text-3xl aesthetic-title leading-tight mt-2" id="article-title">title</h1>
+        </div>
+        <div id="article-content" class="text-sm"></div>
+      </div>
+    </div>
+
+    <!-- ===== tasks ===== -->
+    <div id="tasks-screen" class="view">
+      <div class="max-w-3xl mx-auto w-full h-full flex flex-col">
+        <div class="sh">
+          <div><div class="sh-sub">kanban · synced</div><h2 class="text-2xl aesthetic-title">tasks</h2></div>
+          <div class="flex gap-2 w-full sm:w-1/2">
+            <input type="text" id="new-task-input" class="pro-input flex-1 p-2 text-[13px]" placeholder="new task..." onkeypress="if(event.key === 'Enter') addTask()">
+            <button onclick="addTask()" class="notion-btn notion-btn-primary px-4">add</button>
+          </div>
+        </div>
+        <div class="flex-1 grid grid-cols-1 md:grid-cols-3 gap-4 overflow-hidden">
+          <div class="notion-card p-4 flex flex-col"><h3 class="text-[12px] text-[#9b9a97] mb-3 pb-2 border-b border-[#e9e9e7]">todo</h3><div id="tasks-todo" class="flex-1 overflow-y-auto space-y-1.5 no-scrollbar"></div></div>
+          <div class="notion-card p-4 flex flex-col"><h3 class="text-[12px] text-[#787774] mb-3 pb-2 border-b border-[#e9e9e7]">in progress</h3><div id="tasks-doing" class="flex-1 overflow-y-auto space-y-1.5 no-scrollbar"></div></div>
+          <div class="notion-card p-4 flex flex-col"><h3 class="text-[12px] mb-3 pb-2 border-b border-[#e9e9e7]" style="color:#0f9960">done</h3><div id="tasks-done" class="flex-1 overflow-y-auto space-y-1.5 no-scrollbar opacity-60 hover:opacity-100 transition-opacity"></div></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ===== flashcards ===== -->
+    <div id="flashcards-screen" class="view">
+      <div class="max-w-2xl mx-auto w-full">
+        <div class="sh">
+          <div><div class="sh-sub">synced to db</div><h2 class="text-2xl aesthetic-title">flashcards</h2></div>
+          <div class="flex gap-1.5">
+            <button onclick="toggleFC('play')" id="fc-play-btn" class="notion-btn notion-btn-primary px-3.5 py-1.5">study</button>
+            <button onclick="toggleFC('create')" id="fc-create-btn" class="notion-btn px-3.5 py-1.5">editor</button>
+          </div>
+        </div>
+
+        <div id="fc-play-view" class="flex flex-col items-center mt-8 w-full">
+          <div class="w-full max-w-lg aspect-[3/2] fc-card" id="fc-card" onclick="flipCard()">
+            <div class="fc-inner">
+              <div class="fc-face notion-card"><div id="fc-front" class="text-xl aesthetic-title leading-snug">no cards yet.</div><div class="text-[11px] text-[#c4c2bc]">click to flip</div></div>
+              <div class="fc-face fc-back notion-card"><div id="fc-back" class="text-[15px] leading-relaxed text-[#37352f]"></div><div class="text-[11px] text-[#c4c2bc]">answer</div></div>
+            </div>
+          </div>
+          <div class="flex items-center gap-5 mt-6">
+            <button onclick="prevCard()" class="notion-btn w-8 h-8 flex items-center justify-center !rounded-full !p-0"><i class="fas fa-arrow-left text-[10px]"></i></button>
+            <span class="tag" id="fc-counter">0/0</span>
+            <button onclick="nextCard()" class="notion-btn w-8 h-8 flex items-center justify-center !rounded-full !p-0"><i class="fas fa-arrow-right text-[10px]"></i></button>
+          </div>
+        </div>
+
+        <div id="fc-create-view" class="hide flex flex-col gap-5 w-full">
+          <div class="notion-card p-5">
+            <h3 class="text-[12px] text-[#9b9a97] mb-3 pb-2 border-b border-[#e9e9e7]">new card</h3>
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-2.5 mb-3">
+              <textarea id="fc-q" class="pro-input p-2.5 text-[13px] h-24 resize-none" placeholder="front — question"></textarea>
+              <textarea id="fc-a" class="pro-input p-2.5 text-[13px] h-24 resize-none" placeholder="back — answer"></textarea>
+            </div>
+            <button onclick="addCard()" class="notion-btn notion-btn-primary w-full py-2">save card</button>
+          </div>
+          <div>
+            <div class="text-[12px] text-[#9b9a97] mb-2 pb-2 border-b border-[#e9e9e7]">deck · <span id="fc-count" class="text-[#787774]">0</span></div>
+            <div id="fc-list" class="grid grid-cols-1 gap-1.5"></div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ===== quiz ===== -->
+    <div id="quiz-screen" class="view">
+      <div class="max-w-3xl mx-auto w-full">
+        <div class="sh">
+          <div><div class="sh-sub">synced to db</div><h2 class="text-2xl aesthetic-title">quiz</h2></div>
+          <div class="flex gap-1.5">
+            <button onclick="toggleQz('play')" id="qz-play-btn" class="notion-btn notion-btn-primary px-3.5 py-1.5">study</button>
+            <button onclick="toggleQz('create')" id="qz-create-btn" class="notion-btn px-3.5 py-1.5">editor</button>
+          </div>
+        </div>
+
+        <div id="qz-play-view" class="flex flex-col items-center mt-6 w-full">
+          <div class="w-full max-w-xl notion-card p-8 text-center">
+            <h3 id="qz-question-display" class="text-lg aesthetic-title leading-snug mb-6">no quizzes yet.</h3>
+            <div id="qz-options-container" class="grid grid-cols-1 md:grid-cols-2 gap-2"></div>
+          </div>
+          <div class="flex justify-between items-center w-full max-w-xl mt-4 p-3 bg-[#f7f7f7] border border-[#e9e9e7] rounded">
+            <div id="qz-feedback" class="text-[13px] h-4 flex items-center"></div>
+            <div class="flex items-center gap-3">
+              <span class="tag" id="qz-counter">0/0</span>
+              <button id="qz-next-btn" class="notion-btn notion-btn-primary px-4 py-1 hide" onclick="nextQz()">next</button>
+            </div>
+          </div>
+        </div>
+
+        <div id="qz-create-view" class="hide grid grid-cols-1 md:grid-cols-2 gap-6 w-full">
+          <div class="notion-card p-5 space-y-3">
+            <h3 class="text-[12px] text-[#9b9a97] pb-2 border-b border-[#e9e9e7]">new question</h3>
+            <textarea id="qz-q" class="pro-input w-full p-2.5 text-[13px] h-20 resize-none" placeholder="question..."></textarea>
+            <div class="space-y-2">
+              <div class="text-[11.5px] text-[#9b9a97]">options — select the correct one</div>
+              <div class="flex items-center gap-2"><input type="radio" name="qz-ans" value="0" checked class="w-3.5 h-3.5" style="accent-color:#2383e2"><input type="text" id="qz-o1" class="pro-input flex-1 p-2 text-[13px]" placeholder="option a"></div>
+              <div class="flex items-center gap-2"><input type="radio" name="qz-ans" value="1" class="w-3.5 h-3.5" style="accent-color:#2383e2"><input type="text" id="qz-o2" class="pro-input flex-1 p-2 text-[13px]" placeholder="option b"></div>
+              <div class="flex items-center gap-2"><input type="radio" name="qz-ans" value="2" class="w-3.5 h-3.5" style="accent-color:#2383e2"><input type="text" id="qz-o3" class="pro-input flex-1 p-2 text-[13px]" placeholder="option c"></div>
+              <div class="flex items-center gap-2"><input type="radio" name="qz-ans" value="3" class="w-3.5 h-3.5" style="accent-color:#2383e2"><input type="text" id="qz-o4" class="pro-input flex-1 p-2 text-[13px]" placeholder="option d"></div>
+            </div>
+            <button onclick="addQuiz()" class="notion-btn notion-btn-primary w-full py-2">save</button>
+          </div>
+          <div class="flex flex-col h-full">
+            <div class="flex justify-between items-center mb-2 pb-2 border-b border-[#e9e9e7]"><h3 class="text-[12px] text-[#9b9a97]">question bank</h3><span class="tag" id="qz-count">0</span></div>
+            <div id="qz-list" class="flex-1 space-y-1.5 overflow-y-auto no-scrollbar pb-4"></div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ===== bites ===== -->
+    <div id="bites-screen" class="view">
+      <div class="max-w-3xl mx-auto w-full">
+        <div class="sh"><div><div class="sh-sub">synced to db</div><h2 class="text-2xl aesthetic-title">quick bites</h2></div></div>
+        <div class="notion-card p-5 mb-5">
+          <div class="grid grid-cols-1 md:grid-cols-[1fr_120px_auto] gap-2 mb-2.5">
+            <input type="text" id="bite-t" class="pro-input p-2 text-[13px]" placeholder="title...">
+            <input type="text" id="bite-tag" class="pro-input p-2 text-[13px]" placeholder="tag...">
+            <button onclick="addBite()" class="notion-btn notion-btn-primary px-4">save</button>
+          </div>
+          <textarea id="bite-body" class="pro-input w-full p-2 text-[13px] h-20 resize-none" placeholder="the bite itself..."></textarea>
+        </div>
+        <div id="bites-list" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-2.5"></div>
+      </div>
+    </div>
+
+    <!-- ===== english ===== -->
+    <div id="english-screen" class="view">
+      <div class="max-w-2xl mx-auto w-full">
+        <div class="sh"><div><div class="sh-sub">text analysis</div><h2 class="text-2xl aesthetic-title">word lab</h2></div></div>
+        <textarea id="eng-input" class="pro-input w-full p-3.5 h-36 resize-y leading-relaxed text-[13px]" placeholder="paste or type text — stats compute live..."></textarea>
+        <div id="eng-stats" class="grid grid-cols-2 sm:grid-cols-4 gap-2.5 mt-4"></div>
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mt-4">
+          <div class="notion-card p-4"><div class="text-[12px] text-[#9b9a97] mb-3">top words</div><div id="eng-top" class="space-y-2"></div></div>
+          <div class="notion-card p-4"><div class="text-[12px] text-[#9b9a97] mb-3">readability</div><div class="flex items-baseline gap-3"><span id="eng-flesch" class="text-5xl aesthetic-title">—</span><span id="eng-level" class="text-[12.5px] text-[#787774]"></span></div><div id="eng-extra" class="text-[12px] text-[#787774] mt-4 space-y-1.5"></div></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ===== notes ===== -->
+    <div id="notes-screen" class="view">
+      <div class="max-w-3xl mx-auto w-full h-full flex flex-col">
+        <div class="sh"><div><div class="sh-sub">autosave · synced</div><h2 class="text-2xl aesthetic-title">notes</h2></div><button onclick="newNote()" class="notion-btn notion-btn-primary px-4 py-1.5">new</button></div>
+        <div class="grid md:grid-cols-[200px_1fr] gap-4 flex-1 min-h-0">
+          <div class="notion-card p-2 overflow-y-auto no-scrollbar"><div id="notes-list" class="space-y-0.5"></div></div>
+          <div class="flex flex-col gap-2.5 min-h-0">
+            <input type="text" id="note-title" class="pro-input p-2.5 text-[15px] font-medium" placeholder="untitled">
+            <div class="flex gap-1 flex-wrap">
+              <button class="notion-btn !px-2.5 !py-1 !text-[12px]" onclick="fmt('bold')"><b>b</b></button>
+              <button class="notion-btn !px-2.5 !py-1 !text-[12px]" onclick="fmt('italic')"><i>i</i></button>
+              <button class="notion-btn !px-2.5 !py-1 !text-[12px]" onclick="fmt('underline')"><u>u</u></button>
+              <button class="notion-btn !px-2.5 !py-1 !text-[12px]" onclick="fmt('formatBlock','h2')">h2</button>
+              <button class="notion-btn !px-2.5 !py-1 !text-[12px]" onclick="fmt('formatBlock','blockquote')">quote</button>
+              <button class="notion-btn !px-2.5 !py-1 !text-[12px]" onclick="fmt('insertUnorderedList')">list</button>
+              <button class="notion-btn notion-btn-danger !px-2.5 !py-1 !text-[12px] ml-auto" onclick="delNote()"><i class="fas fa-trash text-[10px]"></i></button>
+            </div>
+            <div id="note-body" contenteditable="true" oninput="noteDirty()"></div>
+            <div id="note-meta" class="text-[11px] text-[#c4c2bc]">select or create a note</div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ===== formulas ===== -->
+    <div id="formulas-screen" class="view">
+      <div class="max-w-2xl mx-auto w-full">
+        <div class="sh"><div><div class="sh-sub">reference + saver · synced</div><h2 class="text-2xl aesthetic-title">formulas</h2></div></div>
+
+        <div class="notion-card p-4 mb-4">
+          <div class="text-[12px] text-[#9b9a97] mb-3 flex items-center gap-2"><i class="fas fa-bookmark text-[#c4c2bc]"></i> save your own · <span id="cf-count" class="text-[#787774]">0 stored</span></div>
+          <div class="grid grid-cols-1 md:grid-cols-2 gap-2 mb-2">
+            <input type="text" id="cf-n" class="pro-input p-2 text-[13px]" placeholder="name (e.g. lens formula)">
+            <select id="cf-c" class="pro-input p-2 text-[13px]"><option value="math">math</option><option value="physics">physics</option><option value="chemistry">chemistry</option></select>
+          </div>
+          <input type="text" id="cf-f" class="pro-input w-full p-2 text-[14px] mb-2 font-medium" placeholder="formula (e.g. 1/f = 1/v − 1/u)">
+          <div class="grid grid-cols-[1fr_auto] gap-2">
+            <input type="text" id="cf-d" class="pro-input p-2 text-[13px]" placeholder="what it solves (optional)">
+            <button onclick="addCustomF()" class="notion-btn notion-btn-primary px-4">save</button>
+          </div>
+        </div>
+
+        <div class="flex gap-2 mb-4 flex-wrap items-center">
+          <div class="flex gap-1.5" id="f-cats">
+            <button class="chip on" onclick="setFCat('all',this)">all</button>
+            <button class="chip" onclick="setFCat('math',this)">math</button>
+            <button class="chip" onclick="setFCat('physics',this)">physics</button>
+            <button class="chip" onclick="setFCat('chemistry',this)">chem</button>
+          </div>
+          <input type="text" id="f-search" class="pro-input flex-1 min-w-[150px] p-2 text-[13px]" placeholder="filter..." oninput="renderFormulas()">
+        </div>
+        <div id="f-list" class="grid grid-cols-1 md:grid-cols-2 gap-2.5"></div>
+      </div>
+    </div>
+
+    <!-- ===== periodic ===== -->
+    <div id="periodic-screen" class="view">
+      <div class="max-w-3xl mx-auto w-full">
+        <div class="sh"><div><div class="sh-sub">118 elements</div><h2 class="text-2xl aesthetic-title">elements</h2></div></div>
+        <div class="flex gap-4 items-start">
+          <div id="pt-grid" class="flex-1 grid gap-[2px]" style="grid-template-columns:repeat(18,1fr);grid-auto-rows:auto"></div>
+          <div class="notion-card p-4 w-40 shrink-0 text-center">
+            <div class="text-[11px] text-[#c4c2bc] mb-2">element</div>
+            <div id="el-detail"><div class="text-5xl aesthetic-title leading-none">—</div><div class="text-[11.5px] text-[#9b9a97] mt-2">click any element</div></div>
+          </div>
+        </div>
+        <div class="flex gap-3 flex-wrap mt-4 text-[10px] text-[#9b9a97]" id="pt-legend"></div>
+      </div>
+    </div>
+
+    <!-- ===== timetable ===== -->
+    <div id="timetable-screen" class="view">
+      <div class="max-w-3xl mx-auto w-full">
+        <div class="sh"><div><div class="sh-sub">click a cell to edit · synced</div><h2 class="text-2xl aesthetic-title">timetable</h2></div></div>
+        <div class="notion-card p-4 overflow-x-auto no-scrollbar"><div id="tt-grid" class="min-w-[560px]"></div></div>
+      </div>
+    </div>
+
+    <!-- ===== converter ===== -->
+    <div id="converter-screen" class="view">
+      <div class="max-w-sm mx-auto w-full">
+        <div class="sh"><div><div class="sh-sub">live conversion</div><h2 class="text-2xl aesthetic-title">converter</h2></div></div>
+        <div class="flex gap-1.5 mb-4 flex-wrap" id="conv-cats">
+          <button class="chip on" onclick="setConvCat('length',this)">length</button>
+          <button class="chip" onclick="setConvCat('mass',this)">mass</button>
+          <button class="chip" onclick="setConvCat('temp',this)">temp</button>
+          <button class="chip" onclick="setConvCat('data',this)">data</button>
+          <button class="chip" onclick="setConvCat('speed',this)">speed</button>
+        </div>
+        <div class="notion-card p-5 space-y-4">
+          <div class="grid grid-cols-[1fr_auto_1fr] gap-2 items-center">
+            <select id="conv-from" class="pro-input p-2 text-[13px]" onchange="calcConv()"></select>
+            <button class="notion-btn w-8 h-8 flex items-center justify-center !p-0" onclick="convSwap()"><i class="fas fa-right-left text-[10px]"></i></button>
+            <select id="conv-to" class="pro-input p-2 text-[13px]" onchange="calcConv()"></select>
+          </div>
+          <input type="number" id="conv-v" class="pro-input w-full p-2.5 text-center" value="1" oninput="calcConv()">
+          <div class="text-center py-3 border-t border-[#e9e9e7]">
+            <div class="text-[11px] text-[#c4c2bc] mb-1.5">result</div>
+            <div class="text-3xl aesthetic-title tabular-nums" id="conv-res">—</div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ===== gpa ===== -->
+    <div id="gpa-screen" class="view">
+      <div class="max-w-xl mx-auto w-full">
+        <div class="sh"><div><div class="sh-sub">synced</div><h2 class="text-2xl aesthetic-title">gpa</h2></div><button onclick="addGRow()" class="notion-btn notion-btn-primary px-4 py-1.5">course</button></div>
+        <div class="grid grid-cols-[1fr_64px_90px_32px] gap-2 text-[11px] text-[#c4c2bc] px-1 mb-2"><span>course</span><span>credits</span><span>grade</span><span></span></div>
+        <div id="gpa-rows" class="space-y-2"></div>
+        <div class="notion-card p-5 mt-4 flex items-center justify-between">
+          <div class="text-[12.5px] text-[#787774]">cumulative · <span id="gpa-pts" class="text-[#37352f]">0 credits</span></div>
+          <div class="text-4xl aesthetic-title tabular-nums" id="gpa-total">0.00</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ===== invoice ===== -->
+    <div id="invoice-screen" class="view">
+      <div class="max-w-xl mx-auto w-full">
+        <div class="sh"><div><div class="sh-sub">printable</div><h2 class="text-2xl aesthetic-title">invoice</h2></div><button onclick="printInvoice()" class="notion-btn notion-btn-primary px-4 py-1.5">print / pdf</button></div>
+        <div class="notion-card p-5 space-y-4">
+          <div class="grid grid-cols-1 sm:grid-cols-3 gap-2">
+            <input type="text" id="inv-no" class="pro-input p-2 text-[13px]" placeholder="invoice no." oninput="invField('no',this.value)">
+            <input type="text" id="inv-from" class="pro-input p-2 text-[13px]" placeholder="from" oninput="invField('from',this.value)">
+            <input type="text" id="inv-to" class="pro-input p-2 text-[13px]" placeholder="to" oninput="invField('to',this.value)">
+          </div>
+          <div class="grid grid-cols-[1fr_60px_84px_32px] gap-2 text-[11px] text-[#c4c2bc] px-1"><span>item</span><span>qty</span><span>rate</span><span></span></div>
+          <div id="inv-items" class="space-y-2"></div>
+          <button onclick="invAdd()" class="notion-btn w-full py-1.5">add item</button>
+          <div class="grid grid-cols-[1fr_120px] gap-2 items-center pt-3 border-t border-[#e9e9e7]">
+            <div class="flex items-center gap-2 justify-end text-[12.5px] text-[#787774]">tax %<input type="number" id="inv-tax" class="pro-input p-1.5 w-16 text-center" value="0" oninput="invField('tax',this.value)"></div>
+            <div class="text-right space-y-1 text-[12px]">
+              <div class="text-[#9b9a97]">sub · <span class="text-[#37352f]" id="inv-sub">0</span></div>
+              <div class="text-[#9b9a97]">tax · <span class="text-[#37352f]" id="inv-taxv">0</span></div>
+              <div class="text-2xl aesthetic-title" id="inv-total">0</div>
+            </div>
+          </div>
+          <textarea id="inv-notes" class="pro-input w-full p-2 text-[13px] h-16 resize-none" placeholder="notes..." oninput="invField('notes',this.value)"></textarea>
+        </div>
+      </div>
+    </div>
+
+    <!-- ===== citations ===== -->
+    <div id="citations-screen" class="view">
+      <div class="max-w-xl mx-auto w-full">
+        <div class="sh"><div><div class="sh-sub">apa · mla · harvard · chicago</div><h2 class="text-2xl aesthetic-title">citations</h2></div></div>
+        <div class="flex gap-1.5 mb-4" id="cite-styles">
+          <button class="chip on" onclick="setCite('apa',this)">apa</button>
+          <button class="chip" onclick="setCite('mla',this)">mla</button>
+          <button class="chip" onclick="setCite('harvard',this)">harvard</button>
+          <button class="chip" onclick="setCite('chicago',this)">chicago</button>
+        </div>
+        <div class="notion-card p-5 space-y-2.5">
+          <input type="text" id="cit-a" class="pro-input w-full p-2 text-[13px]" placeholder="author (last, first)">
+          <input type="text" id="cit-t" class="pro-input w-full p-2 text-[13px]" placeholder="title of work">
+          <div class="grid grid-cols-2 gap-2">
+            <input type="text" id="cit-c" class="pro-input p-2 text-[13px]" placeholder="publisher">
+            <input type="text" id="cit-y" class="pro-input p-2 text-[13px]" placeholder="year">
+          </div>
+          <input type="text" id="cit-u" class="pro-input w-full p-2 text-[13px]" placeholder="url">
+          <button onclick="genCite()" class="notion-btn notion-btn-primary w-full py-2">generate</button>
+        </div>
+        <div id="cite-out-wrap" class="notion-card p-5 mt-4 hide">
+          <div class="flex justify-between items-center mb-3"><span class="text-[11px] text-[#c4c2bc]" id="cite-label">apa</span><button onclick="copyText(document.getElementById('cite-out').textContent)" class="notion-btn !px-3 !py-1 !text-[11.5px]">copy</button></div>
+          <div id="cite-out" class="text-[13px] text-[#37352f] leading-relaxed break-all"></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ===== calculator ===== -->
+    <div id="calc-screen" class="view">
+      <div class="max-w-xs mx-auto w-full">
+        <div class="sh"><div><div class="sh-sub">evaluates live</div><h2 class="text-2xl aesthetic-title">calculator</h2></div></div>
+        <div class="notion-card p-4">
+          <div class="bg-[#f7f7f7] border border-[#e9e9e7] rounded p-3.5 mb-3"><div id="calc-exp">0</div></div>
+          <div class="grid grid-cols-4 gap-1.5">
+            <button class="notion-btn py-3" onclick="calcPress('C')">c</button>
+            <button class="notion-btn py-3" onclick="calcPress('(')">(</button>
+            <button class="notion-btn py-3" onclick="calcPress(')')">)</button>
+            <button class="notion-btn py-3 text-[#9b9a97]" onclick="calcPress('⌫')"><i class="fas fa-delete-left text-[12px]"></i></button>
+            <button class="notion-btn py-3" onclick="calcPress('7')">7</button><button class="notion-btn py-3" onclick="calcPress('8')">8</button><button class="notion-btn py-3" onclick="calcPress('9')">9</button>
+            <button class="notion-btn py-3 text-[#787774]" onclick="calcPress('÷')">÷</button>
+            <button class="notion-btn py-3" onclick="calcPress('4')">4</button><button class="notion-btn py-3" onclick="calcPress('5')">5</button><button class="notion-btn py-3" onclick="calcPress('6')">6</button>
+            <button class="notion-btn py-3 text-[#787774]" onclick="calcPress('×')">×</button>
+            <button class="notion-btn py-3" onclick="calcPress('1')">1</button><button class="notion-btn py-3" onclick="calcPress('2')">2</button><button class="notion-btn py-3" onclick="calcPress('3')">3</button>
+            <button class="notion-btn py-3 text-[#787774]" onclick="calcPress('−')">−</button>
+            <button class="notion-btn py-3" onclick="calcPress('0')">0</button><button class="notion-btn py-3" onclick="calcPress('.')">.</button>
+            <button class="notion-btn notion-btn-primary py-3" onclick="calcPress('=')">=</button>
+            <button class="notion-btn py-3 text-[#787774]" onclick="calcPress('+')">+</button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ===== code ===== -->
+    <div id="code-screen" class="view">
+      <div class="max-w-4xl mx-auto w-full h-full flex flex-col">
+        <div class="sh"><div><div class="sh-sub">html · css · js</div><h2 class="text-2xl aesthetic-title">playground</h2></div><button onclick="runCode()" class="notion-btn notion-btn-primary px-4 py-1.5">run</button></div>
+        <div class="grid md:grid-cols-2 gap-4 flex-1 min-h-0">
+          <div class="notion-card p-0 flex flex-col overflow-hidden">
+            <div class="flex border-b border-[#e9e9e7]" id="cp-tabs">
+              <button class="cp-tab on" onclick="cpTab('html',this)">html</button>
+              <button class="cp-tab" onclick="cpTab('css',this)">css</button>
+              <button class="cp-tab" onclick="cpTab('js',this)">js</button>
+            </div>
+            <textarea id="cp-html" class="cp-ed flex-1" spellcheck="false">&lt;h1&gt;hello&lt;/h1&gt;</textarea>
+            <textarea id="cp-css" class="cp-ed flex-1 hide" spellcheck="false">body{font-family:Inter,sans-serif;display:grid;place-items:center;height:100vh;color:#37352f}</textarea>
+            <textarea id="cp-js" class="cp-ed flex-1 hide" spellcheck="false">document.querySelector('h1').style.color='#2383e2'</textarea>
+          </div>
+          <div class="notion-card p-0 overflow-hidden flex flex-col">
+            <div class="px-4 py-2.5 border-b border-[#e9e9e7] text-[12px] text-[#9b9a97]">preview</div>
+            <iframe id="cp-out" class="flex-1 w-full bg-white" style="border:0" sandbox="allow-scripts"></iframe>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ===== whiteboard ===== -->
+    <div id="whiteboard-screen" class="view">
+      <div class="max-w-4xl mx-auto w-full h-full flex flex-col">
+        <div class="sh"><div><div class="sh-sub">freehand · pointer + touch</div><h2 class="text-2xl aesthetic-title">whiteboard</h2></div>
+          <div class="flex items-center gap-2 flex-wrap">
+            <div class="flex gap-1.5" id="wb-colors"></div>
+            <div class="flex gap-1.5" id="wb-sizes"></div>
+            <button class="notion-btn !px-3 !py-1.5 !text-[12px]" id="wb-erase" onclick="wbErase()">erase</button>
+            <button class="notion-btn !px-3 !py-1.5 !text-[12px]" onclick="wbClear()">clear</button>
+            <button class="notion-btn notion-btn-primary !px-3 !py-1.5 !text-[12px]" onclick="wbSave()">png</button>
+          </div>
+        </div>
+        <div class="notion-card flex-1 p-2.5 min-h-[300px] overflow-hidden"><canvas id="wb-canvas" class="w-full h-full rounded" style="touch-action:none;cursor:crosshair;background:#fff"></canvas></div>
+      </div>
+    </div>
+
+    <!-- ===== analytics ===== -->
+    <div id="analytics-screen" class="view">
+      <div class="max-w-3xl mx-auto w-full">
+        <div class="sh"><div><div class="sh-sub">overview</div><h2 class="text-2xl aesthetic-title">analytics</h2></div></div>
+        <div id="an-tiles" class="grid grid-cols-2 sm:grid-cols-4 gap-2.5 mb-4"></div>
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <div class="notion-card p-5"><div class="text-[12px] text-[#9b9a97] mb-4">last 14 days</div><div id="an-bars" class="flex gap-1.5 items-end"></div></div>
+          <div class="notion-card p-5"><div class="text-[12px] text-[#9b9a97] mb-4">task distribution</div><div id="an-split" class="space-y-4"></div></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ===== habits ===== -->
+    <div id="habits-screen" class="view">
+      <div class="max-w-xl mx-auto w-full">
+        <div class="sh"><div><div class="sh-sub">7-day grid · synced</div><h2 class="text-2xl aesthetic-title">habits</h2></div>
+          <div class="flex gap-2">
+            <input type="text" id="habit-in" class="pro-input p-2 text-[13px] w-40" placeholder="new habit..." onkeypress="if(event.key==='Enter')addHabit()">
+            <button onclick="addHabit()" class="notion-btn notion-btn-primary px-4">add</button>
+          </div>
+        </div>
+        <div class="notion-card p-4">
+          <div class="grid grid-cols-[1fr_repeat(7,30px)_44px_20px] gap-1.5 items-center text-[10px] text-[#c4c2bc] mb-3 px-1" id="hab-head"></div>
+          <div id="hab-rows" class="space-y-1"></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ===== pomodoro ===== -->
+    <div id="pomodoro-screen" class="view">
+      <div class="max-w-sm mx-auto w-full flex flex-col items-center">
+        <div class="sh w-full"><div><div class="sh-sub">25 / 5 / 15</div><h2 class="text-2xl aesthetic-title">pomodoro</h2></div></div>
+        <div class="flex gap-1.5 mb-6" id="pm-modes">
+          <button class="chip on" onclick="pmSetMode('focus',this)">focus</button>
+          <button class="chip" onclick="pmSetMode('short',this)">short break</button>
+          <button class="chip" onclick="pmSetMode('long',this)">long break</button>
+        </div>
+        <div class="relative w-52 h-52">
+          <svg viewBox="0 0 200 200" class="w-full h-full">
+            <circle cx="100" cy="100" r="88" stroke="#e9e9e7" stroke-width="6" fill="none"/>
+            <circle id="pomo-ring" cx="100" cy="100" r="88" stroke="#37352f" stroke-width="6" fill="none" stroke-linecap="round" transform="rotate(-90 100 100)" stroke-dasharray="552.92" stroke-dashoffset="0"/>
+          </svg>
+          <div class="absolute inset-0 flex flex-col items-center justify-center">
+            <div class="text-[11px] text-[#c4c2bc] mb-1" id="pomo-label">focus</div>
+            <div class="text-4xl font-medium tabular-nums leading-none" id="pomo-time">25:00</div>
+            <div class="flex gap-1.5 mt-3" id="pomo-dots"></div>
+          </div>
+        </div>
+        <div class="flex gap-2 mt-6">
+          <button class="notion-btn notion-btn-primary px-6 py-2" id="pm-start" onclick="pmToggle()">start</button>
+          <button class="notion-btn px-4 py-2" onclick="pmReset()">reset</button>
+          <button class="notion-btn px-4 py-2" onclick="pmSkip()">skip</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- ===== timer ===== -->
+    <div id="timer-screen" class="view">
+      <div class="max-w-2xl mx-auto w-full">
+        <div class="sh"><div><div class="sh-sub">stopwatch + countdown</div><h2 class="text-2xl aesthetic-title">timer</h2></div></div>
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <div class="notion-card p-6 text-center">
+            <div class="text-[12px] text-[#9b9a97] mb-4">stopwatch</div>
+            <div class="text-4xl font-medium tabular-nums leading-none mb-5" id="sw-display">00:00.0</div>
+            <div class="flex gap-2 justify-center">
+              <button class="notion-btn notion-btn-primary px-5 py-1.5" id="sw-btn" onclick="swToggle()">start</button>
+              <button class="notion-btn px-4 py-1.5" onclick="swLap()">lap</button>
+              <button class="notion-btn px-4 py-1.5" onclick="swReset()">reset</button>
+            </div>
+            <div id="sw-laps" class="mt-5 space-y-1.5 text-[12.5px] text-[#787774] max-h-28 overflow-y-auto no-scrollbar"></div>
+          </div>
+          <div class="notion-card p-6 text-center">
+            <div class="text-[12px] text-[#9b9a97] mb-4">countdown</div>
+            <div class="text-4xl font-medium tabular-nums leading-none mb-5" id="cd-display">05:00</div>
+            <div class="flex gap-1.5 justify-center mb-5">
+              <button class="notion-btn px-3.5 py-1.5" onclick="cdSet(1)">+1m</button>
+              <button class="notion-btn px-3.5 py-1.5" onclick="cdSet(5)">+5m</button>
+              <button class="notion-btn px-3.5 py-1.5" onclick="cdSet(25)">+25m</button>
+              <button class="notion-btn px-3.5 py-1.5" onclick="cdClear()">clear</button>
+            </div>
+            <button class="notion-btn notion-btn-primary px-6 py-1.5" id="cd-btn" onclick="cdStart()">start</button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ===== external frame ===== -->
+    <div id="ext-screen" class="view" style="padding:0"><iframe id="ext-frame" class="w-full flex-1 bg-white" style="border:0"></iframe></div>
+  </div>
+</main>
+
+<div id="inv-print"></div>
+
+<script>
+/* ============================================================
+   clonbrow — notion minimal
+============================================================ */
+const $=s=>document.querySelector(s), $$=s=>[...document.querySelectorAll(s)];
+const esc=s=>String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+const pad=n=>String(n).padStart(2,'0');
+const deb=(fn,ms)=>{let t;return(...a)=>{clearTimeout(t);t=setTimeout(()=>fn(...a),ms)}};
+
+/* ---- REMOTE DB — your pythonanywhere endpoint ---- */
+const REMOTE={enabled:true,base:'https://clonexxshree.pythonanywhere.com',user:'clonbrow'};
+const K={user:'clonbrow_user',tasks:'clonbrow_tasks',cards:'clonbrow_cards',quiz:'clonbrow_quiz',bites:'clonbrow_bites',notes:'clonbrow_notes',tt:'clonbrow_tt',habits:'clonbrow_habits',act:'clonbrow_act',scratch:'clonbrow_scratch',focus:'clonbrow_focus',gpa:'clonbrow_gpa',inv:'clonbrow_inv',customF:'clonbrow_customF'};
+const DB={
+  get(k,d){try{const v=JSON.parse(localStorage.getItem(k));return v==null?d:v}catch{return d}},
+  set(k,v){localStorage.setItem(k,JSON.stringify(v));queueSync()}
+};
+let syncT=null;
+function queueSync(){if(!REMOTE.enabled)return;clearTimeout(syncT);syncT=setTimeout(syncPush,1200)}
+async function apiFetch(url,opt,timeout){const ctl=new AbortController();const t=setTimeout(()=>ctl.abort(),timeout||12000);try{const r=await fetch(url,{...opt,signal:ctl.signal});clearTimeout(t);if(!r.ok)throw Error('HTTP '+r.status);return r}catch(e){clearTimeout(t);throw e}}
+function setDbStatus(ok){const d=$('#db-indicator'),t=$('#db-indicator-text');if(!d)return;
+  if(ok===true){d.style.background='#0f9960';t.textContent='synced'}
+  else if(ok===false){d.style.background='#d3d1cd';t.textContent='offline'}}
+async function syncPush(){if(!REMOTE.enabled)return;try{for(const k of Object.values(K)){const raw=localStorage.getItem(k);if(raw==null)continue;await apiFetch(REMOTE.base+'/api/data/'+encodeURIComponent(k),{method:'PUT',headers:{'Content-Type':'application/json'},body:JSON.stringify({username:REMOTE.user,value:JSON.parse(raw)})})}setDbStatus(true)}catch(e){setDbStatus(false)}}
+async function syncPull(){if(!REMOTE.enabled)return false;
+  try{const r=await apiFetch(REMOTE.base+'/api/session',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({username:REMOTE.user})});const j=await r.json(),d=j.data||{};let changed=false;
+    Object.values(K).forEach(k=>{const v=d[k];if(v!=null&&localStorage.getItem(k)==null){try{localStorage.setItem(k,JSON.stringify(v));changed=true}catch(e){}}});setDbStatus(true);return changed}catch(e){setDbStatus(false);return false}}
+
+/* login hook */
+window.__fullLogin=function(u){
+  REMOTE.user=u;localStorage.setItem(K.user,JSON.stringify(u));clearTimeout(syncT);
+  renderHome();
+  toast('signed in as '+u,'fa-user');
+  syncPull().then(changed=>{
+    if(changed){renderHome();toast('your data was restored from the cloud','fa-cloud-arrow-down')}
+    syncPush();
+  }).catch(()=>{});
+};
+
+function toast(msg,icon){const t=document.createElement('div');t.className='toast';t.innerHTML=`<i class="fas ${icon||'fa-check'}"></i><span>${esc(msg)}</span>`;$('#toast-wrap').appendChild(t);setTimeout(()=>t.classList.add('out'),2600);setTimeout(()=>t.remove(),3050)}
+function logAct(){const d=DB.get(K.act,{});const k=new Date().toISOString().slice(0,10);d[k]=(d[k]||0)+1;DB.set(K.act,d)}
+function flashLoad(){const b=$('#loading-bar');b.classList.remove('loading-active');void b.offsetWidth;b.classList.add('loading-active')}
+function copyText(t){const fb=()=>{const ta=document.createElement('textarea');ta.value=t;document.body.appendChild(ta);ta.select();try{document.execCommand('copy');toast('copied','fa-copy')}catch(e){toast('copy failed','fa-triangle-exclamation')}ta.remove()};if(navigator.clipboard){navigator.clipboard.writeText(t).then(()=>toast('copied','fa-copy')).catch(fb)}else fb()}
+function countUp(el,val){const dur=600,t0=performance.now();const step=t=>{const p=Math.min(1,(t-t0)/dur),e=1-Math.pow(1-p,3);el.textContent=Math.round(val*e);if(p<1)requestAnimationFrame(step)};requestAnimationFrame(step)}
+const fmtNum=x=>{if(!isFinite(x))return'—';const a=Math.abs(x);if(a!==0&&(a<.001||a>1e9))return x.toExponential(4);return String(+x.toFixed(6))};
+
+setInterval(()=>{const n=new Date();$('#dash-time').textContent=n.toLocaleTimeString([],{hour:'2-digit',minute:'2-digit'});$('#dash-date').textContent=n.toLocaleDateString([],{weekday:'long',month:'short',day:'numeric'})},1000);
+
+/* ============================================================ tabs / routing ============================================================ */
+let tabs=[],tabSeq=0,activeTab=null,hist=[],hIdx=-1;
+function tabInfo(url){
+  if(url.startsWith('clonmedic://')){
+    const m={home:['home','fa-home'],search:['search','fa-search'],notes:['notes','fa-file-lines'],tasks:['tasks','fa-square-check'],flashcards:['flashcards','fa-clone'],quiz:['quiz','fa-circle-question'],bites:['bites','fa-lightbulb'],english:['word lab','fa-feather'],formulas:['formulas','fa-square-root-variable'],periodic:['elements','fa-atom'],timetable:['timetable','fa-calendar'],converter:['convert','fa-right-left'],gpa:['gpa','fa-graduation-cap'],invoice:['invoice','fa-file-invoice'],citations:['citations','fa-quote-right'],calc:['calc','fa-calculator'],code:['playground','fa-code'],whiteboard:['whiteboard','fa-pen'],analytics:['analytics','fa-chart-simple'],habits:['habits','fa-calendar-check'],pomodoro:['pomodoro','fa-stopwatch'],timer:['timer','fa-hourglass-half'],article:['article','fa-book-open']};
+    const r=url.replace('clonmedic://','');return{name:(m[r]||['tab'])[0],icon:(m[r]||[,'fa-circle'])[1]};
+  }
+  return{name:url.split('/').pop().replace('.html',''),icon:'fa-cube'};
+}
+function renderTabs(){
+  $('#tabs-container').innerHTML=tabs.map(t=>{const i=tabInfo(t.url);return`<button onclick="switchTab(${t.id})" class="tab-row ${t.id===activeTab?'on':''}"><i class="fas ${i.icon}"></i><span class="sidebar-text" style="margin-left:0">${esc(i.name)}</span><span class="tab-x" onclick="event.stopPropagation();closeTab(${t.id})"><i class="fas fa-xmark"></i></span></button>`}).join('');
+}
+function newTab(url){url=url||'clonmedic://home';const t={id:++tabSeq,url};tabs.push(t);activeTab=t.id;renderTabs();navigate(url)}
+function closeTab(id){tabs=tabs.filter(t=>t.id!==id);if(activeTab===id){if(tabs.length){const t=tabs[tabs.length-1];activeTab=t.id;navigate(t.url,false)}else newTab()}else renderTabs()}
+function switchTab(id){const t=tabs.find(x=>x.id===id);if(!t)return;activeTab=id;renderTabs();navigate(t.url)}
+
+const SCREENS={home:'home-screen',search:'search-screen',article:'article-screen',notes:'notes-screen',tasks:'tasks-screen',flashcards:'flashcards-screen',quiz:'quiz-screen',bites:'bites-screen',english:'english-screen',formulas:'formulas-screen',periodic:'periodic-screen',timetable:'timetable-screen',converter:'converter-screen',gpa:'gpa-screen',invoice:'invoice-screen',citations:'citations-screen',calc:'calc-screen',code:'code-screen',whiteboard:'whiteboard-screen',analytics:'analytics-screen',habits:'habits-screen',pomodoro:'pomodoro-screen',timer:'timer-screen'};
+function onEnter(r){({home:renderHome,search:onSearchEnter,tasks:renderTasks,flashcards:()=>{renderFCList();loadFC()},quiz:()=>{renderQzList();loadQz()},bites:renderBites,notes:renderNotesScreen,formulas:renderFormulas,periodic:renderPeriodic,timetable:renderTT,converter:()=>{},gpa:renderGPA,invoice:renderInvoice,citations:()=>{},calc:()=>{},code:()=>runCode(),whiteboard:()=>requestAnimationFrame(resizeWb),analytics:renderAnalytics,habits:renderHabits,pomodoro:()=>{},timer:()=>{},article:()=>{}})[r]?.()}
+
+function navigate(url,push){
+  flashLoad();$('#address-bar').value=url;
+  $$('.view').forEach(v=>v.classList.remove('active'));
+  $$('.sb-item').forEach(i=>i.classList.toggle('active',i.dataset.route===url));
+  const t=tabs.find(x=>x.id===activeTab);if(t)t.url=url;renderTabs();
+  if(push!==false){hist=hist.slice(0,hIdx+1);hist.push(url);hIdx=hist.length-1}
+  if(url.startsWith('clonmedic://')){
+    const r=url.replace('clonmedic://','');
+    const el=document.getElementById(SCREENS[r]);if(el){el.classList.add('active');onEnter(r)}
+  }else{const s=$('#ext-screen');s.classList.add('active');$('#ext-frame').src=url}
+}
+function goHome(){navigate('clonmedic://home')}
+function goBack(){if(hIdx>0){hIdx--;navigate(hist[hIdx],false)}else toast('start of history','fa-clock-rotate-left')}
+function goForward(){if(hIdx<hist.length-1){hIdx++;navigate(hist[hIdx],false)}}
+function reloadPage(){navigate(hist[hIdx]||'clonmedic://home',false)}
+function toggleGroup(id){document.getElementById(id).classList.toggle('open')}
+function processInput(v){v=v.trim();if(!v)return;if(v.startsWith('clonmedic://')||v.endsWith('.html')||v.startsWith('http')||v.startsWith('./'))navigate(v);else{navigate('clonmedic://search');runSearch(v)}}
+
+/* ============================================================ search ============================================================ */
+let lastQ='';
+function onSearchEnter(){if(lastQ)runSearch(lastQ);else{$('#search-results-container').innerHTML='<div class="empty-state">type a query in the address bar.</div>';$('#search-q').textContent=''}}
+async function runSearch(q){
+  lastQ=q;$('#search-q').textContent='· '+q;
+  const c=$('#search-results-container');c.innerHTML='<div class="text-[13px] text-[#9b9a97] p-4 flex items-center gap-2"><i class="fas fa-circle-notch fa-spin text-[11px]"></i> searching...</div>';
+  try{
+    const r=await fetch(`https://en.wikipedia.org/w/api.php?action=query&generator=search&gsrsearch=${encodeURIComponent(q)}&gsrlimit=8&prop=extracts|pageimages&exintro=1&explaintext=1&piprop=thumbnail&pithumbsize=160&format=json&origin=*`);
+    const d=await r.json();const pages=Object.values(d.query?.pages||{});
+    if(!pages.length){c.innerHTML='<div class="empty-state">no results.</div>';return}
+    c.innerHTML='';pages.sort((a,b)=>a.index-b.index).forEach(p=>{
+      const el=document.createElement('div');el.className='notion-card result-card';
+      el.innerHTML=`${p.thumbnail?`<img src="${p.thumbnail.source}" alt="">`:''}<div class="flex-1 min-w-0"><div class="text-[14px] font-medium mb-1">${esc(p.title)}</div><div class="text-[12.5px] text-[#787774] leading-relaxed" style="display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden">${esc((p.extract||'').slice(0,220))}…</div></div><i class="fas fa-arrow-right text-[10px] text-[#c4c2bc] mt-1"></i>`;
+      el.onclick=()=>openArticle(p.title);c.appendChild(el);
+    });
+  }catch(e){c.innerHTML='<div class="empty-state">couldn\'t reach the index.</div>'}
+}
+async function openArticle(title){
+  navigate('clonmedic://article');
+  const c=$('#article-content');$('#article-title').textContent=title;c.innerHTML='<div class="text-[13px] text-[#9b9a97] p-4"><i class="fas fa-circle-notch fa-spin mr-2 text-[11px]"></i>loading...</div>';
+  try{
+    const r=await fetch(`https://en.wikipedia.org/w/api.php?action=parse&page=${encodeURIComponent(title)}&prop=text&redirects=1&format=json&origin=*`);
+    const d=await r.json();const html=d.parse?.text?.['*']||'';
+    c.innerHTML=html;
+    try{c.querySelectorAll('.mw-editsection,.mw-empty-elt,style,.navbox,.ambox,#toc,.hatnote,.mbox-small,.mw-jump-link').forEach(n=>n.remove())}catch(e){}
+    logAct();
+  }catch(e){c.innerHTML='<div class="empty-state">failed to load.</div>'}
+}
+
+/* ============================================================ dashboard ============================================================ */
+function renderHome(){
+  const u=DB.get(K.user,''),h=new Date().getHours();
+  $('#dash-greet').textContent=(h<5?'up late':h<12?'good morning':h<18?'good afternoon':'good evening')+(u?', '+u:'');
+  const ta=$('#scratchpad');if(ta&&!ta.value)ta.value=DB.get(K.scratch,'');
+  renderMiniTasks();renderActivity();
+}
+function renderMiniTasks(){
+  const L=DB.get(K.tasks,[]).filter(t=>t.s!=='done').slice(0,4);
+  $('#mini-tasks-list').innerHTML=L.length?L.map(t=>`<div class="mini-task" onclick="newTab('clonmedic://tasks')"><span class="mt-dot ${t.s==='doing'?'on':''}"></span><span class="mt-t">${esc(t.t)}</span></div>`).join(''):'<div class="text-[12.5px] text-[#c4c2bc] px-2 py-2">no open tasks.</div>';
+}
+function renderActivity(){
+  const d=DB.get(K.act,{}),c=$('#activity-matrix');if(!c)return;
+  let html='';const today=new Date();
+  for(let r=0;r<7;r++){html+='<div class="activity-grid">';
+    for(let col=0;col<14;col++){
+      const idx=r*14+col,day=new Date(today);day.setDate(today.getDate()-(97-idx));
+      const k=day.toISOString().slice(0,10),n=d[k]||0;
+      html+=`<div class="activity-cell ${n>=3?'activity-lvl-3':n===2?'activity-lvl-2':n===1?'activity-lvl-1':''}" style="animation-delay:${idx*3}ms" title="${k}"></div>`;
+    }html+='</div>'}
+  c.innerHTML=html;
+}
+const saveScratch=deb(()=>{DB.set(K.scratch,$('#scratchpad').value)},400);
+
+/* ============================================================ tasks ============================================================ */
+function addTask(){const i=$('#new-task-input'),v=i.value.trim();if(!v){toast('task needs a title','fa-pen');return}
+  const L=DB.get(K.tasks,[]);L.unshift({id:Date.now(),t:v,s:'todo'});DB.set(K.tasks,L);i.value='';renderTasks();logAct();toast('task added','fa-check')}
+function moveTask(id,d){const L=DB.get(K.tasks,[]),t=L.find(x=>x.id===id);if(!t)return;const o={todo:0,doing:1,done:2},n=o[t.s]+d;if(n<0||n>2)return;t.s=['todo','doing','done'][n];DB.set(K.tasks,L);renderTasks();if(t.s==='done')logAct()}
+function delTask(id){DB.set(K.tasks,DB.get(K.tasks,[]).filter(x=>x.id!==id));renderTasks();toast('task removed','fa-trash')}
+function renderTasks(){
+  const L=DB.get(K.tasks,[]),cols={todo:[],doing:[],done:[]};L.forEach(t=>cols[t.s]?.push(t));
+  const draw=a=>a.map(t=>`<div class="task-card"><span class="flex-1">${esc(t.t)}</span><div class="tc-actions"><span class="tc-btn" onclick="moveTask(${t.id},-1)"><i class="fas fa-chevron-left"></i></span><span class="tc-btn" onclick="moveTask(${t.id},1)"><i class="fas fa-chevron-right"></i></span><span class="tc-btn" onclick="delTask(${t.id})"><i class="fas fa-xmark"></i></span></div></div>`).join('')||'<div class="empty-state">—</div>';
+  $('#tasks-todo').innerHTML=draw(cols.todo);$('#tasks-doing').innerHTML=draw(cols.doing);$('#tasks-done').innerHTML=draw(cols.done);
+  renderMiniTasks();
+}
+
+/* ============================================================ flashcards ============================================================ */
+let fcIdx=0;
+function toggleFC(m){const p=m==='play';$('#fc-play-view').classList.toggle('hide',!p);$('#fc-create-view').classList.toggle('hide',p);
+  $('#fc-play-btn').classList.toggle('notion-btn-primary',p);$('#fc-create-btn').classList.toggle('notion-btn-primary',!p)}
+function addCard(){const q=$('#fc-q').value.trim(),a=$('#fc-a').value.trim();if(!q||!a){toast('fill both sides of the card','fa-clone');return}
+  const L=DB.get(K.cards,[]);L.push({id:Date.now(),q,a});DB.set(K.cards,L);$('#fc-q').value='';$('#fc-a').value='';renderFCList();fcIdx=L.length-1;loadFC();logAct();toast('card saved','fa-check')}
+function delCard(id){DB.set(K.cards,DB.get(K.cards,[]).filter(x=>x.id!==id));renderFCList();fcIdx=0;loadFC()}
+function renderFCList(){const L=DB.get(K.cards,[]);$('#fc-count').textContent=L.length;
+  $('#fc-list').innerHTML=L.map(c=>`<div class="fc-row"><i class="fas fa-clone text-[10px] text-[#c4c2bc]"></i><span class="flex-1 truncate">${esc(c.q)}</span><span class="tc-btn" onclick="delCard(${c.id})"><i class="fas fa-xmark"></i></span></div>`).join('')||'<div class="empty-state">deck is empty.</div>'}
+function loadFC(){const L=DB.get(K.cards,[]);$('#fc-card').classList.remove('flipped');
+  if(!L.length){$('#fc-front').textContent='no cards yet.';$('#fc-back').textContent='';$('#fc-counter').textContent='0/0';return}
+  fcIdx=Math.min(fcIdx,L.length-1);const c=L[fcIdx];$('#fc-front').textContent=c.q;$('#fc-back').textContent=c.a;$('#fc-counter').textContent=(fcIdx+1)+'/'+L.length}
+function flipCard(){const L=DB.get(K.cards,[]);if(!L.length)return;$('#fc-card').classList.toggle('flipped')}
+function nextCard(){const L=DB.get(K.cards,[]);if(!L.length)return;fcIdx=(fcIdx+1)%L.length;loadFC()}
+function prevCard(){const L=DB.get(K.cards,[]);if(!L.length)return;fcIdx=(fcIdx-1+L.length)%L.length;loadFC()}
+
+/* ============================================================ quiz ============================================================ */
+let qzIdx=0,qzScore=0,qzAnswered=false;
+function toggleQz(m){const p=m==='play';$('#qz-play-view').classList.toggle('hide',!p);$('#qz-create-view').classList.toggle('hide',p);
+  $('#qz-play-btn').classList.toggle('notion-btn-primary',p);$('#qz-create-btn').classList.toggle('notion-btn-primary',!p)}
+function addQuiz(){const q=$('#qz-q').value.trim(),o=['qz-o1','qz-o2','qz-o3','qz-o4'].map(i=>$('#'+i).value.trim()),a=+document.querySelector('input[name=qz-ans]:checked').value;
+  if(!q||o.some(x=>!x)){toast('fill the question and all options','fa-circle-question');return}
+  const L=DB.get(K.quiz,[]);L.push({id:Date.now(),q,o,a});DB.set(K.quiz,L);
+  $('#qz-q').value='';['qz-o1','qz-o2','qz-o3','qz-o4'].forEach(i=>$('#'+i).value='');
+  renderQzList();qzIdx=L.length-1;loadQz();logAct();toast('question saved','fa-check')}
+function delQz(id){DB.set(K.quiz,DB.get(K.quiz,[]).filter(x=>x.id!==id));renderQzList();loadQz()}
+function renderQzList(){const L=DB.get(K.quiz,[]);$('#qz-count').textContent=L.length;
+  $('#qz-list').innerHTML=L.map((z,i)=>`<div class="fc-row"><span class="text-[11px] text-[#c4c2bc] w-5">${i+1}</span><span class="flex-1 truncate">${esc(z.q)}</span><span class="tc-btn" onclick="delQz(${z.id})"><i class="fas fa-xmark"></i></span></div>`).join('')||'<div class="empty-state">bank is empty.</div>'}
+function loadQz(){qzIdx=0;qzScore=0;showQz()}
+function showQz(){
+  const L=DB.get(K.quiz,[]);
+  if(!L.length){$('#qz-question-display').textContent='no quizzes yet.';$('#qz-options-container').innerHTML='';$('#qz-counter').textContent='0/0';$('#qz-next-btn').classList.add('hide');$('#qz-feedback').innerHTML='';return}
+  if(qzIdx>=L.length){$('#qz-question-display').innerHTML='session complete.';$('#qz-options-container').innerHTML=`<div class="w-full"><div class="text-4xl aesthetic-title mb-3">${qzScore}/${L.length}</div><button class="notion-btn notion-btn-primary px-5 py-2" onclick="loadQz()">restart</button></div>`;$('#qz-counter').textContent=L.length+'/'+L.length;$('#qz-next-btn').classList.add('hide');$('#qz-feedback').innerHTML=`<span style="color:var(--green)">${qzScore===L.length?'flawless.':Math.round(qzScore/L.length*100)+'% correct.'}</span>`;return}
+  const it=L[qzIdx];qzAnswered=false;
+  $('#qz-question-display').textContent=it.q;$('#qz-counter').textContent=(qzIdx+1)+'/'+L.length;
+  $('#qz-next-btn').classList.add('hide');$('#qz-feedback').innerHTML='';
+  $('#qz-options-container').innerHTML=it.o.map((o,i)=>`<button class="notion-btn opt-btn" onclick="selectOpt(${i})"><span class="opt-key">${'abcd'[i]}</span><span class="text-left">${esc(o)}</span></button>`).join('');
+}
+function selectOpt(i){
+  if(qzAnswered)return;qzAnswered=true;
+  const L=DB.get(K.quiz,[]),it=L[qzIdx];
+  $$('#qz-options-container button').forEach((b,j)=>b.classList.add(j===it.a?'opt-right':(j===i?'opt-wrong':'opt-dim')));
+  if(i===it.a){qzScore++;$('#qz-feedback').innerHTML='<span style="color:var(--green)">correct.</span>';logAct()}
+  else{$('#qz-feedback').innerHTML=`<span style="color:var(--red)">incorrect · answer is ${'abcd'[it.a]}.</span>`}
+  $('#qz-next-btn').classList.remove('hide');
+}
+function nextQz(){qzIdx++;showQz()}
+
+/* ============================================================ bites ============================================================ */
+function addBite(){const t=$('#bite-t').value.trim(),g=$('#bite-tag').value.trim()||'note',b=$('#bite-body').value.trim();
+  if(!t||!b){toast('title + content required','fa-lightbulb');return}
+  const L=DB.get(K.bites,[]);L.unshift({id:Date.now(),t,g,b,ts:Date.now()});DB.set(K.bites,L);
+  $('#bite-t').value='';$('#bite-tag').value='';$('#bite-body').value='';renderBites();logAct();toast('bite saved','fa-check')}
+function delBite(id){DB.set(K.bites,DB.get(K.bites,[]).filter(x=>x.id!==id));renderBites()}
+function renderBites(){const L=DB.get(K.bites,[]);
+  $('#bites-list').innerHTML=L.map((x,i)=>`<div class="notion-card p-4 fade-card" style="animation-delay:${Math.min(i*35,350)}ms">
+    <div class="flex items-center justify-between mb-2"><span class="tag">${esc(x.g)}</span><div class="flex items-center gap-2"><span class="text-[11px] text-[#c4c2bc]">${new Date(x.ts).toLocaleDateString([],{month:'short',day:'numeric'})}</span><span class="tc-btn" onclick="delBite(${x.id})"><i class="fas fa-xmark"></i></span></div></div>
+    <div class="text-[14px] font-medium mb-1">${esc(x.t)}</div>
+    <div class="text-[12.5px] text-[#787774] leading-relaxed">${esc(x.b)}</div></div>`).join('')||'<div class="empty-state col-span-full">no bites yet.</div>'}
+
+/* ============================================================ english lab ============================================================ */
+const STOP=new Set('the a an and or but of to in on for with as is are was were be been it its this that these those at by from not no so if then than too very can will just has have had do does did he she they we you i me my his her their our your him them us what which who when where why how all any both each few more most other some such only own same don now into about over under again further once here there up down out off because while during before after above below between through against'.split(' '));
+const engAnalyze=deb(()=>{
+  const t=$('#eng-input').value.trim();
+  const words=t?t.split(/\s+/).filter(w=>/[a-z0-9]/i.test(w)):[];
+  const sentences=Math.max(1,(t.match(/[.!?]+/g)||[]).length);
+  const paras=t?t.split(/\n+/).filter(x=>x.trim()).length:0;
+  const uniq=new Set(words.map(w=>w.toLowerCase().replace(/[^a-z0-9']/g,''))).size;
+  const syl=words.reduce((a,w)=>a+Math.max(1,(w.toLowerCase().match(/[aeiouy]+/g)||[]).length),0);
+  const flesch=t?Math.max(0,Math.min(100,Math.round(206.835-1.015*(words.length/sentences)-84.6*(syl/Math.max(1,words.length))))):0;
+  const longest=words.reduce((a,w)=>w.length>a.length?w:a,'');
+  const level=flesch>=90?'very easy':flesch>=80?'easy':flesch>=70?'fairly easy':flesch>=60?'plain':flesch>=50?'fairly hard':flesch>=30?'hard':'very hard';
+  const stat=(l,v)=>`<div class="notion-card p-3.5"><div class="text-[11px] text-[#c4c2bc] mb-1">${l}</div><div class="text-xl font-medium tabular-nums">${v}</div></div>`;
+  $('#eng-stats').innerHTML=[['words',words.length],['unique',uniq],['sentences',t?(t.match(/[.!?]+/g)||[]).length:0],['characters',t.length],['read time',Math.max(t?1:0,Math.ceil(words.length/200))+'m'],['avg length',words.length?(words.reduce((a,w)=>a+w.length,0)/words.length).toFixed(1):'0'],['paragraphs',paras],['syllables',syl]].map(x=>stat(x[0],x[1])).join('');
+  $('#eng-flesch').textContent=t?flesch:'—';$('#eng-level').textContent=t?'· '+level:'';
+  $('#eng-extra').innerHTML=t?`<div>longest word · <b class="text-[#37352f]">${esc(longest)}</b></div><div>avg sentence · <b class="text-[#37352f]">${(words.length/sentences).toFixed(1)} words</b></div>`:'';
+  const freq={};words.forEach(w=>{w=w.toLowerCase().replace(/[^a-z0-9']/g,'');if(w.length>2&&!STOP.has(w))freq[w]=(freq[w]||0)+1});
+  const top=Object.entries(freq).sort((a,b)=>b[1]-a[1]).slice(0,6),mx=Math.max(1,...top.map(x=>x[1]));
+  $('#eng-top').innerHTML=top.length?top.map(([w,n])=>`<div class="flex items-center gap-2.5"><span class="text-[12.5px] w-20 truncate">${esc(w)}</span><div class="flex-1 h-1.5 bg-[#f1f0ee] rounded-full overflow-hidden"><div style="width:${n/mx*100}%" class="h-full bg-[#c9c8c4] rounded-full"></div></div><span class="text-[11px] text-[#c4c2bc]">${n}</span></div>`).join(''):'<div class="text-[12.5px] text-[#c4c2bc]">type something first.</div>';
+},400);
+
+/* ============================================================ notes ============================================================ */
+let curNote=null;
+const noteDirty=deb(saveNote,600);
+function newNote(){const L=DB.get(K.notes,[]);const n={id:Date.now(),title:'untitled',body:'',ts:Date.now()};L.unshift(n);DB.set(K.notes,L);curNote=n.id;renderNotesList();loadNote(n.id);$('#note-title').focus()}
+function renderNotesScreen(){const L=DB.get(K.notes,[]);renderNotesList();if(L.length&&curNote==null)loadNote(L[0].id);else if(!L.length){$('#note-title').value='';$('#note-body').innerHTML='';$('#note-meta').textContent='select or create a note'}}
+function renderNotesList(){const L=DB.get(K.notes,[]);
+  $('#notes-list').innerHTML=L.map(n=>`<button class="note-row ${n.id===curNote?'on':''}" onclick="loadNote(${n.id})">${esc(n.title||'untitled')}<span>${new Date(n.ts).toLocaleDateString([],{month:'short',day:'numeric'})}</span></button>`).join('')||'<div class="empty-state">no notes.</div>'}
+function loadNote(id){curNote=id;const n=DB.get(K.notes,[]).find(x=>x.id===id);if(!n)return;
+  $('#note-title').value=n.title;$('#note-body').innerHTML=n.body;renderNotesList();
+  $('#note-meta').textContent=($('#note-body').innerText.trim().split(/\s+/).filter(Boolean).length)+' words · autosaving'}
+function saveNote(){if(curNote==null)return;const L=DB.get(K.notes,[]);const n=L.find(x=>x.id===curNote);if(!n)return;
+  n.title=$('#note-title').value||'untitled';n.body=$('#note-body').innerHTML;n.ts=Date.now();DB.set(K.notes,L);renderNotesList();
+  $('#note-meta').textContent=($('#note-body').innerText.trim().split(/\s+/).filter(Boolean).length)+' words · saved'}
+function delNote(){if(curNote==null)return;DB.set(K.notes,DB.get(K.notes,[]).filter(x=>x.id!==curNote));curNote=null;renderNotesScreen();toast('note deleted','fa-trash')}
+function fmt(c,b){document.execCommand(c,false,b||null);$('#note-body').focus()}
+
+/* ============================================================ formulas + saver ============================================================ */
+const FORMULAS=[
+ {c:'math',n:'quadratic root',f:'x = ( −b ± √(b² − 4ac) ) / 2a',d:'solves ax² + bx + c = 0'},{c:'math',n:'pythagoras',f:'a² + b² = c²',d:'right-triangle sides'},
+ {c:'math',n:'circle area',f:'A = πr²',d:'area from radius'},{c:'math',n:'circumference',f:'C = 2πr',d:'perimeter of a circle'},
+ {c:'math',n:'sphere volume',f:'V = (4/3)πr³',d:'volume of a sphere'},{c:'math',n:'cylinder volume',f:'V = πr²h',d:'volume of a cylinder'},
+ {c:'math',n:'slope',f:'m = (y₂ − y₁) / (x₂ − x₁)',d:'gradient between points'},{c:'math',n:'distance',f:'d = √((x₂−x₁)² + (y₂−y₁)²)',d:'distance in the plane'},
+ {c:'math',n:'compound interest',f:'A = P(1 + r/n)^(nt)',d:'growth with compounding'},{c:'math',n:'trig identity',f:'sin²θ + cos²θ = 1',d:'core trig identity'},
+ {c:'math',n:'binomial',f:'C(n,k) = n! / (k!(n−k)!)',d:'ways to choose k of n'},
+ {c:'physics',n:'newton ii',f:'F = ma',d:'force = mass × acceleration'},{c:'physics',n:'velocity',f:'v = u + at',d:'final velocity'},
+ {c:'physics',n:'displacement',f:'s = ut + ½at²',d:'with acceleration'},{c:'physics',n:'no-time',f:'v² = u² + 2as',d:'timeless velocity'},
+ {c:'physics',n:'gravitation',f:'F = G·m₁m₂ / r²',d:'universal gravity'},{c:'physics',n:'kinetic energy',f:'KE = ½mv²',d:'energy of motion'},
+ {c:'physics',n:'potential energy',f:'PE = mgh',d:'energy from height'},{c:'physics',n:'power',f:'P = W / t',d:'work per time'},
+ {c:'physics',n:'ohm\'s law',f:'V = IR',d:'voltage = current × resistance'},{c:'physics',n:'wave equation',f:'v = fλ',d:'speed = freq × wavelength'},
+ {c:'physics',n:'hooke\'s law',f:'F = kx',d:'spring force'},{c:'physics',n:'mass-energy',f:'E = mc²',d:'einstein equivalence'},
+ {c:'physics',n:'momentum',f:'p = mv',d:'linear momentum'},
+ {c:'chemistry',n:'ideal gas',f:'PV = nRT',d:'gas state equation'},{c:'chemistry',n:'molarity',f:'M = n / V',d:'moles per litre'},
+ {c:'chemistry',n:'ph',f:'pH = −log₁₀[H⁺]',d:'acidity'},{c:'chemistry',n:'rate law',f:'rate = k[A]^m[B]^n',d:'reaction speed'},
+ {c:'chemistry',n:'gibbs energy',f:'ΔG = ΔH − TΔS',d:'spontaneity'},{c:'chemistry',n:'photon energy',f:'E = hc / λ',d:'light energy'},
+ {c:'chemistry',n:'moles',f:'n = m / M',d:'mass to moles'},{c:'chemistry',n:'heat',f:'Q = mcΔT',d:'thermal change'}
+];
+let fCat='all',FVIEW=[];
+function setFCat(c,el){fCat=c;$$('#f-cats .chip').forEach(x=>x.classList.remove('on'));el.classList.add('on');renderFormulas()}
+function addCustomF(){
+  const n=$('#cf-n').value.trim(),f=$('#cf-f').value.trim();
+  if(!n||!f){toast('name + formula required','fa-square-root-variable');return}
+  const L=DB.get(K.customF,[]);L.unshift({id:Date.now(),n,f,d:$('#cf-d').value.trim(),c:$('#cf-c').value});
+  DB.set(K.customF,L);$('#cf-n').value='';$('#cf-f').value='';$('#cf-d').value='';
+  renderFormulas();logAct();toast('formula saved','fa-check');
+}
+function delCustomF(id){DB.set(K.customF,DB.get(K.customF,[]).filter(x=>x.id!==id));renderFormulas();toast('formula removed','fa-trash')}
+function copyF(i){const x=FVIEW[i];if(x)copyText(x.f)}
+function renderFormulas(){
+  const custom=DB.get(K.customF,[]);
+  $('#cf-count').textContent=custom.length+' stored';
+  const q=($('#f-search').value||'').toLowerCase();
+  const ALL=[...custom.map(x=>({...x,custom:true})),...FORMULAS];
+  const L=ALL.filter(x=>(fCat==='all'||x.c===fCat)&&(x.n+' '+x.f+' '+(x.d||'')).toLowerCase().includes(q));
+  FVIEW=L;
+  $('#f-list').innerHTML=L.map((x,i)=>`<div class="notion-card p-4 fade-card" style="animation-delay:${Math.min(i*30,300)}ms">
+    <div class="flex justify-between items-start gap-2 mb-2.5">
+      <div><div class="text-[11px] text-[#c4c2bc] mb-0.5 flex items-center gap-1.5">${x.c}${x.custom?'<span class="tag" style="padding:1px 8px;font-size:10px">mine</span>':''}</div>
+      <div class="text-[13.5px] font-medium">${esc(x.n)}</div></div>
+      <div class="flex gap-1"><span class="tc-btn" onclick="copyF(${i})" title="copy"><i class="fas fa-copy"></i></span>${x.custom?`<span class="tc-btn" onclick="delCustomF(${x.id})" title="delete"><i class="fas fa-xmark"></i></span>`:''}</div>
+    </div>
+    <div class="text-[16px] font-medium leading-snug mb-1.5">${esc(x.f)}</div>
+    <div class="text-[12px] text-[#9b9a97]">${esc(x.d||'—')}</div></div>`).join('')||'<div class="empty-state col-span-full">no matches.</div>';
+}
+
+/* ============================================================ periodic ============================================================ */
+const EL="1 H Hydrogen O 1 1,2 He Helium G 18 1,3 Li Lithium A 1 2,4 Be Beryllium B 2 2,5 B Boron M 13 2,6 C Carbon O 14 2,7 N Nitrogen O 15 2,8 O Oxygen O 16 2,9 F Fluorine H 17 2,10 Ne Neon G 18 2,11 Na Sodium A 1 3,12 Mg Magnesium B 2 3,13 Al Aluminium P 13 3,14 Si Silicon M 14 3,15 P Phosphorus O 15 3,16 S Sulfur O 16 3,17 Cl Chlorine H 17 3,18 Ar Argon G 18 3,19 K Potassium A 1 4,20 Ca Calcium B 2 4,21 Sc Scandium T 3 4,22 Ti Titanium T 4 4,23 V Vanadium T 5 4,24 Cr Chromium T 6 4,25 Mn Manganese T 7 4,26 Fe Iron T 8 4,27 Co Cobalt T 9 4,28 Ni Nickel T 10 4,29 Cu Copper T 11 4,30 Zn Zinc T 12 4,31 Ga Gallium P 13 4,32 Ge Germanium M 14 4,33 As Arsenic M 15 4,34 Se Selenium O 16 4,35 Br Bromine H 17 4,36 Kr Krypton G 18 4,37 Rb Rubidium A 1 5,38 Sr Strontium B 2 5,39 Y Yttrium T 3 5,40 Zr Zirconium T 4 5,41 Nb Niobium T 5 5,42 Mo Molybdenum T 6 5,43 Tc Technetium T 7 5,44 Ru Ruthenium T 8 5,45 Rh Rhodium T 9 5,46 Pd Palladium T 10 5,47 Ag Silver T 11 5,48 Cd Cadmium T 12 5,49 In Indium P 13 5,50 Sn Tin P 14 5,51 Sb Antimony M 15 5,52 Te Tellurium M 16 5,53 I Iodine H 17 5,54 Xe Xenon G 18 5,55 Cs Caesium A 1 6,56 Ba Barium B 2 6,57 La Lanthanum L 0 6,58 Ce Cerium L 0 6,59 Pr Praseodymium L 0 6,60 Nd Neodymium L 0 6,61 Pm Promethium L 0 6,62 Sm Samarium L 0 6,63 Eu Europium L 0 6,64 Gd Gadolinium L 0 6,65 Tb Terbium L 0 6,66 Dy Dysprosium L 0 6,67 Ho Holmium L 0 6,68 Er Erbium L 0 6,69 Tm Thulium L 0 6,70 Yb Ytterbium L 0 6,71 Lu Lutetium L 0 6,72 Hf Hafnium T 4 6,73 Ta Tantalum T 5 6,74 W Tungsten T 6 6,75 Re Rhenium T 7 6,76 Os Osmium T 8 6,77 Ir Iridium T 9 6,78 Pt Platinum T 10 6,79 Au Gold T 11 6,80 Hg Mercury T 12 6,81 Tl Thallium P 13 6,82 Pb Lead P 14 6,83 Bi Bismuth P 15 6,84 Po Polonium P 16 6,85 At Astatine H 17 6,86 Rn Radon G 18 6,87 Fr Francium A 1 7,88 Ra Radium B 2 7,89 Ac Actinium C 0 7,90 Th Thorium C 0 7,91 Pa Protactinium C 0 7,92 U Uranium C 0 7,93 Np Neptunium C 0 7,94 Pu Plutonium C 0 7,95 Am Americium C 0 7,96 Cm Curium C 0 7,97 Bk Berkelium C 0 7,98 Cf Californium C 0 7,99 Es Einsteinium C 0 7,100 Fm Fermium C 0 7,101 Md Mendelevium C 0 7,102 No Nobelium C 0 7,103 Lr Lawrencium C 0 7,104 Rf Rutherfordium T 4 7,105 Db Dubnium T 5 7,106 Sg Seaborgium T 6 7,107 Bh Bohrium T 7 7,108 Hs Hassium T 8 7,109 Mt Meitnerium T 9 7,110 Ds Darmstadtium T 10 7,111 Rg Roentgenium T 11 7,112 Cn Copernicium T 12 7,113 Nh Nihonium P 13 7,114 Fl Flerovium P 14 7,115 Mc Moscovium P 15 7,116 Lv Livermorium P 16 7,117 Ts Tennessine H 17 7,118 Og Oganesson G 18 7";
+const CATCLS={A:'element-alkali',B:'element-alkaline',T:'element-transition',H:'element-halogen',G:'element-noble',M:'element-metalloid',P:'element-post',O:'element-other',L:'element-lanth',C:'element-act'};
+const CATLBL={A:'alkali metal',B:'alkaline earth',T:'transition metal',H:'halogen',G:'noble gas',M:'metalloid',P:'post-transition',O:'reactive nonmetal',L:'lanthanide',C:'actinide'};
+function renderPeriodic(){
+  if(window._ptDone)return;window._ptDone=true;
+  let html='';
+  EL.split(',').forEach(s=>{
+    const[n,sym,name,cat,grp,per]=s.split(' ');let col,row;
+    if(grp==='0'){row=cat==='L'?9:10;col=3+(+n-(cat==='L'?57:89))}else{col=+grp;row=+per}
+    html+=`<div class="element-box ${CATCLS[cat]}" style="grid-column:${col};grid-row:${row}" onclick="elDetail(${n})" title="${name}"><span class="el-n">${n}</span><span class="el-s">${sym}</span></div>`;
+  });
+  html+=`<div style="grid-column:1/-1;grid-row:8;height:10px"></div>`;
+  html+=`<div class="element-box element-f" style="grid-column:3;grid-row:6"><span class="el-s">57–71</span></div><div class="element-box element-f" style="grid-column:3;grid-row:7"><span class="el-s">89–103</span></div>`;
+  $('#pt-grid').innerHTML=html;
+  $('#pt-legend').innerHTML=Object.entries(CATLBL).map(([k,v])=>`<span class="flex items-center gap-1.5"><span class="w-3 h-3 rounded-sm ${CATCLS[k]}" style="background:#fff;border:1px solid #e9e9e7"></span>${v}</span>`).join('');
+  elDetail(79);
+}
+function elDetail(n){
+  const e=EL.split(',').map(s=>s.split(' ')).find(x=>+x[0]===n);if(!e)return;
+  const[,sym,name,cat,grp,per]=e;
+  $('#el-detail').innerHTML=`<div class="text-5xl aesthetic-title leading-none">${sym}</div><div class="text-[13px] font-medium mt-1">${name}</div><div class="text-[11.5px] text-[#9b9a97] mt-2 leading-relaxed">no. ${n} · ${CATLBL[cat]}<br>${grp==='0'?'f-block':'group '+grp} · period ${per}</div>`;
+}
+
+/* ============================================================ timetable ============================================================ */
+const TT_DAYS=['mon','tue','wed','thu','fri','sat'];
+function ttColor(v){if(!v)return'#e9e9e7';const P=['#37352f','#787774','#9b9a97','#c9c8c4','#a8a6a1','#8e8c88'];let h=0;for(const c of v)h=(h*31+c.charCodeAt(0))>>>0;return P[h%P.length]}
+function renderTT(){
+  const d=DB.get(K.tt,{});
+  let html=`<div class="grid gap-1.5" style="grid-template-columns:44px repeat(8,1fr)">`;
+  html+=`<div></div>`+[1,2,3,4,5,6,7,8].map(p=>`<div class="text-[10.5px] text-[#c4c2bc] text-center">p${p}</div>`).join('');
+  TT_DAYS.forEach(day=>{
+    html+=`<div class="text-[11.5px] text-[#9b9a97] flex items-center">${day}</div>`;
+    for(let p=1;p<=8;p++){const k='d'+day+'p'+p,v=d[k]||'';
+      html+=`<div class="tt-cell" id="${k}" ${v?`style="border-bottom:2px solid ${ttColor(v)}"`:''} onclick="ttEdit('${day}',${p})">${esc(v)||'+'}</div>`}
+  });
+  $('#tt-grid').innerHTML=html+'</div>';
+}
+function ttEdit(day,per){
+  const k='d'+day+'p'+per,cell=document.getElementById(k);if(!cell||cell.querySelector('input'))return;
+  const cur=(DB.get(K.tt,{})[k]||'');
+  cell.innerHTML=`<input class="tt-in" value="${esc(cur)}" onblur="ttSave('${k}',this.value)" onkeypress="if(event.key==='Enter'){this.blur()}">`;
+  const inp=cell.querySelector('input');inp.focus();inp.select();
+}
+function ttSave(k,v){v=v.trim();const d=DB.get(K.tt,{});if(v)d[k]=v;else delete d[k];DB.set(K.tt,d);renderTT()}
+
+/* ============================================================ converter ============================================================ */
+const UNITS={length:{mm:.001,cm:.01,m:1,km:1000,inch:.0254,ft:.3048,yd:.9144,mi:1609.344},mass:{mg:1e-6,g:.001,kg:1,t:1000,oz:.0283495,lb:.453592},data:{b:1,kb:1024,mb:1048576,gb:1073741824,tb:1099511627776},speed:{'m/s':1,'km/h':1/3.6,mph:.44704,kn:.514444},temp:{'°c':1,'°f':1,'k':1}};
+let convCat='length';
+function setConvCat(c,el){convCat=c;$$('#conv-cats .chip').forEach(x=>x.classList.remove('on'));el.classList.add('on');
+  const keys=Object.keys(UNITS[c]);
+  const opt=sel=>keys.map(k=>`<option value="${k}" ${k===sel?'selected':''}>${k}</option>`).join('');
+  $('#conv-from').innerHTML=opt(keys[0]);$('#conv-to').innerHTML=opt(keys[1]||keys[0]);calcConv()}
+function convSwap(){const a=$('#conv-from').value,b=$('#conv-to').value;$('#conv-from').value=b;$('#conv-to').value=a;calcConv()}
+function calcConv(){
+  const v=parseFloat($('#conv-v').value)||0,f=$('#conv-from').value,t=$('#conv-to').value;let r;
+  if(convCat==='temp'){
+    const toC={'°c':x=>x,'°f':x=>(x-32)*5/9,'k':x=>x-273.15},fromC={'°c':x=>x,'°f':x=>x*9/5+32,'k':x=>x+273.15};
+    r=fromC[t](toC[f](v));
+  }else{const U=UNITS[convCat];r=v*U[f]/U[t]}
+  $('#conv-res').textContent=fmtNum(r)+' '+t;
+}
+
+/* ============================================================ gpa ============================================================ */
+const GRADES=[['a',4],['a-',3.7],['b+',3.3],['b',3],['b-',2.7],['c+',2.3],['c',2],['c-',1.7],['d',1],['f',0]];
+function renderGPA(){
+  const L=DB.get(K.gpa,[]);
+  $('#gpa-rows').innerHTML=L.map(r=>`<div class="grid grid-cols-[1fr_64px_90px_32px] gap-2 items-center">
+    <input class="pro-input p-2 text-[13px]" value="${esc(r.c)}" placeholder="course" oninput="gpaUpd(${r.id},'c',this.value)">
+    <input type="number" min="0" class="pro-input p-2 text-[13px] text-center" value="${r.cr}" oninput="gpaUpd(${r.id},'cr',this.value)">
+    <select class="pro-input p-2 text-[13px]" onchange="gpaUpd(${r.id},'g',this.value)">${GRADES.map(([n,v])=>`<option value="${v}" ${String(v)===String(r.g)?'selected':''}>${n} · ${v}</option>`).join('')}</select>
+    <button class="notion-btn py-1.5 px-1 notion-btn-danger" onclick="delGRow(${r.id})"><i class="fas fa-xmark text-[11px]"></i></button></div>`).join('')||'<div class="empty-state">add your first course.</div>';
+  gpaCalc();
+}
+function addGRow(){const L=DB.get(K.gpa,[]);L.push({id:Date.now(),c:'',cr:3,g:4});DB.set(K.gpa,L);renderGPA();$$('#gpa-rows input')[L.length-1]?.focus()}
+function delGRow(id){DB.set(K.gpa,DB.get(K.gpa,[]).filter(x=>x.id!==id));renderGPA()}
+function gpaUpd(id,f,v){const L=DB.get(K.gpa,[]);const r=L.find(x=>x.id===id);if(!r)return;r[f]=f==='c'?v:parseFloat(v)||0;DB.set(K.gpa,L);gpaCalc()}
+function gpaCalc(){const L=DB.get(K.gpa,[]);const cr=L.reduce((a,r)=>a+(+r.cr||0),0);
+  $('#gpa-pts').textContent=cr+' credits';
+  $('#gpa-total').textContent=cr?(L.reduce((a,r)=>a+(+r.cr||0)*(+r.g||0),0)/cr).toFixed(2):'0.00'}
+
+/* ============================================================ invoice ============================================================ */
+const DEF_INV={no:'inv-001',from:'',to:'',items:[{d:'',q:1,r:0}],tax:0,notes:''};
+function invData(){return Object.assign({},DEF_INV,DB.get(K.inv,DEF_INV))}
+function renderInvoice(){
+  const d=invData();
+  $('#inv-no').value=d.no;$('#inv-from').value=d.from;$('#inv-to').value=d.to;$('#inv-tax').value=d.tax;$('#inv-notes').value=d.notes;
+  $('#inv-items').innerHTML=d.items.map((it,i)=>`<div class="grid grid-cols-[1fr_60px_84px_32px] gap-2">
+    <input class="pro-input p-2 text-[13px]" value="${esc(it.d)}" placeholder="description" oninput="invUpd(${i},'d',this.value)">
+    <input type="number" min="0" class="pro-input p-2 text-[13px] text-center" value="${it.q}" oninput="invUpd(${i},'q',this.value)">
+    <input type="number" min="0" class="pro-input p-2 text-[13px] text-center" value="${it.r}" oninput="invUpd(${i},'r',this.value)">
+    <button class="notion-btn py-1.5 px-1 notion-btn-danger" onclick="invDel(${i})"><i class="fas fa-xmark text-[11px]"></i></button></div>`).join('');
+  invTotals();
+}
+function invField(k,v){const d=invData();d[k]=k==='tax'?parseFloat(v)||0:v;DB.set(K.inv,d);invTotals()}
+function invUpd(i,f,v){const d=invData();d.items[i][f]=f==='d'?v:parseFloat(v)||0;DB.set(K.inv,d);invTotals()}
+function invAdd(){const d=invData();d.items.push({d:'',q:1,r:0});DB.set(K.inv,d);renderInvoice()}
+function invDel(i){const d=invData();d.items.splice(i,1);if(!d.items.length)d.items.push({d:'',q:1,r:0});DB.set(K.inv,d);renderInvoice()}
+function invTotals(){const d=invData();const sub=d.items.reduce((a,it)=>a+(+it.q||0)*(+it.r||0),0);const tax=sub*(+d.tax||0)/100;
+  $('#inv-sub').textContent=fmtNum(sub);$('#inv-taxv').textContent=fmtNum(tax);$('#inv-total').textContent=fmtNum(sub+tax)}
+function printInvoice(){
+  const d=invData();const sub=d.items.reduce((a,it)=>a+(+it.q||0)*(+it.r||0),0);const tax=sub*(+d.tax||0)/100;
+  $('#inv-print').innerHTML=`<div style="font-family:Inter,Arial,sans-serif;color:#37352f;padding:36px;max-width:720px;margin:0 auto">
+    <div style="display:flex;justify-content:space-between;border-bottom:1px solid #e9e9e7;padding-bottom:14px;margin-bottom:20px">
+      <div><div style="font-size:24px;font-weight:600">invoice</div>
+      <div style="font-size:12px;color:#787774;margin-top:4px">${esc(d.from)||'from'}</div></div>
+      <div style="text-align:right;font-size:12px;color:#787774">${esc(d.no)||'inv-001'}<br>${new Date().toLocaleDateString()}</div></div>
+    <div style="font-size:12px;margin-bottom:18px;color:#37352f"><b>billed to:</b> ${esc(d.to)||'—'}</div>
+    <table style="width:100%;border-collapse:collapse;font-size:12px">
+      <tr style="border-bottom:1px solid #37352f;text-align:left"><th style="padding:7px 5px">#</th><th style="padding:7px 5px">description</th><th style="padding:7px 5px">qty</th><th style="padding:7px 5px">rate</th><th style="padding:7px 5px;text-align:right">amount</th></tr>
+      ${d.items.map((it,i)=>`<tr style="border-bottom:1px solid #e9e9e7"><td style="padding:7px 5px">${i+1}</td><td style="padding:7px 5px">${esc(it.d)||'—'}</td><td style="padding:7px 5px">${it.q}</td><td style="padding:7px 5px">${fmtNum(+it.r)}</td><td style="padding:7px 5px;text-align:right">${fmtNum((+it.q||0)*(+it.r||0))}</td></tr>`).join('')}
+    </table>
+    <div style="margin-top:16px;text-align:right;font-size:12.5px;color:#787774">
+      <div>subtotal: ${fmtNum(sub)}</div><div>tax (${d.tax||0}%): ${fmtNum(tax)}</div>
+      <div style="font-size:19px;font-weight:600;color:#37352f;margin-top:6px">total: ${fmtNum(sub+tax)}</div></div>
+    ${d.notes?`<div style="margin-top:24px;font-size:11px;color:#9b9a97;border-top:1px solid #e9e9e7;padding-top:10px">${esc(d.notes)}</div>`:''}
+  </div>`;
+  window.print();
+}
+
+/* ============================================================ citations ============================================================ */
+let citeStyle='apa';
+function setCite(s,el){citeStyle=s;$$('#cite-styles .chip').forEach(x=>x.classList.remove('on'));el.classList.add('on');genCite()}
+function genCite(){
+  const a=$('#cit-a').value.trim(),t=$('#cit-t').value.trim(),c=$('#cit-c').value.trim(),y=$('#cit-y').value.trim(),u=$('#cit-u').value.trim();
+  if(!t){toast('a title is needed','fa-quote-right');return}
+  const A=a||'author',T=t,C=c||'publisher',Y=y||'n.d.',U=u||'';
+  const out={
+    apa:`${A}. (${Y}). ${T}. ${C}. ${U}`,
+    mla:`${A}. "${T}." ${C}, ${Y}, ${U}.`,
+    harvard:`${A} (${Y}) ${T}. ${C}. Available at: ${U} (Accessed: ${new Date().toLocaleDateString()}).`,
+    chicago:`${A}. "${T}." ${C}. ${Y}. ${U}.`
+  }[citeStyle];
+  $('#cite-out').textContent=out;$('#cite-out-wrap').classList.remove('hide');$('#cite-label').textContent=citeStyle;
+}
+
+/* ============================================================ calculator ============================================================ */
+let calcExp='';
+function calcPress(k){
+  if(k==='C')calcExp='';else if(k==='⌫')calcExp=calcExp.slice(0,-1);
+  else if(k==='='){calcEq();return}
+  else if(k==='×')calcExp+='*';else if(k==='÷')calcExp+='/';else if(k==='−')calcExp+='-';
+  else calcExp+=k;
+  calcRender();
+}
+function calcEq(){
+  if(!calcExp)return;
+  const safe=calcExp.replace(/[^0-9+\-*/.()% ]/g,'');
+  try{const r=Function('"use strict";return ('+safe+')')();if(r===undefined||Number.isNaN(r))throw 0;calcExp=String(+Number(r).toFixed(8));logAct()}
+  catch(e){toast('invalid expression','fa-calculator')}
+  calcRender();
+}
+function calcRender(){$('#calc-exp').textContent=calcExp||'0'}
+
+/* ============================================================ code playground ============================================================ */
+function cpTab(t,el){$$('#cp-tabs .cp-tab').forEach(x=>x.classList.remove('on'));el.classList.add('on');['html','css','js'].forEach(x=>$('#cp-'+x).classList.toggle('hide',x!==t))}
+const runCode=deb(()=>{
+  const h=$('#cp-html').value,c=$('#cp-css').value,j=$('#cp-js').value;
+  $('#cp-out').srcdoc=`<!DOCTYPE html><html><head><style>${c}</style><link rel="stylesheet" href="theme-mobile.css"></head><body>${h}<scr${'ipt'}>${j}<\/scr${'ipt'}></body></html>`;
+},600);
+
+/* ============================================================ whiteboard ============================================================ */
+const WB_COLORS=['#37352f','#787774','#9b9a97','#2383e2','#0f9960','#eb5757'];
+let wb={color:WB_COLORS[0],size:3,erase:false,drawing:false,ctx:null,_ev:false};
+function wbInit(){
+  const cv=$('#wb-canvas');wb.ctx=cv.getContext('2d');
+  $('#wb-colors').innerHTML=WB_COLORS.map(c=>`<button class="w-6 h-6 rounded-full transition-transform hover:scale-110" style="background:${c};box-shadow:0 0 0 ${c===wb.color?'2px #37352f':'1px #e9e9e7'}" onclick="wbSetColor('${c}')"></button>`).join('');
+  $('#wb-sizes').innerHTML=[2,4,8].map(s=>`<button class="notion-btn w-7 h-7 !p-0 flex items-center justify-center" onclick="wbSetSize(${s})"><span style="width:${s+2}px;height:${s+2}px;border-radius:99px;background:${s===wb.size?'#37352f':'#c9c8c4'};display:block"></span></button>`).join('');
+  if(!wb._ev){wb._ev=true;
+    cv.addEventListener('pointerdown',e=>{wb.drawing=true;const p=wbPos(e);wb.ctx.beginPath();wb.ctx.moveTo(p.x,p.y)});
+    cv.addEventListener('pointermove',e=>{if(!wb.drawing)return;const p=wbPos(e);wb.ctx.strokeStyle=wb.erase?'#ffffff':wb.color;wb.ctx.lineWidth=wb.erase?22:wb.size;wb.ctx.lineCap='round';wb.ctx.lineJoin='round';wb.ctx.lineTo(p.x,p.y);wb.ctx.stroke()});
+    addEventListener('pointerup',()=>wb.drawing=false);
+  }
+  resizeWb();
+}
+function wbPos(e){const r=$('#wb-canvas').getBoundingClientRect();return{x:e.clientX-r.left,y:e.clientY-r.top}}
+function resizeWb(){
+  const cv=$('#wb-canvas'),p=cv.parentElement;if(!p||p.clientHeight<10)return;
+  const snap=cv.width?cv.toDataURL():null;
+  const dpr=devicePixelRatio||1;
+  cv.width=p.clientWidth*dpr-16;cv.height=p.clientHeight*dpr-16;
+  wb.ctx.setTransform(dpr,0,0,dpr,0,0);wb.ctx.fillStyle='#fff';wb.ctx.fillRect(0,0,p.clientWidth,p.clientHeight);
+  if(snap){const img=new Image();img.onload=()=>wb.ctx.drawImage(img,0,0,p.clientWidth,p.clientHeight);img.src=snap}
+}
+function wbSetColor(c){wb.color=c;wb.erase=false;$('#wb-erase').classList.remove('notion-btn-primary');wbInit()}
+function wbSetSize(s){wb.size=s;wbInit()}
+function wbErase(){wb.erase=!wb.erase;$('#wb-erase').classList.toggle('notion-btn-primary',wb.erase)}
+function wbClear(){wb.ctx.fillStyle='#fff';wb.ctx.fillRect(0,0,9999,9999);toast('canvas cleared','fa-trash')}
+function wbSave(){const a=document.createElement('a');a.download='clonbrow-canvas.png';a.href=$('#wb-canvas').toDataURL();a.click();toast('exported as png','fa-download')}
+
+/* ============================================================ analytics ============================================================ */
+function renderAnalytics(){
+  const T=DB.get(K.tasks,[]),C=DB.get(K.cards,[]),Q=DB.get(K.quiz,[]),B=DB.get(K.bites,[]),N=DB.get(K.notes,[]),F=DB.get(K.focus,0),A=DB.get(K.act,{}),CF=DB.get(K.customF,[]);
+  const done=T.filter(t=>t.s==='done').length;
+  $('#an-tiles').innerHTML=[['tasks done',done],['open tasks',T.length-done],['cards',C.length],['quiz items',Q.length],['bites',B.length],['formulas saved',CF.length],['notes',N.length],['focus mins',F]]
+    .map(([l,v],i)=>`<div class="notion-card p-4 fade-card" style="animation-delay:${i*40}ms"><div class="text-[11px] text-[#c4c2bc] mb-1.5">${l}</div><div class="text-2xl font-medium tabular-nums"><span class="an-num" data-val="${v}">0</span></div></div>`).join('');
+  $$('#an-tiles .an-num').forEach(el=>countUp(el,+el.dataset.val||0));
+  const days=[];for(let i=13;i>=0;i--){const dt=new Date();dt.setDate(dt.getDate()-i);const k=dt.toISOString().slice(0,10);days.push({k,n:A[k]||0,l:dt.toLocaleDateString([],{weekday:'narrow'}).toLowerCase()})}
+  const mx=Math.max(1,...days.map(d=>d.n));
+  $('#an-bars').innerHTML=days.map(d=>`<div class="an-bar-col" title="${d.k} · ${d.n}"><div class="an-bar-track"><div class="an-bar" style="height:${Math.max(4,d.n/mx*100)}%"></div></div><span>${d.l}</span></div>`).join('');
+  const bar=(l,n,mx2,col)=>`<div><div class="flex justify-between text-[12px] text-[#787774] mb-1.5"><span>${l}</span><span class="tabular-nums">${n}</span></div><div class="h-1.5 bg-[#f1f0ee] rounded-full overflow-hidden"><div class="h-full rounded-full" style="width:${mx2?n/mx2*100:0}%;background:${col}"></div></div></div>`;
+  $('#an-split').innerHTML=bar('todo',T.length-done,T.length,'#c9c8c4')+bar('doing',T.filter(t=>t.s==='doing').length,T.length,'#9b9a97')+bar('done',done,T.length,'#37352f');
+}
+
+/* ============================================================ habits ============================================================ */
+function addHabit(){const v=$('#habit-in').value.trim();if(!v){toast('name the habit first','fa-calendar-check');return}
+  const L=DB.get(K.habits,[]);L.push({id:Date.now(),name:v,days:{}});DB.set(K.habits,L);$('#habit-in').value='';renderHabits();toast('habit added','fa-check')}
+function delHabit(id){DB.set(K.habits,DB.get(K.habits,[]).filter(x=>x.id!==id));renderHabits()}
+function toggleHabit(id,ds){const L=DB.get(K.habits,[]);const h=L.find(x=>x.id===id);if(!h)return;
+  if(h.days[ds])delete h.days[ds];else{h.days[ds]=1;logAct()}
+  DB.set(K.habits,L);renderHabits()}
+function calcStreak(h){let s=0,d=new Date();if(!h.days[d.toISOString().slice(0,10)])d.setDate(d.getDate()-1);
+  while(h.days[d.toISOString().slice(0,10)]){s++;d.setDate(d.getDate()-1)}return s}
+function renderHabits(){
+  const L=DB.get(K.habits,[]);
+  const days=[];for(let i=6;i>=0;i--){const d=new Date();d.setDate(d.getDate()-i);days.push({k:d.toISOString().slice(0,10),l:d.toLocaleDateString([],{weekday:'narrow'}).toLowerCase()})}
+  $('#hab-head').innerHTML='<span></span>'+days.map(d=>`<span class="text-center">${d.l}</span>`).join('')+'<span class="text-center">run</span><span></span>';
+  $('#hab-rows').innerHTML=L.map(h=>{
+    const s=calcStreak(h);
+    return`<div class="grid grid-cols-[1fr_repeat(7,30px)_44px_20px] gap-1.5 items-center py-0.5">
+      <span class="text-[13px] truncate px-1">${esc(h.name)}</span>
+      ${days.map(d=>`<button class="w-[30px] h-[30px] rounded border flex items-center justify-center transition-all" style="border-color:${h.days[d.k]?'#37352f':'#e9e9e7'};background:${h.days[d.k]?'#37352f':'#fff'};color:#fff" onclick="toggleHabit(${h.id},'${d.k}')">${h.days[d.k]?'<i class="fas fa-check text-[9px]"></i>':''}</button>`).join('')}
+      <span class="text-[12px] text-[#787774] text-center tabular-nums">${s}d</span>
+      <button class="tc-btn" onclick="delHabit(${h.id})"><i class="fas fa-xmark"></i></button></div>`;
+  }).join('')||'<div class="empty-state">add a habit above.</div>';
+}
+
+/* ============================================================ pomodoro ============================================================ */
+const PM={focus:25*60,short:5*60,long:15*60};
+let pm={mode:'focus',left:PM.focus,run:false,cycles:0,int:null};
+function pmToggle(){
+  pm.run=!pm.run;
+  if(pm.run){pm.int=setInterval(pmTick,1000);$('#pm-start').textContent='pause'}
+  else{clearInterval(pm.int);$('#pm-start').textContent='start'}
+  renderPomo();
+}
+function pmTick(){pm.left--;if(pm.left<=0)pmDone();renderPomo()}
+function pmDone(){
+  if(pm.mode==='focus'){pm.cycles++;DB.set(K.focus,(DB.get(K.focus,0))+25);logAct();toast('focus block complete','fa-check');pm.mode=pm.cycles%4===0?'long':'short'}
+  else{pm.mode='focus';toast('break over','fa-arrow-rotate-right')}
+  pm.left=PM[pm.mode];$$('#pm-modes .chip').forEach(c=>c.classList.toggle('on',c.textContent.trim().startsWith(pm.mode)));
+}
+function pmReset(){clearInterval(pm.int);pm={mode:'focus',left:PM.focus,run:false,cycles:0,int:null};$('#pm-start').textContent='start';renderPomo()}
+function pmSkip(){pm.left=1;pmTick()}
+function pmSetMode(m,el){pm.mode=m;pm.left=PM[m];$$('#pm-modes .chip').forEach(x=>x.classList.remove('on'));el.classList.add('on');renderPomo()}
+function renderPomo(){
+  $('#pomo-time').textContent=pad(Math.floor(pm.left/60))+':'+pad(pm.left%60);
+  $('#pomo-label').textContent=pm.mode==='focus'?'focus':pm.mode==='short'?'short break':'long break';
+  const C=552.92;$('#pomo-ring').style.strokeDashoffset=C*(1-pm.left/PM[pm.mode]);
+  $('#pomo-dots').innerHTML=[0,1,2,3].map(i=>`<span class="w-1.5 h-1.5 rounded-full" style="background:${i<pm.cycles%4?'#37352f':'#e9e9e7'}"></span>`).join('');
+}
+
+/* ============================================================ timer ============================================================ */
+let sw={base:0,offset:0,run:false,int:null,laps:[]};
+function swNow(){return sw.offset+(sw.run?Date.now()-sw.base:0)}
+function swToggle(){sw.run=!sw.run;
+  if(sw.run){sw.base=Date.now();sw.int=setInterval(swRender,100);$('#sw-btn').textContent='pause'}else{sw.offset=swNow();clearInterval(sw.int);$('#sw-btn').textContent='resume'}}
+function swLap(){if(!sw.run&&!swNow())return;sw.laps.unshift(swNow());sw.laps=sw.laps.slice(0,8);
+  $('#sw-laps').innerHTML=sw.laps.map((l,i)=>`<div class="flex justify-between px-3"><span class="text-[#c4c2bc]">lap ${sw.laps.length-i}</span><span class="tabular-nums">${swFmt(l)}</span></div>`).join('')}
+function swReset(){clearInterval(sw.int);sw={base:0,offset:0,run:false,int:null,laps:[]};$('#sw-btn').textContent='start';$('#sw-laps').innerHTML='';swRender()}
+function swFmt(ms){const m=Math.floor(ms/60000),s=Math.floor(ms/1000)%60,d=Math.floor(ms/100)%10;return pad(m)+':'+pad(s)+'.'+d}
+function swRender(){$('#sw-display').textContent=swFmt(swNow())}
+let cd={left:300,run:false,int:null};
+function cdRender(){$('#cd-display').textContent=pad(Math.floor(cd.left/60))+':'+pad(cd.left%60)}
+function cdSet(m){cd.left+=m*60;cdRender()}
+function cdClear(){clearInterval(cd.int);cd={left:0,run:false,int:null};$('#cd-btn').textContent='start';cdRender()}
+function cdStart(){
+  if(cd.left<=0){toast('set some time first','fa-hourglass-half');return}
+  cd.run=!cd.run;
+  if(cd.run){cd.int=setInterval(()=>{cd.left--;cdRender();if(cd.left<=0){clearInterval(cd.int);cd.run=false;$('#cd-btn').textContent='start';toast('countdown complete','fa-bell')}},1000);$('#cd-btn').textContent='pause'}
+  else{clearInterval(cd.int);$('#cd-btn').textContent='resume'}
+}
+
+/* ============================================================ keys + init ============================================================ */
+document.addEventListener('keydown',e=>{
+  if((e.metaKey||e.ctrlKey)&&e.key.toLowerCase()==='k'){e.preventDefault();$('#address-bar').focus();$('#address-bar').select();return}
+  if($('#calc-screen').classList.contains('active')&&!['INPUT','TEXTAREA','SELECT'].includes(document.activeElement.tagName)){
+    const k=e.key;
+    if(/^[0-9+\-*/.()%]$/.test(k)){calcExp+=k;calcRender();e.preventDefault()}
+    else if(k==='Enter')calcEq();
+    else if(k==='Backspace'){calcExp=calcExp.slice(0,-1);calcRender()}
+    else if(k.toLowerCase()==='c'){calcExp='';calcRender()}
+  }
+  if($('#code-screen').classList.contains('active')&&e.ctrlKey&&e.key==='Enter'){e.preventDefault();runCode()}
+});
+
+(function init(){
+  const saved=DB.get(K.user,'');if(saved)$('#boot-username').value=saved;
+  $('#scratchpad').addEventListener('input',saveScratch);
+  $('#eng-input').addEventListener('input',engAnalyze);
+  wbInit();pmReset();cdRender();swRender();setConvCat('length',$$('#conv-cats .chip')[0]);
+  newTab('clonmedic://home');
+})();
+</script>
+</body>
+</html>

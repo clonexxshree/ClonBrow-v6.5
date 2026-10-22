@@ -1,0 +1,712 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Physics Lab - Quantum & Optics</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Fira+Code:wght@400;500&display=swap" rel="stylesheet">
+    <style>
+        body, html {
+            margin: 0;
+            padding: 0;
+            width: 100%;
+            height: 100%;
+            overflow: hidden;
+            background-color: #020617; /* Deep Slate 950 */
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+            touch-action: none;
+            user-select: none;
+        }
+
+        .main-shell {
+            display: flex;
+            width: 100%;
+            height: 100%;
+        }
+
+        .glass-panel {
+            background: linear-gradient(145deg, rgba(15, 23, 42, 0.9) 0%, rgba(2, 6, 23, 0.98) 100%);
+            backdrop-filter: blur(40px);
+            -webkit-backdrop-filter: blur(40px);
+            border-right: 1px solid rgba(255, 255, 255, 0.1);
+            box-shadow: 20px 0 50px rgba(0, 0, 0, 0.5);
+            display: flex;
+            flex-direction: column;
+            padding: 2rem;
+            z-index: 100;
+            width: 380px;
+        }
+
+        @media (max-width: 1024px) {
+            .glass-panel { width: 100%; height: 35%; border-right: none; border-bottom: 1px solid rgba(255,255,255,0.1); padding: 1rem; }
+            .main-shell { flex-direction: column; }
+        }
+
+        .workspace {
+            flex-grow: 1;
+            position: relative;
+            overflow: hidden;
+        }
+        
+        #sim-canvas {
+            display: block;
+            width: 100%;
+            height: 100%;
+        }
+
+        .tab-btn {
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+        .tab-btn.active {
+            background-color: #ffffff;
+            color: #020617;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.4);
+        }
+
+        /* Custom Range Sliders */
+        input[type=range] {
+            -webkit-appearance: none;
+            width: 100%;
+            background: transparent;
+        }
+        input[type=range]::-webkit-slider-thumb {
+            -webkit-appearance: none;
+            height: 20px;
+            width: 20px;
+            border-radius: 50%;
+            background: #ffffff;
+            cursor: pointer;
+            margin-top: -8px;
+            box-shadow: 0 4px 10px rgba(0,0,0,0.5);
+            border: 1px solid rgba(255,255,255,0.2);
+            transition: transform 0.2s cubic-bezier(0.2, 0.8, 0.2, 1);
+        }
+        input[type=range]::-webkit-slider-thumb:hover { transform: scale(1.15); }
+        input[type=range]::-webkit-slider-runnable-track {
+            width: 100%; height: 4px; cursor: pointer;
+            background: rgba(255, 255, 255, 0.15); border-radius: 2px;
+        }
+
+        .formula-box { font-family: 'Fira Code', monospace; }
+
+        #loading-screen {
+            position: absolute;
+            inset: 0;
+            background: #020617;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: white;
+            z-index: 150;
+            transition: opacity 0.6s ease;
+        }
+    </style>
+</head>
+<body>
+
+    <div id="loading-screen">
+        <div class="flex flex-col items-center gap-5">
+            <svg class="animate-spin h-10 w-10 text-blue-500" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="3"></circle><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path></svg>
+            <span class="text-xs font-medium tracking-widest text-gray-400 uppercase italic">Calibrating Quantum Engines...</span>
+        </div>
+    </div>
+
+    <div class="main-shell">
+        <!-- Side UI Panel -->
+        <div class="glass-panel shrink-0">
+            <div class="mb-6 border-b border-white/10 pb-6 shrink-0 flex items-center justify-between">
+                <div>
+                    <h1 class="text-2xl font-bold tracking-tight text-white mb-1">Physics Lab</h1>
+                    <p class="text-[11px] font-medium text-blue-400 uppercase tracking-widest">Wave-Particle Duality</p>
+                </div>
+                <div class="w-10 h-10 rounded-full bg-blue-500/20 flex items-center justify-center text-blue-400 shadow-[0_0_15px_rgba(59,130,246,0.3)]">
+                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M14 10l-2 1m0 0l-2-1m2 1v2.5M20 7l-2 1m2-1l-2-1m2 1v2.5M14 4l-2-1-2 1M4 7l2-1M4 7l2 1M4 7v2.5M12 21l-2-1m2 1l2-1m-2 1v-2.5M6 18l-2-1v-2.5M18 18l2-1v-2.5"></path></svg>
+                </div>
+            </div>
+
+            <div class="flex p-1 bg-black/40 rounded-xl shadow-inner gap-1 mb-6 shrink-0 border border-white/5">
+                <button data-tab="polarization" class="tab-btn active flex-1 py-2 text-[10px] font-bold uppercase tracking-wider rounded-lg text-gray-400">Polarization</button>
+                <button data-tab="photoelectric" class="tab-btn flex-1 py-2 text-[10px] font-bold uppercase tracking-wider rounded-lg text-gray-400">Photoelectric</button>
+            </div>
+
+            <div class="scroll-area overflow-y-auto pr-2 pb-2 space-y-7 flex-1">
+                
+                <div class="bg-black/30 p-4 rounded-xl border border-white/5 shadow-inner">
+                    <h2 id="info-title" class="text-sm font-bold text-white mb-2 italic">Polarization (Wave)</h2>
+                    <div id="formula-display" class="formula-box bg-white/5 p-2 rounded text-[11px] text-cyan-300 mb-3 border border-white/10">
+                        I = I_0 · cos²(θ)
+                    </div>
+                    <p id="info-desc" class="text-xs text-gray-400 leading-relaxed">
+                        Unpolarized light vibrates in all directions. A polarizing filter blocks all waves except those parallel to its axis. Rotate the second filter (Analyzer) to block the rest!
+                    </p>
+                </div>
+
+                <!-- POLARIZATION CONTROLS -->
+                <div id="controls-polarization" class="space-y-6">
+                    <div class="space-y-4">
+                        <div class="space-y-2">
+                            <div class="flex justify-between items-end">
+                                <label class="text-[11px] font-semibold text-cyan-400 uppercase tracking-widest">Analyzer Angle (θ)</label>
+                                <span id="angle-display" class="text-[11px] font-mono bg-cyan-500/10 px-2 py-1 rounded text-cyan-300">45°</span>
+                            </div>
+                            <input type="range" id="angle-slider" min="0" max="90" step="1" value="45" class="w-full" style="accent-color: #22d3ee;">
+                            <div class="flex justify-between px-1">
+                                <span class="text-[9px] text-gray-500 font-bold uppercase">Parallel (0°)</span>
+                                <span class="text-[9px] text-gray-500 font-bold uppercase">Crossed (90°)</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- PHOTOELECTRIC CONTROLS -->
+                <div id="controls-photoelectric" class="space-y-6 hidden">
+                    <div class="space-y-5">
+                        <div class="space-y-2">
+                            <div class="flex justify-between items-end">
+                                <label class="text-[11px] font-semibold text-pink-400 uppercase tracking-widest">Wavelength (λ)</label>
+                                <span id="wave-display" class="text-[11px] font-mono bg-pink-500/10 px-2 py-1 rounded text-pink-300">400 nm</span>
+                            </div>
+                            <!-- Spectral Gradient Slider -->
+                            <input type="range" id="wave-slider" min="380" max="750" step="5" value="400" class="w-full" style="background: linear-gradient(to right, #8b00ff, #0000ff, #00ff00, #ffff00, #ff7f00, #ff0000); accent-color: #ffffff;">
+                        </div>
+                        
+                        <div class="space-y-2">
+                            <div class="flex justify-between items-end">
+                                <label class="text-[11px] font-semibold text-orange-400 uppercase tracking-widest">Laser Intensity</label>
+                                <span id="intensity-display" class="text-[11px] font-mono bg-orange-500/10 px-2 py-1 rounded text-orange-300">50%</span>
+                            </div>
+                            <input type="range" id="intensity-slider" min="5" max="100" step="5" value="50" class="w-full" style="accent-color: #f97316;">
+                        </div>
+
+                        <div class="space-y-2 pt-2 border-t border-white/10">
+                            <div class="flex justify-between items-end">
+                                <label class="text-[11px] font-semibold text-emerald-400 uppercase tracking-widest">Metal Work Function (Φ)</label>
+                                <span id="work-display" class="text-[11px] font-mono bg-emerald-500/10 px-2 py-1 rounded text-emerald-300">2.10 eV</span>
+                            </div>
+                            <input type="range" id="work-slider" min="1.50" max="3.50" step="0.05" value="2.10" class="w-full" style="accent-color: #10b981;">
+                            <div class="flex justify-between px-1">
+                                <span class="text-[9px] text-gray-500 font-bold uppercase">Cesium</span>
+                                <span class="text-[9px] text-gray-500 font-bold uppercase">Zinc</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="pt-6 border-t border-white/5 text-[10px] text-gray-600 font-medium text-center shrink-0 mt-4 uppercase tracking-tighter">
+                Dynamic 2D Physics Projection
+            </div>
+        </div>
+
+        <!-- Simulation Workspace -->
+        <div class="workspace" id="workspace">
+            <canvas id="sim-canvas"></canvas>
+            
+            <!-- Contextual HUD -->
+            <div id="hud" class="absolute bottom-6 right-6 z-10 glass-panel !w-[260px] !p-5 !border !rounded-2xl pointer-events-none shadow-2xl">
+                <div class="text-[10px] font-bold uppercase tracking-widest text-gray-500 mb-3 border-b border-white/5 pb-1">Sensor Output</div>
+                <div class="space-y-3">
+                    <div class="flex justify-between items-center">
+                        <span class="text-[11px] text-gray-400 font-medium" id="hud-label-1">Transmission</span>
+                        <span id="hud-val-1" class="text-sm font-mono font-bold text-cyan-400">---</span>
+                    </div>
+                    <div class="flex justify-between items-center">
+                        <span class="text-[11px] text-gray-400 font-medium" id="hud-label-2">Light State</span>
+                        <span id="hud-val-2" class="text-sm font-mono font-bold text-white">---</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const canvas = document.getElementById('sim-canvas');
+        const ctx = canvas.getContext('2d');
+        const workspace = document.getElementById('workspace');
+
+        // --- GLOBAL LAYOUT & STATE ---
+        let currentMode = 'polarization';
+        let cx, cy, wsWidth, wsHeight;
+        let time = 0;
+
+        function resize() {
+            canvas.width = workspace.clientWidth;
+            canvas.height = workspace.clientHeight;
+            wsWidth = canvas.width;
+            wsHeight = canvas.height;
+            cx = wsWidth / 2;
+            cy = wsHeight / 2;
+        }
+        window.addEventListener('resize', resize);
+        resize();
+
+        // --- COMMON UTILS ---
+        function waveLengthToRGB(Wavelength){
+            let R, G, B, alpha;
+            if(Wavelength >= 380 && Wavelength < 440){
+                R = -(Wavelength - 440) / (440 - 380); G = 0.0; B = 1.0;
+            } else if(Wavelength >= 440 && Wavelength < 490){
+                R = 0.0; G = (Wavelength - 440) / (490 - 440); B = 1.0;
+            } else if(Wavelength >= 490 && Wavelength < 510){
+                R = 0.0; G = 1.0; B = -(Wavelength - 510) / (510 - 490);
+            } else if(Wavelength >= 510 && Wavelength < 580){
+                R = (Wavelength - 510) / (580 - 510); G = 1.0; B = 0.0;
+            } else if(Wavelength >= 580 && Wavelength < 645){
+                R = 1.0; G = -(Wavelength - 645) / (645 - 580); B = 0.0;
+            } else if(Wavelength >= 645 && Wavelength <= 750){
+                R = 1.0; G = 0.0; B = 0.0;
+            } else { R = 0.0; G = 0.0; B = 0.0; }
+
+            if(Wavelength >= 380 && Wavelength < 420) alpha = 0.3 + 0.7*(Wavelength - 380)/(420 - 380);
+            else if(Wavelength >= 420 && Wavelength < 701) alpha = 1.0;
+            else if(Wavelength >= 701 && Wavelength <= 750) alpha = 0.3 + 0.7*(750 - Wavelength)/(750 - 700);
+            else alpha = 0.0;
+
+            R = Math.round(R * 255); G = Math.round(G * 255); B = Math.round(B * 255);
+            return `rgba(${R},${G},${B},${alpha})`;
+        }
+
+        // --- MODULE 1: POLARIZATION ---
+        let analyzerAngle = 45; // Degrees from vertical (0 is vertical, 90 is horizontal)
+
+        document.getElementById('angle-slider').addEventListener('input', (e) => {
+            analyzerAngle = parseInt(e.target.value);
+            document.getElementById('angle-display').innerText = analyzerAngle + "°";
+        });
+
+        function drawPolarization() {
+            const startX = 50;
+            const filter1X = cx - 100;
+            const filter2X = cx + 150;
+            const endX = wsWidth - 50;
+            const amp = 60;
+            const k = 0.05; // Wave number
+            const w = 5;    // Angular frequency
+
+            // Pseudo-3D Projection (X is horizontal, Y is vertical, Z is depth)
+            // Maps (x, y, z) to screen coordinates
+            function project(x, y, z) {
+                // Skew Z to the right and down to create depth
+                return {
+                    px: x + z * 0.3,
+                    py: cy - y + z * 0.2
+                };
+            }
+
+            // Draw Filters (Glass panes)
+            function drawFilter(x, angleDeg, label) {
+                ctx.save();
+                // Filter bounds in local 3D space
+                const w = 10, h = 180, d = 180;
+                
+                // Draw glass pane
+                ctx.fillStyle = 'rgba(56, 189, 248, 0.15)';
+                ctx.strokeStyle = 'rgba(56, 189, 248, 0.5)';
+                ctx.lineWidth = 2;
+
+                const p1 = project(x, h/2, -d/2);
+                const p2 = project(x, h/2, d/2);
+                const p3 = project(x, -h/2, d/2);
+                const p4 = project(x, -h/2, -d/2);
+
+                ctx.beginPath();
+                ctx.moveTo(p1.px, p1.py); ctx.lineTo(p2.px, p2.py);
+                ctx.lineTo(p3.px, p3.py); ctx.lineTo(p4.px, p4.py);
+                ctx.closePath();
+                ctx.fill(); ctx.stroke();
+
+                // Draw Transmission Axis (Grid lines)
+                ctx.strokeStyle = 'rgba(255, 255, 255, 0.6)';
+                ctx.lineWidth = 1.5;
+                const rad = angleDeg * Math.PI / 180;
+                
+                // Lines across the filter
+                for (let offset = -80; offset <= 80; offset += 20) {
+                    // Start and end points of a line on the filter plane
+                    // Center is (0,0), rotated by rad
+                    const lx1 = 0, ly1 = 100, lz1 = 0;
+                    const lx2 = 0, ly2 = -100, lz2 = 0;
+
+                    // Rotate around X axis (since the filter is in YZ plane)
+                    // Angle 0 = vertical (Y axis), Angle 90 = horizontal (Z axis)
+                    const y1 = ly1 * Math.cos(rad); const z1 = ly1 * Math.sin(rad);
+                    const y2 = ly2 * Math.cos(rad); const z2 = ly2 * Math.sin(rad);
+
+                    // Add parallel offset
+                    const oy = offset * Math.sin(rad);
+                    const oz = -offset * Math.cos(rad);
+
+                    const lineStart = project(x, y1 + oy, z1 + oz);
+                    const lineEnd = project(x, y2 + oy, z2 + oz);
+
+                    ctx.beginPath();
+                    ctx.moveTo(lineStart.px, lineStart.py);
+                    ctx.lineTo(lineEnd.px, lineEnd.py);
+                    ctx.stroke();
+                }
+
+                // Label
+                const labelPos = project(x, -h/2 - 30, 0);
+                ctx.fillStyle = 'white';
+                ctx.font = 'bold 12px Inter';
+                ctx.textAlign = 'center';
+                ctx.fillText(label, labelPos.px, labelPos.py);
+                
+                ctx.restore();
+            }
+
+            // Draw Filters
+            drawFilter(filter1X, 0, "POLARIZER (Fixed)");
+            drawFilter(filter2X, analyzerAngle, `ANALYZER (${analyzerAngle}°)`);
+
+            // Helper to draw a single continuous wave
+            function drawWaveLine(startX, endX, amplitude, polarizationAngleRad, color, dash = []) {
+                ctx.beginPath();
+                ctx.strokeStyle = color;
+                ctx.lineWidth = 2.5;
+                ctx.setLineDash(dash);
+                ctx.shadowBlur = 10;
+                ctx.shadowColor = color;
+
+                for (let x = startX; x <= endX; x += 2) {
+                    const phase = (x - 50) * k - w * time;
+                    const waveVal = amplitude * Math.sin(phase);
+                    
+                    // Displacement in Y and Z based on polarization angle
+                    const y = waveVal * Math.cos(polarizationAngleRad);
+                    const z = waveVal * Math.sin(polarizationAngleRad);
+                    
+                    const proj = project(x, y, z);
+                    
+                    if (x === startX) ctx.moveTo(proj.px, proj.py);
+                    else ctx.lineTo(proj.px, proj.py);
+                }
+                ctx.stroke();
+                ctx.shadowBlur = 0;
+                ctx.setLineDash([]);
+            }
+
+            // 1. Unpolarized Region (Before Filter 1)
+            // Draw multiple waves at different angles
+            const unpolAngles = [0, 45, 90, 135];
+            const colors = ['#ef4444', '#3b82f6', '#22c55e', '#facc15'];
+            unpolAngles.forEach((ang, i) => {
+                drawWaveLine(startX, filter1X, amp, ang * Math.PI/180, colors[i]);
+            });
+
+            // 2. Polarized Region (Between F1 and F2)
+            // Filter 1 is vertical (0 degrees), so only vertical component passes
+            // To look cool, we just draw one bright white vertical wave
+            drawWaveLine(filter1X, filter2X, amp, 0, '#ffffff');
+
+            // 3. Analyzed Region (After F2)
+            // Malus's Law: Amplitude = A0 * cos(theta), oscillates at angle theta
+            const thetaRad = analyzerAngle * Math.PI / 180;
+            const finalAmp = amp * Math.cos(thetaRad);
+            
+            if (Math.abs(finalAmp) > 0.5) {
+                drawWaveLine(filter2X, endX, Math.abs(finalAmp), thetaRad, '#ffffff');
+            }
+
+            // Central Axis Line (Reference)
+            ctx.strokeStyle = 'rgba(255,255,255,0.2)';
+            ctx.lineWidth = 1;
+            ctx.beginPath();
+            const axisStart = project(startX, 0, 0);
+            const axisEnd = project(endX, 0, 0);
+            ctx.moveTo(axisStart.px, axisStart.py);
+            ctx.lineTo(axisEnd.px, axisEnd.py);
+            ctx.stroke();
+
+            // HUD Updates
+            const intensityPct = Math.pow(Math.cos(thetaRad), 2) * 100;
+            document.getElementById('hud-label-1').innerText = "Transmitted Intensity";
+            document.getElementById('hud-val-1').innerText = intensityPct.toFixed(1) + "%";
+            document.getElementById('hud-label-2').innerText = "Final Amplitude";
+            document.getElementById('hud-val-2').innerText = (Math.cos(thetaRad) * 100).toFixed(1) + "%";
+        }
+
+
+        // --- MODULE 2: PHOTOELECTRIC EFFECT ---
+        let peWavelength = 400; // nm
+        let peIntensity = 50; // spawn rate
+        let workFunction = 2.10; // eV
+        
+        const photons = [];
+        const electrons = [];
+
+        document.getElementById('wave-slider').addEventListener('input', (e) => {
+            peWavelength = parseInt(e.target.value);
+            const c = waveLengthToRGB(peWavelength);
+            document.getElementById('wave-display').innerText = peWavelength + " nm";
+            document.getElementById('wave-display').style.color = c;
+        });
+
+        document.getElementById('intensity-slider').addEventListener('input', (e) => {
+            peIntensity = parseInt(e.target.value);
+            document.getElementById('intensity-display').innerText = peIntensity + "%";
+        });
+
+        document.getElementById('work-slider').addEventListener('input', (e) => {
+            workFunction = parseFloat(e.target.value);
+            document.getElementById('work-display').innerText = workFunction.toFixed(2) + " eV";
+        });
+
+        function updatePhotoelectric() {
+            // Photon Energy E = hc/lambda. Use 1240 eV*nm
+            const photonEnergy = 1240 / peWavelength;
+            const canEmit = photonEnergy >= workFunction;
+            const electronKE = canEmit ? (photonEnergy - workFunction) : 0;
+
+            const plateY = cy + 150;
+            const collectorY = cy - 200;
+
+            // Spawn Photons
+            // Rate depends on intensity
+            if (Math.random() < peIntensity * 0.005) {
+                photons.push({
+                    x: cx - 250 + (Math.random() * 40 - 20),
+                    y: cy - 200,
+                    vx: 4,
+                    vy: 6, // Downward slope towards plate
+                    wavelength: peWavelength,
+                    phaseOffset: Math.random() * Math.PI * 2
+                });
+            }
+
+            // Move Photons
+            for (let i = photons.length - 1; i >= 0; i--) {
+                const p = photons[i];
+                p.x += p.vx;
+                p.y += p.vy;
+
+                // Hit Plate
+                if (p.y >= plateY) {
+                    // Check Photoelectric emission
+                    if (canEmit) {
+                        // Spawn electron
+                        // Velocity proportional to sqrt(KE)
+                        const vBase = Math.sqrt(electronKE) * 2;
+                        const spreadAngle = -Math.PI/2 + (Math.random() * 0.6 - 0.3); // Mostly up
+                        
+                        electrons.push({
+                            x: p.x,
+                            y: plateY - 2,
+                            vx: Math.cos(spreadAngle) * vBase,
+                            vy: Math.sin(spreadAngle) * vBase,
+                        });
+                    }
+                    photons.splice(i, 1);
+                } else if (p.x > wsWidth) {
+                    photons.splice(i, 1);
+                }
+            }
+
+            // Move Electrons
+            for (let i = electrons.length - 1; i >= 0; i--) {
+                const e = electrons[i];
+                e.x += e.vx;
+                e.y += e.vy;
+                
+                // Electric field pulls them slightly to collector center
+                e.vx += (cx - e.x) * 0.002;
+                e.vy -= 0.05; // Upward pull to collector
+
+                if (e.y <= collectorY) {
+                    electrons.splice(i, 1); // Collected
+                }
+            }
+
+            // Update HUD
+            document.getElementById('hud-label-1').innerText = "Photon Energy (E)";
+            document.getElementById('hud-val-1').innerText = photonEnergy.toFixed(2) + " eV";
+            document.getElementById('hud-val-1').style.color = waveLengthToRGB(peWavelength);
+            
+            document.getElementById('hud-label-2').innerText = "Electron K.E.";
+            if (canEmit) {
+                document.getElementById('hud-val-2').innerText = electronKE.toFixed(2) + " eV";
+                document.getElementById('hud-val-2').style.color = "#38bdf8";
+            } else {
+                document.getElementById('hud-val-2').innerText = "No Emission";
+                document.getElementById('hud-val-2').style.color = "#ef4444";
+            }
+        }
+
+        function drawPhotoelectric() {
+            const plateY = cy + 150;
+            const collectorY = cy - 200;
+            const plateW = 400;
+
+            // 1. Draw Laser Emitter
+            ctx.save();
+            ctx.translate(cx - 250, cy - 220);
+            ctx.rotate(Math.atan2(6, 4)); // match photon vx,vy
+            ctx.fillStyle = '#1e293b';
+            ctx.beginPath(); ctx.roundRect(-30, -15, 60, 30, 6); ctx.fill();
+            ctx.fillStyle = waveLengthToRGB(peWavelength);
+            ctx.fillRect(30, -5, 10, 10); // Tip
+            ctx.restore();
+
+            // 2. Draw Plates
+            // Emitting Metal Plate (Bottom)
+            ctx.fillStyle = '#64748b';
+            ctx.shadowColor = '#000'; ctx.shadowBlur = 15; ctx.shadowOffsetY = 5;
+            ctx.beginPath(); ctx.roundRect(cx - plateW/2, plateY, plateW, 30, 4); ctx.fill();
+            ctx.shadowBlur = 0;
+            ctx.fillStyle = '#fff'; ctx.font = 'bold 14px Inter'; ctx.textAlign = 'center';
+            ctx.fillText(`Metal Plate (Φ = ${workFunction.toFixed(2)} eV)`, cx, plateY + 20);
+
+            // Collector Plate (Top)
+            ctx.fillStyle = '#334155';
+            ctx.beginPath(); ctx.roundRect(cx - plateW/2, collectorY - 20, plateW, 20, 4); ctx.fill();
+            ctx.fillStyle = '#fff'; ctx.font = 'bold 12px Inter'; ctx.textAlign = 'center';
+            ctx.fillText("Collector Anode (+)", cx, collectorY - 6);
+
+            // Electric Field Lines (Hint)
+            ctx.strokeStyle = 'rgba(255,255,255,0.05)';
+            ctx.setLineDash([5, 10]);
+            ctx.lineWidth = 1;
+            for(let x = cx - plateW/2 + 20; x <= cx + plateW/2 - 20; x += 40) {
+                ctx.beginPath(); ctx.moveTo(x, plateY); ctx.lineTo(x, collectorY); ctx.stroke();
+            }
+            ctx.setLineDash([]);
+
+            // 3. Draw Photons (Wave-Particle packets)
+            for (let p of photons) {
+                const color = waveLengthToRGB(p.wavelength);
+                ctx.strokeStyle = color;
+                ctx.fillStyle = color;
+                ctx.shadowColor = color;
+                ctx.shadowBlur = 10;
+
+                // Draw sine wave trail to emphasize wave-particle duality
+                ctx.lineWidth = 2;
+                ctx.beginPath();
+                const angle = Math.atan2(p.vy, p.vx);
+                for (let i = 0; i < 40; i+=2) {
+                    const perp = Math.sin(time*20 - i*0.2 + p.phaseOffset) * 6;
+                    const px = p.x - Math.cos(angle)*i - Math.sin(angle)*perp;
+                    const py = p.y - Math.sin(angle)*i + Math.cos(angle)*perp;
+                    if(i===0) ctx.moveTo(px, py); else ctx.lineTo(px, py);
+                }
+                ctx.stroke();
+
+                // Draw Particle Head
+                ctx.beginPath(); ctx.arc(p.x, p.y, 4, 0, Math.PI*2); ctx.fill();
+                ctx.shadowBlur = 0;
+            }
+
+            // 4. Draw Electrons
+            for (let e of electrons) {
+                ctx.fillStyle = '#38bdf8'; // Electric blue
+                ctx.shadowColor = '#38bdf8';
+                ctx.shadowBlur = 15;
+                
+                ctx.beginPath(); ctx.arc(e.x, e.y, 3, 0, Math.PI*2); ctx.fill();
+                
+                // Motion blur trail
+                ctx.strokeStyle = 'rgba(56, 189, 248, 0.4)';
+                ctx.lineWidth = 2;
+                ctx.beginPath();
+                ctx.moveTo(e.x, e.y);
+                ctx.lineTo(e.x - e.vx*3, e.y - e.vy*3);
+                ctx.stroke();
+
+                // Minus sign
+                ctx.fillStyle = '#fff'; ctx.font = '8px Arial'; ctx.textAlign='center'; ctx.textBaseline='middle';
+                ctx.fillText("-", e.x, e.y);
+
+                ctx.shadowBlur = 0;
+            }
+        }
+
+
+        // --- MAIN RENDER LOOP ---
+        let lastTime = 0;
+
+        function render(timestamp) {
+            const dt = (timestamp - lastTime) / 1000 || 0.016;
+            lastTime = timestamp;
+            time += dt;
+
+            // Clear Background
+            ctx.fillStyle = '#020617';
+            ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+            // Subtle Grid
+            ctx.strokeStyle = 'rgba(255,255,255,0.02)';
+            ctx.lineWidth = 1;
+            ctx.beginPath();
+            for(let i=0; i<canvas.width; i+=80) { ctx.moveTo(i,0); ctx.lineTo(i,canvas.height); }
+            for(let i=0; i<canvas.height; i+=80) { ctx.moveTo(0,i); ctx.lineTo(canvas.width,i); }
+            ctx.stroke();
+
+            if (currentMode === 'polarization') {
+                drawPolarization();
+            } else if (currentMode === 'photoelectric') {
+                updatePhotoelectric();
+                drawPhotoelectric();
+            }
+
+            requestAnimationFrame(render);
+        }
+        
+
+        // --- TABS LOGIC ---
+        const tabs = document.querySelectorAll('.tab-btn');
+        tabs.forEach(btn => {
+            btn.addEventListener('click', (e) => {
+                tabs.forEach(t => t.classList.remove('active', 'bg-white', 'text-gray-900'));
+                tabs.forEach(t => t.classList.add('text-gray-400'));
+                btn.classList.add('active', 'bg-white', 'text-gray-900');
+                
+                currentMode = btn.dataset.tab;
+
+                const info = {
+                    polarization: { 
+                        title: "Polarization (Wave)", 
+                        formula: "I = I_0 · cos²(θ)",
+                        desc: "Unpolarized light vibrates in all directions. A polarizing filter blocks all waves except those parallel to its axis. Rotate the second filter (Analyzer) to block the rest!" 
+                    },
+                    photoelectric: { 
+                        title: "Photoelectric Effect (Particle)", 
+                        formula: "K_e = hf - Φ",
+                        desc: "Light acts as quantized packets (Photons). If a photon's energy ($hf$) is greater than the metal's Work Function ($\\Phi$), it forcibly knocks an electron loose!" 
+                    }
+                };
+                
+                document.getElementById('info-title').innerText = info[currentMode].title;
+                document.getElementById('info-desc').innerHTML = info[currentMode].desc;
+                document.getElementById('formula-display').innerText = info[currentMode].formula;
+                
+                document.getElementById('controls-polarization').classList.toggle('hidden', currentMode !== 'polarization');
+                document.getElementById('controls-photoelectric').classList.toggle('hidden', currentMode !== 'photoelectric');
+                
+                if (currentMode === 'polarization') {
+                    document.getElementById('formula-display').style.color = "#22d3ee";
+                    document.getElementById('angle-slider').dispatchEvent(new Event('input'));
+                } else {
+                    document.getElementById('formula-display').style.color = "#38bdf8";
+                    photons.length = 0;
+                    electrons.length = 0;
+                    document.getElementById('wave-slider').dispatchEvent(new Event('input'));
+                }
+            });
+        });
+
+        // Hide loader and start
+        setTimeout(() => {
+            const ls = document.getElementById('loading-screen');
+            ls.style.opacity = '0';
+            setTimeout(() => ls.style.display = 'none', 600);
+            
+            // Trigger initial UI updates
+            document.getElementById('angle-slider').dispatchEvent(new Event('input'));
+            
+            requestAnimationFrame(render);
+        }, 1500);
+
+    </script>
+</body>
+</html>

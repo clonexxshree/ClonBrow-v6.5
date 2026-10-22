@@ -1,0 +1,516 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Cardiac Resonance | Biofeedback Entrainment</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;700&family=JetBrains+Mono:wght@400;700&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --bg-base: #030712;
+            --theme-color: #f43f5e; /* Starts Red (Stress) */
+            --theme-color-dim: rgba(244, 63, 94, 0.2);
+            --ekg-grid: rgba(255, 255, 255, 0.05);
+        }
+
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: var(--bg-base);
+            color: #f8fafc;
+            overflow: hidden;
+            margin: 0;
+            user-select: none;
+            -webkit-tap-highlight-color: transparent;
+        }
+
+        /* Atmospheric Background */
+        #atmosphere {
+            position: fixed;
+            inset: 0;
+            background: radial-gradient(circle at 50% 100%, var(--theme-color-dim) 0%, transparent 70%);
+            z-index: -1;
+            transition: background 1.5s cubic-bezier(0.4, 0, 0.2, 1);
+            opacity: 0.6;
+        }
+
+        /* Glassmorphism Panels */
+        .glass-panel {
+            background: rgba(17, 24, 39, 0.6);
+            backdrop-filter: blur(20px);
+            -webkit-backdrop-filter: blur(20px);
+            border: 1px solid rgba(255, 255, 255, 0.05);
+            box-shadow: 0 30px 60px -15px rgba(0, 0, 0, 0.8);
+        }
+
+        /* EKG Screen Grid */
+        .ekg-screen {
+            background-color: #02040a;
+            background-image: 
+                linear-gradient(var(--ekg-grid) 1px, transparent 1px),
+                linear-gradient(90deg, var(--ekg-grid) 1px, transparent 1px);
+            background-size: 20px 20px;
+            background-position: center center;
+            position: relative;
+        }
+
+        /* The Interactive Node */
+        #entrainment-node {
+            cursor: pointer;
+            touch-action: manipulation;
+            position: relative;
+            z-index: 10;
+        }
+
+        #heart-svg {
+            /* Transform scale is handled via JS for organic voltage linking */
+            filter: drop-shadow(0 0 25px var(--theme-color-dim));
+            color: var(--theme-color);
+            transition: color 1.5s ease, filter 1.5s ease;
+            will-change: transform;
+        }
+
+        /* Ripple effect on click */
+        .ripple {
+            position: absolute;
+            border-radius: 50%;
+            border: 2px solid var(--theme-color);
+            animation: ripple-anim 1s cubic-bezier(0.1, 0.8, 0.3, 1) forwards;
+            pointer-events: none;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+        }
+
+        @keyframes ripple-anim {
+            0% { width: 80px; height: 80px; opacity: 0.8; }
+            100% { width: 300px; height: 300px; opacity: 0; }
+        }
+
+        /* Typography */
+        .font-mono {
+            font-family: 'JetBrains Mono', monospace;
+        }
+        
+        .transition-color {
+            transition: color 1.5s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+
+        /* Goal Ring */
+        .progress-ring__circle {
+            transition: stroke-dashoffset 0.2s linear, stroke 1.5s ease;
+            transform: rotate(-90deg);
+            transform-origin: 50% 50%;
+        }
+    </style>
+</head>
+<body class="flex flex-col min-h-screen">
+
+    <div id="atmosphere"></div>
+
+    <!-- Top Telemetry HUD -->
+    <header class="w-full max-w-[90rem] mx-auto px-8 pt-8 flex justify-between items-start relative z-10">
+        <div>
+            <h1 class="text-xs font-bold tracking-[0.3em] text-slate-500 uppercase mb-2">Clinical Entrainment Interface</h1>
+            <div class="text-3xl font-light tracking-tight text-white flex items-center gap-3">
+                Biofeedback <span class="font-bold transition-color" id="state-title" style="color: var(--theme-color)">Resonance</span>
+            </div>
+        </div>
+        <div class="flex gap-8 text-right">
+            <div class="flex flex-col items-end">
+                <span class="text-[10px] uppercase font-bold text-slate-500 tracking-widest mb-1">HRV (Var)</span>
+                <span class="font-mono text-lg text-slate-300" id="hrv-display">24<span class="text-xs text-slate-500 ml-1">ms</span></span>
+            </div>
+            <div class="flex flex-col items-end">
+                <span class="text-[10px] uppercase font-bold text-slate-500 tracking-widest mb-1">Status</span>
+                <span class="text-sm font-bold uppercase tracking-widest transition-color" id="status-label" style="color: var(--theme-color)">Sympathetic Dominance</span>
+            </div>
+        </div>
+    </header>
+
+    <!-- Main Dashboard -->
+    <main class="flex-grow flex flex-col lg:flex-row items-center justify-center relative z-10 w-full max-w-[90rem] mx-auto px-8 py-8 gap-8">
+        
+        <!-- Left: EKG & Primary Vitals -->
+        <div class="w-full lg:w-2/3 flex flex-col gap-6 h-full min-h-[500px]">
+            
+            <!-- EKG Monitor -->
+            <div class="glass-panel rounded-3xl w-full flex-grow relative overflow-hidden flex flex-col border-t border-l border-white/10">
+                <div class="absolute top-6 left-6 z-20 flex items-center gap-3 bg-black/40 px-3 py-1.5 rounded-full border border-white/5 backdrop-blur-md">
+                    <div class="w-2 h-2 rounded-full animate-pulse transition-color" style="background-color: var(--theme-color);"></div>
+                    <span class="text-[10px] font-mono text-slate-300 uppercase tracking-widest">Lead II - Realtime</span>
+                </div>
+                
+                <div class="ekg-screen w-full h-full absolute inset-0">
+                    <canvas id="ekg-canvas" class="w-full h-full"></canvas>
+                </div>
+
+                <!-- Overlay Gradients for screen effect -->
+                <div class="absolute inset-0 bg-gradient-to-r from-black/40 via-transparent to-black/40 pointer-events-none"></div>
+                <div class="absolute inset-0 bg-gradient-to-b from-black/20 via-transparent to-black/60 pointer-events-none"></div>
+            </div>
+
+            <!-- Bottom Vitals Row -->
+            <div class="flex gap-6 h-36">
+                <!-- BPM -->
+                <div class="glass-panel rounded-3xl p-6 flex flex-col justify-center relative overflow-hidden w-1/2">
+                    <div class="absolute -right-4 -bottom-8 opacity-5 text-9xl font-mono transition-color" style="color: var(--theme-color);" id="bpm-watermark">85</div>
+                    <span class="text-[10px] text-slate-400 uppercase tracking-widest font-bold mb-1">Heart Rate</span>
+                    <div class="flex items-baseline gap-2">
+                        <span id="bpm-display" class="text-6xl font-mono font-light tracking-tighter transition-color" style="color: var(--theme-color);">85</span>
+                        <span class="text-lg font-light text-slate-500">BPM</span>
+                    </div>
+                </div>
+
+                <!-- Respiration / RSA -->
+                <div class="glass-panel rounded-3xl p-6 flex flex-col justify-center w-1/2 relative">
+                    <span class="text-[10px] text-slate-400 uppercase tracking-widest font-bold mb-1">Resp. Sinus Arrhythmia</span>
+                    <div class="flex items-baseline gap-2">
+                        <span id="resp-display" class="text-4xl font-mono font-light tracking-tighter text-slate-300">Exhale</span>
+                    </div>
+                    <!-- Breath visualizer bar -->
+                    <div class="absolute bottom-0 left-0 h-1 bg-white/10 w-full">
+                        <div id="breath-bar" class="h-full bg-slate-400 transition-all duration-75" style="width: 50%;"></div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Right: Interaction & Progress -->
+        <div class="w-full lg:w-1/3 glass-panel rounded-3xl h-full min-h-[500px] p-8 flex flex-col items-center justify-between relative border-t border-l border-white/10">
+            
+            <div class="text-center w-full">
+                <h2 class="text-sm font-bold text-slate-300 uppercase tracking-widest mb-2">Entrainment Node</h2>
+                <p class="text-xs text-slate-500 leading-relaxed">
+                    Set the pacemaking rhythm by tapping. <br>
+                    <span class="text-slate-400">Pace slowly and steadily to engage parasympathetic rest.</span>
+                </p>
+            </div>
+
+            <!-- The Node -->
+            <div class="relative flex items-center justify-center w-full h-64 my-4" id="entrainment-node">
+                <!-- Progress Ring Background -->
+                <svg class="absolute w-64 h-64 pointer-events-none" viewBox="0 0 200 200">
+                    <circle cx="100" cy="100" r="90" fill="none" stroke="rgba(255,255,255,0.03)" stroke-width="4"/>
+                    <circle id="goal-ring" class="progress-ring__circle" cx="100" cy="100" r="90" fill="none" stroke="var(--theme-color)" stroke-width="4" stroke-dasharray="565.48" stroke-dashoffset="565.48"/>
+                </svg>
+
+                <!-- Interactive Heart SVG -->
+                <div class="w-32 h-32 flex items-center justify-center relative z-10">
+                    <svg id="heart-svg" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" class="w-24 h-24">
+                        <path d="M11.645 20.91l-.007-.003-.022-.012a15.247 15.247 0 01-.383-.218 25.18 25.18 0 01-4.244-3.17C4.688 15.36 2.25 12.174 2.25 8.25 2.25 5.322 4.714 3 7.688 3A5.5 5.5 0 0112 5.052 5.5 5.5 0 0116.313 3c2.973 0 5.437 2.322 5.437 5.25 0 3.925-2.438 7.111-4.739 9.256a25.175 25.175 0 01-4.244 3.17 15.247 15.247 0 01-.383.219l-.022.012-.007.004-.003.001a.752.752 0 01-.704 0l-.003-.001z" />
+                    </svg>
+                </div>
+
+                <!-- Center Text Overlay -->
+                <div class="absolute inset-0 flex items-center justify-center pointer-events-none z-20">
+                    <span id="target-bpm-ghost" class="font-mono text-2xl font-bold text-white/50 mix-blend-overlay">TAP</span>
+                </div>
+            </div>
+
+            <div class="w-full text-center">
+                <div class="flex justify-between items-end mb-2">
+                    <span class="text-[10px] uppercase font-bold text-slate-500">Resting Protocol</span>
+                    <span class="font-mono text-sm text-slate-300" id="goal-text">0%</span>
+                </div>
+                <p class="text-[10px] text-slate-500 text-left">Goal: Hold <span class="text-cyan-400 font-bold">≤ 60 BPM</span> for 15 seconds to achieve equilibrium.</p>
+            </div>
+            
+        </div>
+
+    </main>
+
+    <!-- Equilibrium Modal -->
+    <div id="equilibrium-modal" class="fixed inset-0 bg-black/90 backdrop-blur-md z-50 flex flex-col items-center justify-center opacity-0 pointer-events-none transition-opacity duration-1000">
+        <div class="relative w-32 h-32 mb-8 flex items-center justify-center">
+            <div class="absolute inset-0 rounded-full border-2 border-cyan-500/30 animate-ping"></div>
+            <div class="absolute inset-2 rounded-full border-4 border-cyan-400/50 animate-pulse"></div>
+            <div class="w-16 h-16 rounded-full bg-cyan-400 shadow-[0_0_50px_#22d3ee]"></div>
+        </div>
+        <h2 class="text-5xl font-light tracking-widest text-white uppercase mb-4">Equilibrium <span class="text-cyan-400 font-bold">Achieved</span></h2>
+        <p class="text-slate-400 font-mono tracking-widest text-sm text-center max-w-lg leading-relaxed">
+            Parasympathetic nervous system successfully engaged.<br>Cardiac coherence established.
+        </p>
+        <button onclick="location.reload()" class="mt-12 px-10 py-4 border border-cyan-500/50 hover:bg-cyan-500/10 hover:text-white text-cyan-400 rounded-full font-bold uppercase tracking-widest text-xs transition-all duration-300">
+            Terminate Session
+        </button>
+    </div>
+
+    <script>
+        // --- Core Elements ---
+        const root = document.documentElement;
+        const clickNode = document.getElementById('entrainment-node');
+        const heartSvg = document.getElementById('heart-svg');
+        const bpmDisplay = document.getElementById('bpm-display');
+        const bpmWatermark = document.getElementById('bpm-watermark');
+        const hrvDisplay = document.getElementById('hrv-display');
+        const statusLabel = document.getElementById('status-label');
+        const stateTitle = document.getElementById('state-title');
+        const respDisplay = document.getElementById('resp-display');
+        const breathBar = document.getElementById('breath-bar');
+        const goalRing = document.getElementById('goal-ring');
+        const goalText = document.getElementById('goal-text');
+        const targetGhost = document.getElementById('target-bpm-ghost');
+        
+        // Canvas
+        const canvas = document.getElementById('ekg-canvas');
+        const ctx = canvas.getContext('2d');
+
+        // --- Biological State Variables ---
+        let targetBPM = 90;       // Raw derived BPM from clicks/drift
+        let currentBPM = 90;      // Smoothed internal BPM
+        let displayBPM = 90;      // Final UI BPM (includes respiratory sinus arrhythmia)
+        let clickHistory = [];
+        let lastClickTime = performance.now();
+        
+        // Simulation Time
+        let globalTime = 0;
+        let lastFrameTime = performance.now();
+        let timeSinceLastBeat = 0;
+        let beatInterval = 60 / 90; // seconds
+
+        // Goal Tracking
+        let holdProgress = 0; // 0 to 100
+        let isWinner = false;
+
+        // EKG Drawing State
+        let cursorX = 0;
+        let cursorSpeed = 0; // Calculated dynamically based on width
+
+        // Respiration
+        let breathPhase = 0; // 0 to 2PI
+
+        // --- Sizing ---
+        function resizeCanvas() {
+            // High DPI support for crisp EKG lines
+            const dpr = window.devicePixelRatio || 1;
+            const rect = canvas.parentElement.getBoundingClientRect();
+            canvas.width = rect.width * dpr;
+            canvas.height = rect.height * dpr;
+            ctx.scale(dpr, dpr);
+            // Setup drawing styles
+            ctx.lineJoin = 'round';
+            ctx.lineCap = 'round';
+            cursorSpeed = (rect.width / 3); // takes 3 seconds to cross screen
+            cursorX = 0;
+        }
+        window.addEventListener('resize', resizeCanvas);
+        resizeCanvas();
+
+        // --- Clinical States ---
+        const clinicalStates = [
+            { thresh: 110, name: "Tachycardia",        color: "#f43f5e", colorDim: "rgba(244, 63, 94, 0.2)" },  // Rose
+            { thresh: 85,  name: "Sympathetic Active", color: "#f59e0b", colorDim: "rgba(245, 158, 11, 0.2)" }, // Amber
+            { thresh: 65,  name: "Transitioning",      color: "#10b981", colorDim: "rgba(16, 185, 129, 0.2)" }, // Emerald
+            { thresh: 0,   name: "Parasympathetic Rest", color: "#06b6d4", colorDim: "rgba(6, 182, 212, 0.2)" }   // Cyan
+        ];
+
+        function updateTheme(bpm) {
+            let state = clinicalStates[clinicalStates.length - 1];
+            for (let s of clinicalStates) {
+                if (bpm >= s.thresh) { state = s; break; }
+            }
+            root.style.setProperty('--theme-color', state.color);
+            root.style.setProperty('--theme-color-dim', state.colorDim);
+            statusLabel.innerText = state.name;
+        }
+
+        // --- Input Handling ---
+        clickNode.addEventListener('mousedown', triggerInteraction);
+        clickNode.addEventListener('touchstart', (e) => { e.preventDefault(); triggerInteraction(); });
+
+        function triggerInteraction() {
+            if (isWinner) return;
+
+            const now = performance.now();
+            const deltaMs = now - lastClickTime;
+            lastClickTime = now;
+
+            // Visual Ripple
+            const ripple = document.createElement('div');
+            ripple.className = 'ripple';
+            clickNode.appendChild(ripple);
+            setTimeout(() => ripple.remove(), 1000);
+
+            // Calculate instantaneous BPM
+            if (deltaMs > 250 && deltaMs < 4000) { // Ignore spam (<250ms) and long pauses (>4s)
+                const instBPM = 60000 / deltaMs;
+                clickHistory.push(instBPM);
+                if (clickHistory.length > 3) clickHistory.shift(); // 3-beat rolling average for responsiveness
+                
+                // Add natural human jitter (HRV simulation in the target calculation)
+                const jitter = (Math.random() - 0.5) * 4;
+                targetBPM = (clickHistory.reduce((a, b) => a + b, 0) / clickHistory.length) + jitter;
+            } else if (deltaMs >= 4000) {
+                // If paused too long, clicking again sets a baseline, doesn't average with the 4s pause
+                clickHistory = [];
+                targetBPM = 90; // Stress response to missing a beat
+            }
+
+            // Cap raw math
+            targetBPM = Math.max(45, Math.min(180, targetBPM));
+            
+            // Force a beat sync if we are close to the next beat anyway (feels more responsive)
+            if (timeSinceLastBeat > beatInterval * 0.5) {
+                timeSinceLastBeat = beatInterval; // Force trigger next frame
+            }
+        }
+
+        // --- Mathematical EKG Generation (Continuous Gaussian Function) ---
+        // Generates organic P-QRS-T waveform based on normalized time within a beat (0 to 1)
+        function getECGVoltage(tNormalized, currentRate) {
+            // Squeeze the waveform slightly at higher heart rates
+            const squeeze = Math.max(0.6, 60 / currentRate);
+            const t = tNormalized / squeeze; 
+
+            if (t > 1.0) return 0; // Flatline between beats
+
+            // Gaussian components: amplitude * exp(-((t - center)^2) / (2 * width^2))
+            const pWave =  0.15  * Math.exp(-Math.pow(t - 0.15, 2) / 0.001);
+            const qWave = -0.15  * Math.exp(-Math.pow(t - 0.22, 2) / 0.0002);
+            const rWave =  1.20  * Math.exp(-Math.pow(t - 0.25, 2) / 0.0004);
+            const sWave = -0.30  * Math.exp(-Math.pow(t - 0.28, 2) / 0.0004);
+            const tWave =  0.35  * Math.exp(-Math.pow(t - 0.50, 2) / 0.004);
+
+            return pWave + qWave + rWave + sWave + tWave;
+        }
+
+        // --- Main Simulation Loop ---
+        function animate(timestamp) {
+            const dt = (timestamp - lastFrameTime) / 1000; // Delta time in seconds
+            lastFrameTime = timestamp;
+            globalTime += dt;
+
+            if (!isWinner) {
+                // 1. Biological Drift
+                const timeSinceClick = (timestamp - lastClickTime) / 1000;
+                if (timeSinceClick > 2.0) {
+                    // Drift upwards towards stress if user stops pacing
+                    targetBPM += 5 * dt; 
+                    if (targetBPM > 115) targetBPM = 115;
+                    clickHistory = []; // Reset pacing average
+                }
+
+                // 2. Smooth internal BPM
+                currentBPM += (targetBPM - currentBPM) * (dt * 2.0);
+
+                // 3. Respiratory Sinus Arrhythmia (RSA)
+                // Breathing cycle (~5 seconds)
+                breathPhase += dt * (Math.PI * 2 / 5.0);
+                const rsaAmplitude = 4.0; // BPM varies by +/- 4 based on breath
+                const rsaOffset = Math.sin(breathPhase) * rsaAmplitude;
+                
+                displayBPM = currentBPM + rsaOffset;
+                
+                // Update Breathing UI
+                const breathPercent = ((Math.sin(breathPhase) + 1) / 2) * 100;
+                breathBar.style.width = `${breathPercent}%`;
+                respDisplay.innerText = Math.cos(breathPhase) > 0 ? "Inhale" : "Exhale";
+
+                // Update Numerical UI
+                const roundedUI = Math.round(displayBPM);
+                bpmDisplay.innerText = roundedUI;
+                bpmWatermark.innerText = roundedUI;
+                targetGhost.innerText = Math.round(targetBPM);
+                
+                // Calculate pseudo-HRV based on how steady the pacing is vs drift
+                const hrv = Math.max(10, Math.round(60 - Math.abs(targetBPM - currentBPM) * 2 + (Math.random()*5)));
+                hrvDisplay.innerText = hrv;
+
+                updateTheme(roundedUI);
+
+                // 4. Update Beat Timing
+                beatInterval = 60 / displayBPM;
+                timeSinceLastBeat += dt;
+                
+                if (timeSinceLastBeat >= beatInterval) {
+                    timeSinceLastBeat = timeSinceLastBeat % beatInterval;
+                }
+
+                // 5. Goal Progression Logic
+                if (roundedUI <= 60) {
+                    holdProgress += dt * (100 / 15); // 15 seconds to reach 100%
+                    if (holdProgress >= 100) triggerEquilibrium();
+                } else {
+                    holdProgress -= dt * 10; // Drain
+                }
+                holdProgress = Math.max(0, Math.min(100, holdProgress));
+                
+                // Update SVG Ring (Circumference is 565.48)
+                const offset = 565.48 - (holdProgress / 100) * 565.48;
+                goalRing.style.strokeDashoffset = offset;
+                goalText.innerText = `${Math.floor(holdProgress)}%`;
+            }
+
+            // 6. Calculate Current Voltage & Update Physical Heart Scale
+            const tNorm = timeSinceLastBeat / beatInterval;
+            const pureVoltage = getECGVoltage(tNorm, displayBPM);
+            
+            // Add low-frequency wandering baseline noise
+            const noise = (Math.sin(globalTime * 2.1) + Math.cos(globalTime * 1.3)) * 0.05;
+            const finalVoltage = pureVoltage + noise;
+
+            // Tie the physical SVG heart scale directly to the heart's electrical voltage!
+            // Base scale 1.0, plus the voltage spike.
+            const scale = 1.0 + (pureVoltage * 0.25);
+            heartSvg.style.transform = `scale(${scale})`;
+
+            // 7. Render EKG to Canvas
+            renderEKG(dt, finalVoltage);
+
+            requestAnimationFrame(animate);
+        }
+
+        // --- Oscilloscope Rendering ---
+        let lastY = 0;
+        function renderEKG(dt, voltage) {
+            const rect = canvas.getBoundingClientRect();
+            const width = rect.width;
+            const height = rect.height;
+            const midY = height / 2;
+            const ampScale = height * 0.4; // How tall the spikes get
+
+            const newX = cursorX + (cursorSpeed * dt);
+            const newY = midY - (voltage * ampScale);
+
+            // Clear a gap ahead of the cursor (Hospital monitor style)
+            const gapWidth = 30;
+            ctx.clearRect(newX, 0, gapWidth, height);
+
+            // If we wrap around the edge, don't draw a connecting line across the screen
+            if (newX < cursorX) {
+                ctx.clearRect(0, 0, gapWidth, height); // Clear left edge
+            } else {
+                ctx.beginPath();
+                ctx.strokeStyle = getComputedStyle(root).getPropertyValue('--theme-color');
+                ctx.lineWidth = 2.5;
+                
+                ctx.moveTo(cursorX, lastY || newY);
+                ctx.lineTo(newX, newY);
+                
+                // Glow effect
+                ctx.shadowBlur = 12;
+                ctx.shadowColor = ctx.strokeStyle;
+                ctx.stroke();
+                ctx.shadowBlur = 0;
+            }
+
+            cursorX = newX % width;
+            lastY = newY;
+        }
+
+        function triggerEquilibrium() {
+            isWinner = true;
+            document.getElementById('equilibrium-modal').style.opacity = '1';
+            document.getElementById('equilibrium-modal').style.pointerEvents = 'auto';
+            root.style.setProperty('--theme-color', '#06b6d4'); // Lock to Rest Cyan
+            statusLabel.innerText = "Equilibrium";
+            targetGhost.innerText = "REST";
+        }
+
+        // Start Loop
+        requestAnimationFrame(animate);
+
+    </script>
+</body>
+</html>

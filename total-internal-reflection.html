@@ -1,0 +1,456 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Physics Lab - Optics & Kinematics</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        body, html {
+            margin: 0;
+            padding: 0;
+            width: 100%;
+            height: 100%;
+            overflow: hidden;
+            background-color: #020617; /* Slate 950 */
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+            touch-action: none;
+            user-select: none;
+        }
+        
+        #sim-canvas {
+            display: block;
+            width: 100%;
+            height: 100%;
+        }
+
+        /* Glassmorphism Panel */
+        .glass-panel {
+            background: linear-gradient(145deg, rgba(15, 23, 42, 0.85) 0%, rgba(2, 6, 23, 0.95) 100%);
+            backdrop-filter: blur(30px);
+            -webkit-backdrop-filter: blur(30px);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            border-top: 1px solid rgba(255, 255, 255, 0.2);
+            box-shadow: 0 30px 60px -12px rgba(0, 0, 0, 0.8), inset 0 1px 10px rgba(255, 255, 255, 0.05);
+        }
+
+        .scroll-area::-webkit-scrollbar { width: 4px; }
+        .scroll-area::-webkit-scrollbar-thumb { background: rgba(59, 130, 246, 0.5); border-radius: 4px; }
+
+        .tab-btn {
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+        .tab-btn.active {
+            background-color: #ffffff;
+            color: #020617;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.4);
+        }
+        .tab-btn:not(.active):hover {
+            background-color: rgba(255,255,255,0.1);
+            color: #ffffff;
+        }
+
+        /* Minimalist Sliders */
+        input[type=range] {
+            -webkit-appearance: none;
+            width: 100%;
+            background: transparent;
+        }
+        input[type=range]::-webkit-slider-thumb {
+            -webkit-appearance: none;
+            height: 18px;
+            width: 18px;
+            border-radius: 50%;
+            background: #ffffff;
+            cursor: pointer;
+            margin-top: -7px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.6);
+            border: 1px solid rgba(255,255,255,0.2);
+        }
+        input[type=range]::-webkit-slider-runnable-track {
+            width: 100%;
+            height: 4px;
+            cursor: pointer;
+            background: rgba(255, 255, 255, 0.15);
+            border-radius: 2px;
+        }
+    </style>
+</head>
+<body>
+
+    <!-- Main UI Overlay -->
+    <div class="absolute top-5 left-5 md:top-8 md:left-8 z-50 w-[380px] glass-panel p-6 rounded-[1.5rem] pointer-events-auto flex flex-col max-h-[92vh]">
+        
+        <div class="mb-5 border-b border-white/10 pb-5 shrink-0 flex items-center justify-between">
+            <div>
+                <h1 class="text-2xl font-bold tracking-tight text-white mb-1">Advanced Physics</h1>
+                <p class="text-[11px] font-medium text-blue-400 uppercase tracking-widest">TIR & Projectiles</p>
+            </div>
+            <div class="w-10 h-10 rounded-full bg-blue-500/20 flex items-center justify-center text-blue-400 shadow-[0_0_15px_rgba(59,130,246,0.3)]">
+                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19.428 15.428a2 2 0 00-1.022-.547l-2.387-.477a6 6 0 00-3.86.517l-.318.158a6 6 0 01-3.86.517L6.05 15.21a2 2 0 00-1.806.547M8 4h8l-1 1v5.172a2 2 0 00.586 1.414l5 5c1.26 1.26.367 3.414-1.415 3.414H4.828c-1.782 0-2.674-2.154-1.414-3.414l5-5A2 2 0 009 10.172V5L8 4z"></path></svg>
+            </div>
+        </div>
+
+        <div class="flex p-1 bg-black/40 rounded-xl shadow-inner gap-1 mb-6 shrink-0 border border-white/5">
+            <button data-tab="tir" class="tab-btn active flex-1 py-2 text-[10px] font-bold uppercase tracking-wider rounded-lg text-gray-400">Total Internal Reflection</button>
+            <button data-tab="projectile" class="tab-btn flex-1 py-2 text-[10px] font-bold uppercase tracking-wider rounded-lg text-gray-400">Projectile Motion</button>
+        </div>
+
+        <div class="scroll-area overflow-y-auto pr-2 pb-2 space-y-7 flex-1">
+            <!-- Dynamic Info -->
+            <div class="bg-black/30 p-4 rounded-xl border border-white/5 shadow-inner">
+                <h2 id="info-title" class="text-sm font-bold text-white mb-2">Total Internal Reflection</h2>
+                <p id="info-desc" class="text-xs text-gray-400 leading-relaxed">
+                    Fiber optic cables work by bouncing light internally. When the angle of incidence is greater than the <b>Critical Angle</b>, light cannot escape the glass and reflects perfectly.
+                </p>
+            </div>
+
+            <!-- TIR CONTROLS -->
+            <div id="controls-tir" class="space-y-6">
+                <div class="space-y-4">
+                    <label class="text-[10px] font-bold uppercase tracking-widest text-gray-500">Optical Parameters</label>
+                    <div class="space-y-4">
+                        <div class="space-y-2">
+                            <div class="flex justify-between items-end">
+                                <label class="text-[11px] font-semibold text-cyan-400 uppercase tracking-widest">Incident Angle</label>
+                                <span id="tir-angle-display" class="text-[11px] font-mono bg-cyan-500/10 px-2 py-1 rounded text-cyan-300">45°</span>
+                            </div>
+                            <input type="range" id="tir-angle" min="0" max="90" step="0.5" value="45" class="w-full" style="accent-color: #22d3ee;">
+                        </div>
+                        <div class="space-y-2">
+                            <div class="flex justify-between items-end">
+                                <label class="text-[11px] font-semibold text-indigo-400 uppercase tracking-widest">Glass Index ($n$)</label>
+                                <span id="tir-index-display" class="text-[11px] font-mono bg-indigo-500/10 px-2 py-1 rounded text-indigo-300">1.50</span>
+                            </div>
+                            <input type="range" id="tir-index" min="1.1" max="2.4" step="0.01" value="1.5" class="w-full" style="accent-color: #6366f1;">
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- PROJECTILE CONTROLS -->
+            <div id="controls-projectile" class="space-y-6 hidden">
+                <div class="space-y-4">
+                    <label class="text-[10px] font-bold uppercase tracking-widest text-gray-500">Launch Configuration</label>
+                    <div class="space-y-4">
+                        <div class="space-y-2">
+                            <div class="flex justify-between items-end">
+                                <label class="text-[11px] font-semibold text-orange-400 uppercase tracking-widest">Launch Angle</label>
+                                <span id="proj-angle-display" class="text-[11px] font-mono bg-orange-500/10 px-2 py-1 rounded text-orange-300">45°</span>
+                            </div>
+                            <input type="range" id="proj-angle" min="0" max="90" step="1" value="45" class="w-full" style="accent-color: #f97316;">
+                        </div>
+                        <div class="space-y-2">
+                            <div class="flex justify-between items-end">
+                                <label class="text-[11px] font-semibold text-emerald-400 uppercase tracking-widest">Initial Velocity</label>
+                                <span id="proj-vel-display" class="text-[11px] font-mono bg-emerald-500/10 px-2 py-1 rounded text-emerald-300">25 m/s</span>
+                            </div>
+                            <input type="range" id="proj-vel" min="5" max="50" step="1" value="25" class="w-full" style="accent-color: #10b981;">
+                        </div>
+                    </div>
+                </div>
+                <button id="btn-launch" class="w-full py-3 bg-indigo-600 hover:bg-indigo-500 text-white text-xs font-bold uppercase tracking-widest rounded-xl transition-all shadow-lg shadow-indigo-900/40">Launch Basketball</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Live Analysis HUD (Bottom Right) -->
+    <div id="hud" class="absolute bottom-6 right-6 z-10 glass-panel p-5 rounded-2xl pointer-events-none min-w-[240px]">
+        <div class="text-[10px] font-bold uppercase tracking-widest text-gray-500 mb-3 border-b border-white/10 pb-2">Sensor Readout</div>
+        <div class="space-y-3">
+            <div class="flex justify-between items-center">
+                <span class="text-xs text-gray-300 font-medium" id="hud-label-1">Critical Angle</span>
+                <span id="hud-val-1" class="text-base font-mono font-bold text-cyan-400">41.8°</span>
+            </div>
+            <div class="flex justify-between items-center border-t border-white/5 pt-3">
+                <span class="text-xs text-gray-300 font-medium" id="hud-label-2">Internal State</span>
+                <span id="hud-val-2" class="text-base font-mono font-bold text-white">TIR Active</span>
+            </div>
+        </div>
+    </div>
+
+    <canvas id="sim-canvas"></canvas>
+
+    <script>
+        const canvas = document.getElementById('sim-canvas');
+        const ctx = canvas.getContext('2d');
+
+        // --- GLOBAL SETTINGS ---
+        let currentMode = 'tir';
+        let cx, cy;
+        let time = 0;
+
+        function resize() {
+            canvas.width = window.innerWidth;
+            canvas.height = window.innerHeight;
+            const uiWidth = window.innerWidth >= 768 ? 380 : 0;
+            cx = uiWidth + (window.innerWidth - uiWidth) / 2;
+            cy = window.innerHeight / 2;
+        }
+        window.addEventListener('resize', resize);
+        resize();
+
+        // --- PHYSICS STATE ---
+        let tirAngle = 45;
+        let tirIndex = 1.5;
+        let projAngle = 45;
+        let projVel = 25;
+        let isProjecting = false;
+        let projectilePos = { x: 0, y: 0 };
+        let projectileStart = { x: 0, y: 0 };
+        let projectileTime = 0;
+        let trajectoryPath = [];
+
+        // UI Bindings
+        document.getElementById('tir-angle').oninput = (e) => {
+            tirAngle = parseFloat(e.target.value);
+            document.getElementById('tir-angle-display').innerText = tirAngle.toFixed(1) + "°";
+        };
+        document.getElementById('tir-index').oninput = (e) => {
+            tirIndex = parseFloat(e.target.value);
+            document.getElementById('tir-index-display').innerText = tirIndex.toFixed(2);
+        };
+        document.getElementById('proj-angle').oninput = (e) => {
+            projAngle = parseFloat(e.target.value);
+            document.getElementById('proj-angle-display').innerText = projAngle.toFixed(0) + "°";
+        };
+        document.getElementById('proj-vel').oninput = (e) => {
+            projVel = parseFloat(e.target.value);
+            document.getElementById('proj-vel-display').innerText = projVel + " m/s";
+        };
+        document.getElementById('btn-launch').onclick = () => {
+            const uiWidth = window.innerWidth >= 768 ? 380 : 0;
+            projectileStart = { x: uiWidth + 100, y: canvas.height - 150 };
+            projectileTime = 0;
+            trajectoryPath = [];
+            isProjecting = true;
+        };
+
+        // --- MODULE 1: TOTAL INTERNAL REFLECTION ---
+        function drawTIR() {
+            const uiWidth = window.innerWidth >= 768 ? 380 : 0;
+            const cableX = uiWidth + 50;
+            const cableW = canvas.width - uiWidth - 100;
+            const cableH = 180;
+            const cableY = cy - cableH/2;
+
+            // 1. Draw Fiber Cable
+            ctx.fillStyle = 'rgba(255, 255, 255, 0.05)';
+            ctx.fillRect(cableX, cableY, cableW, cableH);
+            ctx.strokeStyle = 'rgba(255, 255, 255, 0.2)';
+            ctx.lineWidth = 2;
+            ctx.strokeRect(cableX, cableY, cableW, cableH);
+
+            // 2. Physics: Critical Angle calculation
+            const n1 = tirIndex;
+            const n2 = 1.0; // Air
+            const criticalAngleRad = Math.asin(n2/n1);
+            const criticalAngleDeg = (criticalAngleRad * 180) / Math.PI;
+
+            // 3. Raycast
+            ctx.lineWidth = 4;
+            ctx.strokeStyle = '#22d3ee';
+            ctx.shadowBlur = 15;
+            ctx.shadowColor = '#22d3ee';
+
+            // Convert UI angle to "angle relative to normal" (90 - theta)
+            let currentX = cableX;
+            let currentY = cy;
+            let angleRad = (tirAngle * Math.PI) / 180;
+            let isTIR = true;
+
+            ctx.beginPath();
+            ctx.moveTo(currentX - 50, currentY); // Start outside
+            ctx.lineTo(currentX, currentY);
+
+            // Multi-bounce internal simulation
+            for (let bounce = 0; bounce < 15; bounce++) {
+                // Calculate next hit
+                // Since it's a straight pipe, we can calculate based on tangent
+                let distToWall;
+                let nextY;
+                let normalAngle;
+
+                if (Math.sin(angleRad) > 0) {
+                    distToWall = (cableY + cableH) - currentY;
+                    nextY = cableY + cableH;
+                    normalAngle = -Math.PI/2;
+                } else {
+                    distToWall = currentY - cableY;
+                    nextY = cableY;
+                    normalAngle = Math.PI/2;
+                }
+
+                const dx = Math.abs(distToWall / Math.tan(angleRad));
+                const nextX = currentX + dx;
+
+                if (nextX > cableX + cableW) {
+                    // Ends before hitting a wall
+                    const finalDx = (cableX + cableW) - currentX;
+                    const finalY = currentY + finalDx * Math.tan(angleRad);
+                    ctx.lineTo(cableX + cableW, finalY);
+                    break;
+                }
+
+                // Check TIR condition at boundary
+                // Angle of incidence is 90 - alpha
+                const incidenceAngle = Math.abs(Math.PI/2 - Math.abs(angleRad));
+                if (incidenceAngle < criticalAngleRad) {
+                    // Refracts OUT (Escapes)
+                    isTIR = false;
+                    const refractAngle = Math.asin((n1 * Math.sin(incidenceAngle)) / n2);
+                    const exitAngle = (Math.PI/2 - refractAngle) * Math.sign(angleRad);
+                    ctx.lineTo(nextX, nextY);
+                    ctx.lineTo(nextX + 100 * Math.cos(exitAngle), nextY + 100 * Math.sin(exitAngle));
+                    break;
+                }
+
+                // Reflect Internally
+                ctx.lineTo(nextX, nextY);
+                currentX = nextX;
+                currentY = nextY;
+                angleRad = -angleRad; // Mirror reflection
+            }
+            ctx.stroke();
+            ctx.shadowBlur = 0;
+
+            // HUD
+            document.getElementById('hud-label-1').innerText = "Critical Angle";
+            document.getElementById('hud-val-1').innerText = criticalAngleDeg.toFixed(1) + "°";
+            document.getElementById('hud-label-2').innerText = "Status";
+            document.getElementById('hud-val-2').innerText = isTIR ? "TIR Active" : "Light Escaping";
+            document.getElementById('hud-val-2').style.color = isTIR ? "#22d3ee" : "#f87171";
+        }
+
+        // --- MODULE 2: PROJECTILE MOTION ---
+        function drawProjectile(dt) {
+            const g = 9.81;
+            const pixelsPerMeter = 15;
+
+            if (isProjecting) {
+                projectileTime += dt * 2.5; // Scaled time
+                const v0 = projVel;
+                const theta = (projAngle * Math.PI) / 180;
+                
+                const vx = v0 * Math.cos(theta);
+                const vy0 = v0 * Math.sin(theta);
+
+                // Kinematic equations
+                const dx = vx * projectileTime;
+                const dy = (vy0 * projectileTime) - (0.5 * g * projectileTime * projectileTime);
+
+                projectilePos.x = projectileStart.x + dx * pixelsPerMeter;
+                projectilePos.y = projectileStart.y - dy * pixelsPerMeter;
+
+                // Path history
+                if (Math.floor(projectileTime * 10) > trajectoryPath.length) {
+                    trajectoryPath.push({ x: projectilePos.x, y: projectilePos.y });
+                }
+
+                // Impact
+                if (projectilePos.y > canvas.height - 100) {
+                    projectilePos.y = canvas.height - 100;
+                    isProjecting = false;
+                }
+
+                // HUD Data
+                const currentVY = vy0 - g * projectileTime;
+                document.getElementById('hud-label-1').innerText = "Vertical Velocity";
+                document.getElementById('hud-val-1').innerText = currentVY.toFixed(1) + " m/s";
+                document.getElementById('hud-label-2').innerText = "Altitude";
+                document.getElementById('hud-val-2').innerText = Math.max(0, dy).toFixed(1) + " m";
+            }
+
+            // Draw Ground
+            ctx.fillStyle = '#1e293b';
+            ctx.fillRect(0, canvas.height - 100, canvas.width, 100);
+            ctx.strokeStyle = 'rgba(255,255,255,0.1)';
+            ctx.beginPath(); ctx.moveTo(0, canvas.height - 100); ctx.lineTo(canvas.width, canvas.height - 100); ctx.stroke();
+
+            // Draw Parabolic Trail
+            ctx.setLineDash([5, 5]);
+            ctx.strokeStyle = 'rgba(249, 115, 22, 0.4)';
+            ctx.lineWidth = 2;
+            ctx.beginPath();
+            if (trajectoryPath.length > 0) {
+                ctx.moveTo(projectileStart.x, projectileStart.y);
+                trajectoryPath.forEach(p => ctx.lineTo(p.x, p.y));
+                ctx.stroke();
+            }
+            ctx.setLineDash([]);
+
+            // Draw Ball
+            const ballX = isProjecting ? projectilePos.x : (window.innerWidth >= 768 ? 480 : 100);
+            const ballY = isProjecting ? projectilePos.y : canvas.height - 150;
+            
+            ctx.save();
+            ctx.translate(ballX, ballY);
+            if (isProjecting) ctx.rotate(projectileTime * 5);
+
+            // Realistic Basketball SVG-like draw
+            ctx.shadowBlur = 15; ctx.shadowColor = 'rgba(249, 115, 22, 0.5)';
+            ctx.fillStyle = '#f97316';
+            ctx.beginPath(); ctx.arc(0, 0, 20, 0, Math.PI*2); ctx.fill();
+            ctx.strokeStyle = '#000'; ctx.lineWidth = 2; ctx.stroke();
+            // Ball Ribs
+            ctx.beginPath(); ctx.moveTo(-20, 0); ctx.lineTo(20, 0); ctx.stroke();
+            ctx.beginPath(); ctx.moveTo(0, -20); ctx.lineTo(0, 20); ctx.stroke();
+            ctx.restore();
+        }
+
+        // --- MAIN RENDER LOOP ---
+        let lastTimestamp = 0;
+        function render(timestamp) {
+            const dt = (timestamp - lastTimestamp) / 1000 || 0.016;
+            lastTimestamp = timestamp;
+            time += dt;
+
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+            ctx.fillStyle = '#020617';
+            ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+            // Subtle Grid
+            ctx.strokeStyle = 'rgba(255,255,255,0.02)';
+            ctx.lineWidth = 1;
+            ctx.beginPath();
+            for(let i=0; i<canvas.width; i+=80) { ctx.moveTo(i,0); ctx.lineTo(i,canvas.height); }
+            for(let i=0; i<canvas.height; i+=80) { ctx.moveTo(0,i); ctx.lineTo(canvas.width,i); }
+            ctx.stroke();
+
+            if (currentMode === 'tir') drawTIR();
+            else drawProjectile(dt);
+
+            requestAnimationFrame(render);
+        }
+
+        const tabs = document.querySelectorAll('.tab-btn');
+        tabs.forEach(btn => {
+            btn.addEventListener('click', (e) => {
+                tabs.forEach(t => t.classList.remove('active', 'bg-white', 'text-gray-900'));
+                tabs.forEach(t => t.classList.add('text-gray-400'));
+                btn.classList.add('active', 'bg-white', 'text-gray-900');
+                currentMode = btn.dataset.tab;
+
+                const info = {
+                    tir: { title: 'Total Internal Reflection', desc: 'Fiber optic cables work by bouncing light internally. When the angle of incidence is greater than the <b>Critical Angle</b>, light cannot escape and reflects perfectly.' },
+                    projectile: { title: 'Projectile Motion', desc: 'Gravity acts only on the vertical component of motion. This creates a perfectly symmetrical parabolic arc. Notice how the horizontal speed never changes!' }
+                };
+                
+                document.getElementById('info-title').innerText = info[currentMode].title;
+                document.getElementById('info-desc').innerHTML = info[currentMode].desc;
+                document.getElementById('controls-tir').classList.toggle('hidden', currentMode !== 'tir');
+                document.getElementById('controls-projectile').classList.toggle('hidden', currentMode !== 'projectile');
+                
+                if (currentMode === 'projectile') {
+                    isProjecting = false;
+                    trajectoryPath = [];
+                }
+            });
+        });
+
+        requestAnimationFrame(render);
+
+    </script>
+</body>
+</html>

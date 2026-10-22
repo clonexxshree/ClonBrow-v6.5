@@ -1,0 +1,282 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Prosthetic Mechanical Advantage Lab</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;700&family=Inter:wght@300;400;600;700&display=swap');
+
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: #020617;
+            color: #f1f5f9;
+            overflow-x: hidden;
+        }
+
+        .font-mono { font-family: 'JetBrains Mono', monospace; }
+
+        .glass-card {
+            background: rgba(15, 23, 42, 0.7);
+            backdrop-filter: blur(12px);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.5);
+        }
+
+        .digital-readout {
+            background: #061021;
+            color: #06b6d4; /* Cyan */
+            text-shadow: 0 0 8px rgba(6, 182, 212, 0.4);
+            border: 1px solid #1e293b;
+        }
+
+        .pulley-wheel { fill: #334155; stroke: #64748b; stroke-width: 2; }
+        .cable { stroke: #94a3b8; stroke-width: 2; fill: none; transition: stroke-dashoffset 0.1s linear; }
+        .tension-line { stroke: #06b6d4; stroke-width: 3; stroke-dasharray: 5 3; }
+
+        input[type=range] {
+            accent-color: #06b6d4;
+        }
+
+        .component-label {
+            font-size: 10px;
+            font-weight: 700;
+            fill: #475569;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+        }
+
+        @keyframes flow {
+            from { stroke-dashoffset: 20; }
+            to { stroke-dashoffset: 0; }
+        }
+        .active-tension { animation: flow 1s linear infinite; }
+    </style>
+</head>
+<body class="min-h-screen p-4 md:p-8 flex items-center justify-center">
+
+    <div class="max-w-7xl w-full grid grid-cols-1 lg:grid-cols-12 gap-8 items-stretch">
+        
+        <!-- Simulation Viewport -->
+        <div class="lg:col-span-8 flex flex-col gap-6">
+            <div id="sim-viewport" class="glass-card rounded-3xl p-8 relative flex-grow min-h-[500px] flex items-center justify-center overflow-hidden border border-slate-800">
+                
+                <!-- HUD Header -->
+                <div class="absolute top-6 left-8 flex items-center gap-3 z-20">
+                    <div class="w-2.5 h-2.5 rounded-full bg-cyan-500 shadow-[0_0_10px_#06b6d4]"></div>
+                    <span class="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Mechanical Advantage Simulation Active</span>
+                </div>
+
+                <!-- SVG Layer: Robotic Limb & Pulley System -->
+                <svg id="limb-svg" viewBox="0 0 600 500" class="w-full h-auto relative z-10">
+                    <defs>
+                        <marker id="arrow-in" markerWidth="10" markerHeight="7" refX="0" refY="3.5" orient="auto">
+                            <polygon points="0 0, 10 3.5, 0 7" fill="#06b6d4" />
+                        </marker>
+                        <marker id="arrow-out" markerWidth="10" markerHeight="7" refX="0" refY="3.5" orient="auto">
+                            <polygon points="0 0, 10 3.5, 0 7" fill="#10b981" />
+                        </marker>
+                    </defs>
+
+                    <!-- Fixed Anchor (Residual Limb/Body) -->
+                    <rect x="50" y="100" width="100" height="300" rx="20" fill="#1e293b" opacity="0.5" />
+                    <text x="100" y="90" class="component-label" text-anchor="middle">Body Anchor</text>
+
+                    <!-- Movable Robotic Limb -->
+                    <g id="robotic-limb">
+                        <rect id="limb-arm" x="400" y="150" width="150" height="200" rx="15" fill="#334155" stroke="#475569" stroke-width="2" />
+                        <circle cx="475" cy="250" r="10" fill="#0f172a" />
+                        <text x="475" y="140" class="component-label" text-anchor="middle">Prosthetic Segment</text>
+                    </g>
+
+                    <!-- Pulley Blocks -->
+                    <!-- Fixed Block (on body) -->
+                    <g id="fixed-block">
+                        <rect x="140" y="200" width="20" height="100" rx="5" fill="#475569" />
+                        <circle cx="160" cy="220" r="15" class="pulley-wheel" />
+                        <circle cx="160" cy="280" r="15" id="wheel-fixed-2" class="pulley-wheel opacity-0 transition-opacity" />
+                    </g>
+
+                    <!-- Moving Block (on prosthetic) -->
+                    <g id="moving-block">
+                        <rect id="moving-mount" x="380" y="200" width="20" height="100" rx="5" fill="#475569" />
+                        <circle id="wheel-move-1" cx="370" cy="220" r="15" class="pulley-wheel" />
+                        <circle id="wheel-move-2" cx="370" cy="280" r="15" class="pulley-wheel opacity-0 transition-opacity" />
+                    </g>
+
+                    <!-- Cables -->
+                    <path id="cable-path" class="cable active-tension" stroke-dasharray="5 5" />
+
+                    <!-- Vector Arrows -->
+                    <!-- Input Force (Muscle) -->
+                    <line x1="50" y1="220" x2="140" y2="220" stroke="#06b6d4" stroke-width="4" marker-end="url(#arrow-in)" />
+                    <text x="50" y="210" fill="#06b6d4" font-size="10" font-weight="bold">MUSCLE INPUT</text>
+                    
+                    <!-- Output Force (Limb) -->
+                    <line id="output-vector" x1="550" y1="250" x2="620" y2="250" stroke="#10b981" stroke-width="6" marker-end="url(#arrow-out)" />
+                    <text id="output-text" x="555" y="240" fill="#10b981" font-size="10" font-weight="bold">SYSTEM OUTPUT</text>
+
+                </svg>
+
+                <!-- Status Overlay -->
+                <div class="absolute bottom-6 left-8 flex flex-col gap-1">
+                    <span class="text-[9px] font-mono text-slate-500 uppercase">Transmission: Low-Friction Spectra Cable</span>
+                    <span class="text-[9px] font-mono text-slate-500 uppercase">Configuration: Compound Block & Tackle</span>
+                </div>
+            </div>
+
+            <!-- Controls -->
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div class="glass-card p-6 rounded-2xl space-y-4">
+                    <div class="flex justify-between items-center">
+                        <label class="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Pulley Configuration (Ratio)</label>
+                        <span id="ratio-display" class="text-xs font-mono text-cyan-400">1:1 (Direct)</span>
+                    </div>
+                    <input type="range" id="ratio-slider" min="1" max="4" step="1" value="1" class="w-full h-1.5 bg-slate-800 rounded-lg appearance-none cursor-pointer">
+                    <div class="flex justify-between text-[9px] text-slate-500 uppercase">
+                        <span>Direct</span>
+                        <span>4:1 Compound</span>
+                    </div>
+                </div>
+                <div class="glass-card p-6 rounded-2xl space-y-4">
+                    <div class="flex justify-between items-center">
+                        <label class="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Residual Muscle Force</label>
+                        <span id="force-display" class="text-xs font-mono text-emerald-400">25 N</span>
+                    </div>
+                    <input type="range" id="force-slider" min="5" max="100" step="5" value="25" class="w-full h-1.5 bg-slate-800 rounded-lg appearance-none cursor-pointer">
+                    <div class="flex justify-between text-[9px] text-slate-500 uppercase">
+                        <span>Limited</span>
+                        <span>Maximum Effort</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Sidebar: Analytics -->
+        <div class="lg:col-span-4 flex flex-col gap-6">
+            
+            <!-- Digital Readout -->
+            <div class="digital-readout rounded-3xl p-6 space-y-6">
+                <div class="flex justify-between items-center border-b border-cyan-900/30 pb-3">
+                    <span class="text-[10px] font-bold tracking-tighter opacity-60 uppercase">Kinetic Advantage Telemetry</span>
+                    <span class="text-xs font-mono">SYS_READY</span>
+                </div>
+
+                <div class="space-y-6">
+                    <div class="space-y-1">
+                        <label class="text-[9px] uppercase font-bold opacity-50">Effective Limb Force (F<sub>out</sub>)</label>
+                        <div id="data-out-force" class="text-4xl font-bold font-mono">25.0 N</div>
+                    </div>
+
+                    <div class="grid grid-cols-2 gap-4 pt-2 border-t border-cyan-900/20">
+                        <div class="space-y-1">
+                            <label class="text-[9px] uppercase font-bold opacity-50">Mech. Advantage</label>
+                            <div id="data-ma" class="text-xl font-bold font-mono">1.0x</div>
+                        </div>
+                        <div class="space-y-1">
+                            <label class="text-[9px] uppercase font-bold opacity-50">Patient Input</label>
+                            <div id="data-in-force" class="text-xl font-bold font-mono">25 N</div>
+                        </div>
+                    </div>
+
+                    <div class="p-4 bg-cyan-500/10 border border-cyan-500/20 rounded-xl space-y-1">
+                        <label class="text-[9px] uppercase font-bold text-cyan-400">Travel Distance Ratio</label>
+                        <div id="data-travel" class="text-3xl font-bold font-mono text-cyan-400">1:1</div>
+                        <p class="text-[8px] text-cyan-500/80 leading-tight mt-2 italic">
+                            The patient must pull the cable <span id="dist-multiplier">1.0</span>x further than the limb moves.
+                        </p>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Physics Logic Card -->
+            <div class="glass-card p-6 rounded-3xl space-y-4">
+                <h3 class="text-xs font-bold text-slate-400 uppercase tracking-widest">Block & Tackle Principle</h3>
+                <div class="bg-slate-900/50 p-4 rounded-xl border border-slate-800 font-mono text-center text-cyan-400 text-sm">
+                    F<sub>out</sub> = F<sub>in</sub> × n<sub>ropes</sub>
+                </div>
+                <p class="text-[10px] text-slate-400 leading-relaxed">
+                    By adding pulleys, we increase the number of supporting cable segments ($n$). This reduces the tension required from the patient's muscle to lift a heavy object, effectively multiplying their limited strength.
+                </p>
+                <div class="p-3 bg-slate-900/50 rounded-xl border border-slate-800">
+                    <div class="text-[9px] font-bold text-slate-500 uppercase mb-1">Clinical Application</div>
+                    <p class="text-[9px] text-slate-600 leading-tight">
+                        This is critical for upper-limb amputees using "body-powered" prostheses, where shoulder shrugs or chest expansion provide the only source of mechanical energy.
+                    </p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', () => {
+            const ratioSlider = document.getElementById('ratio-slider');
+            const forceSlider = document.getElementById('force-slider');
+            const ratioDisplay = document.getElementById('ratio-display');
+            const forceDisplay = document.getElementById('force-display');
+            
+            const cablePath = document.getElementById('cable-path');
+            const wheelFixed2 = document.getElementById('wheel-fixed-2');
+            const wheelMove2 = document.getElementById('wheel-move-2');
+            const outputVector = document.getElementById('output-vector');
+
+            const dataOutForce = document.getElementById('data-out-force');
+            const dataInForce = document.getElementById('data-in-force');
+            const dataMA = document.getElementById('data-ma');
+            const dataTravel = document.getElementById('data-travel');
+            const distMultiplier = document.getElementById('dist-multiplier');
+
+            function update() {
+                const MA = parseInt(ratioSlider.value);
+                const inputForce = parseInt(forceSlider.value);
+                const outputForce = inputForce * MA;
+
+                // Update UI Labels
+                ratioDisplay.textContent = `${MA}:1 ${MA > 1 ? 'Compound' : '(Direct)'}`;
+                forceDisplay.textContent = `${inputForce} N`;
+                
+                // Update Telemetry
+                dataOutForce.textContent = `${outputForce.toFixed(1)} N`;
+                dataInForce.textContent = `${inputForce} N`;
+                dataMA.textContent = `${MA}.0x`;
+                dataTravel.textContent = `${MA}:1`;
+                distMultiplier.textContent = MA.toFixed(1);
+
+                // Update Visuals (Pulley visibility)
+                wheelFixed2.style.opacity = MA > 2 ? '1' : '0';
+                wheelMove2.style.opacity = MA > 3 ? '1' : '0';
+
+                // Update Cable Path
+                // Start: Anchor (140, 220)
+                // P1: Fixed (160, 220)
+                // P2: Move (370, 220)
+                // ... depends on MA
+                let d = `M 50 220 L 160 220`; // Input to first fixed pulley
+                
+                if (MA === 1) {
+                    d += ` L 370 220`;
+                } else if (MA === 2) {
+                    d = `M 50 220 L 160 220 A 15 15 0 0 1 160 250 L 370 250 A 15 15 0 0 0 370 220 L 160 220`;
+                } else if (MA === 3) {
+                    d = `M 50 220 L 160 220 A 15 15 0 0 1 160 250 L 370 250 A 15 15 0 0 0 370 280 L 160 280`;
+                } else {
+                    d = `M 50 220 L 160 220 A 15 15 0 0 1 160 250 L 370 250 A 15 15 0 0 0 370 280 L 160 280 A 15 15 0 0 1 160 310 L 370 310`;
+                }
+                
+                cablePath.setAttribute('d', d);
+
+                // Output Vector Magnitude
+                const arrowLen = Math.min(100, 20 + (outputForce / 3));
+                outputVector.setAttribute('x2', 550 + arrowLen);
+            }
+
+            ratioSlider.addEventListener('input', update);
+            forceSlider.addEventListener('input', update);
+
+            // Initial call
+            update();
+        });
+    </script>
+</body>
+</html>

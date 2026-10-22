@@ -1,0 +1,867 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Post-Transplant Recovery Protocol</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
+    <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@300;400;500;700&family=Inter:wght@400;600;700&family=Caveat:wght@700&display=swap" rel="stylesheet">
+    <style>
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: #020617; 
+            color: #f8fafc;
+            overflow: hidden;
+            margin: 0;
+            padding: 0;
+            user-select: none;
+        }
+        
+        .tech-font { font-family: 'JetBrains Mono', monospace; }
+        .signature-font { font-family: 'Caveat', cursive; }
+        
+        ::-webkit-scrollbar { width: 4px; }
+        ::-webkit-scrollbar-track { background: rgba(0,0,0,0.2); }
+        ::-webkit-scrollbar-thumb { background: #0ea5e9; border-radius: 4px; }
+
+        .scanline {
+            width: 100%; height: 15px;
+            background: rgba(56,189,248,0.2);
+            box-shadow: 0 0 20px rgba(56,189,248,0.4);
+            position: absolute; bottom: 100%;
+            animation: scanline 4s linear infinite;
+            pointer-events: none; z-index: 50;
+        }
+        @keyframes scanline { 0% { bottom: 100%; } 100% { bottom: -20px; } }
+
+        /* Custom Sliders */
+        input[type=range] { -webkit-appearance: none; background: transparent; width: 100%; height: 24px; outline: none; }
+        input[type=range]::-webkit-slider-runnable-track { width: 100%; height: 6px; background: #1e293b; border-radius: 3px; border: 1px solid #334155; }
+        input[type=range]::-webkit-slider-thumb {
+            -webkit-appearance: none; height: 20px; width: 8px; border-radius: 2px;
+            background: #0ea5e9; cursor: pointer; margin-top: -8px;
+            box-shadow: 0 0 10px rgba(14, 165, 233, 0.8); border: 1px solid #fff;
+        }
+        
+        .step-container { transition: max-height 0.3s ease-out, opacity 0.3s ease-out; overflow: hidden; }
+        .sub-step-dot { transition: all 0.3s ease; }
+        .sub-step-dot.active { background-color: #10b981; box-shadow: 0 0 8px #10b981; border-color: #10b981; }
+        
+        #medical-report {
+            background-image: repeating-linear-gradient(transparent, transparent 23px, #e2e8f0 23px, #e2e8f0 24px);
+            background-attachment: local;
+        }
+
+        /* Clean Print Styling for the Download feature */
+        @media print {
+            body * { visibility: hidden; }
+            #report-overlay, #report-overlay * { visibility: visible; }
+            #report-overlay { position: absolute; left: 0; top: 0; width: 100%; height: 100%; transform: none !important; padding: 0 !important; background: white !important; }
+            #medical-report { box-shadow: none; border: none; }
+            .no-print { display: none !important; }
+            @page { margin: 1cm; size: auto; }
+        }
+    </style>
+</head>
+<body class="h-screen w-screen flex flex-col lg:flex-row p-4 lg:p-6 gap-6 box-border">
+
+    <!-- Animation Canvas Area -->
+    <div class="flex-grow h-[50vh] lg:h-full rounded-2xl shadow-[0_0_50px_rgba(14,165,233,0.15)] relative overflow-hidden bg-black group flex flex-col border border-slate-700 no-print">
+        
+        <!-- HUD Overlays -->
+        <div class="absolute top-4 left-4 z-10 space-y-1 pointer-events-none tech-font text-xs text-sky-400 opacity-90 drop-shadow-md bg-slate-900/50 p-3 rounded-lg border border-sky-500/20">
+            <div class="flex justify-between w-48"><span>SYS_STAT:</span> <span id="hud-status" class="text-rose-500 font-bold">BOOTING...</span></div>
+            <div class="flex justify-between w-48"><span>GCS_BRAIN:</span> <span id="hud-gcs">3/15</span></div>
+            <div class="flex justify-between w-48"><span>O2_SAT:</span> <span id="hud-o2">82%</span></div>
+            <div class="flex justify-between w-48"><span>TEMP_CORE:</span> <span id="hud-temp">35.2°C</span></div>
+            <div class="flex justify-between w-48"><span>BPM_LOCK:</span> <span id="hud-bpm" class="text-rose-500">ERRATIC</span></div>
+            <div class="flex justify-between w-48 mt-2 pt-2 border-t border-sky-500/30"><span>PAIN_LVL:</span> <span id="hud-pain" class="text-rose-500 font-bold">8/10</span></div>
+            <div class="flex justify-between w-48"><span>WOUND_SEAL:</span> <span id="hud-seal" class="text-amber-400">UNVERIFIED</span></div>
+            <div class="flex justify-between w-48"><span>WBC_COUNT:</span> <span id="hud-wbc" class="text-amber-400">LOW</span></div>
+        </div>
+
+        <div class="scanline" id="main-scanline" style="display:none;"></div>
+        <canvas id="medicalCanvas" class="w-full h-full cursor-crosshair"></canvas>
+    </div>
+
+    <!-- Diagnostics Terminal -->
+    <div class="w-full lg:w-[480px] flex flex-col justify-between h-[45vh] lg:h-full bg-slate-900 rounded-2xl shadow-2xl border border-slate-700 overflow-hidden flex-shrink-0 relative no-print">
+        
+        <!-- Terminal Header -->
+        <div class="bg-slate-800 p-4 border-b border-slate-700 flex items-center justify-between z-10">
+            <div>
+                <h1 class="text-xl font-bold tracking-tight text-white tech-font" id="phase-title-main">PHASE 1: REBOOT</h1>
+                <p class="text-[10px] text-sky-400 tech-font tracking-[0.2em] mt-0.5">Post-Transplant Protocol</p>
+            </div>
+            <div class="px-3 py-1 bg-slate-900 border border-slate-700 rounded text-sky-400 tech-font text-xs">
+                P<span id="phase-counter" class="text-white font-bold text-lg">1</span>/4
+            </div>
+        </div>
+
+        <!-- Scrollable Steps List -->
+        <div class="flex-grow overflow-y-auto p-4 space-y-3 z-10" id="steps-container">
+            <!-- Steps injected here -->
+        </div>
+
+        <!-- Navigation Footer -->
+        <div class="p-4 border-t border-slate-700 bg-slate-800 flex items-center justify-between z-10">
+            <button id="btn-prev" class="px-4 py-2 rounded font-semibold text-slate-400 hover:text-white hover:bg-slate-700 transition-colors tech-font text-xs disabled:opacity-30 disabled:cursor-not-allowed">
+                &lt; PREV
+            </button>
+            <div class="text-[10px] text-slate-500 tech-font" id="completion-status">STEPS: 0/5</div>
+            <button id="btn-next" disabled class="px-5 py-2.5 rounded bg-sky-600 hover:bg-sky-500 text-white font-bold transition-all shadow-[0_0_15px_rgba(14,165,233,0.4)] tech-font text-xs flex items-center gap-2 disabled:opacity-30 disabled:cursor-not-allowed disabled:shadow-none">
+                NEXT_PHASE &gt;
+            </button>
+        </div>
+
+        <!-- FINAL REPORT OVERLAY -->
+        <div id="report-overlay" class="absolute inset-0 bg-slate-200 z-50 flex flex-col p-8 transform translate-y-full transition-transform duration-700 ease-in-out text-slate-900">
+            
+            <div id="medical-report" class="flex flex-col bg-white shadow-lg p-8 relative overflow-hidden rounded-xl h-full max-h-[90%]">
+                <div class="border-b-2 border-slate-800 pb-4 mb-6 flex justify-between items-end flex-shrink-0">
+                    <div>
+                        <h2 class="text-3xl font-bold tech-font tracking-tighter">CENTRAL MEDICAL LOG</h2>
+                        <p class="text-sm font-semibold text-slate-500 uppercase tracking-widest">Post-Operative Transcript</p>
+                    </div>
+                    <div class="w-12 h-12 border-2 border-emerald-600 rounded-full flex items-center justify-center text-emerald-600 font-bold rotate-12">PASS</div>
+                </div>
+                
+                <div class="space-y-4 text-sm font-medium flex-grow overflow-y-auto pr-2" id="report-content">
+                    <div class="grid grid-cols-2 gap-4 mb-8">
+                        <div><span class="text-slate-500">PATIENT ID:</span> TRN-8842-X</div>
+                        <div><span class="text-slate-500">DATE:</span> <span id="rep-date"></span></div>
+                        <div><span class="text-slate-500">PROCEDURE:</span> HSCT Reboot</div>
+                        <div><span class="text-slate-500">STATUS:</span> <span class="text-emerald-600 font-bold">CLEARED FOR DISCHARGE</span></div>
+                    </div>
+                    
+                    <div class="p-5 bg-slate-50 border border-slate-200 rounded-lg">
+                        <h4 class="font-bold text-slate-700 mb-3 underline tracking-wide">FINAL VITALS TELEMETRY</h4>
+                        <ul class="space-y-3 tech-font text-xs text-slate-700">
+                            <li class="flex justify-between border-b border-slate-200 pb-1"><span>> CORE_TEMP:</span> <span class="font-bold">37.0°C (STABLE)</span></li>
+                            <li class="flex justify-between border-b border-slate-200 pb-1"><span>> O2_SAT:</span> <span class="font-bold">99% (OPTIMAL)</span></li>
+                            <li class="flex justify-between border-b border-slate-200 pb-1"><span>> HR_RHYTHM:</span> <span class="font-bold">70 BPM (LOCKED)</span></li>
+                            <li class="flex justify-between border-b border-slate-200 pb-1"><span>> WBC_ENGRAFTMENT:</span> <span class="font-bold text-emerald-600">SUCCESSFUL (FIREWALL ONLINE)</span></li>
+                            <li class="flex justify-between border-b border-slate-200 pb-1"><span>> RBC_PRODUCTION:</span> <span class="font-bold">OPTIMAL (10,000 RPM)</span></li>
+                            <li class="flex justify-between border-b border-slate-200 pb-1"><span>> PLT_CLOTTING:</span> <span class="font-bold">SECURE</span></li>
+                            <li class="flex justify-between pb-1"><span>> INCISION_SEAL:</span> <span class="font-bold">100% INTACT</span></li>
+                        </ul>
+                    </div>
+
+                    <p class="text-sm leading-relaxed mt-6 italic text-slate-600 border-l-4 border-slate-300 pl-4 bg-slate-50 py-3 pr-3 rounded-r">
+                        "The patient has successfully completed all 4 phases (20 procedural steps) of the post-transplant reboot protocol. The immune system firewall is actively defending the host, robust hematopoiesis is occurring in the marrow cavity, and all physical incisions are sealed. Patient is stable for immediate discharge."
+                    </p>
+                </div>
+
+                <div class="mt-8 flex justify-end flex-shrink-0 pt-4">
+                    <div class="text-center w-64">
+                        <div class="text-5xl text-blue-900 signature-font mb-2" style="transform: rotate(-3deg);">Dr. System Reboot</div>
+                        <div class="border-t border-slate-400 pt-2 text-xs font-bold text-slate-500 tracking-widest">LEAD ATTENDING</div>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Download Button -->
+            <div class="mt-4 flex justify-end items-center z-50">
+                <button onclick="downloadPDF()" id="pdf-btn" class="px-6 py-3 bg-sky-600 hover:bg-sky-500 text-white rounded-lg font-bold tech-font text-sm flex items-center justify-center gap-2 transition-transform active:scale-95 shadow-[0_10px_20px_rgba(14,165,233,0.3)] border border-sky-400 w-64">
+                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"></path></svg>
+                    DOWNLOAD PDF LOG
+                </button>
+            </div>
+        </div>
+
+    </div>
+
+    <script>
+        // --- DATA ARCHITECTURE (4 Phases, 5 Steps each, 3 Sub-steps each = 60 interactions) ---
+        const protocolData = [
+            {
+                title: "PHASE 1: IMMEDIATE RECOVERY",
+                steps: [
+                    { id: 0, name: "Airway & O2 Sync", tool: "slider", target: "spo2", targetVal: 98, hint: "Slide to adjust Oxygen to 98%", subs: ["Extubate", "Titrate O2", "Lock Saturation"] },
+                    { id: 1, name: "Core Temp Regulation", tool: "slider", target: "temp", targetVal: 37, hint: "Apply thermal blanket to 37.0°C", subs: ["Apply Blanket", "Warm IV Fluid", "Stabilize Core"] },
+                    { id: 2, name: "Cardiac Rhythm Lock", tool: "syringe_inject", target: "muscle", hint: "Inject Beta-Blockers into Muscle layer", subs: ["Prep Syringe", "Inject Muscle", "Normalize EKG"] },
+                    { id: 3, name: "Central Line Access", tool: "scalpel", target: "skin", hint: "Drag Scalpel across Skin layer to cut", subs: ["Sterilize", "Make Incision", "Set Port"] },
+                    { id: 4, name: "Initial Blood Draw", tool: "syringe_extract", target: "vessel", hint: "Draw blood from deep Vessel", subs: ["Tourniquet", "Extract Vials", "Send to Lab"] }
+                ]
+            },
+            {
+                title: "PHASE 2: INTERFACE & HARDWARE",
+                steps: [
+                    { id: 0, name: "Incision Seal Check", tool: "scanner", target: "skin", hint: "Scan Skin layer to verify seal", subs: ["Hover Scanner", "Verify Dry", "Apply Dermabond"] },
+                    { id: 1, name: "Pain Titration", tool: "slider", target: "pain", targetVal: 2, hint: "Reduce pain drip to level 2", subs: ["Assess Patient", "Adjust Drip", "Confirm Comfort"] },
+                    { id: 2, name: "Saline Line Flush", tool: "syringe_inject", target: "vessel", hint: "Flush Saline IV line into Vessel", subs: ["Attach Saline", "Push Fluid", "Clear Line"] },
+                    { id: 3, name: "Bowel Sound Auscultation", tool: "scanner", target: "fat", hint: "Scan Fat/Abdomen layer for sounds", subs: ["Place Stethoscope", "Listen Quadrants", "Log Motility"] },
+                    { id: 4, name: "Neuro & Motor Check", tool: "slider", target: "gcs", targetVal: 15, hint: "Raise GCS to 15 (Fully awake)", subs: ["Pupil React", "Grip Strength", "GCS 15"] }
+                ]
+            },
+            {
+                title: "PHASE 3: MOBILITY & HEMODYNAMICS",
+                steps: [
+                    { id: 0, name: "DVT Prophylaxis", tool: "button", target: "dvt", hint: "Click to activate leg compression", subs: ["Wrap Legs", "Connect Pump", "Start Flow"] },
+                    { id: 1, name: "Center of Gravity", tool: "slider", target: "cog", targetVal: 0, hint: "Balance Vestibular system to 0", subs: ["Sit Up", "Stand Up", "Find Balance"] },
+                    { id: 2, name: "Muscle Activation Walk", tool: "button", target: "walk", hint: "Click to initiate 10m walk", subs: ["Support Patient", "Take Steps", "Rest"] },
+                    { id: 3, name: "Marrow Stimulation", tool: "syringe_inject", target: "bone", hint: "Inject growth factor into Bone marrow", subs: ["Prep G-CSF", "Inject Bone", "Wait"] },
+                    { id: 4, name: "Deep Tissue Scan", tool: "scanner", target: "muscle", hint: "Scan Muscle layer for inflammation", subs: ["Calibrate", "Penetrate Scan", "Export Image"] }
+                ]
+            },
+            {
+                title: "PHASE 4: ENGRAFTMENT & HANDOFF",
+                steps: [
+                    { id: 0, name: "WBC Firewall Deploy", tool: "syringe_inject", target: "bone", hint: "Inject Leukocyte Stimulator into Bone", subs: ["Target Marrow", "Push Dose", "Secure System"] },
+                    { id: 1, name: "Erythrocyte Odometer", tool: "dial", target: "rbc_boost", hint: "Drag dial up to rev RBC production", subs: ["Check Hgb", "Rev Engine", "Oxygenate"] },
+                    { id: 2, name: "Platelet Sealant", tool: "syringe_inject", target: "vessel", hint: "Inject Platelet concentrate into Vessel", subs: ["Prep Bag", "IV Push", "Seal Micro-tears"] },
+                    { id: 3, name: "Solid Fuel Intake", tool: "slider", target: "food", targetVal: 100, hint: "Slide up to process solid nutrients", subs: ["Prep Tray", "Ingest", "Digest Engine OK"] },
+                    { id: 4, name: "System Discharge", tool: "button", target: "discharge", hint: "Click to finalize protocols", subs: ["Unplug Server", "Dress Wounds", "Print Report"] }
+                ]
+            }
+        ];
+
+        // System State
+        let sysState = {
+            spo2: 80, temp: 34.5, pain: 8, gcs: 3, cog: -50, foodUnits: 0,
+            dvtActive: false, firewallActive: false, rbcBoost: false, pltBoost: false,
+            walkSteps: 0, discharged: false, sealScanned: false
+        };
+
+        let currentPhase = 0; 
+        let activeStep = 0;   
+        let stepProgress = 0; 
+
+        // --- CANVAS RENDERING SYSTEM ---
+        const canvas = document.getElementById('medicalCanvas');
+        const ctx = canvas.getContext('2d', { alpha: false }); 
+        
+        let width, height, vTop, vBottom, p_muscT, p_muscB;
+        let cells = [];
+        let particles = []; 
+        let globalTime = 0;
+        let ekgHistory = [];
+        let panX = 0; 
+        
+        // Tool tracking
+        let mouseX = -100, mouseY = -100, prevMouseX = -100, prevMouseY = -100;
+        let isMouseDown = false;
+        let incisions = []; 
+        
+        function resize() {
+            const dpr = window.devicePixelRatio || 1;
+            const rect = canvas.parentElement.getBoundingClientRect();
+            width = rect.width; height = rect.height;
+            canvas.width = width * dpr; canvas.height = height * dpr;
+            ctx.scale(dpr, dpr);
+            vTop = height * 0.35; vBottom = height * 0.65; 
+            p_muscT = vTop - height * 0.05;
+            p_muscB = vBottom + height * 0.05;
+            initPopulation(); 
+        }
+        window.addEventListener('resize', resize);
+
+        class Cell {
+            constructor(x, y) {
+                this.x = x; this.z = Math.random(); this.radius = 0;     
+                this.vx = (Math.random() * 0.8 + 0.4) * (0.5 + this.z * 0.7); 
+                this.vy = (Math.random() - 0.5) * 0.6; 
+                this.rotation = Math.random() * Math.PI * 2;
+                this.rotationSpeed = (Math.random() - 0.5) * 0.04; 
+            }
+            initSafeY() { this.y = vTop + this.radius + 15 + Math.random() * (vBottom - vTop - this.radius*2 - 30); }
+            update(flowMod) {
+                this.x += this.vx * flowMod; this.y += this.vy * flowMod;
+                this.rotation += this.rotationSpeed;
+                this.vy += (Math.random() - 0.5) * 0.05; this.vy *= 0.98;
+                if(sysState.dvtActive) this.y += ((vTop + vBottom)/2 - this.y) * 0.015; 
+                if (this.y < vTop + 15) this.vy += 0.08; 
+                if (this.y > vBottom - 15) this.vy -= 0.08; 
+            }
+            drawDepthWash(ctx) {
+                if (this.z < 0.6) {
+                    ctx.beginPath(); ctx.arc(0, 0, this.radius + 1, 0, Math.PI * 2);
+                    ctx.fillStyle = `rgba(50, 0, 0, ${0.7 - this.z})`; ctx.fill();
+                }
+            }
+        }
+
+        class RBC extends Cell {
+            constructor(x, y) { super(x, y); this.radius = (Math.random() * 2 + 10) * (0.5 + this.z * 0.5); if(y === undefined) this.initSafeY(); else this.y = y; }
+            draw(ctx) {
+                ctx.save(); ctx.translate(this.x, this.y); ctx.rotate(this.rotation);
+                let o2Factor = (sysState.spo2 - 80) / 20; 
+                let r = Math.floor(120 + o2Factor * 135); let b = Math.floor(20 + o2Factor * 50);
+                const grad = ctx.createRadialGradient(-this.radius*0.2, -this.radius*0.2, this.radius*0.1, 0, 0, this.radius);
+                grad.addColorStop(0, `rgb(${Math.min(255, r+50)}, 150, 150)`); grad.addColorStop(0.4, `rgb(${r}, ${b}, ${b})`); grad.addColorStop(1, '#500000');   
+                ctx.beginPath(); ctx.arc(0, 0, this.radius, 0, Math.PI * 2); ctx.fillStyle = grad; ctx.fill();
+                const innerGrad = ctx.createRadialGradient(0, 0, 0, 0, 0, this.radius * 0.55);
+                innerGrad.addColorStop(0, '#500000'); innerGrad.addColorStop(1, 'rgba(255,0,0,0)');
+                ctx.beginPath(); ctx.arc(0, 0, this.radius * 0.55, 0, Math.PI * 2); ctx.fillStyle = innerGrad; ctx.fill();
+                this.drawDepthWash(ctx); ctx.restore();
+            }
+        }
+
+        class WBC extends Cell {
+            constructor(x, y) { super(x, y); this.radius = (Math.random() * 3 + 14) * (0.5 + this.z * 0.5); if(y === undefined) this.initSafeY(); else this.y = y; }
+            draw(ctx) {
+                ctx.save(); ctx.translate(this.x, this.y); ctx.rotate(this.rotation);
+                if(sysState.firewallActive) { ctx.shadowColor = '#0ea5e9'; ctx.shadowBlur = 15; }
+                const bodyGrad = ctx.createRadialGradient(-this.radius*0.2, -this.radius*0.2, this.radius*0.2, 0, 0, this.radius);
+                bodyGrad.addColorStop(0, 'rgba(255, 255, 255, 0.95)'); bodyGrad.addColorStop(0.5, 'rgba(200, 230, 255, 0.8)'); bodyGrad.addColorStop(1, 'rgba(150, 200, 240, 0.4)');
+                ctx.beginPath(); ctx.arc(0, 0, this.radius, 0, Math.PI * 2); ctx.fillStyle = bodyGrad; ctx.fill();
+                ctx.lineWidth = 1; ctx.strokeStyle = 'rgba(255,255,255,0.8)'; ctx.stroke();
+                const nucGrad = ctx.createRadialGradient(0, 0, 0, 0, 0, this.radius*0.6);
+                nucGrad.addColorStop(0, '#74b9ff'); nucGrad.addColorStop(1, '#0984e3');
+                ctx.fillStyle = nucGrad; ctx.beginPath(); ctx.arc(-this.radius*0.2, -this.radius*0.2, this.radius*0.3, 0, Math.PI*2); ctx.arc(this.radius*0.2, this.radius*0.1, this.radius*0.3, 0, Math.PI*2); ctx.fill();
+                ctx.shadowBlur = 0; this.drawDepthWash(ctx); ctx.restore();
+            }
+        }
+
+        class Platelet extends Cell {
+            constructor(x, y) { super(x, y); this.radius = (Math.random() * 2 + 4) * (0.5 + this.z * 0.5); this.vx *= 1.4; if(y === undefined) this.initSafeY(); else this.y = y; }
+            draw(ctx) {
+                ctx.save(); ctx.translate(this.x, this.y); ctx.rotate(this.rotation);
+                if(sysState.pltBoost) { ctx.shadowColor = '#feca57'; ctx.shadowBlur = 10; }
+                const grad = ctx.createRadialGradient(0, 0, 0, 0, 0, this.radius);
+                grad.addColorStop(0, '#feca57'); grad.addColorStop(1, '#e17055');
+                ctx.beginPath(); ctx.moveTo(this.radius, 0); for(let i=1; i<7; i++) { let angle = (i * 2 * Math.PI) / 7; let rad = i % 2 === 0 ? this.radius : this.radius * 0.5; ctx.lineTo(Math.cos(angle) * rad, Math.sin(angle) * rad); }
+                ctx.closePath(); ctx.fillStyle = grad; ctx.fill();
+                ctx.shadowBlur = 0; this.drawDepthWash(ctx); ctx.restore();
+            }
+        }
+
+        function spawnCell(x, rates) {
+            const rand = Math.random() * 100;
+            let sum = rates.rbc || 0; if (rand <= sum) return new RBC(x);
+            sum += rates.wbc || 0; if (rand <= sum) return new WBC(x);
+            return new Platelet(x); 
+        }
+
+        function initPopulation() {
+            cells = [];
+            for(let i = 0; i < 150; i++) cells.push(spawnCell((width / 150) * i, { rbc: 85, wbc: 5, platelet: 10 }));
+            ekgHistory = [];
+            for(let i=0; i<width; i+=5) ekgHistory.push({x: i, y: 0});
+        }
+
+        function spawnParticles(type) {
+            for(let i=0; i<3; i++) {
+                particles.push({
+                    x: width*0.2 + Math.random()*width*0.6, y: -20,
+                    vx: (Math.random()-0.5)*3, vy: 2 + Math.random()*3,
+                    type: type, life: 1.0
+                });
+            }
+        }
+
+        function drawAnatomy() {
+            ctx.save();
+            ctx.translate(0, 0);
+
+            let h = height;
+            let p_skinT = h * 0.05, p_fatT = h * 0.16;
+            let p_fatB = h * 0.84, p_skinB = h * 0.95;
+
+            // --- 1. FAT LAYER ---
+            function drawFat(startY, endY) {
+                ctx.fillStyle = '#9a3412'; ctx.fillRect(0, startY, width, endY - startY); 
+                for(let y = startY; y < endY + 10; y += 16) {
+                    for(let x = -50; x < width + 50; x += 18) {
+                        if (y > endY) continue;
+                        let shiftedX = x - (panX * 0.2); 
+                        let r = 10 + Math.sin(x*3.1 + y*7.2)*4;
+                        const fatGrad = ctx.createRadialGradient(shiftedX - r*0.3, y - r*0.3, r*0.1, shiftedX, y, r);
+                        fatGrad.addColorStop(0, '#fef08a'); fatGrad.addColorStop(0.6, '#eab308'); fatGrad.addColorStop(1, '#a16207');
+                        ctx.beginPath(); ctx.arc(shiftedX, y, r, 0, Math.PI*2); ctx.fillStyle = fatGrad; ctx.fill();
+                        ctx.strokeStyle = 'rgba(120, 50, 20, 0.4)'; ctx.lineWidth = 1; ctx.stroke();
+                    }
+                }
+            }
+            drawFat(p_skinT, p_fatT); drawFat(p_fatB, p_skinB);
+
+            // --- 2. SKIN LAYER ---
+            function drawSkin(startY, endY, isTop) {
+                const skinGrad = ctx.createLinearGradient(0, startY, 0, endY);
+                if(isTop) { skinGrad.addColorStop(0, '#fbcfe8'); skinGrad.addColorStop(1, '#fda4af'); }
+                else { skinGrad.addColorStop(0, '#fda4af'); skinGrad.addColorStop(1, '#fbcfe8'); }
+                ctx.fillStyle = skinGrad; ctx.fillRect(0, startY, width, endY - startY);
+            }
+            drawSkin(0, p_skinT, true); drawSkin(p_skinB, h, false);
+
+            // Scalpel Incisions
+            ctx.strokeStyle = '#9f1239'; ctx.lineWidth = 4; ctx.lineCap = 'round';
+            incisions.forEach(inc => { ctx.beginPath(); ctx.moveTo(inc.x1, inc.y1); ctx.lineTo(inc.x2, inc.y2); ctx.stroke(); });
+            if(sysState.sealScanned && incisions.length > 0) {
+                ctx.strokeStyle = 'rgba(16, 185, 129, 0.8)'; ctx.lineWidth = 6;
+                incisions.forEach(inc => { ctx.beginPath(); ctx.moveTo(inc.x1, inc.y1); ctx.lineTo(inc.x2, inc.y2); ctx.stroke(); });
+            }
+
+            // --- 3. MUSCLE LAYER ---
+            function drawMuscle(startY, endY, isTop) {
+                ctx.fillStyle = '#f1f5f9'; ctx.fillRect(0, isTop ? startY : endY - 3, width, 3); // Fascia
+                let mStart = isTop ? startY+3 : startY; let mEnd = isTop ? endY : endY-3;
+                ctx.fillStyle = '#7f1d1d'; ctx.fillRect(0, mStart, width, mEnd - mStart);
+                ctx.lineWidth = 2;
+                for(let y = mStart + 4; y < mEnd - 2; y += 5) {
+                    ctx.beginPath(); ctx.moveTo(-50, y);
+                    for(let x = -50; x < width + 50; x += 30) {
+                        let shiftedX = x - (panX * 0.4); ctx.lineTo(x, y + Math.sin(shiftedX*0.05 + y)*3);
+                    }
+                    ctx.strokeStyle = `rgba(153, 27, 27, ${0.4 + Math.abs(Math.sin(y*3))*0.4})`; ctx.stroke();
+                }
+            }
+            drawMuscle(p_fatT, p_muscT, true); drawMuscle(p_muscB, p_fatB, false);
+
+            // --- 4. BONE LAYER ---
+            function drawBone(startY, endY, isTop) {
+                ctx.fillStyle = '#94a3b8'; ctx.fillRect(0, isTop ? startY : endY - 3, width, 3); // Periosteum
+                let bStart = isTop ? startY+3 : startY; let bEnd = isTop ? endY : endY-3;
+                const boneGrad = ctx.createLinearGradient(0, bStart, 0, bEnd);
+                boneGrad.addColorStop(0, isTop ? '#e2e8f0' : '#881337'); boneGrad.addColorStop(1, isTop ? '#881337' : '#e2e8f0');
+                ctx.fillStyle = boneGrad; ctx.fillRect(0, bStart, width, bEnd - bStart);
+                ctx.fillStyle = 'rgba(67, 20, 7, 0.5)';
+                for(let y = bStart + 2; y < bEnd; y += 6) {
+                    for(let x = -50; x < width + 50; x += 8) {
+                        let shiftedX = x - (panX * 0.6);
+                        if(Math.sin(x*41.1 + y*13.2) > 0.3) {
+                            ctx.beginPath(); ctx.arc(shiftedX + Math.sin(y)*2, y + Math.cos(x)*2, 1 + Math.random()*1.5, 0, Math.PI*2); ctx.fill();
+                        }
+                    }
+                }
+            }
+            drawBone(p_muscT, vTop, true); drawBone(vBottom, p_muscB, false);
+
+            // --- 5. THE BLOOD VESSEL ---
+            const vesselGrad = ctx.createLinearGradient(0, vTop, 0, vBottom);
+            vesselGrad.addColorStop(0, '#2e0000'); vesselGrad.addColorStop(0.15, '#7f1d1d'); 
+            vesselGrad.addColorStop(0.5, '#dc2626'); 
+            vesselGrad.addColorStop(0.85, '#7f1d1d'); vesselGrad.addColorStop(1, '#2e0000');
+            ctx.fillStyle = vesselGrad; ctx.fillRect(0, vTop, width, vBottom - vTop);
+            
+            let pulseOffset = Math.sin(globalTime * (2 + sysState.pain*0.2)) * 2;
+            ctx.lineWidth = 4; ctx.beginPath();
+            for(let x = -50; x <= width + 50; x += 20) { let roughY = vTop + Math.sin((x-panX)*0.05)*4 + pulseOffset; if(x===-50) ctx.moveTo(x, roughY); else ctx.lineTo(x, roughY); }
+            ctx.strokeStyle = '#4a0d0d'; ctx.stroke(); ctx.lineWidth = 2; ctx.strokeStyle = 'rgba(255, 150, 150, 0.4)'; ctx.stroke();
+            
+            ctx.lineWidth = 4; ctx.beginPath();
+            for(let x = -50; x <= width + 50; x += 20) { let roughY = vBottom + Math.sin((x-panX)*0.06)*4 - pulseOffset; if(x===-50) ctx.moveTo(x, roughY); else ctx.lineTo(x, roughY); }
+            ctx.strokeStyle = '#4a0d0d'; ctx.stroke(); ctx.lineWidth = 2; ctx.strokeStyle = 'rgba(255, 100, 100, 0.25)'; ctx.stroke();
+            
+            ctx.restore(); 
+        }
+
+        function drawEKG() {
+            let baseHR = (sysState.pain <= 3) ? 70 : 120 + sysState.pain*4;
+            for(let i=0; i<ekgHistory.length; i++) ekgHistory[i].x -= 4; 
+            while(ekgHistory.length > 0 && ekgHistory[0].x < 0) ekgHistory.shift();
+
+            let timePoint = globalTime * (baseHR / 60) * 2;
+            let waveY = 0; let cycle = timePoint % (Math.PI * 2);
+            if(cycle > 0 && cycle < 0.2) waveY = -15; 
+            else if(cycle > 0.4 && cycle < 0.5) waveY = 20; 
+            else if(cycle > 0.5 && cycle < 0.6) waveY = -90; 
+            else if(cycle > 0.6 && cycle < 0.7) waveY = 30; 
+            else if(cycle > 1.2 && cycle < 1.6) waveY = -20; 
+            else waveY = (Math.random()-0.5)*5;
+
+            let lastX = ekgHistory.length > 0 ? ekgHistory[ekgHistory.length-1].x : 0;
+            while(lastX < width) { lastX += 4; ekgHistory.push({x: lastX, y: waveY}); }
+
+            if(ekgHistory.length === 0) return;
+            ctx.beginPath();
+            for(let i=0; i<ekgHistory.length; i++) {
+                let px = ekgHistory[i].x; let py = height * 0.5 + ekgHistory[i].y;
+                if(i===0) ctx.moveTo(px, py); else ctx.lineTo(px, py);
+            }
+            ctx.strokeStyle = (sysState.pain <= 3) ? 'rgba(16, 185, 129, 0.8)' : 'rgba(225, 29, 72, 0.9)';
+            ctx.lineWidth = 2; ctx.stroke();
+            ctx.shadowColor = ctx.strokeStyle; ctx.shadowBlur = 10; ctx.stroke(); ctx.shadowBlur = 0;
+        }
+
+        function drawInteractiveTool() {
+            if(mouseX < 0 || stepProgress >= 100) return;
+            const stepData = protocolData[currentPhase]?.steps[activeStep];
+            if (!stepData) return;
+
+            ctx.save(); ctx.translate(mouseX, mouseY);
+            
+            if(stepData.tool === 'scalpel') {
+                ctx.fillStyle = '#94a3b8'; ctx.fillRect(-2, -40, 4, 40); 
+                ctx.fillStyle = '#cbd5e1'; ctx.beginPath(); ctx.moveTo(-2,0); ctx.lineTo(6,15); ctx.lineTo(2,-5); ctx.fill(); 
+                ctx.shadowColor = '#fff'; ctx.shadowBlur = 5; ctx.strokeStyle = 'white'; ctx.lineWidth=1; ctx.stroke();
+            } 
+            else if(stepData.tool.includes('syringe')) {
+                // Color Logic
+                let color = '#0ea5e9'; // Default blue
+                if (stepData.tool === 'syringe_extract') color = '#9f1239'; // Red blood
+                else if (stepData.target === 'bone') color = '#f8fafc'; // White WBC booster
+                else if (stepData.target === 'vessel' && currentPhase === 3) color = '#feca57'; // Yellow Platelets
+
+                ctx.rotate(-Math.PI / 6); ctx.fillStyle = '#cbd5e1'; ctx.fillRect(-1, 0, 2, -30); 
+                ctx.fillStyle = 'rgba(255,255,255,0.2)'; ctx.fillRect(-10, -80, 20, 50); 
+                
+                let fR = stepData.tool === 'syringe_extract' ? (stepProgress/100) : (1 - stepProgress/100);
+                if(fR > 0) { ctx.fillStyle = color; ctx.fillRect(-8, -80 + (1-fR)*50, 16, 50 * fR); } 
+                ctx.fillStyle = '#1e293b'; ctx.fillRect(-9, -80 + (1-fR)*50 - 5, 18, 5); 
+            }
+            else if(stepData.tool === 'scanner') {
+                ctx.beginPath(); ctx.arc(0,0, 30, 0, Math.PI*2);
+                ctx.strokeStyle = isMouseDown ? '#10b981' : '#0ea5e9'; ctx.lineWidth = 2; ctx.setLineDash([5, 5]); ctx.stroke();
+                if(isMouseDown) { ctx.fillStyle = 'rgba(16, 185, 129, 0.2)'; ctx.fill(); }
+            }
+            else if(stepData.tool === 'dial') {
+                // Circular Odometer/Dial
+                ctx.beginPath(); ctx.arc(0, 0, 45, 0, Math.PI*2);
+                ctx.fillStyle = 'rgba(15, 23, 42, 0.9)'; ctx.fill();
+                ctx.lineWidth = 4; ctx.strokeStyle = '#334155'; ctx.stroke();
+                
+                ctx.beginPath(); ctx.arc(0, 0, 45, -Math.PI/2, -Math.PI/2 + (stepProgress/100)*Math.PI*2);
+                ctx.strokeStyle = '#0ea5e9'; ctx.shadowColor = '#0ea5e9'; ctx.shadowBlur = 10; ctx.stroke();
+                
+                ctx.shadowBlur = 0; ctx.fillStyle = '#fff'; ctx.font = 'bold 18px "JetBrains Mono"'; ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+                let rpm = Math.floor(stepProgress * 100); 
+                ctx.fillText(rpm, 0, -5);
+                ctx.font = '10px "JetBrains Mono"'; ctx.fillStyle = '#94a3b8';
+                ctx.fillText("RPM", 0, 15);
+
+                ctx.save(); ctx.rotate((stepProgress/100)*Math.PI*4);
+                ctx.beginPath(); ctx.moveTo(0, -32); ctx.lineTo(0, -45); ctx.lineWidth = 4; ctx.strokeStyle = '#38bdf8'; ctx.stroke();
+                ctx.restore();
+            }
+            ctx.restore();
+        }
+
+        function animate() {
+            ctx.fillStyle = '#000000'; ctx.fillRect(0, 0, width, height);
+            globalTime += 0.015;
+
+            drawAnatomy();
+
+            // Blood Waves
+            let flowSpeed = sysState.dvtActive ? 2.5 : 1.0;
+            const vHeight = vBottom - vTop;
+            ctx.fillStyle = 'rgba(120, 0, 0, 0.2)'; ctx.beginPath();
+            for(let x = -50; x <= width + 50; x += 30) { ctx.lineTo(x, vTop + vHeight*0.35 + Math.sin((x-panX)*0.003 + globalTime*0.8*flowSpeed)*35); }
+            ctx.lineTo(width+50, vBottom); ctx.lineTo(-50, vBottom); ctx.fill();
+
+            // Update & Draw Cells
+            let targetCount = 150;
+            let spawnRates = { rbc: 85, wbc: 5, platelet: 10 };
+            
+            if(sysState.firewallActive) { targetCount = 300; spawnRates.wbc = 60; spawnRates.rbc = 30; }
+            if(sysState.rbcBoost) { targetCount = 350; spawnRates.rbc = 80; spawnRates.wbc = 10; }
+            if(sysState.pltBoost) { targetCount = 350; spawnRates.platelet = 60; }
+
+            for (let i = cells.length - 1; i >= 0; i--) {
+                let cell = cells[i]; cell.update(flowSpeed);
+                if (cell.x - cell.radius > width) cells.splice(i, 1);
+            }
+
+            if(cells.length < targetCount && Math.random() < 0.4 * flowSpeed) {
+                cells.push(spawnCell(-50, spawnRates));
+            }
+
+            cells.sort((a,b) => a.z - b.z);
+            for(let cell of cells) cell.draw(ctx);
+
+            drawEKG();
+            drawInteractiveTool();
+
+            // Particle Updates
+            for(let i=particles.length-1; i>=0; i--) {
+                let p = particles[i]; p.x += p.vx; p.y += p.vy; p.life -= 0.015;
+                ctx.beginPath(); ctx.arc(p.x, p.y, p.type === 'water' ? 4 : 6, 0, Math.PI*2);
+                ctx.fillStyle = p.type === 'water' ? `rgba(56, 189, 248, ${p.life})` : `rgba(250, 204, 21, ${p.life})`;
+                ctx.fill();
+                if(p.life <= 0) particles.splice(i, 1);
+            }
+
+            // Overlays
+            let tempDiff = 37 - sysState.temp; 
+            ctx.fillStyle = `rgba(14, 165, 233, ${Math.max(0, tempDiff * 0.15)})`; ctx.fillRect(0, 0, width, height);
+            let painAlpha = (sysState.pain / 10) * 0.25 * (Math.sin(globalTime * (1 + sysState.pain*0.5)) * 0.5 + 0.5); 
+            ctx.fillStyle = `rgba(225, 29, 72, ${painAlpha})`; ctx.fillRect(0, 0, width, height);
+            ctx.fillStyle = `rgba(0, 0, 0, ${Math.max(0, 0.6 - ((sysState.gcs - 3) / 12) * 0.6)})`; ctx.fillRect(0, 0, width, height); 
+            
+            // Safe assignment for HUD elements
+            const setHUD = (id, html, className) => {
+                let el = document.getElementById(id);
+                if(el) { el.innerHTML = html; if(className) el.className = className; }
+            }
+            
+            setHUD('hud-status', sysState.gcs >= 14 ? "ONLINE" : "BOOTING...", sysState.gcs >= 14 ? "text-emerald-400 font-bold" : "text-amber-500 font-bold");
+            setHUD('hud-gcs', `${sysState.gcs}/15`);
+            setHUD('hud-o2', `${sysState.spo2}%`);
+            setHUD('hud-temp', `${sysState.temp.toFixed(1)}°C`);
+            setHUD('hud-bpm', (sysState.pain<=3) ? (70 + Math.floor(Math.random()*4)) : (120 + sysState.pain*3 + Math.floor(Math.random()*15)), (sysState.pain<=3) ? "text-emerald-400 font-bold" : "text-rose-500 font-bold");
+            setHUD('hud-pain', `${sysState.pain}/10`, sysState.pain <= 3 ? "text-emerald-400 font-bold" : "text-rose-500 font-bold alert-state");
+            setHUD('hud-seal', sysState.sealScanned ? "INTACT" : "UNVERIFIED", sysState.sealScanned ? "text-emerald-400 font-bold" : "text-amber-400");
+            setHUD('hud-wbc', sysState.firewallActive ? 'OPTIMAL' : 'LOW', sysState.firewallActive ? 'text-emerald-400 font-bold pulse-glow' : 'text-amber-400');
+
+            handleToolLogic();
+            requestAnimationFrame(animate);
+        }
+
+        // --- INTERACTION LOGIC (Tools & Sliders) ---
+        
+        function handleToolLogic() {
+            if(!isMouseDown || stepProgress >= 100 || mouseX < 0) return;
+            const stepData = protocolData[currentPhase]?.steps[activeStep];
+            if(!stepData) return;
+            
+            if(stepData.tool === 'scalpel' && mouseY < height*0.1) {
+                if(prevMouseX > 0 && Math.abs(mouseX - prevMouseX) > 0) {
+                    incisions.push({x1: prevMouseX, y1: prevMouseY, x2: mouseX, y2: mouseY});
+                    stepProgress += Math.abs(mouseX - prevMouseX) * 0.5; 
+                }
+            }
+            else if(stepData.tool === 'syringe_inject') {
+                let valid = false;
+                if(stepData.target === 'muscle' && ((mouseY > p_muscT && mouseY < vTop) || (mouseY > vBottom && mouseY < p_muscB))) valid = true;
+                if(stepData.target === 'vessel' && mouseY > vTop && mouseY < vBottom) valid = true;
+                if(stepData.target === 'bone' && ((mouseY > vTop && mouseY < p_muscT) || (mouseY > p_muscB && mouseY < height))) valid = true; // simplified bone check
+                // Broader target allowance for usability
+                if(stepData.target === 'bone') valid = true; 
+                if(valid) stepProgress += 0.5;
+            }
+            else if(stepData.tool === 'syringe_extract' && mouseY > vTop && mouseY < vBottom) {
+                stepProgress += 0.5;
+            }
+            else if(stepData.tool === 'scanner') {
+                if(prevMouseX > 0 && Math.abs(mouseX - prevMouseX) > 1) stepProgress += 1.0;
+            }
+            else if(stepData.tool === 'dial') {
+                if(prevMouseY > 0) {
+                    let dist = prevMouseY - mouseY; // Drag up to increase
+                    if (dist > 0 || (dist < 0 && stepProgress > 0)) {
+                        stepProgress += dist * 0.8;
+                        if(stepProgress < 0) stepProgress = 0;
+                    }
+                }
+            }
+
+            prevMouseX = mouseX; prevMouseY = mouseY;
+
+            if(stepProgress >= 100) {
+                stepProgress = 100;
+                
+                // Triggers
+                if(stepData.target === 'skin' && stepData.tool === 'scanner') sysState.sealScanned = true;
+                if(stepData.target === 'bone' && currentPhase === 3 && activeStep === 0) sysState.firewallActive = true;
+                if(stepData.tool === 'dial' && stepData.target === 'rbc_boost') sysState.rbcBoost = true;
+                if(stepData.tool === 'syringe_inject' && stepData.target === 'vessel' && currentPhase === 3 && activeStep === 2) sysState.pltBoost = true;
+
+                completeCurrentStep();
+            } else {
+                updateSubStepsUI();
+            }
+        }
+
+        canvas.addEventListener('mousedown', (e) => { isMouseDown = true; prevMouseX = -100; prevMouseY = -100; });
+        canvas.addEventListener('mouseup', () => { isMouseDown = false; });
+        canvas.addEventListener('mousemove', (e) => {
+            const rect = canvas.getBoundingClientRect();
+            mouseX = e.clientX - rect.left; mouseY = e.clientY - rect.top;
+        });
+        canvas.addEventListener('mouseleave', () => { mouseX = -100; isMouseDown = false; });
+
+        canvas.addEventListener('touchstart', (e) => {
+            e.preventDefault(); isMouseDown = true; prevMouseX = -100; prevMouseY = -100;
+            const rect = canvas.getBoundingClientRect();
+            mouseX = e.touches[0].clientX - rect.left; mouseY = e.touches[0].clientY - rect.top;
+        }, { passive: false });
+        canvas.addEventListener('touchmove', (e) => {
+            e.preventDefault();
+            const rect = canvas.getBoundingClientRect();
+            mouseX = e.touches[0].clientX - rect.left; mouseY = e.touches[0].clientY - rect.top;
+        }, { passive: false });
+        canvas.addEventListener('touchend', () => { isMouseDown = false; });
+
+        // --- DYNAMIC UI CONTROLLER ---
+
+        function renderPhaseUI() {
+            document.getElementById('phase-title-main').innerText = protocolData[currentPhase].title;
+            document.getElementById('phase-counter').innerText = currentPhase + 1;
+            document.getElementById('btn-prev').disabled = currentPhase === 0;
+            
+            const container = document.getElementById('steps-container');
+            container.innerHTML = '';
+
+            protocolData[currentPhase].steps.forEach((step, i) => {
+                let isCompleted = (i < activeStep);
+                let isActive = (i === activeStep);
+                
+                let cardHTML = `
+                    <div class="task-card bg-slate-800 rounded-lg p-4 border border-slate-700 ${isActive ? 'active' : ''} ${isCompleted ? 'completed' : ''}" id="step-card-${i}">
+                        <div class="flex items-center gap-3">
+                            <div class="w-6 h-6 rounded-full flex items-center justify-center tech-font text-xs font-bold ${isCompleted ? 'bg-emerald-500 text-slate-900' : (isActive ? 'bg-sky-500 text-white' : 'bg-slate-700 text-slate-400')}">
+                                ${isCompleted ? '✓' : i+1}
+                            </div>
+                            <h3 class="text-sm font-bold ${isCompleted ? 'text-emerald-400' : 'text-white'} flex-grow">${step.name}</h3>
+                            <div class="text-xs tech-font text-slate-500" id="pct-${i}">${isCompleted ? '100%' : (isActive ? '0%' : '---')}</div>
+                        </div>
+                        
+                        <div class="step-container ${isActive ? 'max-h-48 mt-4 opacity-100' : 'max-h-0 opacity-0'}">
+                            <p class="text-xs text-sky-200 mb-3 bg-sky-900/30 p-2 rounded border border-sky-800/50">ACTION: ${step.hint}</p>
+                            
+                            <!-- Tool UI Injector -->
+                            <div id="tool-ui-${i}" class="mb-4"></div>
+                            
+                            <!-- Sub-steps (3 dots) -->
+                            <div class="flex justify-between items-center text-[10px] tech-font text-slate-400">
+                                <div class="flex items-center gap-1"><div class="w-2 h-2 rounded-full border border-slate-500 sub-step-dot" id="sub-${i}-0"></div> ${step.subs[0]}</div>
+                                <div class="flex items-center gap-1"><div class="w-2 h-2 rounded-full border border-slate-500 sub-step-dot" id="sub-${i}-1"></div> ${step.subs[1]}</div>
+                                <div class="flex items-center gap-1"><div class="w-2 h-2 rounded-full border border-slate-500 sub-step-dot" id="sub-${i}-2"></div> ${step.subs[2]}</div>
+                            </div>
+                        </div>
+                    </div>
+                `;
+                container.innerHTML += cardHTML;
+            });
+
+            if(activeStep < 5) injectToolUI();
+            updateGlobalProgress();
+        }
+
+        function injectToolUI() {
+            const step = protocolData[currentPhase].steps[activeStep];
+            const container = document.getElementById(`tool-ui-${activeStep}`);
+            if(!container) return;
+
+            if(step.tool === 'slider') {
+                let min=0, max=100, stepVal=1, curVal=0;
+                if(step.target === 'spo2') { min=80; max=100; curVal=sysState.spo2; }
+                if(step.target === 'temp') { min=34; max=37.5; stepVal=0.1; curVal=sysState.temp; }
+                if(step.target === 'pain') { min=0; max=10; curVal=sysState.pain; }
+                if(step.target === 'gcs') { min=3; max=15; curVal=sysState.gcs; }
+                if(step.target === 'cog') { min=-50; max=50; curVal=sysState.cog; }
+                if(step.target === 'food') { min=0; max=100; curVal=0; }
+                
+                container.innerHTML = `<input type="range" id="active-slider" min="${min}" max="${max}" step="${stepVal}" value="${curVal}">`;
+                
+                document.getElementById('active-slider').addEventListener('input', (e) => {
+                    let val = parseFloat(e.target.value);
+                    if(step.target === 'spo2') sysState.spo2 = val;
+                    if(step.target === 'temp') sysState.temp = val;
+                    if(step.target === 'pain') sysState.pain = val;
+                    if(step.target === 'gcs') sysState.gcs = val;
+                    if(step.target === 'cog') sysState.cog = val;
+                    if(step.target === 'food') { if(val > 0 && Math.random() < 0.2) spawnParticles('food'); }
+                    
+                    let diff = Math.abs(val - step.targetVal);
+                    let range = max - min;
+                    stepProgress = Math.max(0, 100 - (diff/range)*100);
+                    if(stepProgress >= 99) stepProgress = 100; 
+                    
+                    updateSubStepsUI();
+                    if(stepProgress === 100) completeCurrentStep();
+                });
+            } else if (step.tool === 'button') {
+                container.innerHTML = `<button id="active-btn" class="w-full py-2 bg-sky-600 hover:bg-sky-500 rounded text-xs font-bold text-white transition-all active:scale-95 shadow-[0_0_10px_rgba(14,165,233,0.3)]">EXECUTE PROTOCOL</button>`;
+                document.getElementById('active-btn').addEventListener('click', () => {
+                    if(step.target === 'dvt') sysState.dvtActive = true;
+                    if(step.target === 'walk') panX += 100;
+                    if(step.target === 'discharge') { sysState.discharged = true; showFinalReport(); }
+                    
+                    stepProgress = 100;
+                    updateSubStepsUI();
+                    completeCurrentStep();
+                });
+            } else {
+                container.innerHTML = `<div class="text-center text-xs tech-font text-amber-400 py-2 border border-dashed border-amber-500/50 rounded bg-amber-900/20 animate-pulse">MOVE CURSOR TO CANVAS -></div>`;
+            }
+        }
+
+        function updateSubStepsUI() {
+            let pctEl = document.getElementById(`pct-${activeStep}`);
+            if(pctEl) pctEl.innerText = `${Math.floor(stepProgress)}%`;
+            
+            let s0 = document.getElementById(`sub-${activeStep}-0`);
+            let s1 = document.getElementById(`sub-${activeStep}-1`);
+            let s2 = document.getElementById(`sub-${activeStep}-2`);
+            
+            if(s0 && stepProgress > 0) s0.classList.add('active');
+            if(s1 && stepProgress > 33) s1.classList.add('active');
+            if(s2 && stepProgress >= 99) s2.classList.add('active');
+        }
+
+        function completeCurrentStep() {
+            let pctEl = document.getElementById(`pct-${activeStep}`);
+            if(pctEl) {
+                pctEl.innerText = `100%`;
+                pctEl.className = "text-xs tech-font text-emerald-400 font-bold";
+            }
+            
+            activeStep++;
+            stepProgress = 0;
+            if (activeStep >= 5) incisions = []; // Clear marks after phase
+
+            if(activeStep >= 5) {
+                updateGlobalProgress();
+            } else {
+                renderPhaseUI(); 
+            }
+        }
+
+        function updateGlobalProgress() {
+            let statEl = document.getElementById('completion-status');
+            if(statEl) statEl.innerText = `STEPS: ${Math.min(5, activeStep)}/5`;
+            const btnNext = document.getElementById('btn-next');
+            if(btnNext) {
+                if(activeStep >= 5 && currentPhase < 3) {
+                    btnNext.disabled = false;
+                    btnNext.classList.add('animate-pulse');
+                } else {
+                    btnNext.disabled = true;
+                    btnNext.classList.remove('animate-pulse');
+                }
+            }
+        }
+
+        function showFinalReport() {
+            const overlay = document.getElementById('report-overlay');
+            const d = new Date();
+            document.getElementById('rep-date').innerText = d.toISOString().split('T')[0];
+            
+            overlay.classList.remove('opacity-0', 'pointer-events-none', 'translate-y-full');
+            overlay.classList.add('opacity-100', 'translate-y-0');
+        }
+
+        function downloadPDF() {
+            const btn = document.getElementById('pdf-btn');
+            const originalText = btn.innerHTML;
+            btn.innerHTML = "GENERATING PDF...";
+            btn.disabled = true;
+
+            const element = document.getElementById('medical-report');
+            const content = document.getElementById('report-content');
+            
+            // Prevent scrolling so entire report is captured in PDF
+            if(content) content.classList.remove('overflow-y-auto');
+            
+            const opt = {
+                margin:       0.5,
+                filename:     'patient_recovery_log.pdf',
+                image:        { type: 'jpeg', quality: 1.0 },
+                html2canvas:  { scale: 2, useCORS: true },
+                jsPDF:        { unit: 'in', format: 'letter', orientation: 'portrait' }
+            };
+            
+            // Use html2pdf library to generate and trigger native download
+            html2pdf().set(opt).from(element).save().then(() => {
+                // Restore classes and button
+                if(content) content.classList.add('overflow-y-auto');
+                btn.innerHTML = originalText;
+                btn.disabled = false;
+            });
+        }
+
+        // Phase Navigation
+        document.getElementById('btn-prev').addEventListener('click', () => { if(currentPhase > 0) { currentPhase--; activeStep=0; stepProgress=0; renderPhaseUI(); } });
+        document.getElementById('btn-next').addEventListener('click', () => { if(currentPhase < 3) { currentPhase++; activeStep=0; stepProgress=0; renderPhaseUI(); } });
+
+        // Start
+        resize();
+        renderPhaseUI();
+        animate();
+
+    </script>
+</body>
+</html>

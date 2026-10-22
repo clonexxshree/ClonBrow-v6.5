@@ -1,0 +1,1523 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>CLONBROW</title>
+<link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'><rect x='2' y='2' width='20' height='20' fill='%23000'/><rect x='7' y='7' width='10' height='10' fill='%23FF3B00'/></svg>">
+
+<script src="https://cdn.tailwindcss.com"></script>
+<link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Archivo+Black&family=Space+Mono:wght@400;700&display=swap" rel="stylesheet">
+
+<script>
+tailwind.config={theme:{extend:{fontFamily:{sans:['Space Mono','ui-monospace','monospace'],serif:['Archivo Black','sans-serif']},colors:{n:{ink:'#000000',ink2:'#333333',mut:'#777777',line:'#000000',side:'#E8E4D8',hover:'#FFDE00',bg:'#FFFFFF'}}}}}
+</script>
+
+<style>
+:root{--ink:#000;--red:#FF3B00;--blue:#0000FF;--yellow:#FFDE00;--paper:#FFF;--grey:#E8E4D8;--mut:#777}
+body{background:var(--paper);background-image:linear-gradient(#00000008 1px,transparent 1px),linear-gradient(90deg,#00000008 1px,transparent 1px);background-size:28px 28px;color:var(--ink);overscroll-behavior-y:none}
+.lowercase-ui{text-transform:none}
+.aesthetic-title{font-family:'Archivo Black',sans-serif;text-transform:uppercase;letter-spacing:-.02em;font-weight:400}
+.up{text-transform:uppercase}
+
+/* ---- brutal primitives ---- */
+.notion-card{background:#fff;border:2px solid #000;border-radius:0;box-shadow:4px 4px 0 #000;transition:all .1s;position:relative}
+.notion-card:hover{box-shadow:6px 6px 0 #000;transform:translate(-2px,-2px)}
+.notion-btn{background:#fff;border:2px solid #000;border-radius:0;color:#000;font-family:'Space Mono',monospace;font-weight:700;font-size:12px;text-transform:uppercase;letter-spacing:.5px;cursor:pointer;transition:all .07s;padding:6px 14px;box-shadow:3px 3px 0 #000;line-height:1.4}
+.notion-btn:hover{background:var(--yellow)}
+.notion-btn:active{box-shadow:0 0 0 #000;transform:translate(3px,3px)}
+.notion-btn-primary{background:var(--yellow);color:#000}
+.notion-btn-primary:hover{background:#000;color:var(--yellow)}
+.notion-btn-danger{color:var(--red)}
+.notion-btn-danger:hover{background:var(--red);color:#fff}
+.pro-input{background:#fff;border:2px solid #000;border-radius:0;color:#000;font-family:'Space Mono',monospace;font-size:13px;padding:6px 10px;transition:all .1s;box-shadow:inset 3px 3px 0 #00000010}
+.pro-input:focus{border-color:var(--blue);outline:none;box-shadow:inset 3px 3px 0 #00000010,0 0 0 2px var(--blue)}
+select.pro-input{appearance:none;background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='7'%3E%3Cpath d='M0 0l5 7 5-7z' fill='%23000'/%3E%3C/svg%3E");background-repeat:no-repeat;background-position:right 10px center;padding-right:26px;font-weight:700}
+
+::-webkit-scrollbar{width:10px;height:10px}
+::-webkit-scrollbar-track{background:#fff;border-left:2px solid #000}
+::-webkit-scrollbar-thumb{background:#000;border:0}
+.no-scrollbar::-webkit-scrollbar{display:none}
+.no-scrollbar{-ms-overflow-style:none;scrollbar-width:none}
+::selection{background:#000;color:var(--yellow)}
+@keyframes load-bar{0%{width:0;opacity:1}50%{width:70%;opacity:1}100%{width:100%;opacity:0}}
+#loading-bar{background:var(--red);height:4px}
+.loading-active{animation:load-bar 1s cubic-bezier(.4,0,.2,1) forwards}
+
+/* ---- ticker ---- */
+.ticker{background:#000;color:#fff;border-bottom:2px solid #000;overflow:hidden;white-space:nowrap;font-family:'Space Mono',monospace;font-size:10px;font-weight:700;letter-spacing:2px;padding:4px 0;flex-shrink:0}
+.ticker span{display:inline-block;animation:tick 22s linear infinite;padding-left:100%}
+@keyframes tick{to{transform:translateX(-100%)}}
+
+/* ---- boot ---- */
+@keyframes bootIn{from{opacity:0;transform:translate(8px,8px)}}
+#os-boot-screen>div{animation:bootIn .3s steps(4)}
+
+/* ---- sidebar ---- */
+#vertical-sidebar{width:64px;transition:width .25s steps(6);z-index:50;background:#fff;border-right:3px solid #000}
+#vertical-sidebar:hover{width:252px}
+.sidebar-text{opacity:0;transition:opacity .12s steps(2);white-space:nowrap;font-size:12.5px;font-weight:700;color:inherit;margin-left:8px;text-transform:uppercase}
+#vertical-sidebar:hover .sidebar-text{opacity:1}
+.sb-extra{display:none;align-items:center;margin-left:auto}
+#vertical-sidebar:hover .sb-extra{display:flex}
+.sb-label{display:none;font-size:10px;font-weight:700;color:#777;padding:10px 12px 3px;text-transform:uppercase;letter-spacing:2px}
+#vertical-sidebar:hover .sb-label{display:block}
+.sb-group{--c:var(--blue)}
+#g-learn{--c:var(--blue)}#g-util{--c:#008000}#g-pro{--c:var(--red)}#g-cbw{--c:#777}
+.c-red{--c:var(--red)}.c-yellow{--c:#B8A000}
+.sb-item{display:flex;align-items:center;padding:6px 10px 6px 22px;border-radius:0;color:#333;font-size:12.5px;font-weight:700;cursor:pointer;transition:background .07s;width:100%;text-align:left;border-left:4px solid transparent}
+.sb-item i{width:20px;text-align:center;font-size:12px;color:#555;transition:color .07s;flex-shrink:0}
+.sb-item:hover{background:var(--yellow);color:#000;border-left-color:var(--c)}
+.sb-item:hover i{color:#000}
+.sb-item.active{background:#000;color:var(--yellow);border-left-color:var(--red)}
+.sb-item.active i{color:var(--yellow)}
+.sb-item.dim{color:#999}
+.sb-item.dim:hover{color:#555}
+.sb-head{display:flex;align-items:center;padding:7px 10px 7px 22px;color:#000;font-size:12.5px;font-weight:700;cursor:pointer;width:100%;text-align:left;transition:background .07s;border-left:4px solid var(--c);text-transform:uppercase;letter-spacing:.5px}
+.sb-head i{width:20px;text-align:center;font-size:12px;color:var(--c);flex-shrink:0}
+.sb-head:hover{background:var(--grey)}
+.sb-badge{font-size:9px;font-weight:700;color:#000;border:1.5px solid #000;padding:0 5px;line-height:14px;background:#fff;margin-right:6px}
+.sb-chev{font-size:8px;color:#000;transition:transform .2s steps(3)}
+.sb-group-body{max-height:0;overflow:hidden;transition:max-height .3s steps(8)}
+.sb-group.open .sb-group-body{max-height:440px}
+.sb-group.open .sb-chev{transform:rotate(180deg)}
+.tab-row{display:flex;align-items:center;gap:8px;padding:4px 10px;font-size:11px;font-weight:700;color:#333;cursor:pointer;width:100%;transition:background .07s;text-transform:uppercase}
+.tab-row i:first-child{font-size:9px;width:15px;text-align:center;color:#555;flex-shrink:0}
+.tab-row:hover{background:var(--grey);color:#000}
+.tab-row.on{background:#000;color:#fff}
+.tab-row.on i:first-child{color:var(--yellow)}
+.tab-x{margin-left:auto;font-size:9px;color:#777;padding:2px 4px}
+.tab-x:hover{color:var(--red);background:#fff}
+
+/* ---- views ---- */
+.view{position:absolute;inset:0;display:none;flex-direction:column;overflow-y:auto;padding:24px 28px 80px}
+.view.active{display:flex;animation:viewIn .18s steps(4)}
+@keyframes viewIn{from{opacity:0;transform:translateY(8px)}}
+.hide{display:none!important}
+.sh{display:flex;align-items:flex-end;justify-content:space-between;gap:16px;border-bottom:3px solid #000;padding-bottom:12px;margin-bottom:20px;flex-wrap:wrap}
+.sh-sub{font-size:11px;font-weight:700;color:#777;margin-bottom:4px;text-transform:uppercase;letter-spacing:2px}
+.chip{padding:3px 12px;border-radius:0;border:2px solid #000;background:#fff;color:#000;font-size:11.5px;font-weight:700;cursor:pointer;transition:all .07s;text-transform:uppercase}
+.chip:hover{background:var(--yellow)}
+.chip.on{background:#000;color:var(--yellow)}
+
+/* ---- toasts ---- */
+#toast-wrap{position:fixed;bottom:14px;right:14px;z-index:200;display:flex;flex-direction:column;gap:8px}
+.toast{display:flex;align-items:center;gap:10px;background:#000;border:2px solid #000;border-radius:0;padding:9px 15px;font-size:12px;font-weight:700;color:#fff;box-shadow:4px 4px 0 #FF3B00;text-transform:uppercase;animation:toastIn .15s steps(3)}
+.toast i{color:var(--yellow);font-size:11px}
+.toast.out{opacity:0;transform:translate(6px,6px);transition:all .25s steps(4)}
+@keyframes toastIn{from{opacity:0;transform:translate(6px,6px)}}
+
+/* ---- tasks ---- */
+.task-card{background:#fff;border:2px solid #000;padding:7px 9px;font-size:12.5px;font-weight:700;color:#000;display:flex;flex-direction:column;gap:5px;transition:background .07s;animation:viewIn .12s steps(3) backwards;box-shadow:3px 3px 0 #000}
+.task-card:hover{background:var(--grey)}
+.tc-actions{display:flex;gap:3px}
+.tc-btn{font-size:10px;font-weight:700;color:#555;padding:2px 6px;cursor:pointer;transition:all .07s}
+.tc-btn:hover{color:#000;background:var(--yellow);border:1.5px solid #000}
+.mini-task{display:flex;align-items:center;gap:9px;padding:6px 9px;border:1.5px solid #000;font-size:12.5px;font-weight:700;color:#000;cursor:pointer;transition:background .07s}
+.mini-task:hover{background:var(--yellow)}
+.mt-dot{width:8px;height:8px;background:#999;flex-shrink:0}
+.mt-dot.on{background:var(--red)}
+.mt-t{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+
+/* ---- flashcards ---- */
+.fc-card{perspective:1200px;cursor:pointer;position:relative}
+.fc-inner{position:absolute;inset:0;transition:transform .45s steps(8);transform-style:preserve-3d}
+.fc-card.flipped .fc-inner{transform:rotateY(180deg)}
+.fc-face{position:absolute;inset:0;backface-visibility:hidden;-webkit-backface-visibility:hidden;display:flex;align-items:center;justify-content:center;padding:24px;text-align:center;flex-direction:column;gap:10px;box-shadow:6px 6px 0 #000}
+.fc-face.notion-card:hover{box-shadow:6px 6px 0 #000}
+.fc-back{transform:rotateY(180deg);background:var(--yellow)!important}
+
+/* ---- quiz ---- */
+.opt-btn{display:flex;align-items:center;gap:12px;text-align:left;padding:11px 14px;font-size:13.5px;font-weight:700;box-shadow:3px 3px 0 #000}
+.opt-btn:hover{background:var(--grey)}
+.opt-btn:active{box-shadow:0 0 0 #000;transform:translate(3px,3px)}
+.opt-key{width:24px;height:24px;border:2px solid #000;display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:700;flex-shrink:0;background:#fff}
+.opt-right{background:#B8F5B8!important;border-color:#000!important}
+.opt-right .opt-key{background:#000;color:#B8F5B8}
+.opt-wrong{background:#FFD0C2!important;animation:shake .3s steps(4)}
+.opt-wrong .opt-key{background:var(--red);color:#fff;border-color:#000}
+.opt-dim{opacity:.3}
+@keyframes shake{25%{transform:translateX(-6px)}75%{transform:translateX(6px)}}
+
+/* ---- search / article ---- */
+.result-card{padding:11px 13px;cursor:pointer;display:flex;gap:13px;align-items:flex-start;box-shadow:3px 3px 0 #000}
+.result-card:hover{background:var(--yellow)}
+.result-card img{width:52px;height:36px;object-fit:cover;border:1.5px solid #000;flex-shrink:0}
+#article-content h2{font-family:'Archivo Black',sans-serif;text-transform:uppercase;font-size:1.4rem;border-bottom:3px solid #000;padding-bottom:.35rem;margin-top:2rem;margin-bottom:1rem;color:#000}
+#article-content h3{font-family:'Archivo Black',sans-serif;text-transform:uppercase;font-size:1.1rem;margin-top:1.5rem;margin-bottom:.6rem;color:var(--red)}
+#article-content p{margin-bottom:1.2rem;font-size:.95rem;line-height:1.75;color:#333}
+#article-content a{color:var(--blue);font-weight:700;text-decoration:underline}
+#article-content img{max-width:280px;border:2px solid #000;margin:8px 0;box-shadow:4px 4px 0 #000}
+#article-content table{border-collapse:collapse;font-size:12px;margin:12px 0;width:100%;border:2px solid #000}
+#article-content td,#article-content th{border:1.5px solid #000;padding:5px 9px;color:#333}
+
+/* ---- activity ---- */
+.activity-grid{display:grid;grid-template-columns:repeat(14,1fr);gap:3px}
+.activity-cell{width:100%;aspect-ratio:1;background:#fff;border:1px solid #000;transition:background .1s;animation:viewIn .2s steps(3) backwards}
+.activity-cell:hover{background:var(--yellow)}
+.activity-lvl-1{background:var(--grey)}.activity-lvl-2{background:#888}.activity-lvl-3{background:#000}
+.fade-card{animation:viewIn .15s steps(3) backwards}
+
+/* ---- periodic ---- */
+.element-box{border:1px solid #000;display:flex;flex-direction:column;align-items:center;justify-content:center;cursor:pointer;transition:all .07s;background:#fff;color:#000;aspect-ratio:1;position:relative;font-family:'Space Mono',monospace;font-weight:700}
+.element-box:hover{background:var(--yellow);transform:scale(1.14);z-index:10;border-width:2px}
+.element-alkali{border-bottom:3px solid var(--red)}.element-alkaline{border-bottom:3px solid #FF7A00}
+.element-transition{border-bottom:3px solid var(--blue)}.element-halogen{border-bottom:3px solid #008000}
+.element-noble{border-bottom:3px solid #7B2FBE}.element-metalloid{border-bottom:3px solid #00A29C}
+.element-post{border-bottom:3px solid #0057D8}.element-other{border-bottom:3px solid #777}
+.element-lanth{border-bottom:3px solid #B8A000}.element-act{border-bottom:3px solid #C417B8}
+.element-f{opacity:.3}
+.el-n{position:absolute;top:2px;left:3px;font-size:6px;color:#777}
+.el-s{font-size:10px}
+
+/* ---- notes ---- */
+#note-body{min-height:260px;background:#fff;border:2px solid #000;padding:12px 14px;font-size:13.5px;color:#000;line-height:1.7;outline:none;overflow-y:auto;box-shadow:inset 3px 3px 0 #00000010}
+#note-body:focus{background:#FFFEF5}
+#note-body h2{font-family:'Archivo Black',sans-serif;text-transform:uppercase;font-size:18px;margin:12px 0 6px}
+#note-body blockquote{border-left:4px solid var(--red);padding-left:12px;color:#555;margin:8px 0;font-style:italic}
+#note-body ul{list-style:square;padding-left:22px}
+.note-row{display:flex;flex-direction:column;padding:6px 9px;font-size:12.5px;font-weight:700;color:#333;cursor:pointer;width:100%;text-align:left;transition:background .07s}
+.note-row span{font-size:10px;color:#999;margin-top:1px}
+.note-row:hover{background:var(--grey);color:#000}
+.note-row.on{background:#000;color:var(--yellow)}
+.note-row.on span{color:#999}
+
+/* ---- analytics ---- */
+.an-bar-col{flex:1;display:flex;flex-direction:column;align-items:center;gap:4px}
+.an-bar-track{width:100%;height:56px;display:flex;align-items:flex-end;justify-content:center;background:#fff;border:2px solid #000;overflow:hidden}
+.an-bar{width:100%;background:#000;transition:height .4s steps(8)}
+.an-bar-col span{font-size:9px;font-weight:700;color:#777}
+.an-num{font-family:'Archivo Black',sans-serif}
+
+/* ---- timetable ---- */
+.tt-cell{aspect-ratio:1.6;background:#fff;border:1.5px solid #000;font-size:10px;font-weight:700;color:#333;display:flex;align-items:center;justify-content:center;cursor:pointer;padding:2px;overflow:hidden;text-align:center;transition:background .07s}
+.tt-cell:hover{background:var(--yellow)}
+.tt-in{background:#fff;border:2px solid var(--blue);color:#000;font-size:10px;width:100%;height:100%;text-align:center;outline:none;font-family:'Space Mono',monospace;font-weight:700}
+
+/* ---- code playground ---- */
+.cp-tab{padding:7px 16px;font-size:11px;font-weight:700;color:#777;background:transparent;border:0;border-right:2px solid #000;cursor:pointer;text-transform:uppercase;letter-spacing:1px;transition:all .07s}
+.cp-tab:hover{color:#000;background:var(--grey)}
+.cp-tab.on{background:#000;color:var(--yellow)}
+.cp-ed{background:#fff;border:0;outline:none;padding:12px 14px;font-family:'Space Mono',monospace;font-size:12px;color:#000;line-height:1.7;resize:none}
+.cp-ed:focus{background:#FFFEF5}
+
+/* ---- misc ---- */
+.tag{padding:2px 9px;border:1.5px solid #000;font-size:11px;font-weight:700;background:#fff;color:#000;text-transform:uppercase}
+.empty-state{color:#999;font-size:12px;font-weight:700;text-align:center;padding:18px 6px;text-transform:uppercase;letter-spacing:1px}
+.fc-row{display:flex;align-items:center;gap:10px;background:#fff;border:1.5px solid #000;padding:7px 11px;font-size:12.5px;font-weight:700;color:#333}
+.fc-row:hover{background:var(--grey)}
+.icon-tile{width:36px;height:36px;display:grid;place-items:center;color:#fff;font-size:15px;margin-bottom:9px;border:2px solid #000}
+
+#inv-print{display:none}
+@media print{
+  body *{visibility:hidden}
+  #inv-print{display:block!important;visibility:visible;position:absolute;left:0;top:0;width:100%;background:#fff}
+  #inv-print *{visibility:visible}
+}
+</style>
+<link rel="stylesheet" href="theme-mobile.css"></head>
+
+<body class="h-[100dvh] w-screen overflow-hidden relative flex font-sans">
+<div id="toast-wrap"></div>
+
+<!-- ============ failsafe login ============ -->
+<script>
+window.__bootDone=false;
+window.onerror=function(m){var d=document.getElementById('db-status');if(d)d.innerHTML='<span style="color:#FF3B00;font-weight:700">ERROR: '+String(m).slice(0,80)+'</span>';return false};
+window.__doLogin=function(){
+  if(window.__bootDone)return;
+  var i=document.getElementById('boot-username'),u=i?i.value.trim():'';
+  if(!u){i.style.borderColor='#FF3B00';i.focus();setTimeout(function(){i.style.borderColor=''},900);return}
+  if(typeof window.__fullLogin!=='function'){
+    var st=document.getElementById('db-status');
+    if(st)st.innerHTML='<span style="color:#FF3B00;font-weight:700">APP FAILED — REFRESH</span>';
+    return;
+  }
+  window.__bootDone=true;
+  try{localStorage.setItem('clonbrow_user',JSON.stringify(u))}catch(e){}
+  var b=document.getElementById('os-boot-screen');
+  if(b){b.style.opacity='0';setTimeout(function(){if(b.parentNode)b.remove()},400)}
+  try{window.__fullLogin(u)}catch(e){}
+};
+</script>
+
+<!-- ============ boot ============ -->
+<div id="os-boot-screen" class="absolute inset-0 z-[100] flex items-center justify-center transition-opacity duration-400" style="background:#fff">
+  <div class="notion-card max-w-xs w-full p-8">
+    <div class="mb-7">
+      <div class="w-12 h-12 mb-4 flex items-center justify-center border-2 border-black" style="background:#FF3B00">
+        <div class="w-5 h-5 bg-black"></div>
+      </div>
+      <h1 class="text-3xl aesthetic-title leading-none">CLONBROW</h1>
+      <p class="text-[11px] font-bold text-[#777] mt-2 uppercase tracking-widest">/// LEARN. BUILD. REPEAT.</p>
+    </div>
+    <div class="space-y-3">
+      <input type="text" id="boot-username" placeholder="YOUR NAME" class="w-full pro-input p-2.5 text-sm font-bold" onkeypress="if(event.key==='Enter')__doLogin()">
+      <button onclick="__doLogin()" id="login-btn" class="w-full notion-btn notion-btn-primary py-2.5 text-sm">ENTER →</button>
+      <div id="db-status" class="text-center text-[10.5px] font-bold text-[#777] uppercase tracking-widest"><i class="fas fa-database mr-1.5"></i>DB: PYTHONANYWHERE</div>
+    </div>
+  </div>
+</div>
+
+<!-- ============ sidebar ============ -->
+<aside id="vertical-sidebar" class="h-full flex flex-col py-2 shrink-0 absolute md:relative z-50">
+
+  <button onclick="goHome()" class="flex items-center pl-[18px] pr-2 py-1.5 mx-2 mb-1 border-2 border-black hover:bg-[#FFDE00] transition-colors group" style="width:calc(100% - 16px);background:#FF3B00;color:#fff">
+    <span class="w-6 h-6 shrink-0 bg-black flex items-center justify-center"><span class="w-2.5 h-2.5 bg-white block"></span></span>
+    <span class="sidebar-text aesthetic-title text-[13px]" style="color:#fff">CLONBROW</span>
+  </button>
+
+  <div class="px-2 my-2 border-b-2 border-black pb-2 space-y-0.5">
+    <button onclick="goHome()" data-route="clonmedic://home" class="sb-item c-red"><i class="fas fa-home"></i><span class="sidebar-text">HOME</span></button>
+    <button onclick="newTab('clonmedic://search')" data-route="clonmedic://search" class="sb-item c-yellow"><i class="fas fa-search"></i><span class="sidebar-text">SEARCH</span></button>
+  </div>
+
+  <nav class="flex-1 overflow-y-auto no-scrollbar px-2 space-y-1">
+    <div class="sb-group open" id="g-learn">
+      <button class="sb-head" onclick="toggleGroup('g-learn')"><i class="fas fa-book"></i><span class="sidebar-text">LEARNING</span><span class="sb-extra"><span class="sb-badge">6</span><i class="fas fa-chevron-down sb-chev"></i></span></button>
+      <div class="sb-group-body">
+        <button onclick="newTab('clonmedic://notes')" data-route="clonmedic://notes" class="sb-item"><i class="fas fa-file-lines"></i><span class="sidebar-text">NOTES</span></button>
+        <button onclick="newTab('clonmedic://tasks')" data-route="clonmedic://tasks" class="sb-item"><i class="fas fa-square-check"></i><span class="sidebar-text">TASKS</span></button>
+        <button onclick="newTab('clonmedic://flashcards')" data-route="clonmedic://flashcards" class="sb-item"><i class="fas fa-clone"></i><span class="sidebar-text">FLASHCARDS</span></button>
+        <button onclick="newTab('clonmedic://quiz')" data-route="clonmedic://quiz" class="sb-item"><i class="fas fa-circle-question"></i><span class="sidebar-text">QUIZ</span></button>
+        <button onclick="newTab('clonmedic://bites')" data-route="clonmedic://bites" class="sb-item"><i class="fas fa-lightbulb"></i><span class="sidebar-text">BITES</span></button>
+        <button onclick="newTab('clonmedic://english')" data-route="clonmedic://english" class="sb-item"><i class="fas fa-feather"></i><span class="sidebar-text">WORD LAB</span></button>
+      </div>
+    </div>
+
+    <div class="sb-group" id="g-util">
+      <button class="sb-head" onclick="toggleGroup('g-util')"><i class="fas fa-toolbox"></i><span class="sidebar-text">UTILITIES</span><span class="sb-extra"><span class="sb-badge">8</span><i class="fas fa-chevron-down sb-chev"></i></span></button>
+      <div class="sb-group-body">
+        <button onclick="newTab('clonmedic://formulas')" data-route="clonmedic://formulas" class="sb-item"><i class="fas fa-square-root-variable"></i><span class="sidebar-text">FORMULAS</span></button>
+        <button onclick="newTab('clonmedic://periodic')" data-route="clonmedic://periodic" class="sb-item"><i class="fas fa-atom"></i><span class="sidebar-text">ELEMENTS</span></button>
+        <button onclick="newTab('clonmedic://timetable')" data-route="clonmedic://timetable" class="sb-item"><i class="fas fa-calendar"></i><span class="sidebar-text">TIMETABLE</span></button>
+        <button onclick="newTab('clonmedic://converter')" data-route="clonmedic://converter" class="sb-item"><i class="fas fa-right-left"></i><span class="sidebar-text">CONVERTER</span></button>
+        <button onclick="newTab('clonmedic://gpa')" data-route="clonmedic://gpa" class="sb-item"><i class="fas fa-graduation-cap"></i><span class="sidebar-text">GPA</span></button>
+        <button onclick="newTab('clonmedic://invoice')" data-route="clonmedic://invoice" class="sb-item"><i class="fas fa-file-invoice"></i><span class="sidebar-text">INVOICE</span></button>
+        <button onclick="newTab('clonmedic://citations')" data-route="clonmedic://citations" class="sb-item"><i class="fas fa-quote-right"></i><span class="sidebar-text">CITATIONS</span></button>
+        <button onclick="newTab('clonmedic://calc')" data-route="clonmedic://calc" class="sb-item"><i class="fas fa-calculator"></i><span class="sidebar-text">CALC</span></button>
+      </div>
+    </div>
+
+    <div class="sb-group" id="g-pro">
+      <button class="sb-head" onclick="toggleGroup('g-pro')"><i class="fas fa-star"></i><span class="sidebar-text">TOOLS</span><span class="sb-extra"><span class="sb-badge">6</span><i class="fas fa-chevron-down sb-chev"></i></span></button>
+      <div class="sb-group-body">
+        <button onclick="newTab('clonmedic://code')" data-route="clonmedic://code" class="sb-item"><i class="fas fa-code"></i><span class="sidebar-text">PLAYGROUND</span></button>
+        <button onclick="newTab('clonmedic://whiteboard')" data-route="clonmedic://whiteboard" class="sb-item"><i class="fas fa-pen"></i><span class="sidebar-text">BOARD</span></button>
+        <button onclick="newTab('clonmedic://analytics')" data-route="clonmedic://analytics" class="sb-item"><i class="fas fa-chart-simple"></i><span class="sidebar-text">STATS</span></button>
+        <button onclick="newTab('clonmedic://habits')" data-route="clonmedic://habits" class="sb-item"><i class="fas fa-calendar-check"></i><span class="sidebar-text">HABITS</span></button>
+        <button onclick="newTab('clonmedic://pomodoro')" data-route="clonmedic://pomodoro" class="sb-item"><i class="fas fa-stopwatch"></i><span class="sidebar-text">POMODORO</span></button>
+        <button onclick="newTab('clonmedic://timer')" data-route="clonmedic://timer" class="sb-item"><i class="fas fa-hourglass-half"></i><span class="sidebar-text">TIMER</span></button>
+      </div>
+    </div>
+
+    <div class="sb-group" id="g-cbw">
+      <button class="sb-head" onclick="toggleGroup('g-cbw')"><i class="fas fa-cubes"></i><span class="sidebar-text">ENGINES</span><span class="sb-extra"><span class="sb-badge">6</span><i class="fas fa-chevron-down sb-chev"></i></span></button>
+      <div class="sb-group-body">
+        <button onclick="newTab('heril.html')" data-route="heril.html" class="sb-item dim"><i class="fas fa-flask"></i><span class="sidebar-text">HERIL</span></button>
+        <button onclick="newTab('medicof all.html')" data-route="medicof all.html" class="sb-item dim"><i class="fas fa-vial"></i><span class="sidebar-text">MEDIC</span></button>
+        <button onclick="newTab('SansKoder.html')" data-route="SansKoder.html" class="sb-item dim"><i class="fas fa-terminal"></i><span class="sidebar-text">KODER</span></button>
+        <button onclick="newTab('trecore.html')" data-route="trecore.html" class="sb-item dim"><i class="fas fa-cube"></i><span class="sidebar-text">CORE</span></button>
+        <button onclick="newTab('brainboard.html')" data-route="brainboard.html" class="sb-item dim"><i class="fas fa-chalkboard"></i><span class="sidebar-text">BOARD</span></button>
+        <button onclick="newTab('arcade.html')" data-route="arcade.html" class="sb-item dim"><i class="fas fa-gamepad"></i><span class="sidebar-text">ARCADE</span></button>
+      </div>
+    </div>
+  </nav>
+
+  <div class="px-2 border-t-2 border-black pt-2 pb-1">
+    <div class="sb-label">SESSIONS</div>
+    <div id="tabs-container" class="flex flex-col gap-0.5 max-h-[128px] overflow-y-auto no-scrollbar"></div>
+    <button onclick="newTab()" class="mt-1 sb-item c-red"><i class="fas fa-plus" style="font-size:10px"></i><span class="sidebar-text" style="font-size:11px">NEW TAB</span></button>
+  </div>
+
+  <div class="px-2 pt-2 pb-1 border-t-2 border-black">
+    <div class="flex items-center gap-2 pl-[18px]">
+      <span class="w-2.5 h-2.5 shrink-0 border border-black" style="background:#ccc" id="db-indicator"></span>
+      <span class="sidebar-text" style="margin-left:0;font-size:10.5px;font-weight:700;color:#777"><span>DB:</span> <span id="db-indicator-text" class="text-black">STANDBY</span></span>
+    </div>
+  </div>
+</aside>
+
+<!-- ============ main ============ -->
+<main class="flex-1 flex flex-col relative w-full h-full pl-[64px] md:pl-0">
+  <div id="loading-bar" class="absolute top-0 left-0 w-0 z-50"></div>
+
+  <header class="h-12 border-b-2 border-black flex items-center px-4 gap-4 bg-white shrink-0 z-40">
+    <div class="flex gap-1.5">
+      <button onclick="goBack()" class="w-8 h-8 border-2 border-black bg-white hover:bg-[#FFDE00] font-bold text-xs transition-colors active:translate-y-[1px]">←</button>
+      <button onclick="goForward()" class="w-8 h-8 border-2 border-black bg-white hover:bg-[#FFDE00] font-bold text-xs transition-colors active:translate-y-[1px]">→</button>
+      <button onclick="reloadPage()" class="w-8 h-8 border-2 border-black bg-white hover:bg-[#FFDE00] font-bold text-xs transition-colors active:translate-y-[1px]">↻</button>
+    </div>
+
+    <div class="flex-1 flex justify-center max-w-xl mx-auto relative group">
+      <div class="absolute left-3 top-1/2 transform -translate-y-1/2 font-bold text-[#999] group-focus-within:text-black transition-colors text-xs">></div>
+      <input type="text" id="address-bar" class="w-full pro-input px-8 py-1.5 text-[12px] font-bold uppercase" placeholder="SEARCH OR URL..." onkeypress="if(event.key === 'Enter') processInput(this.value)">
+    </div>
+
+    <button onclick="goHome()" class="w-8 h-8 border-2 border-black bg-white hover:bg-[#FFDE00] font-bold text-xs transition-colors shrink-0 active:translate-y-[1px]">■</button>
+  </header>
+
+  <div class="ticker"><span>CLONBROW /// LEARN /// BUILD /// REPEAT /// FLASHCARDS /// QUIZ /// NOTES /// TASKS /// SYNCED TO PYTHONANYWHERE /// LEARN /// BUILD /// REPEAT ///</span></div>
+
+  <div class="flex-1 relative overflow-hidden">
+
+    <!-- ===== home ===== -->
+    <div id="home-screen" class="view">
+      <div class="max-w-4xl mx-auto w-full">
+        <div class="flex justify-between items-end mb-8 border-b-2 border-black pb-5">
+          <div>
+            <div class="inline-block px-2 py-0.5 border-2 border-black bg-[#0000FF] text-white text-[10px] font-bold uppercase tracking-widest mb-2" id="dash-greet">GOOD EVENING</div>
+            <h1 class="text-4xl aesthetic-title leading-none">WELCOME TO<br>CLONBROW<span style="color:var(--red)">.</span></h1>
+          </div>
+          <div class="text-right pb-1">
+            <div class="text-2xl aesthetic-title tabular-nums" id="dash-time">00:00</div>
+            <div class="text-[11px] font-bold text-[#777] mt-1 uppercase" id="dash-date">FRI, SEP 25</div>
+          </div>
+        </div>
+
+        <div class="grid grid-cols-1 lg:grid-cols-[1fr_2fr] gap-6">
+          <div class="space-y-6">
+            <div class="notion-card flex flex-col h-40">
+              <div class="flex justify-between items-center px-3.5 py-2.5 border-b-2 border-black bg-[#FFDE00]">
+                <span class="text-[11px] font-bold uppercase tracking-widest flex items-center gap-2"><i class="fas fa-pen"></i> SCRATCHPAD</span>
+                <span class="text-[9px] font-bold uppercase tracking-widest">AUTOSAVE</span>
+              </div>
+              <textarea id="scratchpad" class="w-full h-full bg-transparent border-none outline-none p-3.5 text-[12.5px] font-bold text-[#333] resize-none leading-relaxed" placeholder="WRITE SOMETHING..."></textarea>
+            </div>
+
+            <div class="notion-card flex flex-col">
+              <div class="flex justify-between items-center px-3.5 py-2.5 border-b-2 border-black">
+                <span class="text-[11px] font-bold uppercase tracking-widest flex items-center gap-2"><i class="fas fa-square-check" style="color:var(--red)"></i> TASKS</span>
+                <span class="text-[10px] font-bold uppercase cursor-pointer hover:bg-[#FFDE00] px-2 border border-black" onclick="newTab('clonmedic://tasks')">ALL →</span>
+              </div>
+              <div id="mini-tasks-list" class="p-2 space-y-1"></div>
+            </div>
+
+            <div class="notion-card p-4">
+              <div class="flex justify-between items-center mb-3">
+                <span class="text-[11px] font-bold uppercase tracking-widest flex items-center gap-2"><i class="fas fa-chart-simple" style="color:var(--blue)"></i> ACTIVITY</span>
+                <span class="text-[9px] font-bold uppercase tracking-widest text-[#777]">98 DAYS</span>
+              </div>
+              <div id="activity-matrix" class="space-y-1"></div>
+            </div>
+          </div>
+
+          <div class="space-y-8">
+            <div>
+              <div class="text-[11px] font-bold text-[#777] mb-2.5 uppercase tracking-widest">/// LEARNING</div>
+              <div class="grid grid-cols-2 sm:grid-cols-3 gap-3">
+                <div class="notion-card p-3.5 cursor-pointer" onclick="newTab('clonmedic://notes')"><div class="icon-tile" style="background:#0000FF"><i class="fas fa-file-lines"></i></div><div class="text-[12px] font-bold uppercase">NOTES</div><div class="text-[10px] font-bold text-[#777] mt-0.5 uppercase">RICH TEXT</div></div>
+                <div class="notion-card p-3.5 cursor-pointer" onclick="newTab('clonmedic://flashcards')"><div class="icon-tile" style="background:#7B2FBE"><i class="fas fa-clone"></i></div><div class="text-[12px] font-bold uppercase">FLASHCARDS</div><div class="text-[10px] font-bold text-[#777] mt-0.5 uppercase">RECALL</div></div>
+                <div class="notion-card p-3.5 cursor-pointer" onclick="newTab('clonmedic://quiz')"><div class="icon-tile" style="background:#008000"><i class="fas fa-circle-question"></i></div><div class="text-[12px] font-bold uppercase">QUIZ</div><div class="text-[10px] font-bold text-[#777] mt-0.5 uppercase">ASSESS</div></div>
+                <div class="notion-card p-3.5 cursor-pointer" onclick="newTab('clonmedic://bites')"><div class="icon-tile" style="background:#FFDE00;color:#000"><i class="fas fa-lightbulb"></i></div><div class="text-[12px] font-bold uppercase">BITES</div><div class="text-[10px] font-bold text-[#777] mt-0.5 uppercase">MICRO</div></div>
+                <div class="notion-card p-3.5 cursor-pointer" onclick="newTab('clonmedic://english')"><div class="icon-tile" style="background:#FF3B00"><i class="fas fa-feather"></i></div><div class="text-[12px] font-bold uppercase">WORD LAB</div><div class="text-[10px] font-bold text-[#777] mt-0.5 uppercase">STATS</div></div>
+                <div class="notion-card p-3.5 cursor-pointer" onclick="newTab('clonmedic://code')"><div class="icon-tile" style="background:#000"><i class="fas fa-code"></i></div><div class="text-[12px] font-bold uppercase">PLAYGROUND</div><div class="text-[10px] font-bold text-[#777] mt-0.5 uppercase">LIVE</div></div>
+              </div>
+            </div>
+
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+              <div>
+                <div class="text-[11px] font-bold text-[#777] mb-2.5 uppercase tracking-widest">/// UTILITIES</div>
+                <div class="grid grid-cols-2 gap-2">
+                  <button class="notion-btn py-2 px-2.5 flex items-center justify-start gap-2" onclick="newTab('clonmedic://timetable')"><i class="fas fa-calendar w-4 text-center text-[10px]"></i><span>TIME</span></button>
+                  <button class="notion-btn py-2 px-2.5 flex items-center justify-start gap-2" onclick="newTab('clonmedic://converter')"><i class="fas fa-right-left w-4 text-center text-[10px]"></i><span>CONV</span></button>
+                  <button class="notion-btn py-2 px-2.5 flex items-center justify-start gap-2" onclick="newTab('clonmedic://gpa')"><i class="fas fa-graduation-cap w-4 text-center text-[10px]"></i><span>GPA</span></button>
+                  <button class="notion-btn py-2 px-2.5 flex items-center justify-start gap-2" onclick="newTab('clonmedic://calc')"><i class="fas fa-calculator w-4 text-center text-[10px]"></i><span>CALC</span></button>
+                  <button class="notion-btn py-2 px-2.5 flex items-center justify-start gap-2" onclick="newTab('clonmedic://invoice')"><i class="fas fa-file-invoice w-4 text-center text-[10px]"></i><span>INVC</span></button>
+                  <button class="notion-btn py-2 px-2.5 flex items-center justify-start gap-2" onclick="newTab('clonmedic://formulas')"><i class="fas fa-square-root-variable w-4 text-center text-[10px]"></i><span>FORM</span></button>
+                  <button class="notion-btn py-2 px-2.5 flex items-center justify-start gap-2" onclick="newTab('clonmedic://citations')"><i class="fas fa-quote-right w-4 text-center text-[10px]"></i><span>CITE</span></button>
+                  <button class="notion-btn py-2 px-2.5 flex items-center justify-start gap-2" onclick="newTab('clonmedic://periodic')"><i class="fas fa-atom w-4 text-center text-[10px]"></i><span>ELEM</span></button>
+                </div>
+              </div>
+              <div>
+                <div class="text-[11px] font-bold text-[#777] mb-2.5 uppercase tracking-widest" style="color:#FF3B00">/// TOOLS</div>
+                <div class="grid grid-cols-2 gap-2">
+                  <button class="notion-btn py-2 px-2.5 flex items-center justify-start gap-2" onclick="newTab('clonmedic://whiteboard')"><i class="fas fa-pen w-4 text-center text-[10px]"></i><span>BOARD</span></button>
+                  <button class="notion-btn py-2 px-2.5 flex items-center justify-start gap-2" onclick="newTab('clonmedic://analytics')"><i class="fas fa-chart-simple w-4 text-center text-[10px]"></i><span>STATS</span></button>
+                  <button class="notion-btn py-2 px-2.5 flex items-center justify-start gap-2" onclick="newTab('clonmedic://habits')"><i class="fas fa-calendar-check w-4 text-center text-[10px]"></i><span>HABIT</span></button>
+                  <button class="notion-btn py-2 px-2.5 flex items-center justify-start gap-2" onclick="newTab('clonmedic://timer')"><i class="fas fa-hourglass-half w-4 text-center text-[10px]"></i><span>TIMER</span></button>
+                  <button class="notion-btn py-2 px-2.5 flex items-center justify-start gap-2" onclick="newTab('clonmedic://pomodoro')"><i class="fas fa-stopwatch w-4 text-center text-[10px]"></i><span>POMO</span></button>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ===== search ===== -->
+    <div id="search-screen" class="view">
+      <div class="max-w-2xl mx-auto w-full">
+        <div class="flex items-center justify-between border-b-2 border-black pb-3 mb-5">
+          <div class="text-[11px] font-bold uppercase tracking-widest flex items-center gap-2"><i class="fas fa-search" style="color:var(--red)"></i> SEARCH RESULTS</div>
+          <div class="text-[10px] font-bold text-[#777] uppercase" id="search-q"></div>
+        </div>
+        <div id="search-results-container" class="space-y-3"></div>
+      </div>
+    </div>
+
+    <!-- ===== article ===== -->
+    <div id="article-screen" class="view">
+      <div class="max-w-2xl mx-auto w-full">
+        <div class="mb-6 border-b-2 border-black pb-5">
+          <span class="tag mb-3 inline-flex items-center gap-1.5" style="background:#B8F5B8"><i class="fas fa-check text-[10px]"></i> ARTICLE</span>
+          <h1 class="text-3xl aesthetic-title leading-tight mt-2" id="article-title">TITLE</h1>
+        </div>
+        <div id="article-content" class="text-sm"></div>
+      </div>
+    </div>
+
+    <!-- ===== tasks ===== -->
+    <div id="tasks-screen" class="view">
+      <div class="max-w-3xl mx-auto w-full h-full flex flex-col">
+        <div class="sh">
+          <div><div class="sh-sub">KANBAN /// SYNCED</div><h2 class="text-2xl aesthetic-title">TASKS</h2></div>
+          <div class="flex gap-2 w-full sm:w-1/2">
+            <input type="text" id="new-task-input" class="pro-input flex-1 p-2 text-[12px] font-bold uppercase" placeholder="NEW TASK..." onkeypress="if(event.key === 'Enter') addTask()">
+            <button onclick="addTask()" class="notion-btn notion-btn-primary px-4">ADD</button>
+          </div>
+        </div>
+        <div class="flex-1 grid grid-cols-1 md:grid-cols-3 gap-4 overflow-hidden">
+          <div class="notion-card p-4 flex flex-col"><h3 class="text-[11px] font-bold uppercase tracking-widest mb-3 pb-2 border-b-2 border-black">TODO</h3><div id="tasks-todo" class="flex-1 overflow-y-auto space-y-2 no-scrollbar"></div></div>
+          <div class="notion-card p-4 flex flex-col"><h3 class="text-[11px] font-bold uppercase tracking-widest mb-3 pb-2 border-b-2 border-black" style="color:var(--blue)">DOING</h3><div id="tasks-doing" class="flex-1 overflow-y-auto space-y-2 no-scrollbar"></div></div>
+          <div class="notion-card p-4 flex flex-col"><h3 class="text-[11px] font-bold uppercase tracking-widest mb-3 pb-2 border-b-2 border-black" style="color:var(--red)">DONE</h3><div id="tasks-done" class="flex-1 overflow-y-auto space-y-2 no-scrollbar opacity-60 hover:opacity-100 transition-opacity"></div></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ===== flashcards ===== -->
+    <div id="flashcards-screen" class="view">
+      <div class="max-w-2xl mx-auto w-full">
+        <div class="sh">
+          <div><div class="sh-sub">SYNCED TO DB</div><h2 class="text-2xl aesthetic-title">FLASHCARDS</h2></div>
+          <div class="flex gap-2">
+            <button onclick="toggleFC('play')" id="fc-play-btn" class="notion-btn notion-btn-primary px-3.5 py-1.5">STUDY</button>
+            <button onclick="toggleFC('create')" id="fc-create-btn" class="notion-btn px-3.5 py-1.5">EDIT</button>
+          </div>
+        </div>
+
+        <div id="fc-play-view" class="flex flex-col items-center mt-8 w-full">
+          <div class="w-full max-w-lg aspect-[3/2] fc-card" id="fc-card" onclick="flipCard()">
+            <div class="fc-inner">
+              <div class="fc-face notion-card"><div id="fc-front" class="text-xl aesthetic-title leading-snug">NO CARDS YET.</div><div class="text-[10px] font-bold uppercase tracking-widest text-[#777]">CLICK TO FLIP</div></div>
+              <div class="fc-face fc-back notion-card"><div id="fc-back" class="text-[15px] font-bold leading-relaxed"></div><div class="text-[10px] font-bold uppercase tracking-widest">ANSWER</div></div>
+            </div>
+          </div>
+          <div class="flex items-center gap-5 mt-6">
+            <button onclick="prevCard()" class="notion-btn w-9 h-9 flex items-center justify-center !p-0">←</button>
+            <span class="tag" id="fc-counter">0/0</span>
+            <button onclick="nextCard()" class="notion-btn w-9 h-9 flex items-center justify-center !p-0">→</button>
+          </div>
+        </div>
+
+        <div id="fc-create-view" class="hide flex flex-col gap-5 w-full">
+          <div class="notion-card p-5">
+            <h3 class="text-[11px] font-bold uppercase tracking-widest mb-3 pb-2 border-b-2 border-black">NEW CARD</h3>
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-2.5 mb-3">
+              <textarea id="fc-q" class="pro-input p-2.5 text-[12.5px] h-24 resize-none font-bold" placeholder="FRONT — QUESTION"></textarea>
+              <textarea id="fc-a" class="pro-input p-2.5 text-[12.5px] h-24 resize-none font-bold" placeholder="BACK — ANSWER"></textarea>
+            </div>
+            <button onclick="addCard()" class="notion-btn notion-btn-primary w-full py-2">SAVE CARD</button>
+          </div>
+          <div>
+            <div class="text-[11px] font-bold uppercase tracking-widest mb-2 pb-2 border-b-2 border-black">DECK /// <span id="fc-count" class="text-[#777]">0</span></div>
+            <div id="fc-list" class="grid grid-cols-1 gap-1.5"></div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ===== quiz ===== -->
+    <div id="quiz-screen" class="view">
+      <div class="max-w-3xl mx-auto w-full">
+        <div class="sh">
+          <div><div class="sh-sub">SYNCED TO DB</div><h2 class="text-2xl aesthetic-title">QUIZ</h2></div>
+          <div class="flex gap-2">
+            <button onclick="toggleQz('play')" id="qz-play-btn" class="notion-btn notion-btn-primary px-3.5 py-1.5">STUDY</button>
+            <button onclick="toggleQz('create')" id="qz-create-btn" class="notion-btn px-3.5 py-1.5">EDIT</button>
+          </div>
+        </div>
+
+        <div id="qz-play-view" class="flex flex-col items-center mt-6 w-full">
+          <div class="w-full max-w-xl notion-card p-8 text-center">
+            <h3 id="qz-question-display" class="text-lg aesthetic-title leading-snug mb-6">NO QUIZZES YET.</h3>
+            <div id="qz-options-container" class="grid grid-cols-1 md:grid-cols-2 gap-3"></div>
+          </div>
+          <div class="flex justify-between items-center w-full max-w-xl mt-4 p-3 bg-[#E8E4D8] border-2 border-black">
+            <div id="qz-feedback" class="text-[12px] font-bold uppercase h-4 flex items-center"></div>
+            <div class="flex items-center gap-3">
+              <span class="tag" id="qz-counter">0/0</span>
+              <button id="qz-next-btn" class="notion-btn notion-btn-primary px-4 py-1 hide" onclick="nextQz()">NEXT →</button>
+            </div>
+          </div>
+        </div>
+
+        <div id="qz-create-view" class="hide grid grid-cols-1 md:grid-cols-2 gap-6 w-full">
+          <div class="notion-card p-5 space-y-3">
+            <h3 class="text-[11px] font-bold uppercase tracking-widest pb-2 border-b-2 border-black">NEW QUESTION</h3>
+            <textarea id="qz-q" class="pro-input w-full p-2.5 text-[12.5px] h-20 resize-none font-bold" placeholder="QUESTION..."></textarea>
+            <div class="space-y-2">
+              <div class="text-[10px] font-bold uppercase tracking-widest text-[#777]">SELECT CORRECT:</div>
+              <div class="flex items-center gap-2"><input type="radio" name="qz-ans" value="0" checked class="w-4 h-4" style="accent-color:#FF3B00"><input type="text" id="qz-o1" class="pro-input flex-1 p-2 text-[12.5px] font-bold" placeholder="A"></div>
+              <div class="flex items-center gap-2"><input type="radio" name="qz-ans" value="1" class="w-4 h-4" style="accent-color:#FF3B00"><input type="text" id="qz-o2" class="pro-input flex-1 p-2 text-[12.5px] font-bold" placeholder="B"></div>
+              <div class="flex items-center gap-2"><input type="radio" name="qz-ans" value="2" class="w-4 h-4" style="accent-color:#FF3B00"><input type="text" id="qz-o3" class="pro-input flex-1 p-2 text-[12.5px] font-bold" placeholder="C"></div>
+              <div class="flex items-center gap-2"><input type="radio" name="qz-ans" value="3" class="w-4 h-4" style="accent-color:#FF3B00"><input type="text" id="qz-o4" class="pro-input flex-1 p-2 text-[12.5px] font-bold" placeholder="D"></div>
+            </div>
+            <button onclick="addQuiz()" class="notion-btn notion-btn-primary w-full py-2">SAVE</button>
+          </div>
+          <div class="flex flex-col h-full">
+            <div class="flex justify-between items-center mb-2 pb-2 border-b-2 border-black"><h3 class="text-[11px] font-bold uppercase tracking-widest">BANK</h3><span class="tag" id="qz-count">0</span></div>
+            <div id="qz-list" class="flex-1 space-y-1.5 overflow-y-auto no-scrollbar pb-4"></div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ===== bites ===== -->
+    <div id="bites-screen" class="view">
+      <div class="max-w-3xl mx-auto w-full">
+        <div class="sh"><div><div class="sh-sub">SYNCED TO DB</div><h2 class="text-2xl aesthetic-title">QUICK BITES</h2></div></div>
+        <div class="notion-card p-5 mb-5">
+          <div class="grid grid-cols-1 md:grid-cols-[1fr_120px_auto] gap-2 mb-2.5">
+            <input type="text" id="bite-t" class="pro-input p-2 text-[12.5px] font-bold uppercase" placeholder="TITLE...">
+            <input type="text" id="bite-tag" class="pro-input p-2 text-[12.5px] font-bold uppercase" placeholder="TAG...">
+            <button onclick="addBite()" class="notion-btn notion-btn-primary px-4">SAVE</button>
+          </div>
+          <textarea id="bite-body" class="pro-input w-full p-2 text-[12.5px] h-20 resize-none font-bold" placeholder="THE BITE ITSELF..."></textarea>
+        </div>
+        <div id="bites-list" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3"></div>
+      </div>
+    </div>
+
+    <!-- ===== english ===== -->
+    <div id="english-screen" class="view">
+      <div class="max-w-2xl mx-auto w-full">
+        <div class="sh"><div><div class="sh-sub">TEXT ANALYSIS</div><h2 class="text-2xl aesthetic-title">WORD LAB</h2></div></div>
+        <textarea id="eng-input" class="pro-input w-full p-3.5 h-36 resize-y leading-relaxed text-[12.5px] font-bold" placeholder="PASTE TEXT — STATS COMPUTE LIVE..."></textarea>
+        <div id="eng-stats" class="grid grid-cols-2 sm:grid-cols-4 gap-3 mt-4"></div>
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mt-4">
+          <div class="notion-card p-4"><div class="text-[11px] font-bold uppercase tracking-widest mb-3">TOP WORDS</div><div id="eng-top" class="space-y-2"></div></div>
+          <div class="notion-card p-4"><div class="text-[11px] font-bold uppercase tracking-widest mb-3">READABILITY</div><div class="flex items-baseline gap-3"><span id="eng-flesch" class="text-5xl aesthetic-title">—</span><span id="eng-level" class="text-[11px] font-bold uppercase text-[#777]"></span></div><div id="eng-extra" class="text-[11px] font-bold text-[#777] mt-4 space-y-1.5 uppercase"></div></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ===== notes ===== -->
+    <div id="notes-screen" class="view">
+      <div class="max-w-3xl mx-auto w-full h-full flex flex-col">
+        <div class="sh"><div><div class="sh-sub">AUTOSAVE /// SYNCED</div><h2 class="text-2xl aesthetic-title">NOTES</h2></div><button onclick="newNote()" class="notion-btn notion-btn-primary px-4 py-1.5">+ NEW</button></div>
+        <div class="grid md:grid-cols-[200px_1fr] gap-4 flex-1 min-h-0">
+          <div class="notion-card p-2 overflow-y-auto no-scrollbar"><div id="notes-list" class="space-y-0.5"></div></div>
+          <div class="flex flex-col gap-2.5 min-h-0">
+            <input type="text" id="note-title" class="pro-input p-2.5 text-[14px] font-bold uppercase aesthetic-title" placeholder="UNTITLED">
+            <div class="flex gap-1.5 flex-wrap">
+              <button class="notion-btn !px-2.5 !py-1 !text-[11px]" onclick="fmt('bold')"><b>B</b></button>
+              <button class="notion-btn !px-2.5 !py-1 !text-[11px]" onclick="fmt('italic')"><i>I</i></button>
+              <button class="notion-btn !px-2.5 !py-1 !text-[11px]" onclick="fmt('underline')"><u>U</u></button>
+              <button class="notion-btn !px-2.5 !py-1 !text-[11px]" onclick="fmt('formatBlock','h2')">H2</button>
+              <button class="notion-btn !px-2.5 !py-1 !text-[11px]" onclick="fmt('formatBlock','blockquote')">QUOTE</button>
+              <button class="notion-btn !px-2.5 !py-1 !text-[11px]" onclick="fmt('insertUnorderedList')">LIST</button>
+              <button class="notion-btn notion-btn-danger !px-2.5 !py-1 !text-[11px] ml-auto" onclick="delNote()"><i class="fas fa-trash text-[10px]"></i></button>
+            </div>
+            <div id="note-body" contenteditable="true" oninput="noteDirty()"></div>
+            <div id="note-meta" class="text-[10px] font-bold text-[#999] uppercase tracking-widest">SELECT OR CREATE A NOTE</div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ===== formulas ===== -->
+    <div id="formulas-screen" class="view">
+      <div class="max-w-2xl mx-auto w-full">
+        <div class="sh"><div><div class="sh-sub">SAVER /// SYNCED</div><h2 class="text-2xl aesthetic-title">FORMULAS</h2></div></div>
+
+        <div class="notion-card p-4 mb-4">
+          <div class="text-[11px] font-bold uppercase tracking-widest mb-3 flex items-center gap-2"><i class="fas fa-bookmark" style="color:var(--red)"></i> SAVE YOUR OWN /// <span id="cf-count" class="text-[#777]">0 STORED</span></div>
+          <div class="grid grid-cols-1 md:grid-cols-2 gap-2 mb-2">
+            <input type="text" id="cf-n" class="pro-input p-2 text-[12.5px] font-bold uppercase" placeholder="NAME">
+            <select id="cf-c" class="pro-input p-2 text-[12.5px] font-bold uppercase"><option value="math">MATH</option><option value="physics">PHYSICS</option><option value="chemistry">CHEMISTRY</option></select>
+          </div>
+          <input type="text" id="cf-f" class="pro-input w-full p-2 text-[14px] mb-2 font-bold" placeholder="FORMULA">
+          <div class="grid grid-cols-[1fr_auto] gap-2">
+            <input type="text" id="cf-d" class="pro-input p-2 text-[12.5px] font-bold" placeholder="WHAT IT SOLVES (OPTIONAL)">
+            <button onclick="addCustomF()" class="notion-btn notion-btn-primary px-4">+ SAVE</button>
+          </div>
+        </div>
+
+        <div class="flex gap-2 mb-4 flex-wrap items-center">
+          <div class="flex gap-1.5" id="f-cats">
+            <button class="chip on" onclick="setFCat('all',this)">ALL</button>
+            <button class="chip" onclick="setFCat('math',this)">MATH</button>
+            <button class="chip" onclick="setFCat('physics',this)">PHYS</button>
+            <button class="chip" onclick="setFCat('chemistry',this)">CHEM</button>
+          </div>
+          <input type="text" id="f-search" class="pro-input flex-1 min-w-[150px] p-2 text-[12px] font-bold uppercase" placeholder="FILTER..." oninput="renderFormulas()">
+        </div>
+        <div id="f-list" class="grid grid-cols-1 md:grid-cols-2 gap-3"></div>
+      </div>
+    </div>
+
+    <!-- ===== periodic ===== -->
+    <div id="periodic-screen" class="view">
+      <div class="max-w-3xl mx-auto w-full">
+        <div class="sh"><div><div class="sh-sub">118 ELEMENTS</div><h2 class="text-2xl aesthetic-title">ELEMENTS</h2></div></div>
+        <div class="flex gap-4 items-start">
+          <div id="pt-grid" class="flex-1 grid gap-[3px]" style="grid-template-columns:repeat(18,1fr);grid-auto-rows:auto"></div>
+          <div class="notion-card p-4 w-40 shrink-0 text-center">
+            <div class="text-[10px] font-bold uppercase tracking-widest text-[#777] mb-2">ELEMENT</div>
+            <div id="el-detail"><div class="text-5xl aesthetic-title leading-none">—</div><div class="text-[10.5px] font-bold uppercase text-[#777] mt-2">CLICK ANY ELEMENT</div></div>
+          </div>
+        </div>
+        <div class="flex gap-3 flex-wrap mt-4 text-[9px] font-bold uppercase text-[#777]" id="pt-legend"></div>
+      </div>
+    </div>
+
+    <!-- ===== timetable ===== -->
+    <div id="timetable-screen" class="view">
+      <div class="max-w-3xl mx-auto w-full">
+        <div class="sh"><div><div class="sh-sub">CLICK TO EDIT /// SYNCED</div><h2 class="text-2xl aesthetic-title">TIMETABLE</h2></div></div>
+        <div class="notion-card p-4 overflow-x-auto no-scrollbar"><div id="tt-grid" class="min-w-[560px]"></div></div>
+      </div>
+    </div>
+
+    <!-- ===== converter ===== -->
+    <div id="converter-screen" class="view">
+      <div class="max-w-sm mx-auto w-full">
+        <div class="sh"><div><div class="sh-sub">LIVE CONVERSION</div><h2 class="text-2xl aesthetic-title">CONVERTER</h2></div></div>
+        <div class="flex gap-1.5 mb-4 flex-wrap" id="conv-cats">
+          <button class="chip on" onclick="setConvCat('length',this)">LEN</button>
+          <button class="chip" onclick="setConvCat('mass',this)">MASS</button>
+          <button class="chip" onclick="setConvCat('temp',this)">TEMP</button>
+          <button class="chip" onclick="setConvCat('data',this)">DATA</button>
+          <button class="chip" onclick="setConvCat('speed',this)">SPD</button>
+        </div>
+        <div class="notion-card p-5 space-y-4">
+          <div class="grid grid-cols-[1fr_auto_1fr] gap-2 items-center">
+            <select id="conv-from" class="pro-input p-2 text-[12px] font-bold uppercase" onchange="calcConv()"></select>
+            <button class="notion-btn w-9 h-9 flex items-center justify-center !p-0" onclick="convSwap()">⇄</button>
+            <select id="conv-to" class="pro-input p-2 text-[12px] font-bold uppercase" onchange="calcConv()"></select>
+          </div>
+          <input type="number" id="conv-v" class="pro-input w-full p-2.5 text-center font-bold" value="1" oninput="calcConv()">
+          <div class="text-center py-3 border-t-2 border-black">
+            <div class="text-[9px] font-bold uppercase tracking-widest text-[#777] mb-1.5">RESULT</div>
+            <div class="text-3xl aesthetic-title tabular-nums" id="conv-res">—</div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ===== gpa ===== -->
+    <div id="gpa-screen" class="view">
+      <div class="max-w-xl mx-auto w-full">
+        <div class="sh"><div><div class="sh-sub">SYNCED</div><h2 class="text-2xl aesthetic-title">GPA</h2></div><button onclick="addGRow()" class="notion-btn notion-btn-primary px-4 py-1.5">+ COURSE</button></div>
+        <div class="grid grid-cols-[1fr_64px_90px_32px] gap-2 text-[9px] font-bold uppercase tracking-widest text-[#777] px-1 mb-2"><span>COURSE</span><span>CRED</span><span>GRADE</span><span></span></div>
+        <div id="gpa-rows" class="space-y-2"></div>
+        <div class="notion-card p-5 mt-4 flex items-center justify-between">
+          <div class="text-[11px] font-bold uppercase tracking-widest">TOTAL /// <span id="gpa-pts" class="text-[#777]">0 CREDITS</span></div>
+          <div class="text-4xl aesthetic-title tabular-nums" id="gpa-total">0.00</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ===== invoice ===== -->
+    <div id="invoice-screen" class="view">
+      <div class="max-w-xl mx-auto w-full">
+        <div class="sh"><div><div class="sh-sub">PRINTABLE</div><h2 class="text-2xl aesthetic-title">INVOICE</h2></div><button onclick="printInvoice()" class="notion-btn notion-btn-primary px-4 py-1.5">PRINT</button></div>
+        <div class="notion-card p-5 space-y-4">
+          <div class="grid grid-cols-1 sm:grid-cols-3 gap-2">
+            <input type="text" id="inv-no" class="pro-input p-2 text-[12.5px] font-bold uppercase" placeholder="NO." oninput="invField('no',this.value)">
+            <input type="text" id="inv-from" class="pro-input p-2 text-[12.5px] font-bold uppercase" placeholder="FROM" oninput="invField('from',this.value)">
+            <input type="text" id="inv-to" class="pro-input p-2 text-[12.5px] font-bold uppercase" placeholder="TO" oninput="invField('to',this.value)">
+          </div>
+          <div class="grid grid-cols-[1fr_60px_84px_32px] gap-2 text-[9px] font-bold uppercase tracking-widest text-[#777] px-1"><span>ITEM</span><span>QTY</span><span>RATE</span><span></span></div>
+          <div id="inv-items" class="space-y-2"></div>
+          <button onclick="invAdd()" class="notion-btn w-full py-1.5">+ ADD ITEM</button>
+          <div class="grid grid-cols-[1fr_120px] gap-2 items-center pt-3 border-t-2 border-black">
+            <div class="flex items-center gap-2 justify-end text-[11px] font-bold uppercase tracking-widest">TAX %<input type="number" id="inv-tax" class="pro-input p-1.5 w-16 text-center font-bold" value="0" oninput="invField('tax',this.value)"></div>
+            <div class="text-right space-y-1 text-[11px] font-bold uppercase">
+              <div class="text-[#777]">SUB /// <span class="text-black" id="inv-sub">0</span></div>
+              <div class="text-[#777]">TAX /// <span class="text-black" id="inv-taxv">0</span></div>
+              <div class="text-2xl aesthetic-title" id="inv-total">0</div>
+            </div>
+          </div>
+          <textarea id="inv-notes" class="pro-input w-full p-2 text-[12.5px] h-16 resize-none font-bold" placeholder="NOTES..." oninput="invField('notes',this.value)"></textarea>
+        </div>
+      </div>
+    </div>
+
+    <!-- ===== citations ===== -->
+    <div id="citations-screen" class="view">
+      <div class="max-w-xl mx-auto w-full">
+        <div class="sh"><div><div class="sh-sub">APA /// MLA /// HARVARD /// CHICAGO</div><h2 class="text-2xl aesthetic-title">CITATIONS</h2></div></div>
+        <div class="flex gap-1.5 mb-4" id="cite-styles">
+          <button class="chip on" onclick="setCite('apa',this)">APA</button>
+          <button class="chip" onclick="setCite('mla',this)">MLA</button>
+          <button class="chip" onclick="setCite('harvard',this)">HRVD</button>
+          <button class="chip" onclick="setCite('chicago',this)">CHGO</button>
+        </div>
+        <div class="notion-card p-5 space-y-2.5">
+          <input type="text" id="cit-a" class="pro-input w-full p-2 text-[12.5px] font-bold uppercase" placeholder="AUTHOR (LAST, FIRST)">
+          <input type="text" id="cit-t" class="pro-input w-full p-2 text-[12.5px] font-bold" placeholder="TITLE OF WORK">
+          <div class="grid grid-cols-2 gap-2">
+            <input type="text" id="cit-c" class="pro-input p-2 text-[12.5px] font-bold uppercase" placeholder="PUBLISHER">
+            <input type="text" id="cit-y" class="pro-input p-2 text-[12.5px] font-bold uppercase" placeholder="YEAR">
+          </div>
+          <input type="text" id="cit-u" class="pro-input w-full p-2 text-[12.5px] font-bold" placeholder="URL">
+          <button onclick="genCite()" class="notion-btn notion-btn-primary w-full py-2">GENERATE</button>
+        </div>
+        <div id="cite-out-wrap" class="notion-card p-5 mt-4 hide">
+          <div class="flex justify-between items-center mb-3"><span class="text-[10px] font-bold uppercase tracking-widest text-[#777]" id="cite-label">APA</span><button onclick="copyText(document.getElementById('cite-out').textContent)" class="notion-btn !px-3 !py-1 !text-[11px]">COPY</button></div>
+          <div id="cite-out" class="text-[12.5px] font-bold leading-relaxed break-all"></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ===== calculator ===== -->
+    <div id="calc-screen" class="view">
+      <div class="max-w-xs mx-auto w-full">
+        <div class="sh"><div><div class="sh-sub">EVALUATES LIVE</div><h2 class="text-2xl aesthetic-title">CALC</h2></div></div>
+        <div class="notion-card p-4">
+          <div class="bg-[#E8E4D8] border-2 border-black p-3.5 mb-3"><div id="calc-exp" class="text-right text-2xl font-bold tabular-nums" style="font-family:'Archivo Black'">0</div></div>
+          <div class="grid grid-cols-4 gap-2">
+            <button class="notion-btn py-3 notion-btn-danger" onclick="calcPress('C')">C</button>
+            <button class="notion-btn py-3" onclick="calcPress('(')">(</button>
+            <button class="notion-btn py-3" onclick="calcPress(')')">)</button>
+            <button class="notion-btn py-3" onclick="calcPress('⌫')">⌫</button>
+            <button class="notion-btn py-3" onclick="calcPress('7')">7</button><button class="notion-btn py-3" onclick="calcPress('8')">8</button><button class="notion-btn py-3" onclick="calcPress('9')">9</button>
+            <button class="notion-btn py-3" style="background:#E8E4D8" onclick="calcPress('÷')">÷</button>
+            <button class="notion-btn py-3" onclick="calcPress('4')">4</button><button class="notion-btn py-3" onclick="calcPress('5')">5</button><button class="notion-btn py-3" onclick="calcPress('6')">6</button>
+            <button class="notion-btn py-3" style="background:#E8E4D8" onclick="calcPress('×')">×</button>
+            <button class="notion-btn py-3" onclick="calcPress('1')">1</button><button class="notion-btn py-3" onclick="calcPress('2')">2</button><button class="notion-btn py-3" onclick="calcPress('3')">3</button>
+            <button class="notion-btn py-3" style="background:#E8E4D8" onclick="calcPress('−')">−</button>
+            <button class="notion-btn py-3" onclick="calcPress('0')">0</button><button class="notion-btn py-3" onclick="calcPress('.')">.</button>
+            <button class="notion-btn notion-btn-primary py-3" onclick="calcPress('=')">=</button>
+            <button class="notion-btn py-3" style="background:#E8E4D8" onclick="calcPress('+')">+</button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ===== code ===== -->
+    <div id="code-screen" class="view">
+      <div class="max-w-4xl mx-auto w-full h-full flex flex-col">
+        <div class="sh"><div><div class="sh-sub">HTML /// CSS /// JS</div><h2 class="text-2xl aesthetic-title">PLAYGROUND</h2></div><button onclick="runCode()" class="notion-btn notion-btn-primary px-4 py-1.5">▶ RUN</button></div>
+        <div class="grid md:grid-cols-2 gap-4 flex-1 min-h-0">
+          <div class="notion-card p-0 flex flex-col overflow-hidden">
+            <div class="flex border-b-2 border-black" id="cp-tabs">
+              <button class="cp-tab on" onclick="cpTab('html',this)">HTML</button>
+              <button class="cp-tab" onclick="cpTab('css',this)">CSS</button>
+              <button class="cp-tab" onclick="cpTab('js',this)">JS</button>
+            </div>
+            <textarea id="cp-html" class="cp-ed flex-1" spellcheck="false">&lt;h1&gt;HELLO&lt;/h1&gt;</textarea>
+            <textarea id="cp-css" class="cp-ed flex-1 hide" spellcheck="false">body{font-family:'Space Mono',monospace;display:grid;place-items:center;height:100vh;border:4px solid #000}h1{background:#FFDE00;padding:8px 16px}</textarea>
+            <textarea id="cp-js" class="cp-ed flex-1 hide" spellcheck="false">document.querySelector('h1').textContent='YOU DID IT'</textarea>
+          </div>
+          <div class="notion-card p-0 overflow-hidden flex flex-col">
+            <div class="px-4 py-2.5 border-b-2 border-black text-[10px] font-bold uppercase tracking-widest">PREVIEW</div>
+            <iframe id="cp-out" class="flex-1 w-full bg-white" style="border:0" sandbox="allow-scripts"></iframe>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ===== whiteboard ===== -->
+    <div id="whiteboard-screen" class="view">
+      <div class="max-w-4xl mx-auto w-full h-full flex flex-col">
+        <div class="sh"><div><div class="sh-sub">FREEHAND /// TOUCH OK</div><h2 class="text-2xl aesthetic-title">BOARD</h2></div>
+          <div class="flex items-center gap-2 flex-wrap">
+            <div class="flex gap-1.5" id="wb-colors"></div>
+            <div class="flex gap-1.5" id="wb-sizes"></div>
+            <button class="notion-btn !px-3 !py-1.5 !text-[11px]" id="wb-erase" onclick="wbErase()">ERASE</button>
+            <button class="notion-btn !px-3 !py-1.5 !text-[11px]" onclick="wbClear()">CLEAR</button>
+            <button class="notion-btn notion-btn-primary !px-3 !py-1.5 !text-[11px]" onclick="wbSave()">PNG</button>
+          </div>
+        </div>
+        <div class="notion-card flex-1 p-2.5 min-h-[300px] overflow-hidden"><canvas id="wb-canvas" class="w-full h-full" style="touch-action:none;cursor:crosshair;background:#fff"></canvas></div>
+      </div>
+    </div>
+
+    <!-- ===== analytics ===== -->
+    <div id="analytics-screen" class="view">
+      <div class="max-w-3xl mx-auto w-full">
+        <div class="sh"><div><div class="sh-sub">OVERVIEW</div><h2 class="text-2xl aesthetic-title">STATS</h2></div></div>
+        <div id="an-tiles" class="grid grid-cols-2 sm:grid-cols-4 gap-3 mb-4"></div>
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <div class="notion-card p-5"><div class="text-[11px] font-bold uppercase tracking-widest mb-4">LAST 14 DAYS</div><div id="an-bars" class="flex gap-2 items-end"></div></div>
+          <div class="notion-card p-5"><div class="text-[11px] font-bold uppercase tracking-widest mb-4">TASK SPLIT</div><div id="an-split" class="space-y-4"></div></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ===== habits ===== -->
+    <div id="habits-screen" class="view">
+      <div class="max-w-xl mx-auto w-full">
+        <div class="sh"><div><div class="sh-sub">7-DAY GRID /// SYNCED</div><h2 class="text-2xl aesthetic-title">HABITS</h2></div>
+          <div class="flex gap-2">
+            <input type="text" id="habit-in" class="pro-input p-2 text-[12px] font-bold uppercase w-40" placeholder="NEW HABIT..." onkeypress="if(event.key==='Enter')addHabit()">
+            <button onclick="addHabit()" class="notion-btn notion-btn-primary px-4">ADD</button>
+          </div>
+        </div>
+        <div class="notion-card p-4">
+          <div class="grid grid-cols-[1fr_repeat(7,30px)_44px_20px] gap-1.5 items-center text-[9px] font-bold uppercase tracking-widest text-[#777] mb-3 px-1" id="hab-head"></div>
+          <div id="hab-rows" class="space-y-1"></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ===== pomodoro ===== -->
+    <div id="pomodoro-screen" class="view">
+      <div class="max-w-sm mx-auto w-full flex flex-col items-center">
+        <div class="sh w-full"><div><div class="sh-sub">25 / 5 / 15</div><h2 class="text-2xl aesthetic-title">POMODORO</h2></div></div>
+        <div class="flex gap-1.5 mb-6" id="pm-modes">
+          <button class="chip on" onclick="pmSetMode('focus',this)">FOCUS</button>
+          <button class="chip" onclick="pmSetMode('short',this)">SHORT</button>
+          <button class="chip" onclick="pmSetMode('long',this)">LONG</button>
+        </div>
+        <div class="relative w-52 h-52">
+          <svg viewBox="0 0 200 200" class="w-full h-full">
+            <circle cx="100" cy="100" r="88" stroke="#000" stroke-width="8" fill="none"/>
+            <circle id="pomo-ring" cx="100" cy="100" r="88" stroke="#FF3B00" stroke-width="8" fill="none" stroke-linecap="butt" transform="rotate(-90 100 100)" stroke-dasharray="552.92" stroke-dashoffset="0"/>
+          </svg>
+          <div class="absolute inset-0 flex flex-col items-center justify-center">
+            <div class="text-[10px] font-bold uppercase tracking-widest text-[#777] mb-1" id="pomo-label">FOCUS</div>
+            <div class="text-4xl aesthetic-title tabular-nums leading-none" id="pomo-time">25:00</div>
+            <div class="flex gap-1.5 mt-3" id="pomo-dots"></div>
+          </div>
+        </div>
+        <div class="flex gap-2 mt-6">
+          <button class="notion-btn notion-btn-primary px-6 py-2" id="pm-start" onclick="pmToggle()">START</button>
+          <button class="notion-btn px-4 py-2" onclick="pmReset()">RESET</button>
+          <button class="notion-btn px-4 py-2" onclick="pmSkip()">SKIP</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- ===== timer ===== -->
+    <div id="timer-screen" class="view">
+      <div class="max-w-2xl mx-auto w-full">
+        <div class="sh"><div><div class="sh-sub">STOPWATCH + COUNTDOWN</div><h2 class="text-2xl aesthetic-title">TIMER</h2></div></div>
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <div class="notion-card p-6 text-center">
+            <div class="text-[11px] font-bold uppercase tracking-widest mb-4">STOPWATCH</div>
+            <div class="text-4xl aesthetic-title tabular-nums leading-none mb-5" id="sw-display">00:00.0</div>
+            <div class="flex gap-2 justify-center">
+              <button class="notion-btn notion-btn-primary px-5 py-1.5" id="sw-btn" onclick="swToggle()">START</button>
+              <button class="notion-btn px-4 py-1.5" onclick="swLap()">LAP</button>
+              <button class="notion-btn px-4 py-1.5" onclick="swReset()">RESET</button>
+            </div>
+            <div id="sw-laps" class="mt-5 space-y-1.5 text-[11.5px] font-bold uppercase max-h-28 overflow-y-auto no-scrollbar"></div>
+          </div>
+          <div class="notion-card p-6 text-center">
+            <div class="text-[11px] font-bold uppercase tracking-widest mb-4">COUNTDOWN</div>
+            <div class="text-4xl aesthetic-title tabular-nums leading-none mb-5" style="color:var(--red)" id="cd-display">05:00</div>
+            <div class="flex gap-1.5 justify-center mb-5">
+              <button class="notion-btn px-3.5 py-1.5" onclick="cdSet(1)">+1M</button>
+              <button class="notion-btn px-3.5 py-1.5" onclick="cdSet(5)">+5M</button>
+              <button class="notion-btn px-3.5 py-1.5" onclick="cdSet(25)">+25M</button>
+              <button class="notion-btn px-3.5 py-1.5" onclick="cdClear()">CLR</button>
+            </div>
+            <button class="notion-btn notion-btn-primary px-6 py-1.5" id="cd-btn" onclick="cdStart()">START</button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ===== external frame ===== -->
+    <div id="ext-screen" class="view" style="padding:0"><iframe id="ext-frame" class="w-full flex-1 bg-white" style="border:0"></iframe></div>
+  </div>
+</main>
+
+<div id="inv-print"></div>
+
+<script>
+/* ============================================================
+   CLONBROW — BRUTALIST CORE (logic identical, skin swapped)
+============================================================ */
+const $=s=>document.querySelector(s), $$=s=>[...document.querySelectorAll(s)];
+const esc=s=>String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+const pad=n=>String(n).padStart(2,'0');
+const deb=(fn,ms)=>{let t;return(...a)=>{clearTimeout(t);t=setTimeout(()=>fn(...a),ms)}};
+
+/* ---- REMOTE DB — pythonanywhere ---- */
+const REMOTE={enabled:true,base:'https://clonexxshree.pythonanywhere.com',user:'clonbrow'};
+const K={user:'clonbrow_user',tasks:'clonbrow_tasks',cards:'clonbrow_cards',quiz:'clonbrow_quiz',bites:'clonbrow_bites',notes:'clonbrow_notes',tt:'clonbrow_tt',habits:'clonbrow_habits',act:'clonbrow_act',scratch:'clonbrow_scratch',focus:'clonbrow_focus',gpa:'clonbrow_gpa',inv:'clonbrow_inv',customF:'clonbrow_customF'};
+const DB={
+  get(k,d){try{const v=JSON.parse(localStorage.getItem(k));return v==null?d:v}catch{return d}},
+  set(k,v){localStorage.setItem(k,JSON.stringify(v));queueSync()}
+};
+let syncT=null;
+function queueSync(){if(!REMOTE.enabled)return;clearTimeout(syncT);syncT=setTimeout(syncPush,1200)}
+async function apiFetch(url,opt,timeout){const ctl=new AbortController();const t=setTimeout(()=>ctl.abort(),timeout||12000);try{const r=await fetch(url,{...opt,signal:ctl.signal});clearTimeout(t);if(!r.ok)throw Error('HTTP '+r.status);return r}catch(e){clearTimeout(t);throw e}}
+function setDbStatus(ok){const d=$('#db-indicator'),t=$('#db-indicator-text');if(!d)return;
+  if(ok===true){d.style.background='#008000';t.textContent='SYNCED'}
+  else if(ok===false){d.style.background='#ccc';t.textContent='OFFLINE'}}
+async function syncPush(){if(!REMOTE.enabled)return;try{for(const k of Object.values(K)){const raw=localStorage.getItem(k);if(raw==null)continue;await apiFetch(REMOTE.base+'/api/data/'+encodeURIComponent(k),{method:'PUT',headers:{'Content-Type':'application/json'},body:JSON.stringify({username:REMOTE.user,value:JSON.parse(raw)})})}setDbStatus(true)}catch(e){setDbStatus(false)}}
+async function syncPull(){if(!REMOTE.enabled)return false;
+  try{const r=await apiFetch(REMOTE.base+'/api/session',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({username:REMOTE.user})});const j=await r.json(),d=j.data||{};let changed=false;
+    Object.values(K).forEach(k=>{const v=d[k];if(v!=null&&localStorage.getItem(k)==null){try{localStorage.setItem(k,JSON.stringify(v));changed=true}catch(e){}}});setDbStatus(true);return changed}catch(e){setDbStatus(false);return false}}
+
+window.__fullLogin=function(u){
+  REMOTE.user=u;localStorage.setItem(K.user,JSON.stringify(u));clearTimeout(syncT);
+  renderHome();
+  toast('SIGNED IN: '+u.toUpperCase(),'fa-user');
+  syncPull().then(changed=>{
+    if(changed){renderHome();toast('DATA RESTORED FROM CLOUD','fa-cloud-arrow-down')}
+    syncPush();
+  }).catch(()=>{});
+};
+
+function toast(msg,icon){const t=document.createElement('div');t.className='toast';t.innerHTML=`<i class="fas ${icon||'fa-check'}"></i><span>${esc(msg)}</span>`;$('#toast-wrap').appendChild(t);setTimeout(()=>t.classList.add('out'),2600);setTimeout(()=>t.remove(),3050)}
+function logAct(){const d=DB.get(K.act,{});const k=new Date().toISOString().slice(0,10);d[k]=(d[k]||0)+1;DB.set(K.act,d)}
+function flashLoad(){const b=$('#loading-bar');b.classList.remove('loading-active');void b.offsetWidth;b.classList.add('loading-active')}
+function copyText(t){const fb=()=>{const ta=document.createElement('textarea');ta.value=t;document.body.appendChild(ta);ta.select();try{document.execCommand('copy');toast('COPIED','fa-copy')}catch(e){toast('COPY FAILED','fa-triangle-exclamation')}ta.remove()};if(navigator.clipboard){navigator.clipboard.writeText(t).then(()=>toast('COPIED','fa-copy')).catch(fb)}else fb()}
+function countUp(el,val){const dur=550,t0=performance.now();const step=t=>{const p=Math.min(1,(t-t0)/dur),e=1-Math.pow(1-p,3);el.textContent=Math.round(val*e);if(p<1)requestAnimationFrame(step)};requestAnimationFrame(step)}
+const fmtNum=x=>{if(!isFinite(x))return'—';const a=Math.abs(x);if(a!==0&&(a<.001||a>1e9))return x.toExponential(4);return String(+x.toFixed(6))};
+
+setInterval(()=>{const n=new Date();$('#dash-time').textContent=n.toLocaleTimeString([],{hour:'2-digit',minute:'2-digit'});$('#dash-date').textContent=n.toLocaleDateString([],{weekday:'short',month:'short',day:'numeric'}).toUpperCase()},1000);
+
+/* ============================================================ tabs / routing ============================================================ */
+let tabs=[],tabSeq=0,activeTab=null,hist=[],hIdx=-1;
+function tabInfo(url){
+  if(url.startsWith('clonmedic://')){
+    const m={home:['home','fa-home'],search:['search','fa-search'],notes:['notes','fa-file-lines'],tasks:['tasks','fa-square-check'],flashcards:['cards','fa-clone'],quiz:['quiz','fa-circle-question'],bites:['bites','fa-lightbulb'],english:['word lab','fa-feather'],formulas:['formulas','fa-square-root-variable'],periodic:['elements','fa-atom'],timetable:['timetable','fa-calendar'],converter:['convert','fa-right-left'],gpa:['gpa','fa-graduation-cap'],invoice:['invoice','fa-file-invoice'],citations:['citations','fa-quote-right'],calc:['calc','fa-calculator'],code:['playground','fa-code'],whiteboard:['board','fa-pen'],analytics:['stats','fa-chart-simple'],habits:['habits','fa-calendar-check'],pomodoro:['pomodoro','fa-stopwatch'],timer:['timer','fa-hourglass-half'],article:['article','fa-book-open']};
+    const r=url.replace('clonmedic://','');return{name:(m[r]||['tab'])[0],icon:(m[r]||[,'fa-circle'])[1]};
+  }
+  return{name:url.split('/').pop().replace('.html',''),icon:'fa-cube'};
+}
+function renderTabs(){
+  $('#tabs-container').innerHTML=tabs.map(t=>{const i=tabInfo(t.url);return`<button onclick="switchTab(${t.id})" class="tab-row ${t.id===activeTab?'on':''}"><i class="fas ${i.icon}"></i><span class="sidebar-text" style="margin-left:0">${esc(i.name)}</span><span class="tab-x" onclick="event.stopPropagation();closeTab(${t.id})"><i class="fas fa-xmark"></i></span></button>`}).join('');
+}
+function newTab(url){url=url||'clonmedic://home';const t={id:++tabSeq,url};tabs.push(t);activeTab=t.id;renderTabs();navigate(url)}
+function closeTab(id){tabs=tabs.filter(t=>t.id!==id);if(activeTab===id){if(tabs.length){const t=tabs[tabs.length-1];activeTab=t.id;navigate(t.url,false)}else newTab()}else renderTabs()}
+function switchTab(id){const t=tabs.find(x=>x.id===id);if(!t)return;activeTab=id;renderTabs();navigate(t.url)}
+
+const SCREENS={home:'home-screen',search:'search-screen',article:'article-screen',notes:'notes-screen',tasks:'tasks-screen',flashcards:'flashcards-screen',quiz:'quiz-screen',bites:'bites-screen',english:'english-screen',formulas:'formulas-screen',periodic:'periodic-screen',timetable:'timetable-screen',converter:'converter-screen',gpa:'gpa-screen',invoice:'invoice-screen',citations:'citations-screen',calc:'calc-screen',code:'code-screen',whiteboard:'whiteboard-screen',analytics:'analytics-screen',habits:'habits-screen',pomodoro:'pomodoro-screen',timer:'timer-screen'};
+function onEnter(r){({home:renderHome,search:onSearchEnter,tasks:renderTasks,flashcards:()=>{renderFCList();loadFC()},quiz:()=>{renderQzList();loadQz()},bites:renderBites,notes:renderNotesScreen,formulas:renderFormulas,periodic:renderPeriodic,timetable:renderTT,converter:()=>{},gpa:renderGPA,invoice:renderInvoice,citations:()=>{},calc:()=>{},code:()=>runCode(),whiteboard:()=>requestAnimationFrame(resizeWb),analytics:renderAnalytics,habits:renderHabits,pomodoro:()=>{},timer:()=>{},article:()=>{}})[r]?.()}
+
+function navigate(url,push){
+  flashLoad();$('#address-bar').value=url;
+  $$('.view').forEach(v=>v.classList.remove('active'));
+  $$('.sb-item').forEach(i=>i.classList.toggle('active',i.dataset.route===url));
+  const t=tabs.find(x=>x.id===activeTab);if(t)t.url=url;renderTabs();
+  if(push!==false){hist=hist.slice(0,hIdx+1);hist.push(url);hIdx=hist.length-1}
+  if(url.startsWith('clonmedic://')){
+    const r=url.replace('clonmedic://','');
+    const el=document.getElementById(SCREENS[r]);if(el){el.classList.add('active');onEnter(r)}
+  }else{const s=$('#ext-screen');s.classList.add('active');$('#ext-frame').src=url}
+}
+function goHome(){navigate('clonmedic://home')}
+function goBack(){if(hIdx>0){hIdx--;navigate(hist[hIdx],false)}else toast('START OF HISTORY','fa-clock-rotate-left')}
+function goForward(){if(hIdx<hist.length-1){hIdx++;navigate(hist[hIdx],false)}}
+function reloadPage(){navigate(hist[hIdx]||'clonmedic://home',false)}
+function toggleGroup(id){document.getElementById(id).classList.toggle('open')}
+function processInput(v){v=v.trim();if(!v)return;if(v.startsWith('clonmedic://')||v.endsWith('.html')||v.startsWith('http')||v.startsWith('./'))navigate(v);else{navigate('clonmedic://search');runSearch(v)}}
+
+/* ============================================================ search ============================================================ */
+let lastQ='';
+function onSearchEnter(){if(lastQ)runSearch(lastQ);else{$('#search-results-container').innerHTML='<div class="empty-state">TYPE A QUERY IN THE BAR.</div>';$('#search-q').textContent=''}}
+async function runSearch(q){
+  lastQ=q;$('#search-q').textContent='/// '+q.toUpperCase();
+  const c=$('#search-results-container');c.innerHTML='<div class="text-[12px] font-bold uppercase text-[#777] p-4 flex items-center gap-2"><i class="fas fa-circle-notch fa-spin text-[11px]"></i> SEARCHING...</div>';
+  try{
+    const r=await fetch(`https://en.wikipedia.org/w/api.php?action=query&generator=search&gsrsearch=${encodeURIComponent(q)}&gsrlimit=8&prop=extracts|pageimages&exintro=1&explaintext=1&piprop=thumbnail&pithumbsize=160&format=json&origin=*`);
+    const d=await r.json();const pages=Object.values(d.query?.pages||{});
+    if(!pages.length){c.innerHTML='<div class="empty-state">NO RESULTS.</div>';return}
+    c.innerHTML='';pages.sort((a,b)=>a.index-b.index).forEach(p=>{
+      const el=document.createElement('div');el.className='notion-card result-card';
+      el.innerHTML=`${p.thumbnail?`<img src="${p.thumbnail.source}" alt="">`:''}<div class="flex-1 min-w-0"><div class="text-[13px] font-bold uppercase mb-1">${esc(p.title)}</div><div class="text-[11.5px] font-bold text-[#555] leading-relaxed" style="display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden">${esc((p.extract||'').slice(0,220))}…</div></div><i class="fas fa-arrow-right text-[10px] mt-1"></i>`;
+      el.onclick=()=>openArticle(p.title);c.appendChild(el);
+    });
+  }catch(e){c.innerHTML='<div class="empty-state">INDEX UNREACHABLE.</div>'}
+}
+async function openArticle(title){
+  navigate('clonmedic://article');
+  const c=$('#article-content');$('#article-title').textContent=title;c.innerHTML='<div class="text-[12px] font-bold uppercase text-[#777] p-4"><i class="fas fa-circle-notch fa-spin mr-2 text-[11px]"></i>LOADING...</div>';
+  try{
+    const r=await fetch(`https://en.wikipedia.org/w/api.php?action=parse&page=${encodeURIComponent(title)}&prop=text&redirects=1&format=json&origin=*`);
+    const d=await r.json();const html=d.parse?.text?.['*']||'';
+    c.innerHTML=html;
+    try{c.querySelectorAll('.mw-editsection,.mw-empty-elt,style,.navbox,.ambox,#toc,.hatnote,.mbox-small,.mw-jump-link').forEach(n=>n.remove())}catch(e){}
+    logAct();
+  }catch(e){c.innerHTML='<div class="empty-state">FAILED TO LOAD.</div>'}
+}
+
+/* ============================================================ dashboard ============================================================ */
+function renderHome(){
+  const u=DB.get(K.user,''),h=new Date().getHours();
+  $('#dash-greet').textContent=(h<5?'UP LATE':h<12?'GOOD MORNING':h<18?'GOOD AFTERNOON':'GOOD EVENING')+(u?' /// '+u.toUpperCase():'');
+  const ta=$('#scratchpad');if(ta&&!ta.value)ta.value=DB.get(K.scratch,'');
+  renderMiniTasks();renderActivity();
+}
+function renderMiniTasks(){
+  const L=DB.get(K.tasks,[]).filter(t=>t.s!=='done').slice(0,4);
+  $('#mini-tasks-list').innerHTML=L.length?L.map(t=>`<div class="mini-task" onclick="newTab('clonmedic://tasks')"><span class="mt-dot ${t.s==='doing'?'on':''}"></span><span class="mt-t">${esc(t.t)}</span></div>`).join(''):'<div class="text-[11px] font-bold uppercase text-[#999] px-2 py-2">NO OPEN TASKS.</div>';
+}
+function renderActivity(){
+  const d=DB.get(K.act,{}),c=$('#activity-matrix');if(!c)return;
+  let html='';const today=new Date();
+  for(let r=0;r<7;r++){html+='<div class="activity-grid">';
+    for(let col=0;col<14;col++){
+      const idx=r*14+col,day=new Date(today);day.setDate(today.getDate()-(97-idx));
+      const k=day.toISOString().slice(0,10),n=d[k]||0;
+      html+=`<div class="activity-cell ${n>=3?'activity-lvl-3':n===2?'activity-lvl-2':n===1?'activity-lvl-1':''}" style="animation-delay:${idx*3}ms" title="${k}"></div>`;
+    }html+='</div>'}
+  c.innerHTML=html;
+}
+const saveScratch=deb(()=>{DB.set(K.scratch,$('#scratchpad').value)},400);
+
+/* ============================================================ tasks ============================================================ */
+function addTask(){const i=$('#new-task-input'),v=i.value.trim();if(!v){toast('TASK NEEDS A TITLE','fa-pen');return}
+  const L=DB.get(K.tasks,[]);L.unshift({id:Date.now(),t:v,s:'todo'});DB.set(K.tasks,L);i.value='';renderTasks();logAct();toast('TASK ADDED','fa-check')}
+function moveTask(id,d){const L=DB.get(K.tasks,[]),t=L.find(x=>x.id===id);if(!t)return;const o={todo:0,doing:1,done:2},n=o[t.s]+d;if(n<0||n>2)return;t.s=['todo','doing','done'][n];DB.set(K.tasks,L);renderTasks();if(t.s==='done')logAct()}
+function delTask(id){DB.set(K.tasks,DB.get(K.tasks,[]).filter(x=>x.id!==id));renderTasks();toast('TASK REMOVED','fa-trash')}
+function renderTasks(){
+  const L=DB.get(K.tasks,[]),cols={todo:[],doing:[],done:[]};L.forEach(t=>cols[t.s]?.push(t));
+  const draw=a=>a.map(t=>`<div class="task-card"><span class="flex-1 uppercase">${esc(t.t)}</span><div class="tc-actions"><span class="tc-btn" onclick="moveTask(${t.id},-1)"><i class="fas fa-chevron-left"></i></span><span class="tc-btn" onclick="moveTask(${t.id},1)"><i class="fas fa-chevron-right"></i></span><span class="tc-btn" onclick="delTask(${t.id})"><i class="fas fa-xmark"></i></span></div></div>`).join('')||'<div class="empty-state">—</div>';
+  $('#tasks-todo').innerHTML=draw(cols.todo);$('#tasks-doing').innerHTML=draw(cols.doing);$('#tasks-done').innerHTML=draw(cols.done);
+  renderMiniTasks();
+}
+
+/* ============================================================ flashcards ============================================================ */
+let fcIdx=0;
+function toggleFC(m){const p=m==='play';$('#fc-play-view').classList.toggle('hide',!p);$('#fc-create-view').classList.toggle('hide',p);
+  $('#fc-play-btn').classList.toggle('notion-btn-primary',p);$('#fc-create-btn').classList.toggle('notion-btn-primary',!p)}
+function addCard(){const q=$('#fc-q').value.trim(),a=$('#fc-a').value.trim();if(!q||!a){toast('FILL BOTH SIDES','fa-clone');return}
+  const L=DB.get(K.cards,[]);L.push({id:Date.now(),q,a});DB.set(K.cards,L);$('#fc-q').value='';$('#fc-a').value='';renderFCList();fcIdx=L.length-1;loadFC();logAct();toast('CARD SAVED','fa-check')}
+function delCard(id){DB.set(K.cards,DB.get(K.cards,[]).filter(x=>x.id!==id));renderFCList();fcIdx=0;loadFC()}
+function renderFCList(){const L=DB.get(K.cards,[]);$('#fc-count').textContent=L.length;
+  $('#fc-list').innerHTML=L.map(c=>`<div class="fc-row"><i class="fas fa-clone text-[10px]"></i><span class="flex-1 truncate uppercase">${esc(c.q)}</span><span class="tc-btn" onclick="delCard(${c.id})"><i class="fas fa-xmark"></i></span></div>`).join('')||'<div class="empty-state">EMPTY DECK.</div>'}
+function loadFC(){const L=DB.get(K.cards,[]);$('#fc-card').classList.remove('flipped');
+  if(!L.length){$('#fc-front').textContent='NO CARDS YET.';$('#fc-back').textContent='';$('#fc-counter').textContent='0/0';return}
+  fcIdx=Math.min(fcIdx,L.length-1);const c=L[fcIdx];$('#fc-front').textContent=c.q;$('#fc-back').textContent=c.a;$('#fc-counter').textContent=(fcIdx+1)+'/'+L.length}
+function flipCard(){const L=DB.get(K.cards,[]);if(!L.length)return;$('#fc-card').classList.toggle('flipped')}
+function nextCard(){const L=DB.get(K.cards,[]);if(!L.length)return;fcIdx=(fcIdx+1)%L.length;loadFC()}
+function prevCard(){const L=DB.get(K.cards,[]);if(!L.length)return;fcIdx=(fcIdx-1+L.length)%L.length;loadFC()}
+
+/* ============================================================ quiz ============================================================ */
+let qzIdx=0,qzScore=0,qzAnswered=false;
+function toggleQz(m){const p=m==='play';$('#qz-play-view').classList.toggle('hide',!p);$('#qz-create-view').classList.toggle('hide',p);
+  $('#qz-play-btn').classList.toggle('notion-btn-primary',p);$('#qz-create-btn').classList.toggle('notion-btn-primary',!p)}
+function addQuiz(){const q=$('#qz-q').value.trim(),o=['qz-o1','qz-o2','qz-o3','qz-o4'].map(i=>$('#'+i).value.trim()),a=+document.querySelector('input[name=qz-ans]:checked').value;
+  if(!q||o.some(x=>!x)){toast('FILL ALL FIELDS','fa-circle-question');return}
+  const L=DB.get(K.quiz,[]);L.push({id:Date.now(),q,o,a});DB.set(K.quiz,L);
+  $('#qz-q').value='';['qz-o1','qz-o2','qz-o3','qz-o4'].forEach(i=>$('#'+i).value='');
+  renderQzList();qzIdx=L.length-1;loadQz();logAct();toast('QUESTION SAVED','fa-check')}
+function delQz(id){DB.set(K.quiz,DB.get(K.quiz,[]).filter(x=>x.id!==id));renderQzList();loadQz()}
+function renderQzList(){const L=DB.get(K.quiz,[]);$('#qz-count').textContent=L.length;
+  $('#qz-list').innerHTML=L.map((z,i)=>`<div class="fc-row"><span class="text-[10px] w-5">${i+1}</span><span class="flex-1 truncate uppercase">${esc(z.q)}</span><span class="tc-btn" onclick="delQz(${z.id})"><i class="fas fa-xmark"></i></span></div>`).join('')||'<div class="empty-state">EMPTY BANK.</div>'}
+function loadQz(){qzIdx=0;qzScore=0;showQz()}
+function showQz(){
+  const L=DB.get(K.quiz,[]);
+  if(!L.length){$('#qz-question-display').textContent='NO QUIZZES YET.';$('#qz-options-container').innerHTML='';$('#qz-counter').textContent='0/0';$('#qz-next-btn').classList.add('hide');$('#qz-feedback').innerHTML='';return}
+  if(qzIdx>=L.length){$('#qz-question-display').innerHTML='SESSION COMPLETE.';$('#qz-options-container').innerHTML=`<div class="w-full"><div class="text-4xl aesthetic-title mb-3">${qzScore}/${L.length}</div><button class="notion-btn notion-btn-primary px-5 py-2" onclick="loadQz()">RESTART</button></div>`;$('#qz-counter').textContent=L.length+'/'+L.length;$('#qz-next-btn').classList.add('hide');$('#qz-feedback').innerHTML=`<span style="color:#008000">${qzScore===L.length?'FLAWLESS.':Math.round(qzScore/L.length*100)+'% CORRECT.'}</span>`;return}
+  const it=L[qzIdx];qzAnswered=false;
+  $('#qz-question-display').textContent=it.q;$('#qz-counter').textContent=(qzIdx+1)+'/'+L.length;
+  $('#qz-next-btn').classList.add('hide');$('#qz-feedback').innerHTML='';
+  $('#qz-options-container').innerHTML=it.o.map((o,i)=>`<button class="notion-btn opt-btn" onclick="selectOpt(${i})"><span class="opt-key">${'ABCD'[i]}</span><span class="text-left">${esc(o)}</span></button>`).join('');
+}
+function selectOpt(i){
+  if(qzAnswered)return;qzAnswered=true;
+  const L=DB.get(K.quiz,[]),it=L[qzIdx];
+  $$('#qz-options-container button').forEach((b,j)=>b.classList.add(j===it.a?'opt-right':(j===i?'opt-wrong':'opt-dim')));
+  if(i===it.a){qzScore++;$('#qz-feedback').innerHTML='<span style="color:#008000">CORRECT.</span>';logAct()}
+  else{$('#qz-feedback').innerHTML=`<span style="color:#FF3B00">WRONG /// ${'ABCD'[it.a]}</span>`}
+  $('#qz-next-btn').classList.remove('hide');
+}
+function nextQz(){qzIdx++;showQz()}
+
+/* ============================================================ bites ============================================================ */
+function addBite(){const t=$('#bite-t').value.trim(),g=$('#bite-tag').value.trim()||'note',b=$('#bite-body').value.trim();
+  if(!t||!b){toast('TITLE + CONTENT REQUIRED','fa-lightbulb');return}
+  const L=DB.get(K.bites,[]);L.unshift({id:Date.now(),t,g,b,ts:Date.now()});DB.set(K.bites,L);
+  $('#bite-t').value='';$('#bite-tag').value='';$('#bite-body').value='';renderBites();logAct();toast('BITE SAVED','fa-check')}
+function delBite(id){DB.set(K.bites,DB.get(K.bites,[]).filter(x=>x.id!==id));renderBites()}
+function renderBites(){const L=DB.get(K.bites,[]);
+  $('#bites-list').innerHTML=L.map((x,i)=>`<div class="notion-card p-4 fade-card" style="animation-delay:${Math.min(i*35,350)}ms">
+    <div class="flex items-center justify-between mb-2"><span class="tag" style="background:#FFDE00">${esc(x.g).toUpperCase()}</span><div class="flex items-center gap-2"><span class="text-[10px] font-bold text-[#999]">${new Date(x.ts).toLocaleDateString([],{month:'short',day:'numeric'}).toUpperCase()}</span><span class="tc-btn" onclick="delBite(${x.id})"><i class="fas fa-xmark"></i></span></div></div>
+    <div class="text-[13px] aesthetic-title mb-1 uppercase">${esc(x.t)}</div>
+    <div class="text-[11.5px] font-bold text-[#555] leading-relaxed">${esc(x.b)}</div></div>`).join('')||'<div class="empty-state col-span-full">NO BITES.</div>'}
+
+/* ============================================================ english lab ============================================================ */
+const STOP=new Set('the a an and or but of to in on for with as is are was were be been it its this that these those at by from not no so if then than too very can will just has have had do does did he she they we you i me my his her their our your him them us what which who when where why how all any both each few more most other some such only own same don now into about over under again further once here there up down out off because while during before after above below between through against'.split(' '));
+const engAnalyze=deb(()=>{
+  const t=$('#eng-input').value.trim();
+  const words=t?t.split(/\s+/).filter(w=>/[a-z0-9]/i.test(w)):[];
+  const sentences=Math.max(1,(t.match(/[.!?]+/g)||[]).length);
+  const paras=t?t.split(/\n+/).filter(x=>x.trim()).length:0;
+  const uniq=new Set(words.map(w=>w.toLowerCase().replace(/[^a-z0-9']/g,''))).size;
+  const syl=words.reduce((a,w)=>a+Math.max(1,(w.toLowerCase().match(/[aeiouy]+/g)||[]).length),0);
+  const flesch=t?Math.max(0,Math.min(100,Math.round(206.835-1.015*(words.length/sentences)-84.6*(syl/Math.max(1,words.length))))):0;
+  const longest=words.reduce((a,w)=>w.length>a.length?w:a,'');
+  const level=flesch>=90?'VERY EASY':flesch>=80?'EASY':flesch>=70?'FAIRLY EASY':flesch>=60?'PLAIN':flesch>=50?'FAIRLY HARD':flesch>=30?'HARD':'VERY HARD';
+  const stat=(l,v)=>`<div class="notion-card p-3.5"><div class="text-[9px] font-bold uppercase tracking-widest text-[#777] mb-1">${l}</div><div class="text-xl aesthetic-title">${v}</div></div>`;
+  $('#eng-stats').innerHTML=[['WORDS',words.length],['UNIQUE',uniq],['SENTENCES',t?(t.match(/[.!?]+/g)||[]).length:0],['CHARS',t.length],['READ TIME',Math.max(t?1:0,Math.ceil(words.length/200))+'M'],['AVG LEN',words.length?(words.reduce((a,w)=>a+w.length,0)/words.length).toFixed(1):'0'],['PARAGRAPHS',paras],['SYLLABLES',syl]].map(x=>stat(x[0],x[1])).join('');
+  $('#eng-flesch').textContent=t?flesch:'—';$('#eng-level').textContent=t?'/// '+level:'';
+  $('#eng-extra').innerHTML=t?`<div>LONGEST /// <b>${esc(longest)}</b></div><div>AVG SENTENCE /// <b>${(words.length/sentences).toFixed(1)} WORDS</b></div>`:'';
+  const freq={};words.forEach(w=>{w=w.toLowerCase().replace(/[^a-z0-9']/g,'');if(w.length>2&&!STOP.has(w))freq[w]=(freq[w]||0)+1});
+  const top=Object.entries(freq).sort((a,b)=>b[1]-a[1]).slice(0,6),mx=Math.max(1,...top.map(x=>x[1]));
+  $('#eng-top').innerHTML=top.length?top.map(([w,n])=>`<div class="flex items-center gap-2.5"><span class="text-[11px] font-bold uppercase w-20 truncate">${esc(w)}</span><div class="flex-1 h-3.5 border border-black bg-white"><div style="width:${n/mx*100}%" class="h-full bg-black"></div></div><span class="text-[10px] font-bold text-[#777]">${n}</span></div>`).join(''):'<div class="text-[11px] font-bold uppercase text-[#999]">TYPE SOMETHING.</div>';
+},400);
+
+/* ============================================================ notes ============================================================ */
+let curNote=null;
+const noteDirty=deb(saveNote,600);
+function newNote(){const L=DB.get(K.notes,[]);const n={id:Date.now(),title:'UNTITLED',body:'',ts:Date.now()};L.unshift(n);DB.set(K.notes,L);curNote=n.id;renderNotesList();loadNote(n.id);$('#note-title').focus()}
+function renderNotesScreen(){const L=DB.get(K.notes,[]);renderNotesList();if(L.length&&curNote==null)loadNote(L[0].id);else if(!L.length){$('#note-title').value='';$('#note-body').innerHTML='';$('#note-meta').textContent='SELECT OR CREATE A NOTE'}}
+function renderNotesList(){const L=DB.get(K.notes,[]);
+  $('#notes-list').innerHTML=L.map(n=>`<button class="note-row ${n.id===curNote?'on':''}" onclick="loadNote(${n.id})">${esc(n.title||'UNTITLED')}<span>${new Date(n.ts).toLocaleDateString([],{month:'short',day:'numeric'}).toUpperCase()}</span></button>`).join('')||'<div class="empty-state">NO NOTES.</div>'}
+function loadNote(id){curNote=id;const n=DB.get(K.notes,[]).find(x=>x.id===id);if(!n)return;
+  $('#note-title').value=n.title;$('#note-body').innerHTML=n.body;renderNotesList();
+  $('#note-meta').textContent=($('#note-body').innerText.trim().split(/\s+/).filter(Boolean).length)+' WORDS /// AUTOSAVING'}
+function saveNote(){if(curNote==null)return;const L=DB.get(K.notes,[]);const n=L.find(x=>x.id===curNote);if(!n)return;
+  n.title=$('#note-title').value||'UNTITLED';n.body=$('#note-body').innerHTML;n.ts=Date.now();DB.set(K.notes,L);renderNotesList();
+  $('#note-meta').textContent=($('#note-body').innerText.trim().split(/\s+/).filter(Boolean).length)+' WORDS /// SAVED'}
+function delNote(){if(curNote==null)return;DB.set(K.notes,DB.get(K.notes,[]).filter(x=>x.id!==curNote));curNote=null;renderNotesScreen();toast('NOTE DELETED','fa-trash')}
+function fmt(c,b){document.execCommand(c,false,b||null);$('#note-body').focus()}
+
+/* ============================================================ formulas + saver ============================================================ */
+const FORMULAS=[
+ {c:'math',n:'quadratic root',f:'x = ( −b ± √(b² − 4ac) ) / 2a',d:'solves ax² + bx + c = 0'},{c:'math',n:'pythagoras',f:'a² + b² = c²',d:'right-triangle sides'},
+ {c:'math',n:'circle area',f:'A = πr²',d:'area from radius'},{c:'math',n:'circumference',f:'C = 2πr',d:'perimeter of a circle'},
+ {c:'math',n:'sphere volume',f:'V = (4/3)πr³',d:'volume of a sphere'},{c:'math',n:'cylinder volume',f:'V = πr²h',d:'volume of a cylinder'},
+ {c:'math',n:'slope',f:'m = (y₂ − y₁) / (x₂ − x₁)',d:'gradient between points'},{c:'math',n:'distance',f:'d = √((x₂−x₁)² + (y₂−y₁)²)',d:'distance in the plane'},
+ {c:'math',n:'compound interest',f:'A = P(1 + r/n)^(nt)',d:'growth with compounding'},{c:'math',n:'trig identity',f:'sin²θ + cos²θ = 1',d:'core trig identity'},
+ {c:'math',n:'binomial',f:'C(n,k) = n! / (k!(n−k)!)',d:'ways to choose k of n'},
+ {c:'physics',n:'newton ii',f:'F = ma',d:'force = mass × acceleration'},{c:'physics',n:'velocity',f:'v = u + at',d:'final velocity'},
+ {c:'physics',n:'displacement',f:'s = ut + ½at²',d:'with acceleration'},{c:'physics',n:'no-time',f:'v² = u² + 2as',d:'timeless velocity'},
+ {c:'physics',n:'gravitation',f:'F = G·m₁m₂ / r²',d:'universal gravity'},{c:'physics',n:'kinetic energy',f:'KE = ½mv²',d:'energy of motion'},
+ {c:'physics',n:'potential energy',f:'PE = mgh',d:'energy from height'},{c:'physics',n:'power',f:'P = W / t',d:'work per time'},
+ {c:'physics',n:'ohm\'s law',f:'V = IR',d:'voltage = current × resistance'},{c:'physics',n:'wave equation',f:'v = fλ',d:'speed = freq × wavelength'},
+ {c:'physics',n:'hooke\'s law',f:'F = kx',d:'spring force'},{c:'physics',n:'mass-energy',f:'E = mc²',d:'einstein equivalence'},
+ {c:'physics',n:'momentum',f:'p = mv',d:'linear momentum'},
+ {c:'chemistry',n:'ideal gas',f:'PV = nRT',d:'gas state equation'},{c:'chemistry',n:'molarity',f:'M = n / V',d:'moles per litre'},
+ {c:'chemistry',n:'ph',f:'pH = −log₁₀[H⁺]',d:'acidity'},{c:'chemistry',n:'rate law',f:'rate = k[A]^m[B]^n',d:'reaction speed'},
+ {c:'chemistry',n:'gibbs energy',f:'ΔG = ΔH − TΔS',d:'spontaneity'},{c:'chemistry',n:'photon energy',f:'E = hc / λ',d:'light energy'},
+ {c:'chemistry',n:'moles',f:'n = m / M',d:'mass to moles'},{c:'chemistry',n:'heat',f:'Q = mcΔT',d:'thermal change'}
+];
+let fCat='all',FVIEW=[];
+function setFCat(c,el){fCat=c;$$('#f-cats .chip').forEach(x=>x.classList.remove('on'));el.classList.add('on');renderFormulas()}
+function addCustomF(){
+  const n=$('#cf-n').value.trim(),f=$('#cf-f').value.trim();
+  if(!n||!f){toast('NAME + FORMULA REQUIRED','fa-square-root-variable');return}
+  const L=DB.get(K.customF,[]);L.unshift({id:Date.now(),n,f,d:$('#cf-d').value.trim(),c:$('#cf-c').value});
+  DB.set(K.customF,L);$('#cf-n').value='';$('#cf-f').value='';$('#cf-d').value='';
+  renderFormulas();logAct();toast('FORMULA SAVED','fa-check');
+}
+function delCustomF(id){DB.set(K.customF,DB.get(K.customF,[]).filter(x=>x.id!==id));renderFormulas();toast('FORMULA REMOVED','fa-trash')}
+function copyF(i){const x=FVIEW[i];if(x)copyText(x.f)}
+function renderFormulas(){
+  const custom=DB.get(K.customF,[]);
+  $('#cf-count').textContent=custom.length+' STORED';
+  const q=($('#f-search').value||'').toLowerCase();
+  const ALL=[...custom.map(x=>({...x,custom:true})),...FORMULAS];
+  const L=ALL.filter(x=>(fCat==='all'||x.c===fCat)&&(x.n+' '+x.f+' '+(x.d||'')).toLowerCase().includes(q));
+  FVIEW=L;
+  $('#f-list').innerHTML=L.map((x,i)=>`<div class="notion-card p-4 fade-card" style="animation-delay:${Math.min(i*30,300)}ms">
+    <div class="flex justify-between items-start gap-2 mb-2.5">
+      <div><div class="text-[9px] font-bold uppercase tracking-widest text-[#777] mb-0.5 flex items-center gap-1.5">${x.c.toUpperCase()}${x.custom?'<span class="tag" style="padding:1px 7px;font-size:8px;background:#FF3B00;color:#fff;border-color:#000">MINE</span>':''}</div>
+      <div class="text-[12.5px] font-bold uppercase">${esc(x.n)}</div></div>
+      <div class="flex gap-1"><span class="tc-btn" onclick="copyF(${i})" title="copy"><i class="fas fa-copy"></i></span>${x.custom?`<span class="tc-btn" onclick="delCustomF(${x.id})" title="delete"><i class="fas fa-xmark"></i></span>`:''}</div>
+    </div>
+    <div class="text-[15px] font-bold leading-snug mb-1.5">${esc(x.f)}</div>
+    <div class="text-[10.5px] font-bold text-[#777] uppercase">${esc(x.d||'—')}</div></div>`).join('')||'<div class="empty-state col-span-full">NO MATCHES.</div>';
+}
+
+/* ============================================================ periodic ============================================================ */
+const EL="1 H Hydrogen O 1 1,2 He Helium G 18 1,3 Li Lithium A 1 2,4 Be Beryllium B 2 2,5 B Boron M 13 2,6 C Carbon O 14 2,7 N Nitrogen O 15 2,8 O Oxygen O 16 2,9 F Fluorine H 17 2,10 Ne Neon G 18 2,11 Na Sodium A 1 3,12 Mg Magnesium B 2 3,13 Al Aluminium P 13 3,14 Si Silicon M 14 3,15 P Phosphorus O 15 3,16 S Sulfur O 16 3,17 Cl Chlorine H 17 3,18 Ar Argon G 18 3,19 K Potassium A 1 4,20 Ca Calcium B 2 4,21 Sc Scandium T 3 4,22 Ti Titanium T 4 4,23 V Vanadium T 5 4,24 Cr Chromium T 6 4,25 Mn Manganese T 7 4,26 Fe Iron T 8 4,27 Co Cobalt T 9 4,28 Ni Nickel T 10 4,29 Cu Copper T 11 4,30 Zn Zinc T 12 4,31 Ga Gallium P 13 4,32 Ge Germanium M 14 4,33 As Arsenic M 15 4,34 Se Selenium O 16 4,35 Br Bromine H 17 4,36 Kr Krypton G 18 4,37 Rb Rubidium A 1 5,38 Sr Strontium B 2 5,39 Y Yttrium T 3 5,40 Zr Zirconium T 4 5,41 Nb Niobium T 5 5,42 Mo Molybdenum T 6 5,43 Tc Technetium T 7 5,44 Ru Ruthenium T 8 5,45 Rh Rhodium T 9 5,46 Pd Palladium T 10 5,47 Ag Silver T 11 5,48 Cd Cadmium T 12 5,49 In Indium P 13 5,50 Sn Tin P 14 5,51 Sb Antimony M 15 5,52 Te Tellurium M 16 5,53 I Iodine H 17 5,54 Xe Xenon G 18 5,55 Cs Caesium A 1 6,56 Ba Barium B 2 6,57 La Lanthanum L 0 6,58 Ce Cerium L 0 6,59 Pr Praseodymium L 0 6,60 Nd Neodymium L 0 6,61 Pm Promethium L 0 6,62 Sm Samarium L 0 6,63 Eu Europium L 0 6,64 Gd Gadolinium L 0 6,65 Tb Terbium L 0 6,66 Dy Dysprosium L 0 6,67 Ho Holmium L 0 6,68 Er Erbium L 0 6,69 Tm Thulium L 0 6,70 Yb Ytterbium L 0 6,71 Lu Lutetium L 0 6,72 Hf Hafnium T 4 6,73 Ta Tantalum T 5 6,74 W Tungsten T 6 6,75 Re Rhenium T 7 6,76 Os Osmium T 8 6,77 Ir Iridium T 9 6,78 Pt Platinum T 10 6,79 Au Gold T 11 6,80 Hg Mercury T 12 6,81 Tl Thallium P 13 6,82 Pb Lead P 14 6,83 Bi Bismuth P 15 6,84 Po Polonium P 16 6,85 At Astatine H 17 6,86 Rn Radon G 18 6,87 Fr Francium A 1 7,88 Ra Radium B 2 7,89 Ac Actinium C 0 7,90 Th Thorium C 0 7,91 Pa Protactinium C 0 7,92 U Uranium C 0 7,93 Np Neptunium C 0 7,94 Pu Plutonium C 0 7,95 Am Americium C 0 7,96 Cm Curium C 0 7,97 Bk Berkelium C 0 7,98 Cf Californium C 0 7,99 Es Einsteinium C 0 7,100 Fm Fermium C 0 7,101 Md Mendelevium C 0 7,102 No Nobelium C 0 7,103 Lr Lawrencium C 0 7,104 Rf Rutherfordium T 4 7,105 Db Dubnium T 5 7,106 Sg Seaborgium T 6 7,107 Bh Bohrium T 7 7,108 Hs Hassium T 8 7,109 Mt Meitnerium T 9 7,110 Ds Darmstadtium T 10 7,111 Rg Roentgenium T 11 7,112 Cn Copernicium T 12 7,113 Nh Nihonium P 13 7,114 Fl Flerovium P 14 7,115 Mc Moscovium P 15 7,116 Lv Livermorium P 16 7,117 Ts Tennessine H 17 7,118 Og Oganesson G 18 7";
+const CATCLS={A:'element-alkali',B:'element-alkaline',T:'element-transition',H:'element-halogen',G:'element-noble',M:'element-metalloid',P:'element-post',O:'element-other',L:'element-lanth',C:'element-act'};
+const CATLBL={A:'alkali metal',B:'alkaline earth',T:'transition metal',H:'halogen',G:'noble gas',M:'metalloid',P:'post-transition',O:'reactive nonmetal',L:'lanthanide',C:'actinide'};
+const CATCOL={A:'#FF3B00',B:'#FF7A00',T:'#0000FF',H:'#008000',G:'#7B2FBE',M:'#00A29C',P:'#0057D8',O:'#777',L:'#B8A000',C:'#C417B8'};
+function renderPeriodic(){
+  if(window._ptDone)return;window._ptDone=true;
+  let html='';
+  EL.split(',').forEach(s=>{
+    const[n,sym,name,cat,grp,per]=s.split(' ');let col,row;
+    if(grp==='0'){row=cat==='L'?9:10;col=3+(+n-(cat==='L'?57:89))}else{col=+grp;row=+per}
+    html+=`<div class="element-box ${CATCLS[cat]}" style="grid-column:${col};grid-row:${row}" onclick="elDetail(${n})" title="${name}"><span class="el-n">${n}</span><span class="el-s">${sym}</span></div>`;
+  });
+  html+=`<div style="grid-column:1/-1;grid-row:8;height:10px"></div>`;
+  html+=`<div class="element-box element-f" style="grid-column:3;grid-row:6"><span class="el-s">57–71</span></div><div class="element-box element-f" style="grid-column:3;grid-row:7"><span class="el-s">89–103</span></div>`;
+  $('#pt-grid').innerHTML=html;
+  $('#pt-legend').innerHTML=Object.entries(CATLBL).map(([k,v])=>`<span class="flex items-center gap-1.5"><span class="w-3 h-3" style="background:#fff;border:1px solid #000;border-bottom:3px solid ${CATCOL[k]}"></span>${v.toUpperCase()}</span>`).join('');
+  elDetail(79);
+}
+function elDetail(n){
+  const e=EL.split(',').map(s=>s.split(' ')).find(x=>+x[0]===n);if(!e)return;
+  const[,sym,name,cat,grp,per]=e;
+  $('#el-detail').innerHTML=`<div class="text-5xl aesthetic-title leading-none">${sym}</div><div class="text-[12px] font-bold uppercase mt-1">${name}</div><div class="text-[10px] font-bold uppercase text-[#777] mt-2 leading-relaxed">NO. ${n} /// ${CATLBL[cat].toUpperCase()}<br>${grp==='0'?'F-BLOCK':'GROUP '+grp} /// PERIOD ${per}</div>`;
+}
+
+/* ============================================================ timetable ============================================================ */
+const TT_DAYS=['mon','tue','wed','thu','fri','sat'];
+function ttColor(v){if(!v)return'#ccc';const P=['#FF3B00','#0000FF','#008000','#7B2FBE','#FF7A00','#000'];let h=0;for(const c of v)h=(h*31+c.charCodeAt(0))>>>0;return P[h%P.length]}
+function renderTT(){
+  const d=DB.get(K.tt,{});
+  let html=`<div class="grid gap-1.5" style="grid-template-columns:44px repeat(8,1fr)">`;
+  html+=`<div></div>`+[1,2,3,4,5,6,7,8].map(p=>`<div class="text-[10px] font-bold uppercase text-center">P${p}</div>`).join('');
+  TT_DAYS.forEach(day=>{
+    html+=`<div class="text-[10.5px] font-bold uppercase flex items-center">${day}</div>`;
+    for(let p=1;p<=8;p++){const k='d'+day+'p'+p,v=d[k]||'';
+      html+=`<div class="tt-cell" id="${k}" ${v?`style="border-bottom:3px solid ${ttColor(v)}"`:''} onclick="ttEdit('${day}',${p})">${esc(v)||'+'}</div>`}
+  });
+  $('#tt-grid').innerHTML=html+'</div>';
+}
+function ttEdit(day,per){
+  const k='d'+day+'p'+per,cell=document.getElementById(k);if(!cell||cell.querySelector('input'))return;
+  const cur=(DB.get(K.tt,{})[k]||'');
+  cell.innerHTML=`<input class="tt-in" value="${esc(cur)}" onblur="ttSave('${k}',this.value)" onkeypress="if(event.key==='Enter'){this.blur()}">`;
+  const inp=cell.querySelector('input');inp.focus();inp.select();
+}
+function ttSave(k,v){v=v.trim();const d=DB.get(K.tt,{});if(v)d[k]=v;else delete d[k];DB.set(K.tt,d);renderTT()}
+
+/* ============================================================ converter ============================================================ */
+const UNITS={length:{mm:.001,cm:.01,m:1,km:1000,inch:.0254,ft:.3048,yd:.9144,mi:1609.344},mass:{mg:1e-6,g:.001,kg:1,t:1000,oz:.0283495,lb:.453592},data:{b:1,kb:1024,mb:1048576,gb:1073741824,tb:1099511627776},speed:{'m/s':1,'km/h':1/3.6,mph:.44704,kn:.514444},temp:{'°c':1,'°f':1,'k':1}};
+let convCat='length';
+function setConvCat(c,el){convCat=c;$$('#conv-cats .chip').forEach(x=>x.classList.remove('on'));el.classList.add('on');
+  const keys=Object.keys(UNITS[c]);
+  const opt=sel=>keys.map(k=>`<option value="${k}" ${k===sel?'selected':''}>${k}</option>`).join('');
+  $('#conv-from').innerHTML=opt(keys[0]);$('#conv-to').innerHTML=opt(keys[1]||keys[0]);calcConv()}
+function convSwap(){const a=$('#conv-from').value,b=$('#conv-to').value;$('#conv-from').value=b;$('#conv-to').value=a;calcConv()}
+function calcConv(){
+  const v=parseFloat($('#conv-v').value)||0,f=$('#conv-from').value,t=$('#conv-to').value;let r;
+  if(convCat==='temp'){
+    const toC={'°c':x=>x,'°f':x=>(x-32)*5/9,'k':x=>x-273.15},fromC={'°c':x=>x,'°f':x=>x*9/5+32,'k':x=>x+273.15};
+    r=fromC[t](toC[f](v));
+  }else{const U=UNITS[convCat];r=v*U[f]/U[t]}
+  $('#conv-res').textContent=fmtNum(r)+' '+t;
+}
+
+/* ============================================================ gpa ============================================================ */
+const GRADES=[['a',4],['a-',3.7],['b+',3.3],['b',3],['b-',2.7],['c+',2.3],['c',2],['c-',1.7],['d',1],['f',0]];
+function renderGPA(){
+  const L=DB.get(K.gpa,[]);
+  $('#gpa-rows').innerHTML=L.map(r=>`<div class="grid grid-cols-[1fr_64px_90px_32px] gap-2 items-center">
+    <input class="pro-input p-2 text-[12px] font-bold uppercase" value="${esc(r.c)}" placeholder="COURSE" oninput="gpaUpd(${r.id},'c',this.value)">
+    <input type="number" min="0" class="pro-input p-2 text-[12px] text-center font-bold" value="${r.cr}" oninput="gpaUpd(${r.id},'cr',this.value)">
+    <select class="pro-input p-2 text-[12px] font-bold uppercase" onchange="gpaUpd(${r.id},'g',this.value)">${GRADES.map(([n,v])=>`<option value="${v}" ${String(v)===String(r.g)?'selected':''}>${n} /// ${v}</option>`).join('')}</select>
+    <button class="notion-btn py-1.5 px-1 notion-btn-danger" onclick="delGRow(${r.id})"><i class="fas fa-xmark text-[11px]"></i></button></div>`).join('')||'<div class="empty-state">ADD YOUR FIRST COURSE.</div>';
+  gpaCalc();
+}
+function addGRow(){const L=DB.get(K.gpa,[]);L.push({id:Date.now(),c:'',cr:3,g:4});DB.set(K.gpa,L);renderGPA();$$('#gpa-rows input')[L.length-1]?.focus()}
+function delGRow(id){DB.set(K.gpa,DB.get(K.gpa,[]).filter(x=>x.id!==id));renderGPA()}
+function gpaUpd(id,f,v){const L=DB.get(K.gpa,[]);const r=L.find(x=>x.id===id);if(!r)return;r[f]=f==='c'?v:parseFloat(v)||0;DB.set(K.gpa,L);gpaCalc()}
+function gpaCalc(){const L=DB.get(K.gpa,[]);const cr=L.reduce((a,r)=>a+(+r.cr||0),0);
+  $('#gpa-pts').textContent=cr+' CREDITS';
+  $('#gpa-total').textContent=cr?(L.reduce((a,r)=>a+(+r.cr||0)*(+r.g||0),0)/cr).toFixed(2):'0.00'}
+
+/* ============================================================ invoice ============================================================ */
+const DEF_INV={no:'inv-001',from:'',to:'',items:[{d:'',q:1,r:0}],tax:0,notes:''};
+function invData(){return Object.assign({},DEF_INV,DB.get(K.inv,DEF_INV))}
+function renderInvoice(){
+  const d=invData();
+  $('#inv-no').value=d.no;$('#inv-from').value=d.from;$('#inv-to').value=d.to;$('#inv-tax').value=d.tax;$('#inv-notes').value=d.notes;
+  $('#inv-items').innerHTML=d.items.map((it,i)=>`<div class="grid grid-cols-[1fr_60px_84px_32px] gap-2">
+    <input class="pro-input p-2 text-[12px] font-bold uppercase" value="${esc(it.d)}" placeholder="DESCRIPTION" oninput="invUpd(${i},'d',this.value)">
+    <input type="number" min="0" class="pro-input p-2 text-[12px] text-center font-bold" value="${it.q}" oninput="invUpd(${i},'q',this.value)">
+    <input type="number" min="0" class="pro-input p-2 text-[12px] text-center font-bold" value="${it.r}" oninput="invUpd(${i},'r',this.value)">
+    <button class="notion-btn py-1.5 px-1 notion-btn-danger" onclick="invDel(${i})"><i class="fas fa-xmark text-[11px]"></i></button></div>`).join('');
+  invTotals();
+}
+function invField(k,v){const d=invData();d[k]=k==='tax'?parseFloat(v)||0:v;DB.set(K.inv,d);invTotals()}
+function invUpd(i,f,v){const d=invData();d.items[i][f]=f==='d'?v:parseFloat(v)||0;DB.set(K.inv,d);invTotals()}
+function invAdd(){const d=invData();d.items.push({d:'',q:1,r:0});DB.set(K.inv,d);renderInvoice()}
+function invDel(i){const d=invData();d.items.splice(i,1);if(!d.items.length)d.items.push({d:'',q:1,r:0});DB.set(K.inv,d);renderInvoice()}
+function invTotals(){const d=invData();const sub=d.items.reduce((a,it)=>a+(+it.q||0)*(+it.r||0),0);const tax=sub*(+d.tax||0)/100;
+  $('#inv-sub').textContent=fmtNum(sub);$('#inv-taxv').textContent=fmtNum(tax);$('#inv-total').textContent=fmtNum(sub+tax)}
+function printInvoice(){
+  const d=invData();const sub=d.items.reduce((a,it)=>a+(+it.q||0)*(+it.r||0),0);const tax=sub*(+d.tax||0)/100;
+  $('#inv-print').innerHTML=`<div style="font-family:'Space Mono',monospace;color:#000;padding:36px;max-width:720px;margin:0 auto">
+    <div style="display:flex;justify-content:space-between;border-bottom:4px solid #000;padding-bottom:14px;margin-bottom:20px">
+      <div><div style="font-family:'Archivo Black';font-size:26px;text-transform:uppercase">INVOICE</div>
+      <div style="font-size:12px;font-weight:700;margin-top:4px;text-transform:uppercase">${esc(d.from)||'FROM'}</div></div>
+      <div style="text-align:right;font-size:12px;font-weight:700;text-transform:uppercase">${esc(d.no)||'INV-001'}<br>${new Date().toLocaleDateString()}</div></div>
+    <div style="font-size:12px;margin-bottom:18px;font-weight:700;text-transform:uppercase">BILLED TO: ${esc(d.to)||'—'}</div>
+    <table style="width:100%;border-collapse:collapse;font-size:12px;border:2px solid #000">
+      <tr style="border-bottom:2px solid #000;text-align:left;background:#FFDE00"><th style="padding:7px 5px">#</th><th style="padding:7px 5px">ITEM</th><th style="padding:7px 5px">QTY</th><th style="padding:7px 5px">RATE</th><th style="padding:7px 5px;text-align:right">AMOUNT</th></tr>
+      ${d.items.map((it,i)=>`<tr style="border-bottom:1px solid #000"><td style="padding:7px 5px">${i+1}</td><td style="padding:7px 5px">${esc(it.d)||'—'}</td><td style="padding:7px 5px">${it.q}</td><td style="padding:7px 5px">${fmtNum(+it.r)}</td><td style="padding:7px 5px;text-align:right">${fmtNum((+it.q||0)*(+it.r||0))}</td></tr>`).join('')}
+    </table>
+    <div style="margin-top:16px;text-align:right;font-size:12.5px;font-weight:700;text-transform:uppercase">
+      <div>SUBTOTAL: ${fmtNum(sub)}</div><div>TAX (${d.tax||0}%): ${fmtNum(tax)}</div>
+      <div style="font-family:'Archivo Black';font-size:20px;margin-top:6px;border:2px solid #000;background:#FFDE00;padding:4px 10px;display:inline-block">TOTAL: ${fmtNum(sub+tax)}</div></div>
+    ${d.notes?`<div style="margin-top:24px;font-size:11px;color:#555;font-weight:700;border-top:2px solid #000;padding-top:10px">${esc(d.notes)}</div>`:''}
+  </div>`;
+  window.print();
+}
+
+/* ============================================================ citations ============================================================ */
+let citeStyle='apa';
+function setCite(s,el){citeStyle=s;$$('#cite-styles .chip').forEach(x=>x.classList.remove('on'));el.classList.add('on');genCite()}
+function genCite(){
+  const a=$('#cit-a').value.trim(),t=$('#cit-t').value.trim(),c=$('#cit-c').value.trim(),y=$('#cit-y').value.trim(),u=$('#cit-u').value.trim();
+  if(!t){toast('TITLE REQUIRED','fa-quote-right');return}
+  const A=a||'author',T=t,C=c||'publisher',Y=y||'n.d.',U=u||'';
+  const out={
+    apa:`${A}. (${Y}). ${T}. ${C}. ${U}`,
+    mla:`${A}. "${T}." ${C}, ${Y}, ${U}.`,
+    harvard:`${A} (${Y}) ${T}. ${C}. Available at: ${U} (Accessed: ${new Date().toLocaleDateString()}).`,
+    chicago:`${A}. "${T}." ${C}. ${Y}. ${U}.`
+  }[citeStyle];
+  $('#cite-out').textContent=out;$('#cite-out-wrap').classList.remove('hide');$('#cite-label').textContent=citeStyle.toUpperCase();
+}
+
+/* ============================================================ calculator ============================================================ */
+let calcExp='';
+function calcPress(k){
+  if(k==='C')calcExp='';else if(k==='⌫')calcExp=calcExp.slice(0,-1);
+  else if(k==='='){calcEq();return}
+  else if(k==='×')calcExp+='*';else if(k==='÷')calcExp+='/';else if(k==='−')calcExp+='-';
+  else calcExp+=k;
+  calcRender();
+}
+function calcEq(){
+  if(!calcExp)return;
+  const safe=calcExp.replace(/[^0-9+\-*/.()% ]/g,'');
+  try{const r=Function('"use strict";return ('+safe+')')();if(r===undefined||Number.isNaN(r))throw 0;calcExp=String(+Number(r).toFixed(8));logAct()}
+  catch(e){toast('INVALID EXPRESSION','fa-calculator')}
+  calcRender();
+}
+function calcRender(){$('#calc-exp').textContent=calcExp||'0'}
+
+/* ============================================================ code playground ============================================================ */
+function cpTab(t,el){$$('#cp-tabs .cp-tab').forEach(x=>x.classList.remove('on'));el.classList.add('on');['html','css','js'].forEach(x=>$('#cp-'+x).classList.toggle('hide',x!==t))}
+const runCode=deb(()=>{
+  const h=$('#cp-html').value,c=$('#cp-css').value,j=$('#cp-js').value;
+  $('#cp-out').srcdoc=`<!DOCTYPE html><html><head><style>${c}</style><link rel="stylesheet" href="theme-mobile.css"></head><body>${h}<scr${'ipt'}>${j}<\/scr${'ipt'}></body></html>`;
+},600);
+
+/* ============================================================ whiteboard ============================================================ */
+const WB_COLORS=['#000000','#FF3B00','#0000FF','#008000','#7B2FBE','#FF7A00'];
+let wb={color:WB_COLORS[0],size:3,erase:false,drawing:false,ctx:null,_ev:false};
+function wbInit(){
+  const cv=$('#wb-canvas');wb.ctx=cv.getContext('2d');
+  $('#wb-colors').innerHTML=WB_COLORS.map(c=>`<button class="w-6 h-6 transition-transform hover:scale-110" style="background:${c};border:2px solid #000;${c===wb.color?'box-shadow:3px 3px 0 #000':''}" onclick="wbSetColor('${c}')"></button>`).join('');
+  $('#wb-sizes').innerHTML=[2,4,8].map(s=>`<button class="notion-btn w-7 h-7 !p-0 flex items-center justify-center" onclick="wbSetSize(${s})"><span style="width:${s+2}px;height:${s+2}px;background:${s===wb.size?'#000':'#999'};display:block"></span></button>`).join('');
+  if(!wb._ev){wb._ev=true;
+    cv.addEventListener('pointerdown',e=>{wb.drawing=true;const p=wbPos(e);wb.ctx.beginPath();wb.ctx.moveTo(p.x,p.y)});
+    cv.addEventListener('pointermove',e=>{if(!wb.drawing)return;const p=wbPos(e);wb.ctx.strokeStyle=wb.erase?'#ffffff':wb.color;wb.ctx.lineWidth=wb.erase?22:wb.size;wb.ctx.lineCap='square';wb.ctx.lineJoin='miter';wb.ctx.lineTo(p.x,p.y);wb.ctx.stroke()});
+    addEventListener('pointerup',()=>wb.drawing=false);
+  }
+  resizeWb();
+}
+function wbPos(e){const r=$('#wb-canvas').getBoundingClientRect();return{x:e.clientX-r.left,y:e.clientY-r.top}}
+function resizeWb(){
+  const cv=$('#wb-canvas'),p=cv.parentElement;if(!p||p.clientHeight<10)return;
+  const snap=cv.width?cv.toDataURL():null;
+  const dpr=devicePixelRatio||1;
+  cv.width=p.clientWidth*dpr-16;cv.height=p.clientHeight*dpr-16;
+  wb.ctx.setTransform(dpr,0,0,dpr,0,0);wb.ctx.fillStyle='#fff';wb.ctx.fillRect(0,0,p.clientWidth,p.clientHeight);
+  if(snap){const img=new Image();img.onload=()=>wb.ctx.drawImage(img,0,0,p.clientWidth,p.clientHeight);img.src=snap}
+}
+function wbSetColor(c){wb.color=c;wb.erase=false;$('#wb-erase').classList.remove('notion-btn-primary');wbInit()}
+function wbSetSize(s){wb.size=s;wbInit()}
+function wbErase(){wb.erase=!wb.erase;$('#wb-erase').classList.toggle('notion-btn-primary',wb.erase)}
+function wbClear(){wb.ctx.fillStyle='#fff';wb.ctx.fillRect(0,0,9999,9999);toast('BOARD CLEARED','fa-trash')}
+function wbSave(){const a=document.createElement('a');a.download='clonbrow-board.png';a.href=$('#wb-canvas').toDataURL();a.click();toast('EXPORTED AS PNG','fa-download')}
+
+/* ============================================================ analytics ============================================================ */
+function renderAnalytics(){
+  const T=DB.get(K.tasks,[]),C=DB.get(K.cards,[]),Q=DB.get(K.quiz,[]),B=DB.get(K.bites,[]),N=DB.get(K.notes,[]),F=DB.get(K.focus,0),A=DB.get(K.act,{}),CF=DB.get(K.customF,[]);
+  const done=T.filter(t=>t.s==='done').length;
+  const cols=['#FF3B00','#0000FF','#008000','#7B2FBE','#FF7A00','#000','#B8A000','#00A29C'];
+  $('#an-tiles').innerHTML=[['TASKS DONE',done],['OPEN TASKS',T.length-done],['CARDS',C.length],['QUIZ ITEMS',Q.length],['BITES',B.length],['FORMULAS',CF.length],['NOTES',N.length],['FOCUS MINS',F]]
+    .map(([l,v],i)=>`<div class="notion-card p-4 fade-card" style="animation-delay:${i*40}ms"><div class="text-[9px] font-bold uppercase tracking-widest text-[#777] mb-1.5">${l}</div><div class="text-3xl aesthetic-title"><span class="an-num" data-val="${v}">0</span></div><div class="absolute top-0 right-0 w-3 h-3" style="background:${cols[i%cols.length]}"></div></div>`).join('');
+  $$('#an-tiles .an-num').forEach(el=>countUp(el,+el.dataset.val||0));
+  const days=[];for(let i=13;i>=0;i--){const dt=new Date();dt.setDate(dt.getDate()-i);const k=dt.toISOString().slice(0,10);days.push({k,n:A[k]||0,l:dt.toLocaleDateString([],{weekday:'narrow'}).toLowerCase()})}
+  const mx=Math.max(1,...days.map(d=>d.n));
+  $('#an-bars').innerHTML=days.map(d=>`<div class="an-bar-col" title="${d.k} /// ${d.n}"><div class="an-bar-track"><div class="an-bar" style="height:${Math.max(4,d.n/mx*100)}%"></div></div><span>${d.l}</span></div>`).join('');
+  const bar=(l,n,mx2,col)=>`<div><div class="flex justify-between text-[11px] font-bold uppercase mb-1.5"><span>${l}</span><span>${n}</span></div><div class="h-3.5 border-2 border-black bg-white"><div class="h-full" style="width:${mx2?n/mx2*100:0}%;background:${col}"></div></div></div>`;
+  $('#an-split').innerHTML=bar('TODO',T.length-done,T.length,'#999')+bar('DOING',T.filter(t=>t.s==='doing').length,T.length,'#FFDE00')+bar('DONE',done,T.length,'#000');
+}
+
+/* ============================================================ habits ============================================================ */
+function addHabit(){const v=$('#habit-in').value.trim();if(!v){toast('NAME THE HABIT','fa-calendar-check');return}
+  const L=DB.get(K.habits,[]);L.push({id:Date.now(),name:v,days:{}});DB.set(K.habits,L);$('#habit-in').value='';renderHabits();toast('HABIT ADDED','fa-check')}
+function delHabit(id){DB.set(K.habits,DB.get(K.habits,[]).filter(x=>x.id!==id));renderHabits()}
+function toggleHabit(id,ds){const L=DB.get(K.habits,[]);const h=L.find(x=>x.id===id);if(!h)return;
+  if(h.days[ds])delete h.days[ds];else{h.days[ds]=1;logAct()}
+  DB.set(K.habits,L);renderHabits()}
+function calcStreak(h){let s=0,d=new Date();if(!h.days[d.toISOString().slice(0,10)])d.setDate(d.getDate()-1);
+  while(h.days[d.toISOString().slice(0,10)]){s++;d.setDate(d.getDate()-1)}return s}
+function renderHabits(){
+  const L=DB.get(K.habits,[]);
+  const days=[];for(let i=6;i>=0;i--){const d=new Date();d.setDate(d.getDate()-i);days.push({k:d.toISOString().slice(0,10),l:d.toLocaleDateString([],{weekday:'narrow'}).toLowerCase()})}
+  $('#hab-head').innerHTML='<span></span>'+days.map(d=>`<span class="text-center">${d.l}</span>`).join('')+'<span class="text-center">RUN</span><span></span>';
+  $('#hab-rows').innerHTML=L.map(h=>{
+    const s=calcStreak(h);
+    return`<div class="grid grid-cols-[1fr_repeat(7,30px)_44px_20px] gap-1.5 items-center py-0.5">
+      <span class="text-[12px] font-bold uppercase truncate px-1">${esc(h.name)}</span>
+      ${days.map(d=>`<button class="w-[30px] h-[30px] border-2 border-black flex items-center justify-center transition-all" style="background:${h.days[d.k]?'#000':'#fff'};color:#fff" onclick="toggleHabit(${h.id},'${d.k}')">${h.days[d.k]?'<i class="fas fa-check text-[9px]"></i>':''}</button>`).join('')}
+      <span class="text-[11px] font-bold text-center">${s}D</span>
+      <button class="tc-btn" onclick="delHabit(${h.id})"><i class="fas fa-xmark"></i></button></div>`;
+  }).join('')||'<div class="empty-state">ADD A HABIT ABOVE.</div>';
+}
+
+/* ============================================================ pomodoro ============================================================ */
+const PM={focus:25*60,short:5*60,long:15*60};
+let pm={mode:'focus',left:PM.focus,run:false,cycles:0,int:null};
+function pmToggle(){
+  pm.run=!pm.run;
+  if(pm.run){pm.int=setInterval(pmTick,1000);$('#pm-start').textContent='PAUSE'}
+  else{clearInterval(pm.int);$('#pm-start').textContent='START'}
+  renderPomo();
+}
+function pmTick(){pm.left--;if(pm.left<=0)pmDone();renderPomo()}
+function pmDone(){
+  if(pm.mode==='focus'){pm.cycles++;DB.set(K.focus,(DB.get(K.focus,0))+25);logAct();toast('FOCUS BLOCK COMPLETE','fa-check');pm.mode=pm.cycles%4===0?'long':'short'}
+  else{pm.mode='focus';toast('BREAK OVER','fa-arrow-rotate-right')}
+  pm.left=PM[pm.mode];$$('#pm-modes .chip').forEach(c=>c.classList.toggle('on',c.textContent.trim().startsWith(pm.mode)));
+}
+function pmReset(){clearInterval(pm.int);pm={mode:'focus',left:PM.focus,run:false,cycles:0,int:null};$('#pm-start').textContent='START';renderPomo()}
+function pmSkip(){pm.left=1;pmTick()}
+function pmSetMode(m,el){pm.mode=m;pm.left=PM[m];$$('#pm-modes .chip').forEach(x=>x.classList.remove('on'));el.classList.add('on');renderPomo()}
+function renderPomo(){
+  $('#pomo-time').textContent=pad(Math.floor(pm.left/60))+':'+pad(pm.left%60);
+  $('#pomo-label').textContent=pm.mode==='focus'?'FOCUS':pm.mode==='short'?'SHORT BREAK':'LONG BREAK';
+  const C=552.92;$('#pomo-ring').style.strokeDashoffset=C*(1-pm.left/PM[pm.mode]);
+  $('#pomo-dots').innerHTML=[0,1,2,3].map(i=>`<span class="w-2.5 h-2.5 border border-black" style="background:${i<pm.cycles%4?'#FF3B00':'#fff'}"></span>`).join('');
+}
+
+/* ============================================================ timer ============================================================ */
+let sw={base:0,offset:0,run:false,int:null,laps:[]};
+function swNow(){return sw.offset+(sw.run?Date.now()-sw.base:0)}
+function swToggle(){sw.run=!sw.run;
+  if(sw.run){sw.base=Date.now();sw.int=setInterval(swRender,100);$('#sw-btn').textContent='PAUSE'}else{sw.offset=swNow();clearInterval(sw.int);$('#sw-btn').textContent='RESUME'}}
+function swLap(){if(!sw.run&&!swNow())return;sw.laps.unshift(swNow());sw.laps=sw.laps.slice(0,8);
+  $('#sw-laps').innerHTML=sw.laps.map((l,i)=>`<div class="flex justify-between px-3 border-b border-black"><span class="text-[#777]">LAP ${sw.laps.length-i}</span><span class="tabular-nums">${swFmt(l)}</span></div>`).join('')}
+function swReset(){clearInterval(sw.int);sw={base:0,offset:0,run:false,int:null,laps:[]};$('#sw-btn').textContent='START';$('#sw-laps').innerHTML='';swRender()}
+function swFmt(ms){const m=Math.floor(ms/60000),s=Math.floor(ms/1000)%60,d=Math.floor(ms/100)%10;return pad(m)+':'+pad(s)+'.'+d}
+function swRender(){$('#sw-display').textContent=swFmt(swNow())}
+let cd={left:300,run:false,int:null};
+function cdRender(){$('#cd-display').textContent=pad(Math.floor(cd.left/60))+':'+pad(cd.left%60)}
+function cdSet(m){cd.left+=m*60;cdRender()}
+function cdClear(){clearInterval(cd.int);cd={left:0,run:false,int:null};$('#cd-btn').textContent='START';cdRender()}
+function cdStart(){
+  if(cd.left<=0){toast('SET TIME FIRST','fa-hourglass-half');return}
+  cd.run=!cd.run;
+  if(cd.run){cd.int=setInterval(()=>{cd.left--;cdRender();if(cd.left<=0){clearInterval(cd.int);cd.run=false;$('#cd-btn').textContent='START';toast("TIME'S UP",'fa-bell')}},1000);$('#cd-btn').textContent='PAUSE'}
+  else{clearInterval(cd.int);$('#cd-btn').textContent='RESUME'}
+}
+
+/* ============================================================ keys + init ============================================================ */
+document.addEventListener('keydown',e=>{
+  if((e.metaKey||e.ctrlKey)&&e.key.toLowerCase()==='k'){e.preventDefault();$('#address-bar').focus();$('#address-bar').select();return}
+  if($('#calc-screen').classList.contains('active')&&!['INPUT','TEXTAREA','SELECT'].includes(document.activeElement.tagName)){
+    const k=e.key;
+    if(/^[0-9+\-*/.()%]$/.test(k)){calcExp+=k;calcRender();e.preventDefault()}
+    else if(k==='Enter')calcEq();
+    else if(k==='Backspace'){calcExp=calcExp.slice(0,-1);calcRender()}
+    else if(k.toLowerCase()==='c'){calcExp='';calcRender()}
+  }
+  if($('#code-screen').classList.contains('active')&&e.ctrlKey&&e.key==='Enter'){e.preventDefault();runCode()}
+});
+
+(function init(){
+  const saved=DB.get(K.user,'');if(saved)$('#boot-username').value=saved;
+  $('#scratchpad').addEventListener('input',saveScratch);
+  $('#eng-input').addEventListener('input',engAnalyze);
+  wbInit();pmReset();cdRender();swRender();setConvCat('length',$$('#conv-cats .chip')[0]);
+  newTab('clonmedic://home');
+})();
+</script>
+</body>
+</html>

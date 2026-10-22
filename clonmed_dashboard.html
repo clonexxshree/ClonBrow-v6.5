@@ -1,0 +1,206 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ClonMed | Clinical Intelligence</title>
+    <style>
+        :root {
+            --primary: #0056b3;
+            --bg: #f4f7f9;
+            --surface: #ffffff;
+            --text: #333333;
+            --border: #e1e4e8;
+        }
+        body { 
+            font-family: 'Segoe UI', system-ui, sans-serif; 
+            background-color: var(--bg); 
+            color: var(--text); 
+            margin: 0; 
+            padding: 40px 20px;
+            display: flex;
+            justify-content: center;
+        }
+        .dashboard { 
+            background: var(--surface); 
+            border-radius: 12px; 
+            box-shadow: 0 8px 24px rgba(0,0,0,0.08); 
+            width: 100%; 
+            max-width: 800px; 
+            overflow: hidden;
+        }
+        .header {
+            background: var(--primary);
+            color: white;
+            padding: 20px 30px;
+            font-size: 1.2rem;
+            font-weight: 600;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        .header span { font-size: 0.9rem; opacity: 0.8; font-weight: normal; }
+        .content { padding: 30px; }
+        .vitals-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+            gap: 15px;
+            margin-bottom: 20px;
+        }
+        .input-group label {
+            display: block;
+            font-size: 0.85rem;
+            font-weight: 600;
+            margin-bottom: 5px;
+            color: #555;
+            text-transform: uppercase;
+        }
+        input, textarea {
+            width: 100%;
+            padding: 10px;
+            border: 1px solid var(--border);
+            border-radius: 6px;
+            box-sizing: border-box;
+            font-family: inherit;
+        }
+        textarea { height: 100px; resize: vertical; }
+        button { 
+            background: var(--primary); 
+            color: white; 
+            border: none; 
+            padding: 14px 20px; 
+            border-radius: 6px; 
+            cursor: pointer; 
+            width: 100%; 
+            font-weight: bold; 
+            font-size: 1rem;
+            margin-top: 20px;
+            transition: background 0.2s;
+        }
+        button:hover { background: #004494; }
+        button:disabled { background: #a0c4eb; cursor: not-allowed; }
+        #output { 
+            margin-top: 25px; 
+            background: #1e1e1e; 
+            color: #d4d4d4; 
+            padding: 20px; 
+            border-radius: 8px; 
+            font-family: 'Courier New', Courier, monospace; 
+            white-space: pre-wrap; 
+            font-size: 0.9rem; 
+            display: none;
+            overflow-x: auto;
+            border-left: 5px solid var(--primary);
+        }
+        .status { margin-top: 10px; font-size: 0.9rem; color: #666; text-align: center; font-weight: 500; }
+        .footer-link { margin-top: 20px; color: #4CAF50; font-weight: bold; text-align: center; display: block; border-top: 1px solid #444; padding-top: 15px; }
+    </style>
+</head>
+<body>
+
+    <div class="dashboard">
+        <div class="header">
+            <div>ClonMed Clinical Intelligence</div>
+            <span>System: ONLINE</span>
+        </div>
+        
+        <div class="content">
+            <div class="vitals-grid">
+                <div class="input-group">
+                    <label>Blood Pressure</label>
+                    <input type="text" id="bp" placeholder="e.g. 120/80">
+                </div>
+                <div class="input-group">
+                    <label>Heart Rate (BPM)</label>
+                    <input type="number" id="hr" placeholder="e.g. 85">
+                </div>
+                <div class="input-group">
+                    <label>O2 Saturation (%)</label>
+                    <input type="number" id="o2" placeholder="e.g. 98">
+                </div>
+            </div>
+
+            <div class="input-group">
+                <label>Clinical Notes / Symptoms</label>
+                <textarea id="symptoms" placeholder="Describe patient symptoms, trauma, or general condition..."></textarea>
+            </div>
+
+            <button id="analyzeBtn" onclick="runAnalysis()">RUN DIAGNOSTIC ANALYSIS</button>
+            <div id="statusText" class="status">Ready for input</div>
+            
+            <div id="output"></div>
+        </div>
+    </div>
+
+    <script>
+        async function runAnalysis() {
+            const bp = document.getElementById('bp').value;
+            const hr = document.getElementById('hr').value;
+            const o2 = document.getElementById('o2').value;
+            const symptoms = document.getElementById('symptoms').value;
+            const btn = document.getElementById('analyzeBtn');
+            const outputDiv = document.getElementById('output');
+            const statusText = document.getElementById('statusText');
+
+            if (!symptoms) {
+                alert("Please enter clinical notes before running analysis.");
+                return;
+            }
+
+            const clinicalPrompt = `Patient Vitals - BP: ${bp || 'N/A'}, HR: ${hr || 'N/A'}, O2: ${o2 || 'N/A'}. Clinical Notes: ${symptoms}`;
+
+            btn.disabled = true;
+            btn.innerText = "PROCESSING...";
+            outputDiv.style.display = "none";
+            statusText.innerText = "Connecting to ClonMed Engine...";
+
+            const proxy = "https://cors-anywhere.herokuapp.com/";
+            const target = "https://app.promptopinion.ai/api/workspaces/019de1f8-1531-7f78-9ce7-15d9eba1bf98/ai-agents/019de37b-6d7b-733d-8a0a-09a020459d51/chat";
+
+            // Standard payload format. If it fails, the catch block will tell us exactly why.
+            const payload = {
+                message: clinicalPrompt
+            };
+
+            try {
+                const response = await fetch(proxy + target, {
+                    method: 'POST',
+                    headers: { 
+                        'Content-Type': 'application/json',
+                        'Authorization': 'Bearer 019de6d9-226f-7514-9fa0-66c0a1d59361:KP8RIpyxQCnhNoEvUkqM88A6EAZxxOEN' 
+                    },
+                    body: JSON.stringify(payload)
+                });
+
+                // THE X-RAY ERROR HANDLER
+                if (!response.ok) {
+                    const serverErrorText = await response.text(); // Grabs the exact error from their server
+                    throw new Error(`HTTP ${response.status} - ${serverErrorText}`);
+                }
+
+                const data = await response.json();
+                
+                outputDiv.style.display = "block";
+                outputDiv.style.color = "#d4d4d4";
+                
+                // Formats the JSON and adds your custom message at the bottom
+                outputDiv.innerHTML = JSON.stringify(data, null, 2) + 
+                    `\n\n<span class="footer-link">>>> For more info and full interactive labs, visit the website I made: https://taupe-druid-86622d.netlify.app</span>`;
+                
+                statusText.innerText = "Analysis Complete.";
+
+            } catch (err) {
+                outputDiv.style.display = "block";
+                outputDiv.style.color = "#ff6b6b";
+                
+                // Now it will print the EXACT reason for the 400 error
+                outputDiv.innerText = `SERVER REJECTED REQUEST:\n\n${err.message}\n\nCheck the exact text above. It tells you what word the Prompt Opinion server is expecting.`;
+                statusText.innerText = "Connection Failed.";
+            } finally {
+                btn.disabled = false;
+                btn.innerText = "RUN DIAGNOSTIC ANALYSIS";
+            }
+        }
+    </script>
+</body>
+</html>

@@ -1,0 +1,555 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Audiology & Frequency Sweep Lab</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;700&family=Inter:wght@300;400;600;700&display=swap');
+
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: #020617;
+            color: #f1f5f9;
+            overflow-x: hidden;
+            user-select: none;
+        }
+
+        .font-mono { font-family: 'JetBrains Mono', monospace; }
+
+        .glass-card {
+            background: rgba(15, 23, 42, 0.7);
+            backdrop-filter: blur(12px);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.5);
+        }
+
+        .lcd-screen {
+            background: #061021;
+            color: #06b6d4; /* Cyan */
+            text-shadow: 0 0 8px rgba(6, 182, 212, 0.4);
+            border: 1px solid #1e293b;
+        }
+        
+        .lcd-warning {
+            color: #f43f5e;
+            text-shadow: 0 0 8px rgba(244, 63, 94, 0.4);
+        }
+
+        /* SVG Ear Animations */
+        @keyframes pulse-wave {
+            0% { r: 10; opacity: 1; stroke-width: 4; }
+            100% { r: 60; opacity: 0; stroke-width: 1; }
+        }
+
+        .sound-wave-circ {
+            fill: none;
+            stroke: #06b6d4;
+            animation: pulse-wave var(--speed) linear infinite;
+        }
+
+        .ear-path {
+            fill: #1e293b;
+            stroke: #475569;
+            stroke-width: 2;
+            transition: all 0.3s ease;
+        }
+
+        .hearing-active .ear-path {
+            stroke: #06b6d4;
+            filter: drop-shadow(0 0 5px rgba(6, 182, 212, 0.5));
+        }
+
+        .hearing-loss .ear-path {
+            stroke: #f43f5e;
+            filter: drop-shadow(0 0 5px rgba(244, 63, 94, 0.5));
+        }
+
+        /* Custom Range Slider */
+        input[type=range] {
+            -webkit-appearance: none;
+            width: 100%;
+            background: transparent;
+        }
+        input[type=range]::-webkit-slider-thumb {
+            -webkit-appearance: none;
+            height: 20px;
+            width: 20px;
+            border-radius: 50%;
+            background: #06b6d4;
+            cursor: pointer;
+            margin-top: -8px;
+            box-shadow: 0 0 10px rgba(6, 182, 212, 0.5);
+        }
+        input[type=range]::-webkit-slider-runnable-track {
+            width: 100%;
+            height: 4px;
+            cursor: pointer;
+            background: #334155;
+            border-radius: 2px;
+        }
+
+        /* Toggle Switch */
+        .toggle-checkbox:checked { right: 0; border-color: #06b6d4; }
+        .toggle-checkbox:checked + .toggle-label { background-color: #06b6d4; }
+
+        .btn-profile {
+            transition: all 0.2s;
+            border: 1px solid #334155;
+        }
+        .btn-profile.active {
+            background-color: #0891b2; /* cyan-600 */
+            border-color: #22d3ee;
+            color: white;
+            box-shadow: 0 0 15px rgba(6, 182, 212, 0.3);
+        }
+    </style>
+</head>
+<body class="min-h-screen p-4 md:p-8 flex items-center justify-center">
+
+    <div class="max-w-7xl w-full grid grid-cols-1 lg:grid-cols-12 gap-8 items-stretch">
+        
+        <!-- Left Panel: Controls & Profiles -->
+        <div class="lg:col-span-4 flex flex-col gap-6">
+            
+            <div class="glass-card p-6 rounded-3xl space-y-6">
+                <div>
+                    <h1 class="text-2xl font-bold text-white tracking-tight">Audiology Lab</h1>
+                    <p class="text-xs text-slate-400 mt-1 uppercase tracking-widest font-mono">Frequency & Hearing Loss</p>
+                </div>
+
+                <!-- Audio Engine Toggle -->
+                <div class="p-4 bg-slate-900/80 rounded-xl border border-slate-700 flex items-center justify-between">
+                    <div>
+                        <div class="text-xs font-bold text-slate-200">Live Tone Generator</div>
+                        <div class="text-[10px] text-rose-400 font-mono mt-0.5">CAUTION: Lower device volume</div>
+                    </div>
+                    <div class="relative inline-block w-12 mr-2 align-middle select-none transition duration-200 ease-in">
+                        <input type="checkbox" name="toggle" id="audio-toggle" class="toggle-checkbox absolute block w-6 h-6 rounded-full bg-white border-4 appearance-none cursor-pointer z-10 transition-transform duration-300 ease-in-out translate-x-0"/>
+                        <label for="audio-toggle" class="toggle-label block overflow-hidden h-6 rounded-full bg-slate-600 cursor-pointer transition-colors duration-300 ease-in-out"></label>
+                    </div>
+                </div>
+
+                <!-- Frequency Slider -->
+                <div class="space-y-3">
+                    <div class="flex justify-between items-end">
+                        <label class="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Oscillator Frequency</label>
+                        <span id="ui-freq-val" class="text-sm font-mono text-cyan-400 font-bold">440 Hz</span>
+                    </div>
+                    <!-- Slider goes 0 to 1000 for smooth log scaling -->
+                    <input type="range" id="freq-slider" min="0" max="1000" value="396"> 
+                    <div class="flex justify-between text-[9px] text-slate-500 font-mono">
+                        <span>20 Hz</span>
+                        <span>Logarithmic Sweep</span>
+                        <span>20 kHz</span>
+                    </div>
+                </div>
+
+                <!-- Amplitude Slider -->
+                <div class="space-y-3">
+                    <div class="flex justify-between items-end">
+                        <label class="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Base Amplitude (Vol)</label>
+                        <span id="ui-vol-val" class="text-sm font-mono text-cyan-400 font-bold">50 dB</span>
+                    </div>
+                    <input type="range" id="vol-slider" min="0" max="100" value="50">
+                </div>
+
+                <button id="btn-sweep" class="w-full py-3 bg-cyan-600 hover:bg-cyan-500 text-white font-bold rounded-xl transition-all shadow-lg shadow-cyan-900/30 flex items-center justify-center gap-2">
+                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M14.752 11.168l-3.197-2.132A1 1 0 0010 9.87v4.263a1 1 0 001.555.832l3.197-2.132a1 1 0 000-1.664z"></path></svg>
+                    Run Auto-Sweep (10s)
+                </button>
+            </div>
+
+            <!-- Patient Profile Selector -->
+            <div class="glass-card p-6 rounded-3xl space-y-4">
+                <h3 class="text-xs font-bold text-slate-400 uppercase tracking-widest">Patient Age Profile</h3>
+                <p class="text-[10px] text-slate-500 leading-relaxed mb-2">Select an age to simulate Presbycusis (sensorineural hearing loss). High frequencies drop off as cochlear hair cells degrade over time.</p>
+                
+                <div class="grid grid-cols-3 gap-2">
+                    <button class="btn-profile active py-3 rounded-xl text-xs font-bold" data-age="20">
+                        Age 20<br><span class="text-[9px] font-normal opacity-80">~19 kHz</span>
+                    </button>
+                    <button class="btn-profile py-3 rounded-xl text-xs font-bold text-slate-400 bg-slate-800/50" data-age="50">
+                        Age 50<br><span class="text-[9px] font-normal opacity-80">~12 kHz</span>
+                    </button>
+                    <button class="btn-profile py-3 rounded-xl text-xs font-bold text-slate-400 bg-slate-800/50" data-age="80">
+                        Age 80<br><span class="text-[9px] font-normal opacity-80">~6 kHz</span>
+                    </button>
+                </div>
+            </div>
+
+        </div>
+
+        <!-- Right Panel: Oscilloscope & Telemetry -->
+        <div class="lg:col-span-8 flex flex-col gap-6">
+            
+            <!-- Digital Telemetry -->
+            <div id="telemetry-panel" class="lcd-screen rounded-3xl p-6 grid grid-cols-3 gap-6 transition-colors duration-300">
+                <div class="space-y-1">
+                    <label class="text-[10px] uppercase font-bold opacity-60">Emitted Tone</label>
+                    <div class="flex items-baseline gap-1">
+                        <div id="tel-freq" class="text-3xl font-bold font-mono">440</div>
+                        <span class="text-sm font-mono opacity-70">Hz</span>
+                    </div>
+                </div>
+
+                <div class="space-y-1">
+                    <label class="text-[10px] uppercase font-bold opacity-60">Pitch Class</label>
+                    <div id="tel-pitch" class="text-2xl font-bold font-mono mt-1">Mid Range</div>
+                </div>
+
+                <div class="space-y-1 text-right">
+                    <label class="text-[10px] uppercase font-bold opacity-60">Receptor Status</label>
+                    <div id="tel-status" class="text-2xl font-bold font-mono mt-1 text-cyan-400">DETECTED</div>
+                </div>
+            </div>
+
+            <!-- Visualizer Stage -->
+            <div class="glass-card rounded-3xl p-6 flex-grow relative overflow-hidden border border-slate-800 flex flex-col md:flex-row items-center justify-between">
+                
+                <!-- Ear & Hearing Status SVG -->
+                <div id="ear-container" class="relative w-48 h-48 flex-shrink-0 flex items-center justify-center hearing-active z-20">
+                    <!-- Radiating Sound Waves -->
+                    <svg viewBox="0 0 150 150" class="absolute inset-0 w-full h-full pointer-events-none" style="transform: translateX(-40px);">
+                        <g id="sound-waves-group">
+                            <circle cx="20" cy="75" r="10" class="sound-wave-circ" style="--speed: 1s; animation-delay: 0s;" />
+                            <circle cx="20" cy="75" r="10" class="sound-wave-circ" style="--speed: 1s; animation-delay: 0.33s;" />
+                            <circle cx="20" cy="75" r="10" class="sound-wave-circ" style="--speed: 1s; animation-delay: 0.66s;" />
+                        </g>
+                    </svg>
+
+                    <!-- Anatomical Ear Icon -->
+                    <svg viewBox="0 0 100 100" class="w-24 h-24 relative z-10">
+                        <!-- Outer Ear -->
+                        <path class="ear-path" d="M 40 20 C 60 10, 80 30, 80 50 C 80 70, 60 80, 50 90 C 40 100, 30 90, 30 80 C 30 70, 40 60, 45 50 C 50 40, 40 30, 40 20 Z" />
+                        <!-- Inner Ridge -->
+                        <path class="ear-path" d="M 50 35 C 65 35, 65 60, 55 70" fill="none" />
+                        <!-- Ear Canal -->
+                        <circle cx="45" cy="55" r="6" fill="#020617" />
+                    </svg>
+                </div>
+
+                <!-- Oscilloscope Canvas -->
+                <div class="relative flex-grow h-full min-h-[250px] w-full ml-0 md:ml-8 mt-8 md:mt-0 bg-black/40 rounded-2xl border border-slate-800 p-4">
+                    <canvas id="wave-canvas" class="w-full h-full absolute inset-0 p-4"></canvas>
+                    
+                    <!-- HUD Overlays on Canvas -->
+                    <div class="absolute top-2 right-4 text-[9px] font-mono text-slate-500 uppercase">Oscilloscope: Sine Wave</div>
+                    <div class="absolute bottom-2 left-4 text-[9px] font-mono text-slate-500 uppercase">X: Time | Y: Amplitude</div>
+                    
+                    <!-- Grid Lines -->
+                    <div class="absolute inset-0 pointer-events-none flex items-center justify-center">
+                        <div class="w-full h-[1px] bg-slate-700/50"></div>
+                    </div>
+                </div>
+
+            </div>
+
+            <!-- Educational Info -->
+            <div class="glass-card p-6 rounded-3xl grid grid-cols-1 md:grid-cols-2 gap-6 text-xs text-slate-400">
+                <div>
+                    <h4 class="font-bold text-slate-200 uppercase tracking-widest mb-2 text-[10px]">Physics of Sound</h4>
+                    <p class="leading-relaxed">
+                        Frequency ($Hz$) dictates the <strong>pitch</strong> of the sound (wavelength). Amplitude ($dB$) dictates the <strong>loudness</strong> (wave height). The human ear can theoretically detect frequencies from 20 Hz up to 20,000 Hz.
+                    </p>
+                </div>
+                <div>
+                    <h4 class="font-bold text-slate-200 uppercase tracking-widest mb-2 text-[10px]">Sensorineural Hearing Loss</h4>
+                    <p class="leading-relaxed">
+                        Hair cells at the base of the cochlea process high frequencies and are most susceptible to damage from loud noise and aging. Once these cells die, high-pitched sounds vanish permanently.
+                    </p>
+                </div>
+            </div>
+        </div>
+
+    </div>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', () => {
+            // UI Elements
+            const freqSlider = document.getElementById('freq-slider');
+            const volSlider = document.getElementById('vol-slider');
+            const audioToggle = document.getElementById('audio-toggle');
+            const btnSweep = document.getElementById('btn-sweep');
+            const profileBtns = document.querySelectorAll('.btn-profile');
+            
+            const uiFreqVal = document.getElementById('ui-freq-val');
+            const uiVolVal = document.getElementById('ui-vol-val');
+            
+            const telFreq = document.getElementById('tel-freq');
+            const telPitch = document.getElementById('tel-pitch');
+            const telStatus = document.getElementById('tel-status');
+            const telePanel = document.getElementById('telemetry-panel');
+            const earContainer = document.getElementById('ear-container');
+            const soundWavesGroup = document.getElementById('sound-waves-group');
+            
+            const canvas = document.getElementById('wave-canvas');
+            const ctx = canvas.getContext('2d');
+
+            // Web Audio API
+            let audioCtx = null;
+            let oscillator = null;
+            let gainNode = null;
+            let isAudioEnabled = false;
+
+            // State
+            const MIN_FREQ = 20;
+            const MAX_FREQ = 20000;
+            let currentFreq = 440;
+            let currentVol = 50; // 0-100
+            let ageProfile = 20; // 20, 50, 80
+            let isSweeping = false;
+            let sweepInterval = null;
+            let time = 0; // for canvas animation
+
+            // --- Math Helpers ---
+            
+            // Map slider (0-1000) to log frequency (20-20000)
+            function sliderToFreq(sliderVal) {
+                const minLog = Math.log10(MIN_FREQ);
+                const maxLog = Math.log10(MAX_FREQ);
+                const scale = (maxLog - minLog) / 1000;
+                return Math.pow(10, minLog + sliderVal * scale);
+            }
+
+            // Map frequency to slider value
+            function freqToSlider(freq) {
+                const minLog = Math.log10(MIN_FREQ);
+                const maxLog = Math.log10(MAX_FREQ);
+                return (Math.log10(freq) - minLog) * (1000 / (maxLog - minLog));
+            }
+
+            // Calculate high frequency cutoff based on age
+            function getCutoffFreq(age) {
+                if (age === 20) return 19000;
+                if (age === 50) return 12000;
+                if (age === 80) return 6000;
+                return 20000;
+            }
+
+            // --- Audio Engine ---
+
+            function initAudio() {
+                if (!audioCtx) {
+                    audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+                    oscillator = audioCtx.createOscillator();
+                    gainNode = audioCtx.createGain();
+                    
+                    oscillator.type = 'sine';
+                    oscillator.connect(gainNode);
+                    gainNode.connect(audioCtx.destination);
+                    
+                    // Start muted
+                    gainNode.gain.setValueAtTime(0, audioCtx.currentTime);
+                    oscillator.start();
+                }
+                
+                if (audioCtx.state === 'suspended') {
+                    audioCtx.resume();
+                }
+            }
+
+            function updateAudio() {
+                if (!audioCtx || !isAudioEnabled) return;
+
+                // Update Frequency
+                oscillator.frequency.setTargetAtTime(currentFreq, audioCtx.currentTime, 0.05);
+
+                // Calculate Perceived Volume (Roll off if above cutoff)
+                const cutoff = getCutoffFreq(ageProfile);
+                let perceptionMultiplier = 1;
+                
+                if (currentFreq > cutoff) {
+                    // Quick roll-off over 1000Hz
+                    const excess = currentFreq - cutoff;
+                    perceptionMultiplier = Math.max(0, 1 - (excess / 1000));
+                }
+
+                // Map 0-100 vol slider to exponential gain (0 to ~0.3 to avoid blasting ears)
+                // Max volume is capped low for safety
+                const baseGain = Math.pow(currentVol / 100, 2) * 0.2; 
+                const finalGain = baseGain * perceptionMultiplier;
+
+                // Smooth volume transition
+                gainNode.gain.setTargetAtTime(finalGain, audioCtx.currentTime, 0.05);
+            }
+
+            // --- Visualization ---
+
+            function resizeCanvas() {
+                const rect = canvas.parentElement.getBoundingClientRect();
+                canvas.width = rect.width - 32; // minus padding
+                canvas.height = rect.height - 32;
+            }
+            window.addEventListener('resize', resizeCanvas);
+            resizeCanvas();
+
+            function drawWave() {
+                ctx.clearRect(0, 0, canvas.width, canvas.height);
+                
+                const w = canvas.width;
+                const h = canvas.height;
+                const centerY = h / 2;
+
+                // Determine hearing status
+                const cutoff = getCutoffFreq(ageProfile);
+                const isHeard = currentFreq <= cutoff + 500; // Give a slight buffer for visual transition
+                
+                // Set UI Colors based on hearing
+                const color = isHeard ? '#06b6d4' : '#334155'; // Cyan or Gray
+
+                // Compress visual wavelength logarithmically so 20kHz is tight but visible
+                const visualFreq = Math.log10(currentFreq) * 5; 
+                const amplitude = (currentVol / 100) * (h / 2.5);
+
+                ctx.beginPath();
+                ctx.moveTo(0, centerY);
+
+                for (let x = 0; x < w; x++) {
+                    // y = A * sin(f*x + t)
+                    const y = centerY + Math.sin((x * visualFreq * 0.01) + time) * amplitude;
+                    ctx.lineTo(x, y);
+                }
+
+                ctx.strokeStyle = color;
+                ctx.lineWidth = 3;
+                
+                if (isHeard) {
+                    ctx.shadowBlur = 10;
+                    ctx.shadowColor = color;
+                } else {
+                    ctx.shadowBlur = 0;
+                }
+
+                ctx.stroke();
+                ctx.shadowBlur = 0; // reset
+
+                time += 0.1;
+                requestAnimationFrame(drawWave);
+            }
+
+            function updateUI() {
+                const sliderVal = parseInt(freqSlider.value);
+                currentFreq = sliderToFreq(sliderVal);
+                currentVol = parseInt(volSlider.value);
+
+                // Format Texts
+                uiFreqVal.textContent = `${Math.round(currentFreq)} Hz`;
+                uiVolVal.textContent = `${currentVol} dB`;
+                telFreq.textContent = Math.round(currentFreq);
+
+                // Pitch Class
+                if (currentFreq < 250) telPitch.textContent = "BASS (Low)";
+                else if (currentFreq < 2000) telPitch.textContent = "MID RANGE";
+                else if (currentFreq < 8000) telPitch.textContent = "PRESENCE (High)";
+                else telPitch.textContent = "BRILLIANCE (Ultra-High)";
+
+                // Hearing Loss Logic
+                const cutoff = getCutoffFreq(ageProfile);
+                const isHeard = currentFreq <= cutoff;
+
+                if (isHeard) {
+                    telStatus.textContent = "DETECTED";
+                    telStatus.className = "text-2xl font-bold font-mono mt-1 text-cyan-400";
+                    telePanel.classList.remove('lcd-warning');
+                    
+                    earContainer.classList.add('hearing-active');
+                    earContainer.classList.remove('hearing-loss');
+                    soundWavesGroup.style.opacity = '1';
+                } else {
+                    telStatus.textContent = "INAUDIBLE";
+                    telStatus.className = "text-2xl font-bold font-mono mt-1 text-rose-500";
+                    telePanel.classList.add('lcd-warning');
+                    
+                    earContainer.classList.remove('hearing-active');
+                    earContainer.classList.add('hearing-loss');
+                    soundWavesGroup.style.opacity = '0';
+                }
+
+                // Adjust SVG animation speed based on freq
+                const speed = Math.max(0.2, 2.0 - (Math.log10(currentFreq) * 0.3));
+                document.documentElement.style.setProperty('--speed', `${speed}s`);
+
+                updateAudio();
+            }
+
+            // --- Actions ---
+
+            function runSweep() {
+                if (isSweeping) return;
+                isSweeping = true;
+                btnSweep.disabled = true;
+                btnSweep.classList.add('opacity-50');
+                
+                // Start from 20Hz
+                freqSlider.value = 0;
+                updateUI();
+
+                const duration = 10000; // 10 seconds
+                const steps = 100;
+                const intervalTime = duration / steps;
+                let step = 0;
+
+                sweepInterval = setInterval(() => {
+                    step++;
+                    // Move slider linearly (which maps to log frequency)
+                    freqSlider.value = (step / steps) * 1000;
+                    updateUI();
+
+                    if (step >= steps) {
+                        clearInterval(sweepInterval);
+                        isSweeping = false;
+                        btnSweep.disabled = false;
+                        btnSweep.classList.remove('opacity-50');
+                    }
+                }, intervalTime);
+            }
+
+            // --- Event Listeners ---
+
+            freqSlider.addEventListener('input', () => {
+                if(isSweeping) {
+                    clearInterval(sweepInterval);
+                    isSweeping = false;
+                    btnSweep.disabled = false;
+                    btnSweep.classList.remove('opacity-50');
+                }
+                updateUI();
+            });
+
+            volSlider.addEventListener('input', updateUI);
+
+            audioToggle.addEventListener('change', (e) => {
+                isAudioEnabled = e.target.checked;
+                if (isAudioEnabled) {
+                    initAudio();
+                } else if (gainNode) {
+                    gainNode.gain.setTargetAtTime(0, audioCtx.currentTime, 0.05);
+                }
+                updateUI();
+            });
+
+            profileBtns.forEach(btn => {
+                btn.addEventListener('click', (e) => {
+                    profileBtns.forEach(b => b.classList.remove('active', 'bg-cyan-600', 'text-white'));
+                    profileBtns.forEach(b => b.classList.add('text-slate-400', 'bg-slate-800/50'));
+                    
+                    const target = e.currentTarget;
+                    target.classList.remove('text-slate-400', 'bg-slate-800/50');
+                    target.classList.add('active');
+                    
+                    ageProfile = parseInt(target.dataset.age);
+                    updateUI();
+                });
+            });
+
+            btnSweep.addEventListener('click', runSweep);
+
+            // Init
+            updateUI();
+            drawWave();
+        });
+    </script>
+</body>
+</html>

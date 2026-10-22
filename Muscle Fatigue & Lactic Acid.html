@@ -1,0 +1,306 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Muscle Fiber Fatigue Dynamics</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        body {
+            background-color: #020617; /* slate-950 */
+            color: #f8fafc;
+            margin: 0;
+            overflow: hidden;
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+            touch-action: none;
+        }
+
+        .sci-panel {
+            background: rgba(15, 23, 42, 0.7);
+            backdrop-filter: blur(20px);
+            -webkit-backdrop-filter: blur(20px);
+            border: 1px solid rgba(255, 255, 255, 0.08);
+            box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.5);
+        }
+
+        /* Fatigue Thermometer Styling */
+        .thermometer-container {
+            width: 40px;
+            height: 300px;
+            background: #1e293b;
+            border-radius: 20px;
+            position: relative;
+            border: 2px solid #334155;
+            overflow: hidden;
+        }
+
+        #fatigue-fill {
+            position: absolute;
+            bottom: 0;
+            width: 100%;
+            height: 0%;
+            background: linear-gradient(to top, #ef4444, #f59e0b, #fbbf24);
+            transition: height 0.1s linear;
+            box-shadow: 0 0 20px rgba(239, 68, 68, 0.5);
+        }
+
+        /* Striation pattern */
+        .striations {
+            fill: url(#striationPattern);
+            opacity: 0.2;
+        }
+
+        /* Exercise Button Pulse */
+        @keyframes pulse-red {
+            0%, 100% { transform: scale(1); box-shadow: 0 0 0 0 rgba(239, 68, 68, 0.7); }
+            50% { transform: scale(1.05); box-shadow: 0 0 20px 10px rgba(239, 68, 68, 0); }
+        }
+        .btn-exercise:active {
+            transform: scale(0.95);
+            background-color: #991b1b;
+        }
+
+        /* Muscle Tremor Animation */
+        @keyframes tremor {
+            0% { transform: translate(0,0); }
+            25% { transform: translate(1px, -1px); }
+            50% { transform: translate(-1px, 1px); }
+            75% { transform: translate(1px, 1px); }
+            100% { transform: translate(0,0); }
+        }
+        .tremoring {
+            animation: tremor 0.05s linear infinite;
+        }
+        
+        .ion-particle {
+            transition: opacity 0.5s ease;
+        }
+    </style>
+</head>
+<body class="w-screen h-screen flex flex-col md:flex-row relative selection:bg-red-500 bg-[radial-gradient(ellipse_at_top_right,_var(--tw-gradient-stops))] from-slate-900 via-slate-950 to-black">
+
+    <!-- UI Overlay -->
+    <div class="absolute top-0 left-0 w-full p-6 md:p-10 z-20 pointer-events-none flex flex-col md:flex-row justify-between items-start gap-6">
+        <div class="sci-panel p-8 rounded-2xl max-w-lg pointer-events-auto">
+            <div class="flex items-center gap-3 mb-3">
+                <div class="h-[1px] w-10 bg-red-500"></div>
+                <span class="text-red-400 font-mono text-[10px] tracking-widest uppercase">Physiological Stress Model</span>
+            </div>
+            <h1 class="text-4xl font-extrabold text-white mb-2 tracking-tight">
+                Metabolic <span class="text-transparent bg-clip-text bg-gradient-to-r from-red-500 to-amber-500">Fatigue</span>
+            </h1>
+            <p class="text-slate-400 text-sm leading-relaxed mb-6 font-light">
+                Intense anaerobic activity causes a buildup of lactate and protons ($H^+$), lowering intracellular pH. Observe how muscle fibers respond to metabolic debt through structural tremors and color shifts.
+            </p>
+            
+            <button id="exercise-btn" class="btn-exercise w-full py-4 bg-red-600 hover:bg-red-500 text-white font-bold rounded-xl transition-all shadow-lg pointer-events-auto uppercase tracking-widest text-sm">
+                Hold to Exercise
+            </button>
+            <p class="text-[10px] text-slate-500 mt-2 text-center font-mono uppercase tracking-tighter">Release to allow metabolic recovery</p>
+        </div>
+
+        <!-- Vertical Thermometer / Fatigue Meter -->
+        <div class="sci-panel p-6 rounded-2xl flex flex-row items-center gap-6 pointer-events-auto">
+            <div class="flex flex-col justify-between h-[300px] text-[10px] font-mono text-slate-500 uppercase">
+                <span>Critical</span>
+                <span>Strained</span>
+                <span>Fatigued</span>
+                <span>Optimal</span>
+            </div>
+            <div class="thermometer-container">
+                <div id="fatigue-fill"></div>
+                <!-- Measurement lines -->
+                <div class="absolute inset-0 flex flex-col justify-between py-4 pointer-events-none">
+                    <div class="w-full h-[1px] bg-white/20"></div>
+                    <div class="w-full h-[1px] bg-white/10"></div>
+                    <div class="w-full h-[1px] bg-white/10"></div>
+                    <div class="w-full h-[1px] bg-white/10"></div>
+                    <div class="w-full h-[1px] bg-white/10"></div>
+                </div>
+            </div>
+            <div class="flex flex-col justify-center gap-4">
+                <div class="text-right">
+                    <span class="text-[10px] font-mono text-slate-500 uppercase block">Fatigue Level</span>
+                    <span id="fatigue-pct" class="text-3xl font-bold text-white">0%</span>
+                </div>
+                <div class="text-right">
+                    <span class="text-[10px] font-mono text-slate-500 uppercase block">Est. pH</span>
+                    <span id="ph-val" class="text-xl font-bold text-cyan-400">7.10</span>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Main SVG Render -->
+    <div class="w-full h-full flex items-center justify-center p-4">
+        <svg id="muscle-canvas" viewBox="0 0 800 600" class="w-full h-full max-w-5xl drop-shadow-2xl">
+            <defs>
+                <!-- Muscle Fiber Gradient -->
+                <linearGradient id="fiberGrad" x1="0%" y1="0%" x2="0%" y2="100%">
+                    <stop offset="0%" stop-color="#991b1b" /> <!-- red-800 -->
+                    <stop offset="50%" stop-color="#7f1d1d" /> <!-- red-900 -->
+                    <stop offset="100%" stop-color="#450a0a" /> <!-- red-950 -->
+                </linearGradient>
+
+                <linearGradient id="fatiguedFiberGrad" x1="0%" y1="0%" x2="0%" y2="100%">
+                    <stop offset="0%" stop-color="#450a0a" /> 
+                    <stop offset="100%" stop-color="#180000" />
+                </linearGradient>
+
+                <!-- Striation Pattern -->
+                <pattern id="striationPattern" x="0" y="0" width="10" height="600" patternUnits="userSpaceOnUse">
+                    <rect x="0" y="0" width="2" height="600" fill="white" />
+                </pattern>
+
+                <!-- Ion Glow Filter -->
+                <filter id="ionGlow">
+                    <feGaussianBlur stdDeviation="3" result="blur" />
+                    <feComposite in="SourceGraphic" in2="blur" operator="over" />
+                </filter>
+            </defs>
+
+            <!-- Background Tissue -->
+            <rect x="0" y="0" width="800" height="600" fill="url(#fiberGrad)" opacity="0.05" />
+
+            <!-- Muscle Bundle Group -->
+            <g id="muscle-bundle" transform="translate(400, 300)">
+                <!-- Epimysium (Outer Layer) -->
+                <ellipse cx="0" cy="0" rx="320" ry="180" fill="none" stroke="#450a0a" stroke-width="4" opacity="0.5" />
+
+                <!-- Individual Fascicles -->
+                <!-- Fascicle 1 -->
+                <g id="fascicle-1" transform="translate(-150, -50)">
+                    <rect x="-100" y="-40" width="500" height="80" rx="40" class="muscle-fiber transition-all duration-700" fill="url(#fiberGrad)" stroke="#450a0a" />
+                    <rect x="-100" y="-40" width="500" height="80" rx="40" class="striations pointer-events-none" />
+                </g>
+                <!-- Fascicle 2 -->
+                <g id="fascicle-2" transform="translate(-180, 50)">
+                    <rect x="-100" y="-40" width="500" height="80" rx="40" class="muscle-fiber transition-all duration-700" fill="url(#fiberGrad)" stroke="#450a0a" />
+                    <rect x="-100" y="-40" width="500" height="80" rx="40" class="striations pointer-events-none" />
+                </g>
+                <!-- Fascicle 3 -->
+                <g id="fascicle-3" transform="translate(-130, -110)">
+                    <rect x="-100" y="-30" width="500" height="60" rx="30" class="muscle-fiber transition-all duration-700" fill="url(#fiberGrad)" stroke="#450a0a" />
+                    <rect x="-100" y="-30" width="500" height="60" rx="30" class="striations pointer-events-none" />
+                </g>
+                <!-- Fascicle 4 -->
+                <g id="fascicle-4" transform="translate(-160, 110)">
+                    <rect x="-100" y="-30" width="500" height="60" rx="30" class="muscle-fiber transition-all duration-700" fill="url(#fiberGrad)" stroke="#450a0a" />
+                    <rect x="-100" y="-30" width="500" height="60" rx="30" class="striations pointer-events-none" />
+                </g>
+
+                <!-- Lactic Acid / Ion Particle Layer -->
+                <g id="ion-container" filter="url(#ionGlow)"></g>
+            </g>
+        </svg>
+    </div>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', () => {
+            const exerciseBtn = document.getElementById('exercise-btn');
+            const fatigueFill = document.getElementById('fatigue-fill');
+            const fatiguePctText = document.getElementById('fatigue-pct');
+            const phValText = document.getElementById('ph-val');
+            const ionContainer = document.getElementById('ion-container');
+            const muscleFibers = document.querySelectorAll('.muscle-fiber');
+            const muscleBundle = document.getElementById('muscle-bundle');
+
+            let fatigue = 0; // 0 to 100
+            let isExercising = false;
+            let particles = [];
+
+            // Core Loop
+            function update() {
+                if (isExercising) {
+                    fatigue = Math.min(100, fatigue + 0.4);
+                    if (Math.random() > 0.7) createIon();
+                } else {
+                    fatigue = Math.max(0, fatigue - 0.2);
+                    if (Math.random() > 0.9 && particles.length > 0) removeIon();
+                }
+
+                // Update UI
+                fatigueFill.style.height = `${fatigue}%`;
+                fatiguePctText.textContent = `${Math.round(fatigue)}%`;
+                
+                // pH calculation (7.1 down to 6.4 at max fatigue)
+                const ph = 7.1 - (fatigue / 100) * 0.7;
+                phValText.textContent = ph.toFixed(2);
+                phValText.style.color = fatigue > 80 ? '#f87171' : (fatigue > 40 ? '#fbbf24' : '#22d3ee');
+
+                // Visual fiber changes
+                muscleFibers.forEach(fiber => {
+                    // Color shift
+                    const strainOpacity = fatigue / 100;
+                    fiber.style.filter = `brightness(${1 - strainOpacity * 0.5})`;
+                    
+                    // Tremor logic
+                    if (fatigue > 50) {
+                        const intensity = (fatigue - 50) / 50; // 0 to 1
+                        if (Math.random() < intensity * 0.5) {
+                            fiber.classList.add('tremoring');
+                        } else {
+                            fiber.classList.remove('tremoring');
+                        }
+                    } else {
+                        fiber.classList.remove('tremoring');
+                    }
+                });
+
+                // Overall bundle shake at extreme fatigue
+                if (fatigue > 90) {
+                    muscleBundle.setAttribute('transform', `translate(${400 + (Math.random()*2-1)}, ${300 + (Math.random()*2-1)})`);
+                } else {
+                    muscleBundle.setAttribute('transform', 'translate(400, 300)');
+                }
+
+                requestAnimationFrame(update);
+            }
+
+            function createIon() {
+                if (particles.length > 100) return;
+                
+                const ion = document.createElementNS('http://www.w3.org/2000/svg', 'circle');
+                const x = (Math.random() - 0.5) * 600;
+                const y = (Math.random() - 0.5) * 300;
+                
+                ion.setAttribute('cx', x);
+                ion.setAttribute('cy', y);
+                ion.setAttribute('r', Math.random() * 3 + 1);
+                ion.setAttribute('fill', '#22d3ee');
+                ion.setAttribute('class', 'ion-particle');
+                ion.setAttribute('opacity', '0');
+                
+                ionContainer.appendChild(ion);
+                particles.push(ion);
+                
+                // Fade in
+                setTimeout(() => ion.setAttribute('opacity', Math.random() * 0.6 + 0.2), 10);
+            }
+
+            function removeIon() {
+                const ion = particles.shift();
+                if (ion) {
+                    ion.setAttribute('opacity', '0');
+                    setTimeout(() => ion.remove(), 500);
+                }
+            }
+
+            // Input Events
+            const startExercise = () => isExercising = true;
+            const stopExercise = () => isExercising = false;
+
+            exerciseBtn.addEventListener('mousedown', startExercise);
+            window.addEventListener('mouseup', stopExercise);
+            
+            exerciseBtn.addEventListener('touchstart', (e) => {
+                e.preventDefault();
+                startExercise();
+            });
+            window.addEventListener('touchend', stopExercise);
+
+            update();
+        });
+    </script>
+</body>
+</html>

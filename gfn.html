@@ -1,0 +1,1051 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ClonMedic OS</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+    <style>
+        /* Minimalist Scrollbar */
+        ::-webkit-scrollbar { width: 6px; height: 6px; }
+        ::-webkit-scrollbar-track { background: transparent; }
+        ::-webkit-scrollbar-thumb { background: #e2e8f0; border-radius: 10px; }
+        ::-webkit-scrollbar-thumb:hover { background: #cbd5e1; }
+
+        /* Custom Animations */
+        @keyframes pulse-glow {
+            0%, 100% { box-shadow: 0 0 0 0 rgba(59, 130, 246, 0); }
+            50% { box-shadow: 0 0 10px 0 rgba(59, 130, 246, 0.2); }
+        }
+
+        @keyframes load-bar {
+            0% { width: 0%; opacity: 1; }
+            50% { width: 70%; opacity: 1; }
+            100% { width: 100%; opacity: 0; }
+        }
+
+        .anim-focus:focus-within {
+            animation: pulse-glow 2s infinite;
+        }
+
+        .loading-active {
+            animation: load-bar 1.5s ease-out forwards;
+        }
+
+        /* Neo-Brutalist Styles */
+        .brutal-box {
+            border: 3px solid #111827;
+            box-shadow: 6px 6px 0px 0px #111827;
+            transition: all 0.15s ease;
+            border-radius: 0;
+        }
+        .brutal-box:focus-within, .brutal-box:active {
+            box-shadow: 2px 2px 0px 0px #111827;
+            transform: translate(4px, 4px);
+        }
+        .brutal-btn {
+            border: 2px solid transparent;
+            transition: all 0.15s ease;
+            border-radius: 0;
+        }
+        .brutal-btn:hover {
+            border: 2px solid #111827;
+            box-shadow: 4px 4px 0px 0px #111827;
+            transform: translate(-2px, -2px);
+        }
+
+        /* Crawler Terminal Text Effect */
+        .typing-cursor::after {
+            content: '█';
+            animation: blink 1s step-start infinite;
+            color: #3b82f6;
+            margin-left: 4px;
+        }
+        @keyframes blink { 50% { opacity: 0; } }
+
+        /* Glassmorphism overlays */
+        .glass-panel {
+            background: rgba(255, 255, 255, 0.95);
+            backdrop-filter: blur(10px);
+            -webkit-backdrop-filter: blur(10px);
+        }
+
+        /* Hide scrollbar for tabs */
+        .no-scrollbar::-webkit-scrollbar {
+            display: none;
+        }
+        .no-scrollbar {
+            -ms-overflow-style: none;
+            scrollbar-width: none;
+        }
+    </style>
+</head>
+<body class="bg-gray-300 h-screen w-screen overflow-hidden flex items-center justify-center p-2 sm:p-6 font-mono">
+
+    <!-- OS Window Container -->
+    <div class="bg-white w-full h-full max-w-[1600px] flex flex-col overflow-hidden border-4 border-gray-900 shadow-[12px_12px_0_0_rgba(17,24,39,1)] transition-all duration-500 relative">
+        
+        <!-- Loading Bar -->
+        <div id="loading-bar" class="absolute top-0 left-0 h-1.5 bg-blue-600 w-0 z-50"></div>
+
+        <!-- Top Window Bar with Tabs -->
+        <div class="bg-gray-200 px-3 pt-2 flex items-end gap-2 border-b-4 border-gray-900 z-40 relative">
+            <!-- Window Controls -->
+            <div class="flex gap-2 mb-2.5 mr-2">
+                <div class="w-4 h-4 bg-red-500 border-2 border-gray-900 hover:bg-red-600 cursor-pointer transition-colors"></div>
+                <div class="w-4 h-4 bg-yellow-400 border-2 border-gray-900 hover:bg-yellow-500 cursor-pointer transition-colors"></div>
+                <div class="w-4 h-4 bg-green-500 border-2 border-gray-900 hover:bg-green-600 cursor-pointer transition-colors"></div>
+            </div>
+            
+            <!-- Tabs Container -->
+            <div id="tabs-container" class="flex-1 flex overflow-x-auto no-scrollbar gap-1 items-end h-10">
+                <!-- Tabs injected dynamically via JS -->
+            </div>
+
+            <!-- Add Tab Button -->
+            <button onclick="createNewTab()" title="New Tab (Ctrl+T)" class="mb-1.5 p-1.5 bg-white text-gray-800 brutal-btn flex items-center justify-center">
+                <i class="fas fa-plus text-sm"></i>
+            </button>
+        </div>
+
+        <!-- Browser Toolbar -->
+        <header class="bg-white border-b-4 border-gray-900 px-4 py-3 flex items-center gap-4 z-30 relative">
+            
+            <!-- Navigation Actions -->
+            <div class="flex gap-3 text-gray-800">
+                <button onclick="goBack()" class="bg-gray-100 p-2 brutal-btn"><i class="fas fa-chevron-left text-sm"></i></button>
+                <button onclick="goForward()" class="bg-gray-100 p-2 brutal-btn"><i class="fas fa-chevron-right text-sm"></i></button>
+                <button onclick="reloadPage()" class="bg-gray-100 p-2 brutal-btn"><i class="fas fa-rotate-right text-sm"></i></button>
+                <button onclick="goHome()" class="bg-gray-100 p-2 brutal-btn"><i class="fas fa-house text-sm"></i></button>
+            </div>
+
+            <!-- Omnibox (Address Bar & Crawler) -->
+            <div class="flex-1 max-w-3xl mx-auto relative group">
+                <div class="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none z-10">
+                    <img src="https://res.cloudinary.com/ds93qby5a/image/upload/v1777557271/3e89a999-c62a-4c1e-972c-d67b0db24048_agmy1w.png" alt="ClonMedic" class="h-5 w-5 object-contain grayscale">
+                </div>
+                <input type="text" id="address-bar" 
+                    class="block w-full pl-12 pr-10 py-2.5 font-sans brutal-box bg-white text-gray-900 placeholder-gray-500 focus:outline-none focus:bg-gray-50 sm:text-base" 
+                    placeholder="Search the web or enter URL..."
+                    value="">
+                <div class="absolute inset-y-0 right-0 pr-4 flex items-center z-10">
+                    <i class="fas fa-magnifying-glass text-gray-900 text-sm"></i>
+                </div>
+            </div>
+
+            <!-- Right side tools -->
+            <div class="flex gap-3 text-gray-800 ml-auto">
+                <button class="bg-gray-100 p-2 brutal-btn" title="ClonMedic Network Status"><i class="fas fa-network-wired text-sm"></i></button>
+                <button class="bg-gray-100 p-2 brutal-btn" title="Settings"><i class="fas fa-gear text-sm"></i></button>
+            </div>
+        </header>
+
+        <!-- Main Workspace -->
+        <main class="flex-1 relative bg-white flex flex-row overflow-hidden font-sans">
+            
+            <!-- Side Navigation Bar -->
+            <aside class="w-20 border-r-4 border-gray-900 bg-gray-200 flex flex-col items-center py-6 gap-6 z-40 shrink-0">
+                <button onclick="createNewTab('arcade.html')" class="w-12 h-12 border-4 border-gray-900 rounded-2xl shadow-[4px_4px_0px_0px_#111827] bg-[#ffb811] hover:bg-yellow-400 flex items-center justify-center transition-all active:translate-x-[4px] active:translate-y-[4px] active:shadow-none" title="Arcade Games">
+                    <i class="fas fa-gamepad text-2xl text-gray-900"></i>
+                </button>
+                <button onclick="createNewTab('medicof all.html')" class="w-12 h-12 border-4 border-gray-900 rounded-2xl shadow-[4px_4px_0px_0px_#111827] bg-[#1CA5EB] hover:bg-blue-400 flex items-center justify-center transition-all active:translate-x-[4px] active:translate-y-[4px] active:shadow-none" title="Educational Tools">
+                    <i class="fas fa-graduation-cap text-xl text-white"></i>
+                </button>
+
+                <!-- Profile / Dashboard Button -->
+                <div class="mt-auto">
+                    <button onclick="openDashboard()" class="w-12 h-12 border-4 border-gray-900 rounded-2xl shadow-[4px_4px_0px_0px_#111827] bg-[#ff4757] hover:bg-red-400 flex items-center justify-center transition-all active:translate-x-[4px] active:translate-y-[4px] active:shadow-none" title="OS Dashboard & Profile">
+                        <i class="fas fa-user-astronaut text-xl text-white"></i>
+                    </button>
+                </div>
+            </aside>
+
+            <!-- Content Area -->
+            <div class="flex-1 relative overflow-hidden flex flex-col">
+                
+                <!-- Home Screen View -->
+                <div id="home-screen" class="absolute inset-0 z-20 flex flex-col items-center justify-center bg-[#1CA5EB] p-8 transition-opacity duration-500">
+                    
+                    <!-- ClonBrow V2 Logo -->
+                    <div class="mb-10 text-center select-none flex flex-col items-center z-30">
+                        <div class="text-white font-black font-sans text-[5rem] sm:text-[7rem] md:text-[10rem] leading-none tracking-tighter transform hover:scale-105 transition-transform" style="-webkit-text-stroke: 4px #111827; text-shadow: 8px 8px 0px #111827;">
+                            CLONBROW
+                        </div>
+                        <div class="bg-[#ffc107] text-gray-900 font-black font-sans text-2xl md:text-3xl px-12 py-4 border-4 border-gray-900 rounded-full transform -rotate-2 mt-4 cursor-default" style="box-shadow: 0px 8px 0px 0px #e69100, 0px 12px 0px 0px #111827;">
+                            START BROWSING
+                        </div>
+                    </div>
+
+                    <!-- Central Search Bar -->
+                    <div class="relative w-full max-w-2xl mb-12 z-30">
+                         <div class="absolute inset-y-0 left-0 pl-6 flex items-center pointer-events-none z-10">
+                             <i class="fas fa-magnifying-glass text-gray-900 text-xl"></i>
+                         </div>
+                         <input type="text" id="home-search-bar"
+                             class="block w-full pl-16 pr-6 py-5 text-xl font-sans bg-white border-4 border-gray-900 text-gray-900 placeholder-gray-500 focus:outline-none rounded-2xl shadow-[8px_8px_0px_0px_#111827] focus:shadow-[4px_4px_0px_0px_#111827] focus:translate-x-1 focus:translate-y-1 transition-all"
+                             placeholder="Search ClonMedic index or enter URL..."
+                             autocomplete="off">
+                    </div>
+
+                </div>
+
+                <!-- Iframe Container for Tabs -->
+                <div id="iframe-container" class="w-full h-full relative z-10">
+                    <!-- Tab Iframes are injected dynamically here -->
+                </div>
+
+                <!-- Crawler Search Results Overlay -->
+                <div id="search-overlay" class="absolute inset-0 glass-panel hidden flex-col z-30 overflow-y-auto">
+                    <div class="pt-12 pb-6 px-8 max-w-4xl mx-auto w-full border-b border-gray-100">
+                        <div class="flex items-center gap-4 mb-2">
+                            <div class="w-10 h-10 rounded-full bg-blue-50 flex items-center justify-center">
+                                <i class="fas fa-spider text-blue-500 text-xl"></i>
+                            </div>
+                            <h2 class="text-2xl font-light text-gray-800 tracking-tight">ClonMedic <span class="font-semibold text-blue-600">Deep Indexer</span></h2>
+                        </div>
+                        <p id="crawler-status" class="text-sm text-gray-500 font-mono typing-cursor">Awaiting query...</p>
+                    </div>
+                    <div id="search-results" class="flex-1 p-8 max-w-4xl mx-auto w-full space-y-6"></div>
+                </div>
+
+                <!-- Dashboard & Profile Full View -->
+                <div id="dashboard-modal" class="absolute inset-0 z-50 hidden flex-col bg-[#1CA5EB] transition-opacity font-sans">
+                    
+                    <!-- OS Header -->
+                    <div class="bg-[#1085c2] text-white px-6 py-4 flex justify-between items-center shrink-0 shadow-md z-10 border-b-4 border-blue-900">
+                        <div class="flex items-center gap-4">
+                            <i class="fas fa-satellite-dish text-[#ffc107] animate-pulse text-2xl"></i>
+                            <span class="font-black tracking-widest uppercase text-xl" style="text-shadow: 2px 2px 0px rgba(0,0,0,0.2);">ClonMedic Hub</span>
+                        </div>
+                        <button onclick="closeDashboard()" class="w-10 h-10 bg-red-500 rounded-full text-white hover:bg-red-400 transition-colors shadow-[0_4px_0_0_#c0392b] active:translate-y-1 active:shadow-none flex items-center justify-center border-2 border-red-700">
+                            <i class="fas fa-times text-xl"></i>
+                        </button>
+                    </div>
+
+                    <!-- AUTHENTICATION VIEW -->
+                    <div id="auth-view" class="flex-1 flex items-center justify-center bg-[#1CA5EB]">
+                        <div class="bg-white p-10 rounded-[2rem] shadow-[0_12px_0_0_#0d86c4] max-w-md w-full transform transition-all text-center mx-4 border-4 border-[#0d86c4]">
+                            <h2 id="auth-title" class="text-4xl font-black mb-8 uppercase tracking-tight text-[#1CA5EB]">System Login</h2>
+                            
+                            <div class="space-y-5">
+                                <input type="text" id="auth-username" placeholder="USERNAME" class="w-full bg-gray-100 rounded-2xl p-4 text-lg font-bold text-gray-800 border-2 border-transparent focus:bg-white focus:border-[#1CA5EB] transition-all outline-none text-center placeholder-gray-400 shadow-inner">
+                                <input type="password" id="auth-password" placeholder="PASSWORD" class="w-full bg-gray-100 rounded-2xl p-4 text-lg font-bold text-gray-800 border-2 border-transparent focus:bg-white focus:border-[#1CA5EB] transition-all outline-none text-center placeholder-gray-400 shadow-inner">
+                                
+                                <div id="auth-error" class="text-red-600 font-bold text-sm hidden bg-red-100 p-3 rounded-xl border-2 border-red-300 shadow-sm animate-bounce"></div>
+                                
+                                <button onclick="window.handleAuth()" class="w-full bg-[#ffc107] hover:bg-[#ffcd38] text-gray-900 rounded-full p-4 font-black text-2xl shadow-[0_6px_0_0_#d39e00] active:translate-y-[6px] active:shadow-none transition-all mt-4 tracking-wide border-2 border-[#d39e00]">
+                                    <span id="auth-btn-text">START</span> <i class="fas fa-play ml-1"></i>
+                                </button>
+                            </div>
+                            <div class="mt-8 text-center">
+                                <button onclick="window.toggleAuthMode()" class="text-gray-500 hover:text-[#1CA5EB] font-black transition-colors text-lg uppercase tracking-wide border-b-2 border-dashed border-gray-400 hover:border-[#1CA5EB]">
+                                    <span id="auth-switch-text">New User? Register Identity</span>
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- DASHBOARD VIEW -->
+                    <div id="dashboard-view" class="flex-1 hidden bg-[#1CA5EB] p-4 sm:p-8 overflow-y-auto">
+                        <div class="grid grid-cols-1 lg:grid-cols-12 gap-8 max-w-[1600px] mx-auto min-h-full">
+                            
+                            <!-- Column 1: Profile & Bio -->
+                            <div class="lg:col-span-3 bg-white rounded-[2rem] shadow-[0_10px_0_0_#0d86c4] p-8 flex flex-col gap-6 border-4 border-[#0d86c4]">
+                                <div class="flex flex-col items-center mt-2">
+                                    <div class="relative group cursor-pointer mb-4" onclick="document.getElementById('pfp-upload').click()">
+                                        <div class="w-36 h-36 rounded-[2rem] overflow-hidden bg-gray-100 shadow-[0_6px_0_0_#e5e7eb] border-4 border-gray-100 flex items-center justify-center group-hover:scale-105 transition-transform">
+                                            <img id="user-pfp" src="" class="w-full h-full object-cover">
+                                        </div>
+                                        <div class="absolute inset-0 bg-[#1CA5EB]/80 rounded-[2rem] hidden group-hover:flex items-center justify-center text-white font-black text-xl transition-all border-4 border-[#1CA5EB]">
+                                            <i class="fas fa-camera"></i>
+                                        </div>
+                                        <input type="file" id="pfp-upload" accept="image/*" class="hidden" onchange="window.previewPFP(event)">
+                                    </div>
+                                    <h3 id="display-username" class="text-3xl font-black uppercase text-gray-800 tracking-tight text-center">Loading...</h3>
+                                    <div class="bg-green-100 text-green-600 font-bold px-3 py-1 rounded-full text-sm mt-2 flex items-center gap-2 border-2 border-green-200">
+                                        <div class="w-2 h-2 rounded-full bg-green-500 animate-pulse"></div> Online
+                                    </div>
+                                </div>
+
+                                <div class="flex-1 flex flex-col mt-4">
+                                    <label class="font-black text-[#1CA5EB] mb-2 uppercase text-sm tracking-wider flex items-center"><i class="fas fa-id-card mr-2"></i> Clearance / Bio Log</label>
+                                    <textarea id="user-bio" onblur="window.saveBio()" class="flex-1 w-full bg-blue-50 rounded-2xl p-4 font-bold text-gray-700 focus:bg-blue-100 resize-none outline-none transition-colors border-2 border-blue-200 focus:border-blue-400 shadow-inner" placeholder="Type your bio... (Auto-saves)"></textarea>
+                                </div>
+                                
+                                <button onclick="window.handleLogout()" class="mt-4 w-full bg-gray-100 hover:bg-red-500 hover:text-white hover:shadow-[0_4px_0_0_#c0392b] text-gray-500 rounded-full p-3 font-black text-lg active:translate-y-1 active:shadow-none transition-all uppercase border-2 border-gray-200 hover:border-red-600">
+                                    Logout
+                                </button>
+                            </div>
+
+                            <!-- Column 2: Stats & Telemetry -->
+                            <div class="lg:col-span-4 flex flex-col gap-8">
+                                <!-- Streak Module -->
+                                <div class="bg-[#ffc107] rounded-[2rem] shadow-[0_10px_0_0_#d39e00] p-8 text-center relative overflow-hidden transform hover:-translate-y-1 transition-transform border-4 border-[#ffcd38]">
+                                    <i class="fas fa-star absolute -right-4 -top-4 text-[10rem] text-white opacity-30 group-hover:rotate-12 transition-transform"></i>
+                                    <h4 class="font-black text-orange-800 text-xl tracking-widest relative z-10 uppercase mb-2 inline-block">Active Streak</h4>
+                                    <div class="text-[5rem] leading-none font-black text-white relative z-10" style="text-shadow: 4px 4px 0px rgba(0,0,0,0.1);">12</div>
+                                    <div class="font-black text-orange-900 mt-2 text-lg relative z-10 uppercase">Days Building</div>
+                                </div>
+
+                                <!-- Time Usage Metrics -->
+                                <div class="bg-white rounded-[2rem] shadow-[0_10px_0_0_#0d86c4] p-8 flex-1 flex flex-col border-4 border-[#0d86c4]">
+                                    <div class="text-[#1CA5EB] font-black tracking-widest uppercase text-xl mb-6 flex items-center"><i class="fas fa-chart-bar mr-2"></i> Telemetry Data</div>
+                                    <div class="space-y-6 font-bold flex-1 flex flex-col justify-center">
+                                        <div class="group">
+                                            <div class="flex justify-between mb-2 text-gray-600">
+                                                <span><i class="fas fa-microscope mr-2 text-blue-500"></i> Clinical Labs</span><span class="text-blue-500 bg-blue-50 px-2 rounded-md">45h</span>
+                                            </div>
+                                            <div class="h-4 w-full bg-gray-100 rounded-full overflow-hidden border border-gray-200"><div class="h-full bg-blue-500 w-[75%] rounded-full shadow-[inset_0_-2px_0_0_rgba(0,0,0,0.2)]"></div></div>
+                                        </div>
+                                        <div class="group">
+                                            <div class="flex justify-between mb-2 text-gray-600">
+                                                <span><i class="fas fa-gamepad mr-2 text-yellow-500"></i> Arcade Games</span><span class="text-yellow-500 bg-yellow-50 px-2 rounded-md">12h</span>
+                                            </div>
+                                            <div class="h-4 w-full bg-gray-100 rounded-full overflow-hidden border border-gray-200"><div class="h-full bg-[#ffc107] w-[30%] rounded-full shadow-[inset_0_-2px_0_0_rgba(0,0,0,0.2)]"></div></div>
+                                        </div>
+                                        <div class="group">
+                                            <div class="flex justify-between mb-2 text-gray-600">
+                                                <span><i class="fas fa-spider mr-2 text-green-500"></i> Deep Indexer</span><span class="text-green-500 bg-green-50 px-2 rounded-md">8h</span>
+                                            </div>
+                                            <div class="h-4 w-full bg-gray-100 rounded-full overflow-hidden border border-gray-200"><div class="h-full bg-green-500 w-[20%] rounded-full shadow-[inset_0_-2px_0_0_rgba(0,0,0,0.2)]"></div></div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- Column 3: Live Chat & Status -->
+                            <div class="lg:col-span-5 bg-white rounded-[2rem] shadow-[0_10px_0_0_#0d86c4] flex flex-col overflow-hidden border-4 border-[#0d86c4]">
+                                <div class="bg-blue-50 p-4 border-b-2 border-blue-200 flex flex-col gap-3">
+                                    <div class="font-black tracking-widest uppercase text-lg text-[#1CA5EB] flex items-center justify-between">
+                                        <span><i class="fas fa-users mr-2"></i> Global Network</span>
+                                    </div>
+                                    <!-- Active Users Horizontal Scroll -->
+                                    <div id="active-users-list" class="flex gap-4 overflow-x-auto no-scrollbar pb-2 pt-2 min-h-[100px] items-start">
+                                        <div class="text-sm text-gray-400 font-bold animate-pulse mt-2">Scanning frequencies...</div>
+                                    </div>
+                                </div>
+                                
+                                <!-- Friend Requests Area -->
+                                <div id="friend-requests-area" class="bg-yellow-50 p-3 hidden flex-col gap-2 border-b-2 border-yellow-200 shadow-[inset_0_2px_4px_rgba(0,0,0,0.05)]">
+                                    <div class="text-xs font-black text-yellow-600 uppercase tracking-widest flex items-center"><i class="fas fa-bell mr-2 animate-bounce"></i> Pending Requests</div>
+                                    <div id="requests-list" class="flex flex-col gap-2 max-h-[150px] overflow-y-auto no-scrollbar"></div>
+                                </div>
+
+                                <!-- Chat Messages Area -->
+                                <div id="chat-messages" class="flex-1 overflow-y-auto p-6 space-y-4 bg-gray-50 flex flex-col shadow-inner"></div>
+
+                                <!-- Chat Input -->
+                                <div class="p-4 bg-white border-t-2 border-gray-200 flex gap-3 shadow-[0_-4px_10px_rgba(0,0,0,0.02)]">
+                                    <input type="text" id="chat-input" placeholder="Broadcast message..." class="flex-1 bg-gray-100 rounded-full px-6 py-3 font-bold text-gray-700 focus:bg-white focus:ring-4 focus:ring-blue-100 border-2 border-transparent focus:border-blue-200 transition-all outline-none shadow-inner" onkeypress="if(event.key === 'Enter') window.sendChatMessage()">
+                                    <button onclick="window.sendChatMessage()" class="w-14 h-14 bg-[#ffc107] text-gray-900 rounded-full shadow-[0_4px_0_0_#d39e00] flex items-center justify-center hover:bg-[#ffcd38] active:translate-y-1 active:shadow-none transition-all border-2 border-[#d39e00] text-xl">
+                                        <i class="fas fa-paper-plane"></i>
+                                    </button>
+                                </div>
+                            </div>
+
+                        </div>
+                    </div>
+
+                </div>
+
+            </div>
+        </main>
+    </div>
+
+    <script type="module">
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
+        import { getAuth, signInWithEmailAndPassword, createUserWithEmailAndPassword, onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
+        import { getFirestore, doc, setDoc, onSnapshot, collection, addDoc, query, orderBy, limit, serverTimestamp, updateDoc, deleteDoc } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
+
+        const firebaseConfig = {
+            apiKey: "AIzaSyA5tK-Q3dm5IyG68Bdd6j7NXxdGJYJX5cY",
+            authDomain: "clonbrow.firebaseapp.com",
+            projectId: "clonbrow",
+            storageBucket: "clonbrow.firebasestorage.app",
+            messagingSenderId: "590467480687",
+            appId: "1:590467480687:web:e237f18492dc9d0845a19a"
+        };
+        const app = initializeApp(firebaseConfig);
+        const auth = getAuth(app);
+        const db = getFirestore(app);
+        const CLONBROW_APP_ID = "clonbrow";
+
+        const addressBar = document.getElementById('address-bar');
+        const homeSearchBar = document.getElementById('home-search-bar');
+        const homeScreen = document.getElementById('home-screen');
+        const searchOverlay = document.getElementById('search-overlay');
+        const searchResults = document.getElementById('search-results');
+        const crawlerStatus = document.getElementById('crawler-status');
+        const loadingBar = document.getElementById('loading-bar');
+        const iframeContainer = document.getElementById('iframe-container');
+
+        const HOME_URL = 'clonmedic://home';
+        
+        let tabs = [];
+        let activeTabId = null;
+
+        function triggerLoadAnimation() {
+            loadingBar.classList.remove('loading-active');
+            void loadingBar.offsetWidth; 
+            loadingBar.classList.add('loading-active');
+        }
+
+        window.updateUserStatus = async function(statusText) {
+            if (!currentUser) return;
+            const presenceRef = doc(db, 'artifacts', CLONBROW_APP_ID, 'public', 'data', 'presence', currentUser.uid);
+            try {
+                await setDoc(presenceRef, {
+                    uid: currentUser.uid,
+                    username: document.getElementById('display-username').textContent || "User",
+                    pfp: document.getElementById('user-pfp').src || "",
+                    status: statusText,
+                    timestamp: serverTimestamp()
+                }, { merge: true });
+            } catch (error) { console.error("Status update error", error); }
+        };
+
+        function getTabStatus(url) {
+            if (url === HOME_URL) return "Browsing Dashboard";
+            if (url.includes('arcade.html')) return "Playing Games";
+            if (url.includes('medicof all.html') || url.includes('netlify.app')) return "In Clinical Labs";
+            return "Surfing the Web";
+        }
+
+        function generateId() { return 'tab-' + Math.random().toString(36).substr(2, 9); }
+
+        window.createNewTab = function(url = HOME_URL) {
+            const tab = {
+                id: generateId(),
+                url: url,
+                title: url === HOME_URL ? 'New Tab' : getDomain(url),
+                history: [url],
+                historyIndex: 0,
+                iframe: null
+            };
+            tabs.push(tab);
+            window.switchTab(tab.id);
+        };
+
+        function getDomain(url) {
+            try {
+                if (url.includes('netlify.app')) return 'ClonMedic Lab';
+                if (!url.startsWith('http') && url.includes('.html')) return url.replace('.html', '').toUpperCase();
+                return new URL(url).hostname.replace('www.', '');
+            } catch (e) { return url; }
+        }
+
+        window.renderTabs = function() {
+            const container = document.getElementById('tabs-container');
+            container.innerHTML = '';
+            
+            tabs.forEach(tab => {
+                const isActive = tab.id === activeTabId;
+                const tabEl = document.createElement('div');
+                
+                const activeClasses = 'bg-white border-2 border-gray-900 border-b-0 relative z-10 before:absolute before:-bottom-1 before:left-0 before:right-0 before:h-1.5 before:bg-white text-gray-900 font-bold';
+                const inactiveClasses = 'bg-gray-300 border-2 border-transparent border-b-gray-900 text-gray-600 hover:bg-gray-400 font-medium';
+                
+                tabEl.className = `group flex items-center justify-between px-3 py-2 min-w-[150px] max-w-[220px] cursor-pointer transition-colors text-sm ${isActive ? activeClasses : inactiveClasses}`;
+                tabEl.onclick = () => window.switchTab(tab.id);
+                
+                let iconClass = 'fa-globe text-gray-400';
+                if (tab.url === HOME_URL) iconClass = 'fa-house text-blue-400';
+                else if (tab.url.includes('netlify.app')) iconClass = 'fa-microscope text-blue-500';
+
+                tabEl.innerHTML = `
+                    <div class="flex items-center gap-2 truncate pointer-events-none">
+                        <i class="fas ${iconClass} text-xs"></i>
+                        <span class="truncate font-medium">${tab.title}</span>
+                    </div>
+                    <button onclick="window.closeTab(event, '${tab.id}')" class="opacity-0 group-hover:opacity-100 hover:bg-gray-300 rounded-md w-5 h-5 flex items-center justify-center transition-all text-gray-500">
+                        <i class="fas fa-times text-[10px]"></i>
+                    </button>
+                `;
+                container.appendChild(tabEl);
+            });
+        };
+
+        window.switchTab = function(id) {
+            activeTabId = id;
+            const tab = tabs.find(t => t.id === id);
+            if (!tab) return;
+
+            window.renderTabs();
+            searchOverlay.classList.add('hidden'); 
+
+            if (tab.url === HOME_URL) {
+                homeScreen.classList.remove('hidden');
+                addressBar.value = '';
+                homeSearchBar.value = '';
+                Array.from(iframeContainer.children).forEach(f => f.classList.add('hidden'));
+            } else {
+                homeScreen.classList.add('hidden');
+                addressBar.value = tab.url;
+                if (!tab.iframe) {
+                    const iframe = document.createElement('iframe');
+                    iframe.className = 'w-full h-full border-none absolute inset-0 bg-white';
+                    iframe.src = tab.url;
+                    iframeContainer.appendChild(iframe);
+                    tab.iframe = iframe;
+                }
+                Array.from(iframeContainer.children).forEach(f => f.classList.add('hidden'));
+                tab.iframe.classList.remove('hidden');
+            }
+
+            if (document.getElementById('dashboard-modal').classList.contains('hidden')) {
+                window.updateUserStatus(getTabStatus(tab.url));
+            }
+        };
+
+        window.closeTab = function(e, id) {
+            e.stopPropagation(); 
+            if (tabs.length === 1) {
+                const tab = tabs[0];
+                if (tab.iframe) tab.iframe.remove();
+                tabs = [];
+                window.createNewTab();
+                return;
+            }
+            const tabIndex = tabs.findIndex(t => t.id === id);
+            const tab = tabs[tabIndex];
+            if (tab.iframe) tab.iframe.remove();
+            tabs.splice(tabIndex, 1);
+            if (activeTabId === id) {
+                const newIndex = Math.max(0, tabIndex - 1);
+                window.switchTab(tabs[newIndex].id);
+            } else {
+                window.renderTabs();
+            }
+        };
+
+        addressBar.addEventListener('keypress', function (e) {
+            if (e.key === 'Enter') {
+                e.preventDefault();
+                if(this.value.trim() === '') window.loadWebPage(HOME_URL);
+                else processInput(this.value.trim());
+                this.blur();
+            }
+        });
+
+        homeSearchBar.addEventListener('keypress', function (e) {
+            if (e.key === 'Enter') {
+                e.preventDefault();
+                if(this.value.trim() !== '') {
+                    addressBar.value = this.value.trim();
+                    processInput(this.value.trim());
+                }
+                this.blur();
+            }
+        });
+
+        function processInput(input) {
+            triggerLoadAnimation();
+            const urlPattern = /^(https?:\/\/)?([\w.-]+)\.([a-z]{2,6}\.?)(\/[\w.-]*)*\/?$/i;
+            if (urlPattern.test(input) || input.startsWith('http')) {
+                let finalUrl = input.startsWith('http') ? input : 'https://' + input;
+                window.loadWebPage(finalUrl);
+            } else {
+                executeCrawler(input);
+            }
+        }
+
+        window.loadWebPage = function(url) {
+            const tab = tabs.find(t => t.id === activeTabId);
+            if (!tab) return;
+            tab.url = url;
+            tab.title = url === HOME_URL ? 'New Tab' : getDomain(url);
+            if (tab.history[tab.historyIndex] !== url) {
+                tab.history = tab.history.slice(0, tab.historyIndex + 1);
+                tab.history.push(url);
+                tab.historyIndex++;
+            }
+            if (tab.iframe && url !== HOME_URL) tab.iframe.src = url;
+            window.switchTab(activeTabId);
+        };
+
+        window.goBack = function() {
+            const tab = tabs.find(t => t.id === activeTabId);
+            if (tab && tab.historyIndex > 0) {
+                tab.historyIndex--;
+                triggerLoadAnimation();
+                tab.url = tab.history[tab.historyIndex];
+                tab.title = tab.url === HOME_URL ? 'New Tab' : getDomain(tab.url);
+                if(tab.iframe && tab.url !== HOME_URL) tab.iframe.src = tab.url;
+                window.switchTab(activeTabId);
+            }
+        };
+
+        window.goForward = function() {
+            const tab = tabs.find(t => t.id === activeTabId);
+            if (tab && tab.historyIndex < tab.history.length - 1) {
+                tab.historyIndex++;
+                triggerLoadAnimation();
+                tab.url = tab.history[tab.historyIndex];
+                tab.title = tab.url === HOME_URL ? 'New Tab' : getDomain(tab.url);
+                if(tab.iframe && tab.url !== HOME_URL) tab.iframe.src = tab.url;
+                window.switchTab(activeTabId);
+            }
+        };
+
+        window.reloadPage = function() {
+            triggerLoadAnimation();
+            if(!searchOverlay.classList.contains('hidden')) {
+                executeCrawler(addressBar.value);
+            } else {
+                const tab = tabs.find(t => t.id === activeTabId);
+                if(tab && tab.iframe && tab.url !== HOME_URL) tab.iframe.src = tab.iframe.src;
+            }
+        };
+
+        window.goHome = function() {
+            triggerLoadAnimation();
+            window.loadWebPage(HOME_URL);
+        };
+
+        async function executeCrawler(query) {
+            const tab = tabs.find(t => t.id === activeTabId);
+            if (tab && tab.iframe) tab.iframe.classList.add('hidden');
+            homeScreen.classList.add('hidden'); 
+            searchOverlay.classList.remove('hidden'); 
+            window.updateUserStatus('Deep Indexing');
+            
+            addressBar.value = query;
+            searchResults.innerHTML = '';
+            crawlerStatus.textContent = `Deploying crawler nodes for: "${query}"...`;
+            setTimeout(() => { crawlerStatus.textContent = `Indexing global databases for: "${query}"...`; }, 600);
+
+            try {
+                const response = await fetch(`https://en.wikipedia.org/w/api.php?action=query&list=search&srsearch=${encodeURIComponent(query)}&utf8=&format=json&origin=*`);
+                const data = await response.json();
+                setTimeout(() => { renderSearchResults(data.query.search, query); }, 1200);
+            } catch (error) {
+                crawlerStatus.textContent = `Crawler encountered an anomaly. Connection failed.`;
+                crawlerStatus.classList.remove('typing-cursor');
+                searchResults.innerHTML = `<div class="text-red-500 bg-red-50 p-4 rounded-xl border border-red-100">Unable to index the web at this moment.</div>`;
+            }
+        }
+
+        function renderSearchResults(results, query) {
+            crawlerStatus.textContent = `Index complete. Found ${results.length} highly relevant nodes for "${query}".`;
+            crawlerStatus.classList.remove('typing-cursor');
+
+            if (results.length === 0) {
+                searchResults.innerHTML = `
+                    <div class="text-center py-12">
+                        <i class="fas fa-ghost text-4xl text-gray-300 mb-4 block"></i>
+                        <h3 class="text-lg text-gray-600">No nodes found for "${query}"</h3>
+                    </div>`;
+                return;
+            }
+
+            results.forEach((result, index) => {
+                const articleUrl = `https://en.wikipedia.org/wiki/${encodeURIComponent(result.title)}`;
+                const delay = index * 100; 
+                const card = document.createElement('div');
+                card.className = `group bg-white p-6 border-4 border-gray-900 shadow-[6px_6px_0_0_rgba(17,24,39,1)] hover:shadow-[2px_2px_0_0_rgba(17,24,39,1)] hover:translate-y-[4px] hover:translate-x-[4px] transition-all duration-150 transform opacity-0`;
+                card.style.animation = `fadeUp 0.5s ease forwards ${delay}ms`;
+                card.innerHTML = `
+                    <div class="flex items-start gap-4">
+                        <div class="pt-1 hidden sm:block">
+                            <div class="w-10 h-10 bg-gray-100 border-2 border-gray-900 flex items-center justify-center text-gray-900 group-hover:bg-blue-400 transition-colors">
+                                <i class="fas fa-globe text-sm"></i>
+                            </div>
+                        </div>
+                        <div class="flex-1">
+                            <div class="flex items-center gap-2 mb-2">
+                                <span class="text-xs font-mono text-gray-900 bg-gray-200 px-2 py-0.5 border border-gray-900">NODE:${result.pageid}</span>
+                                <span class="text-xs text-blue-600 font-bold uppercase tracking-wider">ClonMedic Index</span>
+                            </div>
+                            <a href="#" onclick="window.loadWebPage('${articleUrl}'); return false;" class="text-xl font-bold text-gray-900 group-hover:text-blue-600 transition-colors block mb-2 font-mono">
+                                ${result.title}
+                            </a>
+                            <p class="text-gray-700 text-sm leading-relaxed font-sans">${result.snippet}...</p>
+                        </div>
+                    </div>
+                `;
+                searchResults.appendChild(card);
+            });
+        }
+
+        const style = document.createElement('style');
+        style.innerHTML = `@keyframes fadeUp { to { opacity: 1; transform: translateY(0); } }`;
+        document.head.appendChild(style);
+
+        // --- DASHBOARD & AUTH LOGIC ---
+        const dashboardModal = document.getElementById('dashboard-modal');
+        const authView = document.getElementById('auth-view');
+        const dashboardView = document.getElementById('dashboard-view');
+        const authTitle = document.getElementById('auth-title');
+        const authSwitchText = document.getElementById('auth-switch-text');
+        const authUsername = document.getElementById('auth-username');
+        const displayUsername = document.getElementById('display-username');
+        const pfpImage = document.getElementById('user-pfp');
+        const authError = document.getElementById('auth-error');
+        const authBtnText = document.getElementById('auth-btn-text');
+
+        let isRegistering = false;
+        let currentUser = null;
+        let unsubscribeDoc = null;
+        let unsubscribeChat = null;
+        let unsubscribePresence = null;
+        let unsubscribeFriendships = null;
+        let latestPresenceData = [];
+        let globalFriendships = [];
+
+        // Always inject a persistent System Admin bot so friend requests are testable instantly
+        const systemBot = {
+            uid: 'system-bot-001',
+            username: 'System Admin',
+            pfp: 'https://api.dicebear.com/7.x/bottts/svg?seed=admin',
+            status: 'Monitoring Network',
+            timestamp: { toMillis: () => Date.now() } 
+        };
+
+        onAuthStateChanged(auth, (user) => {
+            if (user) {
+                currentUser = user;
+                authView.classList.add('hidden');
+                dashboardView.classList.remove('hidden');
+                authError.classList.add('hidden');
+                loadUserData();
+                if (dashboardModal.classList.contains('flex')) {
+                    initChatAndPresence();
+                }
+            } else {
+                currentUser = null;
+                authView.classList.remove('hidden');
+                dashboardView.classList.add('hidden');
+                displayUsername.textContent = "Loading...";
+                if (unsubscribeDoc) { unsubscribeDoc(); unsubscribeDoc = null; }
+                if (unsubscribeChat) { unsubscribeChat(); unsubscribeChat = null; }
+                if (unsubscribePresence) { unsubscribePresence(); unsubscribePresence = null; }
+                if (unsubscribeFriendships) { unsubscribeFriendships(); unsubscribeFriendships = null; }
+            }
+        });
+
+        async function loadUserData() {
+            if (!currentUser) return;
+            const profileRef = doc(db, 'artifacts', CLONBROW_APP_ID, 'users', currentUser.uid, 'profile', 'main');
+            unsubscribeDoc = onSnapshot(profileRef, (docSnap) => {
+                if (docSnap.exists()) {
+                    const data = docSnap.data();
+                    displayUsername.textContent = data.username || "User";
+                    document.getElementById('user-bio').value = data.bio || "";
+                    pfpImage.src = data.pfp || `https://api.dicebear.com/7.x/bottts/svg?seed=${data.username || 'clonmedic'}`;
+                    window.updateUserStatus('Chatting in Hub');
+                }
+            });
+        }
+
+        function initChatAndPresence() {
+            const friendshipsQuery = query(collection(db, 'artifacts', CLONBROW_APP_ID, 'public', 'data', 'friendships'));
+            unsubscribeFriendships = onSnapshot(friendshipsQuery, (snapshot) => {
+                globalFriendships = [];
+                snapshot.forEach(docSnap => globalFriendships.push({ id: docSnap.id, ...docSnap.data() }));
+                renderFriendRequests();
+                renderPresence();
+            });
+
+            const presenceQuery = query(collection(db, 'artifacts', CLONBROW_APP_ID, 'public', 'data', 'presence'));
+            unsubscribePresence = onSnapshot(presenceQuery, (snapshot) => {
+                latestPresenceData = [systemBot]; // Always include bot
+                snapshot.forEach(docSnap => {
+                    const data = docSnap.data();
+                    if(data.uid === systemBot.uid) return;
+                    if(data.timestamp && (Date.now() - data.timestamp.toMillis() > 3600000)) return; 
+                    latestPresenceData.push(data);
+                });
+                renderPresence();
+            });
+
+            const chatBox = document.getElementById('chat-messages');
+            const chatQuery = query(collection(db, 'artifacts', CLONBROW_APP_ID, 'public', 'data', 'global_chat'), orderBy('timestamp', 'desc'), limit(30));
+            unsubscribeChat = onSnapshot(chatQuery, (snapshot) => {
+                const msgs = [];
+                snapshot.forEach(doc => msgs.push(doc.data()));
+                chatBox.innerHTML = '';
+                msgs.reverse().forEach(msg => {
+                    const isMe = currentUser && msg.uid === currentUser.uid;
+                    const msgEl = document.createElement('div');
+                    msgEl.className = `flex gap-3 ${isMe ? 'flex-row-reverse' : 'flex-row'}`;
+                    msgEl.innerHTML = `
+                        <img src="${msg.pfp}" class="w-10 h-10 rounded-full border-2 border-white shadow-sm object-cover bg-white shrink-0 mt-1">
+                        <div class="flex flex-col ${isMe ? 'items-end' : 'items-start'} max-w-[75%]">
+                            <span class="text-xs font-bold text-gray-500 mb-1 px-1">${msg.username}</span>
+                            <div class="p-3 font-bold text-sm ${isMe ? 'bg-[#ffc107] text-gray-900 rounded-2xl rounded-tr-sm shadow-[0_3px_0_0_#d39e00]' : 'bg-white text-gray-800 rounded-2xl rounded-tl-sm shadow-[0_3px_0_0_#e5e7eb] border-2 border-gray-100'}">
+                                ${msg.text}
+                            </div>
+                        </div>
+                    `;
+                    chatBox.appendChild(msgEl);
+                });
+                chatBox.scrollTop = chatBox.scrollHeight;
+            });
+        }
+
+        function renderPresence() {
+            const usersList = document.getElementById('active-users-list');
+            usersList.innerHTML = '';
+            
+            latestPresenceData.forEach(data => {
+                const isMe = currentUser && data.uid === currentUser.uid;
+                let friendshipStatus = 'none';
+                let friendshipId = null;
+                
+                if (currentUser && !isMe) {
+                    const relation = globalFriendships.find(f => 
+                        (f.senderId === currentUser.uid && f.receiverId === data.uid) ||
+                        (f.senderId === data.uid && f.receiverId === currentUser.uid)
+                    );
+                    if (relation) {
+                        friendshipId = relation.id;
+                        if (relation.status === 'accepted') friendshipStatus = 'friends';
+                        else if (relation.senderId === currentUser.uid) friendshipStatus = 'pending_sent';
+                        else friendshipStatus = 'pending_received';
+                    }
+                }
+
+                let badgeActionHtml = '';
+                if (!isMe && currentUser) {
+                    if (friendshipStatus === 'none') {
+                        // PERMANENTLY VISIBLE ADD FRIEND BUTTON (removed opacity-0)
+                        badgeActionHtml = `<button onclick="window.sendFriendRequest('${data.uid}', '${data.username.replace(/'/g, "\\'")}', '${data.pfp}')" class="absolute -top-2 -right-2 w-6 h-6 bg-[#1CA5EB] rounded-full text-white text-xs border-2 border-white shadow-sm flex items-center justify-center z-10 hover:bg-blue-600 transition-colors hover:scale-110" title="Add Friend"><i class="fas fa-plus"></i></button>`;
+                    } else if (friendshipStatus === 'friends') {
+                        badgeActionHtml = `<div class="absolute -top-2 -right-2 w-6 h-6 bg-[#ffc107] rounded-full text-white text-xs border-2 border-white shadow-sm flex items-center justify-center z-10" title="Friend"><i class="fas fa-star"></i></div>`;
+                    } else if (friendshipStatus === 'pending_sent') {
+                        badgeActionHtml = `<div class="absolute -top-2 -right-2 w-6 h-6 bg-gray-400 rounded-full text-white text-xs border-2 border-white shadow-sm flex items-center justify-center z-10" title="Request Sent"><i class="fas fa-clock"></i></div>`;
+                    }
+                }
+
+                const userBadge = document.createElement('div');
+                userBadge.className = "flex flex-col items-center gap-1 min-w-[70px] cursor-default relative";
+                userBadge.innerHTML = `
+                    <div class="relative">
+                        <img src="${data.pfp}" class="w-12 h-12 rounded-[1rem] border-2 ${friendshipStatus === 'friends' ? 'border-[#ffc107]' : 'border-white'} shadow-sm object-cover bg-gray-200 hover:scale-110 transition-transform">
+                        <div class="absolute bottom-0 right-0 w-3 h-3 bg-green-500 border-2 border-white rounded-full z-10"></div>
+                        ${badgeActionHtml}
+                    </div>
+                    <div class="text-[10px] font-bold text-gray-800 truncate w-full text-center mt-1">${data.username}</div>
+                    <div class="text-[9px] font-bold text-[#1CA5EB] bg-blue-100 px-2 rounded-full truncate w-full text-center">${data.status || 'Online'}</div>
+                `;
+                usersList.appendChild(userBadge);
+            });
+        }
+
+        function renderFriendRequests() {
+            if (!currentUser) return;
+            const requestsArea = document.getElementById('friend-requests-area');
+            const requestsList = document.getElementById('requests-list');
+            requestsList.innerHTML = '';
+            
+            const incomingRequests = globalFriendships.filter(f => f.receiverId === currentUser.uid && f.status === 'pending');
+            
+            if (incomingRequests.length > 0) {
+                requestsArea.classList.remove('hidden');
+                requestsArea.classList.add('flex');
+                
+                incomingRequests.forEach(req => {
+                    const reqEl = document.createElement('div');
+                    reqEl.className = "bg-white p-2 rounded-xl shadow-sm border-2 border-yellow-200 flex justify-between items-center";
+                    reqEl.innerHTML = `
+                        <div class="flex items-center gap-3">
+                            <img src="${req.senderPfp}" class="w-10 h-10 rounded-[1rem] border-2 border-gray-100 object-cover">
+                            <span class="text-sm font-black text-gray-800">${req.senderName}</span>
+                        </div>
+                        <div class="flex gap-2">
+                            <button onclick="window.acceptRequest('${req.id}')" class="bg-green-500 hover:bg-green-600 text-white w-8 h-8 rounded-full flex items-center justify-center transition-colors shadow-sm"><i class="fas fa-check"></i></button>
+                            <button onclick="window.rejectRequest('${req.id}')" class="bg-red-500 hover:bg-red-600 text-white w-8 h-8 rounded-full flex items-center justify-center transition-colors shadow-sm"><i class="fas fa-times"></i></button>
+                        </div>
+                    `;
+                    requestsList.appendChild(reqEl);
+                });
+            } else {
+                requestsArea.classList.add('hidden');
+                requestsArea.classList.remove('flex');
+            }
+        }
+
+        window.sendFriendRequest = async function(receiverId, receiverName, receiverPfp) {
+            if (!currentUser) return;
+            try {
+                await addDoc(collection(db, 'artifacts', CLONBROW_APP_ID, 'public', 'data', 'friendships'), {
+                    senderId: currentUser.uid,
+                    senderName: document.getElementById('display-username').textContent,
+                    senderPfp: document.getElementById('user-pfp').src,
+                    receiverId: receiverId,
+                    receiverName: receiverName,
+                    receiverPfp: receiverPfp,
+                    status: 'pending',
+                    timestamp: serverTimestamp()
+                });
+            } catch(e) { console.error("Error sending request", e); }
+        };
+
+        window.acceptRequest = async function(requestId) {
+            if (!currentUser) return;
+            try {
+                const reqRef = doc(db, 'artifacts', CLONBROW_APP_ID, 'public', 'data', 'friendships', requestId);
+                await updateDoc(reqRef, { status: 'accepted' });
+            } catch(e) { console.error("Error accepting request", e); }
+        };
+
+        window.rejectRequest = async function(requestId) {
+            if (!currentUser) return;
+            try {
+                const reqRef = doc(db, 'artifacts', CLONBROW_APP_ID, 'public', 'data', 'friendships', requestId);
+                await deleteDoc(reqRef);
+            } catch(e) { console.error("Error rejecting request", e); }
+        };
+
+        window.sendChatMessage = async function() {
+            if (!currentUser) return;
+            const input = document.getElementById('chat-input');
+            const text = input.value.trim();
+            if (!text) return;
+            input.value = '';
+            
+            await addDoc(collection(db, 'artifacts', CLONBROW_APP_ID, 'public', 'data', 'global_chat'), {
+                uid: currentUser.uid,
+                username: document.getElementById('display-username').textContent || "User",
+                pfp: document.getElementById('user-pfp').src,
+                text: text,
+                timestamp: serverTimestamp()
+            });
+            window.updateUserStatus('Chatting in Hub');
+        };
+
+        window.openDashboard = function() {
+            dashboardModal.classList.remove('hidden');
+            dashboardModal.classList.add('flex');
+            
+            if (currentUser) {
+                authView.classList.add('hidden');
+                dashboardView.classList.remove('hidden');
+                if(!unsubscribeChat) initChatAndPresence();
+                window.updateUserStatus('Browsing Dashboard');
+            } else {
+                authView.classList.remove('hidden');
+                dashboardView.classList.add('hidden');
+            }
+        };
+
+        window.closeDashboard = function() {
+            dashboardModal.classList.add('hidden');
+            dashboardModal.classList.remove('flex');
+            const tab = tabs.find(t => t.id === activeTabId);
+            if(tab) window.updateUserStatus(getTabStatus(tab.url));
+        };
+
+        window.toggleAuthMode = function() {
+            isRegistering = !isRegistering;
+            authError.classList.add('hidden');
+            if (isRegistering) {
+                authTitle.textContent = "Register Identity";
+                authSwitchText.textContent = "Existing User? System Login";
+            } else {
+                authTitle.textContent = "System Login";
+                authSwitchText.textContent = "New User? Register Identity";
+            }
+        };
+
+        function showAuthError(msg) {
+            authError.textContent = msg;
+            authError.classList.remove('hidden');
+            authBtnText.textContent = "START";
+        }
+
+        window.handleAuth = async function() {
+            const rawUsername = authUsername.value.trim();
+            const password = document.getElementById('auth-password').value;
+            
+            authError.classList.add('hidden');
+
+            if (!rawUsername || !password) {
+                showAuthError("ERROR: Username and Password required.");
+                return;
+            }
+            if (password.length < 6) {
+                showAuthError("ERROR: Password must be at least 6 characters.");
+                return;
+            }
+
+            const email = rawUsername.toLowerCase().replace(/[^a-z0-9]/g, '') + "@clonmed.os";
+            authBtnText.textContent = "PROCESSING...";
+
+            try {
+                if (isRegistering) {
+                    const cred = await createUserWithEmailAndPassword(auth, email, password);
+                    await setDoc(doc(db, 'artifacts', CLONBROW_APP_ID, 'users', cred.user.uid, 'profile', 'main'), {
+                        username: rawUsername,
+                        bio: "",
+                        pfp: `https://api.dicebear.com/7.x/bottts/svg?seed=${rawUsername}`,
+                        streak: 1,
+                        createdAt: new Date().toISOString()
+                    });
+                } else {
+                    await signInWithEmailAndPassword(auth, email, password);
+                }
+                authUsername.value = "";
+                document.getElementById('auth-password').value = "";
+            } catch (error) {
+                if (error.code === 'auth/invalid-credential' || error.code === 'auth/user-not-found') {
+                    showAuthError("ERROR: Incorrect username or password.");
+                } else if (error.code === 'auth/email-already-in-use') {
+                    showAuthError("ERROR: Username already taken. Please Login.");
+                } else {
+                    showAuthError("AUTH FAILED: " + error.message);
+                }
+            }
+            authBtnText.textContent = "START";
+        };
+
+        window.handleLogout = async function() {
+            try {
+                if (currentUser) {
+                    await setDoc(doc(db, 'artifacts', CLONBROW_APP_ID, 'public', 'data', 'presence', currentUser.uid), { status: 'Offline' }, { merge: true });
+                }
+                await signOut(auth);
+            } catch (error) { console.error("Logout Error", error); }
+        };
+
+        window.saveBio = async function() {
+            if (!currentUser) return;
+            const bio = document.getElementById('user-bio').value;
+            const profileRef = doc(db, 'artifacts', CLONBROW_APP_ID, 'users', currentUser.uid, 'profile', 'main');
+            await setDoc(profileRef, { bio }, { merge: true });
+        };
+
+        window.previewPFP = function(event) {
+            const file = event.target.files[0];
+            if (file) {
+                const reader = new FileReader();
+                reader.onload = async function(e) {
+                    pfpImage.src = e.target.result;
+                    if (currentUser) {
+                        const profileRef = doc(db, 'artifacts', CLONBROW_APP_ID, 'users', currentUser.uid, 'profile', 'main');
+                        await setDoc(profileRef, { pfp: e.target.result }, { merge: true });
+                        window.updateUserStatus('Updated Profile'); 
+                    }
+                }
+                reader.readAsDataURL(file);
+            }
+        };
+
+        document.addEventListener('keydown', function(e) {
+            if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 't') {
+                e.preventDefault();
+                window.createNewTab();
+            }
+            if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 'w') {
+                e.preventDefault();
+                if (activeTabId) window.closeTab(e, activeTabId);
+            }
+        });
+
+        // System Boot
+        window.createNewTab();
+
+    </script>
+</body>
+</html>

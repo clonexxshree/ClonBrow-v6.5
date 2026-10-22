@@ -1,0 +1,522 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Endoscopy & Total Internal Reflection Lab</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;700&family=Inter:wght@300;400;600;700&display=swap');
+
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: #020617; /* Slate 950 */
+            color: #f8fafc;
+            overflow-x: hidden;
+            user-select: none;
+        }
+
+        .font-mono { font-family: 'JetBrains Mono', monospace; }
+
+        /* UI Panels */
+        .glass-card {
+            background: rgba(15, 23, 42, 0.75);
+            backdrop-filter: blur(16px);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.5);
+        }
+
+        .digital-readout {
+            background: #020617;
+            color: #0ea5e9; /* Sky 500 */
+            text-shadow: 0 0 10px rgba(14, 165, 233, 0.5);
+            border: 1px solid #1e293b;
+            transition: all 0.3s ease;
+        }
+
+        .tir-active {
+            color: #34d399 !important; /* Emerald 400 */
+            text-shadow: 0 0 12px rgba(52, 211, 153, 0.6) !important;
+            border-color: rgba(52, 211, 153, 0.3) !important;
+            background: rgba(5, 150, 105, 0.05) !important;
+        }
+        
+        .tir-lost {
+            color: #f43f5e !important; /* Rose 500 */
+            text-shadow: 0 0 12px rgba(244, 63, 94, 0.6) !important;
+            border-color: rgba(244, 63, 94, 0.3) !important;
+            background: rgba(225, 29, 72, 0.05) !important;
+        }
+
+        /* SVG Anatomy & Fiber Styles */
+        .fiber-core {
+            fill: rgba(56, 189, 248, 0.1);
+            stroke: rgba(56, 189, 248, 0.3);
+            stroke-width: 1;
+        }
+        
+        .fiber-cladding {
+            fill: rgba(148, 163, 184, 0.1);
+            stroke: rgba(148, 163, 184, 0.4);
+            stroke-width: 2;
+        }
+
+        .stomach-wall {
+            fill: #4c0519; /* Dark rose */
+            stroke: #be123c;
+            stroke-width: 4;
+            transition: fill 0.3s ease, filter 0.3s ease;
+        }
+
+        .tissue-illuminated {
+            fill: #e11d48 !important;
+            filter: drop-shadow(0 0 20px rgba(225, 29, 72, 0.6));
+        }
+
+        /* Scanline Background */
+        .optics-grid {
+            background-size: 40px 40px;
+            background-image: 
+                linear-gradient(to right, rgba(14, 165, 233, 0.05) 1px, transparent 1px),
+                linear-gradient(to bottom, rgba(14, 165, 233, 0.05) 1px, transparent 1px);
+        }
+
+        input[type=range] { accent-color: #0ea5e9; }
+        
+        input[type=range].slider-core { accent-color: #3b82f6; }
+        input[type=range].slider-clad { accent-color: #94a3b8; }
+    </style>
+</head>
+<body class="min-h-screen p-4 md:p-8 flex items-center justify-center">
+
+    <div class="max-w-7xl w-full grid grid-cols-1 lg:grid-cols-12 gap-8 items-stretch">
+        
+        <!-- Simulation Viewport -->
+        <div class="lg:col-span-8 flex flex-col gap-6">
+            <div class="glass-card rounded-3xl p-0 relative flex-grow min-h-[450px] flex flex-col overflow-hidden border border-slate-800 optics-grid">
+                
+                <!-- HUD Header -->
+                <div class="absolute top-6 left-8 flex items-center gap-3 z-30">
+                    <div id="status-dot" class="w-2.5 h-2.5 rounded-full bg-emerald-500 shadow-[0_0_10px_#34d399]"></div>
+                    <span id="status-text" class="text-[10px] font-bold text-slate-400 uppercase tracking-widest font-mono">Fiber Optic Transmission: <span id="hud-status" class="text-emerald-400">TIR ACHIEVED</span></span>
+                </div>
+
+                <!-- Simulation Area (SVG + Canvas) -->
+                <div class="relative w-full flex-grow flex items-center justify-center">
+                    
+                    <!-- SVG Background (Fiber & Stomach) -->
+                    <svg id="optics-svg" viewBox="0 0 800 400" class="absolute inset-0 w-full h-full z-10" preserveAspectRatio="none">
+                        
+                        <!-- Internal Body Cavity (Stomach) -->
+                        <path id="stomach-tissue" d="M 650 0 C 600 100, 580 300, 650 400 L 800 400 L 800 0 Z" class="stomach-wall" />
+                        <text x="730" y="200" fill="#fca5a5" font-size="14" font-weight="bold" font-family="Inter" text-anchor="middle" opacity="0.5" transform="rotate(90, 730, 200)">GASTRIC MUCOSA</text>
+
+                        <!-- Fiber Optic Cable -->
+                        <g id="fiber-assembly">
+                            <!-- Cladding (Outer Layer) -->
+                            <rect x="0" y="130" width="600" height="140" class="fiber-cladding" />
+                            <text x="300" y="145" fill="#94a3b8" font-size="10" font-family="monospace" text-anchor="middle">CLADDING (n₂)</text>
+                            <text x="300" y="265" fill="#94a3b8" font-size="10" font-family="monospace" text-anchor="middle">CLADDING (n₂)</text>
+
+                            <!-- Core (Inner Layer) -->
+                            <rect x="0" y="160" width="600" height="80" class="fiber-core" />
+                            <text x="300" y="204" fill="#38bdf8" font-size="12" font-family="monospace" font-weight="bold" text-anchor="middle" opacity="0.6">OPTICAL CORE (n₁)</text>
+                            
+                            <!-- Endoscope Tip/Lens -->
+                            <path d="M 600 120 L 620 140 L 620 260 L 600 280 Z" fill="#0f172a" stroke="#334155" stroke-width="2"/>
+                            <rect x="615" y="160" width="10" height="80" fill="#e0f2fe" opacity="0.4" rx="4"/>
+                        </g>
+
+                        <!-- Light Source Emitter -->
+                        <rect x="-20" y="150" width="40" height="100" fill="#020617" stroke="#0ea5e9" stroke-width="2" rx="4" />
+                    </svg>
+
+                    <!-- Canvas for Ray Tracing -->
+                    <canvas id="ray-canvas" class="absolute inset-0 w-full h-full z-20 pointer-events-none"></canvas>
+
+                </div>
+
+                <!-- Tags -->
+                <div class="absolute bottom-6 left-8 flex flex-col gap-1 z-30">
+                    <span class="text-[9px] font-mono text-slate-500 uppercase">Requirement for TIR: n₁ > n₂</span>
+                    <span class="text-[9px] font-mono text-slate-500 uppercase">Snell's Law: n₁sin(θ₁) = n₂sin(θ₂)</span>
+                </div>
+            </div>
+
+            <!-- Controls -->
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+                
+                <!-- Input Angle -->
+                <div class="glass-card p-5 rounded-2xl space-y-3">
+                    <div class="flex justify-between items-center">
+                        <label class="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Input Angle (α)</label>
+                        <span id="angle-display" class="text-xs font-bold font-mono text-sky-400">15.0°</span>
+                    </div>
+                    <input type="range" id="angle-slider" min="0" max="45" step="0.5" value="15" class="w-full h-1.5 bg-slate-800 rounded-lg appearance-none cursor-pointer">
+                </div>
+
+                <!-- Core Refractive Index -->
+                <div class="glass-card p-5 rounded-2xl space-y-3">
+                    <div class="flex justify-between items-center">
+                        <label class="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Core (n₁)</label>
+                        <span id="n1-display" class="text-xs font-bold font-mono text-blue-400">1.48</span>
+                    </div>
+                    <input type="range" id="n1-slider" min="1.30" max="1.70" step="0.01" value="1.48" class="w-full h-1.5 bg-slate-800 rounded-lg appearance-none cursor-pointer slider-core">
+                </div>
+
+                <!-- Cladding Refractive Index -->
+                <div class="glass-card p-5 rounded-2xl space-y-3">
+                    <div class="flex justify-between items-center">
+                        <label class="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Cladding (n₂)</label>
+                        <span id="n2-display" class="text-xs font-bold font-mono text-slate-300">1.44</span>
+                    </div>
+                    <input type="range" id="n2-slider" min="1.30" max="1.70" step="0.01" value="1.44" class="w-full h-1.5 bg-slate-800 rounded-lg appearance-none cursor-pointer slider-clad">
+                </div>
+
+            </div>
+        </div>
+
+        <!-- Sidebar: Analytics & Data -->
+        <div class="lg:col-span-4 flex flex-col gap-6">
+            
+            <!-- Digital Readout -->
+            <div id="telemetry-panel" class="digital-readout rounded-3xl p-6 space-y-6">
+                <div class="flex justify-between items-center border-b border-current pb-3 opacity-60">
+                    <span class="text-[10px] font-bold tracking-tighter uppercase">Optical Telemetry</span>
+                    <span class="text-xs font-mono" id="sim-status">TIR ACTIVE</span>
+                </div>
+
+                <div class="space-y-5">
+                    
+                    <!-- Critical Angle -->
+                    <div class="space-y-1">
+                        <label class="text-[9px] uppercase font-bold opacity-60">Critical Angle (θ<sub>c</sub>)</label>
+                        <div class="flex items-baseline gap-2">
+                            <div id="data-critical" class="text-4xl font-bold font-mono">76.7°</div>
+                        </div>
+                    </div>
+
+                    <div class="grid grid-cols-2 gap-4 pt-4 border-t border-current opacity-80">
+                        <!-- Incidence Angle -->
+                        <div class="space-y-1">
+                            <label class="text-[9px] uppercase font-bold text-current">Incidence (θ<sub>i</sub>)</label>
+                            <div id="data-incidence" class="text-xl font-bold font-mono">75.0°</div>
+                        </div>
+                        <!-- Signal Efficiency -->
+                        <div class="space-y-1">
+                            <label class="text-[9px] uppercase font-bold text-current">Signal Transmission</label>
+                            <div id="data-efficiency" class="text-xl font-bold font-mono">100%</div>
+                        </div>
+                    </div>
+
+                    <!-- Warning Block -->
+                    <div id="leak-warning" class="p-3 bg-rose-500/10 border border-rose-500/30 rounded-xl space-y-1 mt-2 hidden">
+                        <div class="text-[10px] font-bold text-rose-500 uppercase flex items-center gap-1">
+                            <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"></path></svg>
+                            Refraction / Signal Loss
+                        </div>
+                        <p class="text-[9px] text-rose-300/80 leading-tight">
+                            Incidence angle is less than the Critical Angle. Light is escaping into the cladding and body tissue, causing a catastrophic drop in image quality.
+                        </p>
+                    </div>
+
+                </div>
+            </div>
+
+            <!-- Physics Logic Card -->
+            <div class="glass-card p-6 rounded-3xl space-y-4 flex-grow flex flex-col">
+                <h3 class="text-xs font-bold text-slate-400 uppercase tracking-widest flex items-center gap-2">
+                    <svg class="w-4 h-4 text-sky-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9.663 17h4.673M12 3v1m6.364 1.636l-.707.707M21 12h-1M4 12H3m3.343-5.657l-.707-.707m2.828 9.9a5 5 0 117.072 0l-.548.547A3.374 3.374 0 0014 18.469V19a2 2 0 11-4 0v-.531c0-.895-.356-1.754-.988-2.386l-.548-.547z"></path></svg>
+                    Total Internal Reflection
+                </h3>
+                
+                <div class="bg-slate-900/50 p-4 rounded-xl border border-slate-800 flex items-center justify-center">
+                    <div class="text-lg font-mono text-sky-400">
+                        θ<sub>c</sub> = arcsin(n₂ / n₁)
+                    </div>
+                </div>
+
+                <div class="space-y-3">
+                    <p class="text-[10px] text-slate-300 leading-relaxed">
+                        To act as a perfect mirror, an optical fiber requires a high-index core ($n_1$) surrounded by a lower-index cladding ($n_2$). 
+                    </p>
+                    <p class="text-[10px] text-slate-300 leading-relaxed">
+                        When light strikes the boundary, we measure the <strong>Angle of Incidence ($\theta_i$)</strong> relative to the normal (vertical) line. If $\theta_i$ is greater than the Critical Angle ($\theta_c$), it cannot refract out and is 100% reflected inward.
+                    </p>
+                    <div class="p-2 border-l-2 border-emerald-500 bg-emerald-500/10 text-[9px] text-emerald-200/80 mt-2">
+                        Medical endoscopes use bundles of tens of thousands of these fibers. One bundle transmits bright Xenon light in, while another carries the reflected image back to a digital sensor.
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', () => {
+            const angleSlider = document.getElementById('angle-slider');
+            const n1Slider = document.getElementById('n1-slider');
+            const n2Slider = document.getElementById('n2-slider');
+            
+            const angleDisplay = document.getElementById('angle-display');
+            const n1Display = document.getElementById('n1-display');
+            const n2Display = document.getElementById('n2-display');
+            
+            const telePanel = document.getElementById('telemetry-panel');
+            const dataCritical = document.getElementById('data-critical');
+            const dataIncidence = document.getElementById('data-incidence');
+            const dataEfficiency = document.getElementById('data-efficiency');
+            const simStatus = document.getElementById('sim-status');
+            const hudStatus = document.getElementById('hud-status');
+            const statusDot = document.getElementById('status-dot');
+            const leakWarning = document.getElementById('leak-warning');
+            
+            const stomachTissue = document.getElementById('stomach-tissue');
+            
+            const canvas = document.getElementById('ray-canvas');
+            const ctx = canvas.getContext('2d');
+
+            // Fiber Geometry relative to Canvas (Matching SVG)
+            const FIBER_START_X = 20; // from emitter
+            const FIBER_END_X = 600;  // at lens
+            let scaleX = 1;
+            let scaleY = 1;
+
+            // Base SVG coordinates
+            const SVG_W = 800;
+            const SVG_H = 400;
+            const CORE_TOP = 160;
+            const CORE_BOT = 240;
+            const CORE_CENTER = 200;
+
+            function resizeCanvas() {
+                const rect = canvas.parentElement.getBoundingClientRect();
+                canvas.width = rect.width;
+                canvas.height = rect.height;
+                
+                scaleX = canvas.width / SVG_W;
+                scaleY = canvas.height / SVG_H;
+                
+                updatePhysics();
+            }
+
+            window.addEventListener('resize', resizeCanvas);
+            
+            function drawBeam(startX, startY, angleDeg, n1, n2, criticalAngle) {
+                ctx.clearRect(0, 0, canvas.width, canvas.height);
+                
+                let x = startX;
+                let y = startY;
+                let currentAngle = angleDeg; // Angle relative to horizontal axis
+                let intensity = 100; // %
+                let isTIR = true;
+
+                // Normal to the fiber boundary is vertical (90 deg)
+                // Incidence angle theta_i is measured from the normal.
+                // So theta_i = 90 - |currentAngle|
+                let incidenceAngle = 90 - Math.abs(currentAngle);
+                
+                // Visual properties
+                const coreTopY = CORE_TOP * scaleY;
+                const coreBotY = CORE_BOT * scaleY;
+                const endX = FIBER_END_X * scaleX;
+
+                ctx.lineCap = 'round';
+                ctx.lineJoin = 'round';
+
+                // Start Drawing Main Beam
+                ctx.beginPath();
+                ctx.moveTo(x * scaleX, y * scaleY);
+
+                let bounceCount = 0;
+                const MAX_BOUNCES = 50;
+
+                while (x < FIBER_END_X && intensity > 1 && bounceCount < MAX_BOUNCES) {
+                    bounceCount++;
+                    
+                    // Calculate next intersection with top or bottom boundary
+                    let nextY = (currentAngle > 0) ? CORE_BOT : CORE_TOP; // If angle > 0, heading down
+                    let dy = Math.abs(nextY - y);
+                    
+                    // dx = dy / tan(angle)
+                    let rad = Math.abs(currentAngle) * Math.PI / 180;
+                    let dx = dy / Math.tan(rad);
+                    
+                    let nextX = x + dx;
+
+                    if (nextX >= FIBER_END_X) {
+                        // Exits the fiber before bouncing again
+                        nextX = FIBER_END_X;
+                        let actualDy = (nextX - x) * Math.tan(rad);
+                        nextY = y + (currentAngle > 0 ? actualDy : -actualDy);
+                        
+                        ctx.lineTo(nextX * scaleX, nextY * scaleY);
+                        x = nextX;
+                        y = nextY;
+                        break; 
+                    }
+
+                    ctx.lineTo(nextX * scaleX, nextY * scaleY);
+                    
+                    // Boundary Hit - Evaluate TIR
+                    incidenceAngle = 90 - Math.abs(currentAngle);
+                    
+                    if (isNaN(criticalAngle) || incidenceAngle < criticalAngle) {
+                        // NO TIR - Refraction occurs
+                        isTIR = false;
+                        
+                        // Draw escaping ray
+                        // Snell's Law: n1 * sin(theta_i) = n2 * sin(theta_r)
+                        // sin(theta_r) = (n1/n2) * sin(theta_i)
+                        let sinThetaR = (n1 / n2) * Math.sin(incidenceAngle * Math.PI / 180);
+                        let thetaR_rad = Math.asin(sinThetaR);
+                        let thetaR_deg = thetaR_rad * 180 / Math.PI;
+                        
+                        // Angle relative to horizontal for the escaping ray
+                        let escapeAngle = 90 - thetaR_deg;
+                        if (currentAngle < 0) escapeAngle = -escapeAngle; // Escape top
+                        else escapeAngle = escapeAngle; // Escape bottom
+
+                        let eRad = escapeAngle * Math.PI / 180;
+                        let eDx = 100; // Draw length outside
+                        let eDy = eDx * Math.tan(eRad);
+                        
+                        // Draw escaped ray (dimmer)
+                        ctx.save();
+                        ctx.beginPath();
+                        ctx.moveTo(nextX * scaleX, nextY * scaleY);
+                        ctx.lineTo((nextX + eDx) * scaleX, (nextY + eDy) * scaleY);
+                        ctx.strokeStyle = `rgba(244, 63, 94, ${intensity / 100})`; // Reddish for lost signal
+                        ctx.lineWidth = 2;
+                        ctx.stroke();
+                        ctx.restore();
+
+                        // Main internal ray loses huge intensity
+                        intensity *= 0.3; // Drops 70% per bounce
+                    }
+
+                    // Reflection (Angle flips)
+                    currentAngle = -currentAngle;
+                    x = nextX;
+                    y = nextY;
+                }
+
+                // Draw the main internal path
+                ctx.strokeStyle = '#0ea5e9'; // Bright cyan
+                ctx.lineWidth = 4;
+                ctx.shadowColor = '#38bdf8';
+                ctx.shadowBlur = 15;
+                ctx.stroke();
+                
+                // Reset shadow
+                ctx.shadowBlur = 0;
+
+                // Draw projection into stomach if light survives
+                if (x >= FIBER_END_X && intensity > 5) {
+                    ctx.beginPath();
+                    ctx.moveTo(x * scaleX, y * scaleY);
+                    
+                    // Cone of light
+                    let spread = 20; // degrees
+                    let topRad = (currentAngle - spread) * Math.PI / 180;
+                    let botRad = (currentAngle + spread) * Math.PI / 180;
+                    
+                    let projDist = 200; // SVG units
+                    
+                    let tX = (x + projDist) * scaleX;
+                    let tY1 = (y + projDist * Math.tan(topRad)) * scaleY;
+                    let tY2 = (y + projDist * Math.tan(botRad)) * scaleY;
+
+                    ctx.lineTo(tX, tY1);
+                    ctx.lineTo(tX, tY2);
+                    ctx.closePath();
+                    
+                    let grad = ctx.createLinearGradient(x * scaleX, y * scaleY, tX, y * scaleY);
+                    grad.addColorStop(0, `rgba(56, 189, 248, ${intensity/100 * 0.8})`);
+                    grad.addColorStop(1, 'rgba(56, 189, 248, 0)');
+                    
+                    ctx.fillStyle = grad;
+                    ctx.fill();
+                }
+
+                return { isTIR, intensity, incidenceAngle };
+            }
+
+            function updatePhysics() {
+                const alpha = parseFloat(angleSlider.value); // Input angle relative to horizontal
+                const n1 = parseFloat(n1Slider.value); // Core
+                const n2 = parseFloat(n2Slider.value); // Cladding
+
+                angleDisplay.textContent = `${alpha.toFixed(1)}°`;
+                n1Display.textContent = n1.toFixed(2);
+                n2Display.textContent = n2.toFixed(2);
+
+                // Snell's Law to calculate critical angle
+                // theta_c = arcsin(n2 / n1)
+                let criticalAngle = NaN;
+                if (n1 > n2) {
+                    criticalAngle = Math.asin(n2 / n1) * (180 / Math.PI);
+                    dataCritical.textContent = `${criticalAngle.toFixed(1)}°`;
+                    dataCritical.className = "text-4xl font-bold font-mono text-white";
+                } else {
+                    dataCritical.textContent = "N/A (n₁ ≤ n₂)";
+                    dataCritical.className = "text-2xl font-bold font-mono text-rose-500 mt-2";
+                }
+
+                // If alpha is 0, straight line
+                if (alpha === 0) {
+                    const result = drawBeam(FIBER_START_X, CORE_CENTER, 0.001, n1, n2, criticalAngle); // 0.001 to prevent div by 0
+                    updateTelemetry(true, 100, 90, criticalAngle);
+                    return;
+                }
+
+                // Ray tracing and physics logic
+                const result = drawBeam(FIBER_START_X, CORE_CENTER, alpha, n1, n2, criticalAngle);
+                
+                updateTelemetry(result.isTIR, result.intensity, result.incidenceAngle, criticalAngle);
+            }
+
+            function updateTelemetry(isTIR, intensity, incAngle, critAngle) {
+                
+                dataIncidence.textContent = `${incAngle.toFixed(1)}°`;
+                dataEfficiency.textContent = `${Math.round(intensity)}%`;
+
+                if (isTIR && !isNaN(critAngle)) {
+                    // TIR Achieved
+                    telePanel.className = "digital-readout tir-active rounded-3xl p-6 space-y-6";
+                    simStatus.textContent = "TIR ACTIVE";
+                    hudStatus.textContent = "TIR ACHIEVED";
+                    hudStatus.className = "text-emerald-400";
+                    statusDot.className = "w-2.5 h-2.5 rounded-full bg-emerald-500 shadow-[0_0_10px_#34d399]";
+                    
+                    dataIncidence.className = "text-xl font-bold font-mono text-emerald-400";
+                    dataEfficiency.className = "text-xl font-bold font-mono text-emerald-400";
+                    
+                    leakWarning.classList.add('hidden');
+                    stomachTissue.classList.add('tissue-illuminated');
+                } else {
+                    // Signal Lost
+                    telePanel.className = "digital-readout tir-lost rounded-3xl p-6 space-y-6";
+                    simStatus.textContent = "SIGNAL LEAKAGE";
+                    hudStatus.textContent = "SIGNAL LOST";
+                    hudStatus.className = "text-rose-500";
+                    statusDot.className = "w-2.5 h-2.5 rounded-full bg-rose-500 shadow-[0_0_10px_#f43f5e] animate-pulse";
+                    
+                    dataIncidence.className = "text-xl font-bold font-mono text-rose-500";
+                    dataEfficiency.className = "text-xl font-bold font-mono text-rose-500";
+                    
+                    leakWarning.classList.remove('hidden');
+                    stomachTissue.classList.remove('tissue-illuminated');
+                }
+            }
+
+            // Events
+            angleSlider.addEventListener('input', updatePhysics);
+            n1Slider.addEventListener('input', updatePhysics);
+            n2Slider.addEventListener('input', updatePhysics);
+
+            // Initial Draw
+            setTimeout(resizeCanvas, 100); // small delay for layout to settle
+        });
+    </script>
+</body>
+</html>

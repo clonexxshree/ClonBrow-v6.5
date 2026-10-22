@@ -1,0 +1,596 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Physics Lab - Waves & Electrostatics</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Fira+Code:wght@400;500&display=swap" rel="stylesheet">
+    <style>
+        body, html {
+            margin: 0;
+            padding: 0;
+            width: 100%;
+            height: 100%;
+            overflow: hidden;
+            background-color: #020617; /* Slate 950 */
+            font-family: 'Inter', sans-serif;
+            touch-action: none;
+            user-select: none;
+        }
+        
+        #sim-canvas {
+            display: block;
+            width: 100%;
+            height: 100%;
+        }
+
+        .glass-panel {
+            background: linear-gradient(145deg, rgba(15, 23, 42, 0.9) 0%, rgba(2, 6, 23, 0.98) 100%);
+            backdrop-filter: blur(40px);
+            -webkit-backdrop-filter: blur(40px);
+            border-right: 1px solid rgba(255, 255, 255, 0.1);
+            box-shadow: 20px 0 50px rgba(0, 0, 0, 0.5);
+            display: flex;
+            flex-direction: column;
+            padding: 2rem;
+            z-index: 100;
+            width: 380px;
+        }
+
+        @media (max-width: 1024px) {
+            .glass-panel { width: 100%; height: 35%; border-right: none; border-bottom: 1px solid rgba(255,255,255,0.1); padding: 1rem; }
+            .main-shell { flex-direction: column; }
+        }
+
+        .main-shell {
+            display: flex;
+            width: 100%;
+            height: 100%;
+        }
+
+        .workspace {
+            flex-grow: 1;
+            position: relative;
+            overflow: hidden;
+            cursor: grab;
+        }
+        .workspace:active { cursor: grabbing; }
+
+        .tab-btn {
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+        .tab-btn.active {
+            background-color: #ffffff;
+            color: #020617;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.4);
+        }
+
+        input[type=range] {
+            -webkit-appearance: none;
+            width: 100%;
+            background: transparent;
+        }
+        input[type=range]::-webkit-slider-thumb {
+            -webkit-appearance: none;
+            height: 24px;
+            width: 24px;
+            border-radius: 50%;
+            background: #ffffff;
+            cursor: pointer;
+            margin-top: -10px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.6);
+            border: 1px solid rgba(255,255,255,0.2);
+        }
+        input[type=range]::-webkit-slider-runnable-track {
+            width: 100%;
+            height: 5px;
+            cursor: pointer;
+            background: rgba(255, 255, 255, 0.15);
+            border-radius: 3px;
+        }
+
+        .formula-box {
+            font-family: 'Fira Code', monospace;
+        }
+
+        #loading-screen {
+            position: absolute;
+            inset: 0;
+            background: #020617;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: white;
+            z-index: 150;
+            transition: opacity 0.6s ease;
+        }
+    </style>
+</head>
+<body>
+
+    <div id="loading-screen">
+        <div class="flex flex-col items-center gap-5">
+            <svg class="animate-spin h-10 w-10 text-blue-500" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="3"></circle><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path></svg>
+            <span class="text-xs font-medium tracking-widest text-gray-400 uppercase italic text-center">Correcting Workspace Ratio...</span>
+        </div>
+    </div>
+
+    <div class="main-shell">
+        <div class="glass-panel shrink-0">
+            <div class="mb-6 border-b border-white/10 pb-6 shrink-0 flex items-center justify-between">
+                <div>
+                    <h1 class="text-2xl font-bold tracking-tight text-white mb-1">Dynamics Lab</h1>
+                    <p class="text-[11px] font-medium text-blue-400 uppercase tracking-widest">Stage-Scaled Simulations</p>
+                </div>
+                <div class="w-10 h-10 rounded-full bg-blue-500/20 flex items-center justify-center text-blue-400">
+                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"></path></svg>
+                </div>
+            </div>
+
+            <div class="flex p-1 bg-black/40 rounded-xl shadow-inner gap-1 mb-6 shrink-0 border border-white/5">
+                <button data-tab="shm" class="tab-btn active flex-1 py-2 text-[10px] font-bold uppercase tracking-wider rounded-lg text-gray-400">Periodic Motion</button>
+                <button data-tab="coulomb" class="tab-btn flex-1 py-2 text-[10px] font-bold uppercase tracking-wider rounded-lg text-gray-400">Coulomb's Law</button>
+            </div>
+
+            <div class="scroll-area overflow-y-auto pr-2 pb-2 space-y-7 flex-1">
+                <div class="bg-black/30 p-4 rounded-xl border border-white/5 shadow-inner">
+                    <h2 id="info-title" class="text-sm font-bold text-white mb-2 italic">Simple Harmonic Motion</h2>
+                    <div id="formula-display" class="formula-box bg-white/5 p-2 rounded text-[11px] text-cyan-300 mb-3 border border-white/10">
+                        T = 2π√(L/g)
+                    </div>
+                    <p id="info-desc" class="text-xs text-gray-400 leading-relaxed">
+                        Periodic motion generates a perfect <b>Sine Wave</b>. Drag the massive sphere to set a starting displacement and watch the trace.
+                    </p>
+                </div>
+
+                <div id="controls-shm" class="space-y-6">
+                    <div class="space-y-4">
+                        <div class="flex p-1 bg-white/5 rounded-xl gap-1">
+                            <button id="mode-pendulum" class="flex-1 py-1.5 text-[10px] font-bold uppercase rounded-lg bg-white text-slate-900 transition-all">Pendulum</button>
+                            <button id="mode-spring" class="flex-1 py-1.5 text-[10px] font-bold uppercase rounded-lg text-gray-400 hover:text-white transition-all">Spring</button>
+                        </div>
+                        <div class="space-y-4">
+                            <div class="space-y-2">
+                                <div class="flex justify-between items-end">
+                                    <label id="shm-param-1-label" class="text-[11px] font-semibold text-cyan-400 uppercase tracking-widest">Length (L)</label>
+                                    <span id="shm-param-1-display" class="text-[11px] font-mono bg-cyan-500/10 px-2 py-1 rounded text-cyan-300">250 px</span>
+                                </div>
+                                <input type="range" id="shm-param-1" min="150" max="450" step="5" value="250" class="w-full" style="accent-color: #22d3ee;">
+                            </div>
+                            <div class="space-y-2">
+                                <div class="flex justify-between items-end">
+                                    <label id="shm-param-2-label" class="text-[11px] font-semibold text-indigo-400 uppercase tracking-widest">Mass (m)</label>
+                                    <span id="shm-param-2-display" class="text-[11px] font-mono bg-indigo-500/10 px-2 py-1 rounded text-indigo-300">1.0 kg</span>
+                                </div>
+                                <input type="range" id="shm-param-2" min="0.5" max="5" step="0.1" value="1" class="w-full" style="accent-color: #6366f1;">
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div id="controls-coulomb" class="space-y-6 hidden">
+                    <div class="space-y-4">
+                        <label class="text-[10px] font-bold uppercase tracking-widest text-gray-500">Force Parameters</label>
+                        <div class="space-y-4">
+                            <div class="space-y-2">
+                                <div class="flex justify-between items-end">
+                                    <label class="text-[11px] font-semibold text-red-400 uppercase tracking-widest">Charge 1 ($q_1$)</label>
+                                    <span id="q1-display" class="text-[11px] font-mono bg-red-500/10 px-2 py-1 rounded text-red-300">+5 μC</span>
+                                </div>
+                                <input type="range" id="q1-slider" min="-10" max="10" step="1" value="5" class="w-full" style="accent-color: #ef4444;">
+                            </div>
+                            <div class="space-y-2">
+                                <div class="flex justify-between items-end">
+                                    <label class="text-[11px] font-semibold text-blue-400 uppercase tracking-widest">Charge 2 ($q_2$)</label>
+                                    <span id="q2-display" class="text-[11px] font-mono bg-blue-500/10 px-2 py-1 rounded text-blue-300">-5 μC</span>
+                                </div>
+                                <input type="range" id="q2-slider" min="-10" max="10" step="1" value="-5" class="w-full" style="accent-color: #3b82f6;">
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="pt-6 border-t border-white/5 text-[10px] text-gray-600 font-medium text-center shrink-0 mt-4 uppercase tracking-tighter">
+                True 1:1 Pixel Aspect Ratio Lock
+            </div>
+        </div>
+
+        <div class="workspace" id="workspace">
+            <canvas id="sim-canvas"></canvas>
+            
+            <div id="hud" class="absolute bottom-10 right-10 z-10 glass-panel !w-[280px] !p-6 !border !rounded-3xl pointer-events-none shadow-2xl">
+                <div class="text-[10px] font-bold uppercase tracking-widest text-gray-500 mb-3 border-b border-white/5 pb-1">Real-Time Telemetry</div>
+                <div class="space-y-3">
+                    <div class="flex justify-between items-center">
+                        <span class="text-[12px] text-gray-400 font-medium" id="hud-label-1">Period (T)</span>
+                        <span id="hud-val-1" class="text-base font-mono font-bold text-cyan-400">---</span>
+                    </div>
+                    <div class="flex justify-between items-center">
+                        <span class="text-[12px] text-gray-400 font-medium" id="hud-label-2">Displacement</span>
+                        <span id="hud-val-2" class="text-base font-mono font-bold text-white">---</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const canvas = document.getElementById('sim-canvas');
+        const ctx = canvas.getContext('2d');
+        const workspace = document.getElementById('workspace');
+
+        // --- GLOBAL SETTINGS ---
+        let currentMode = 'shm';
+        let shmType = 'pendulum';
+        let cx, cy;
+        let time = 0;
+        let shmParam1 = 250; 
+        let shmParam2 = 1.0; 
+        let q1 = 5, q2 = -5;
+        let posHistory = [];
+        const maxHistory = 350;
+
+        // Assets
+        const assets = {
+            ball: new Image(),
+            pos: new Image(),
+            neg: new Image()
+        };
+        let loaded = 0;
+
+        function finishLoading() {
+            const loader = document.getElementById('loading-screen');
+            if(loader) {
+                loader.style.opacity = '0';
+                setTimeout(() => loader.style.display = 'none', 600);
+            }
+        }
+        
+        assets.ball.onload = assets.pos.onload = assets.neg.onload = () => {
+            loaded++;
+            if(loaded >= 3) finishLoading();
+        };
+        assets.ball.onerror = assets.pos.onerror = assets.neg.onerror = () => finishLoading();
+        
+        setTimeout(finishLoading, 3000);
+
+        assets.ball.src = 'https://res.cloudinary.com/ds93qby5a/image/upload/v1775831166/wooden_ball_kce8nj.png';
+        assets.pos.src = 'https://res.cloudinary.com/ds93qby5a/image/upload/v1775936553/red_sphere_hi_res_p9pz2.png';
+        assets.neg.src = 'https://res.cloudinary.com/ds93qby5a/image/upload/v1775936553/blue_sphere_hi_res_m9p9z2.png';
+
+        // Aspect-ratio aware drawing logic
+        function drawImageAspect(img, x, y, targetWidth, pivotX = 0.5, pivotY = 0.5) {
+            if (!img.complete || !img.naturalWidth) {
+                ctx.fillStyle = "rgba(100,100,100,0.5)";
+                ctx.beginPath(); ctx.arc(x, y, targetWidth/2, 0, Math.PI*2); ctx.fill();
+                return 0;
+            }
+            const ratio = img.naturalHeight / img.naturalWidth;
+            const targetHeight = targetWidth * ratio; 
+            ctx.drawImage(img, x - (targetWidth * pivotX), y - (targetHeight * pivotY), targetWidth, targetHeight);
+            return targetHeight;
+        }
+
+        let charges = [
+            { x: 0, y: 0, q: 5, isDragging: false, radius: 80 },
+            { x: 0, y: 0, q: -5, isDragging: false, radius: 80 }
+        ];
+        
+        let shmObject = { x: 0, y: 0, angle: 0, displacement: 0, isDragging: false, phaseOffset: 0, radius: 100 };
+
+        // CRITICAL FIX: Base canvas dimensions purely on the flex workspace size to avoid squishing
+        function resize() {
+            canvas.width = workspace.clientWidth;
+            canvas.height = workspace.clientHeight;
+            
+            // cx and cy are now strictly relative to the canvas itself
+            cx = canvas.width / 2;
+            cy = canvas.height / 2;
+
+            // Positioning targets 
+            if(!charges[0].isDragging && !charges[1].isDragging) {
+                charges[0].x = cx - canvas.width * 0.22; charges[0].y = cy;
+                charges[1].x = cx + canvas.width * 0.22; charges[1].y = cy;
+            }
+        }
+        window.addEventListener('resize', resize);
+        resize();
+
+        // UI Handlers
+        document.getElementById('shm-param-1').oninput = (e) => {
+            shmParam1 = parseFloat(e.target.value);
+            document.getElementById('shm-param-1-display').innerText = shmType === 'pendulum' ? `${shmParam1} px` : `${shmParam1} N/m`;
+        };
+        document.getElementById('shm-param-2').oninput = (e) => {
+            shmParam2 = parseFloat(e.target.value);
+            document.getElementById('shm-param-2-display').innerText = `${shmParam2.toFixed(1)} kg`;
+        };
+        document.getElementById('q1-slider').oninput = (e) => {
+            q1 = parseInt(e.target.value); charges[0].q = q1;
+            document.getElementById('q1-display').innerText = (q1 > 0 ? '+' : '') + q1 + " μC";
+        };
+        document.getElementById('q2-slider').oninput = (e) => {
+            q2 = parseInt(e.target.value); charges[1].q = q2;
+            document.getElementById('q2-display').innerText = (q2 > 0 ? '+' : '') + q2 + " μC";
+        };
+
+        // --- MODULE 1: SHM ---
+        function drawSHM() {
+            const g = 9.81;
+            const graphX = 60; // Offset from left edge of canvas
+            const graphW = canvas.width * 0.28;
+            const graphY = cy;
+
+            let oscPos = 0;
+
+            if (shmType === 'pendulum') {
+                const L = shmParam1 / 100;
+                const omega = Math.sqrt(g / L);
+                const period = 2 * Math.PI / omega;
+                if (!shmObject.isDragging) shmObject.angle = 0.7 * Math.sin(omega * time + shmObject.phaseOffset);
+                
+                oscPos = shmObject.angle * shmParam1;
+                const startY = cy - canvas.height * 0.35;
+                shmObject.x = cx + Math.sin(shmObject.angle) * shmParam1;
+                shmObject.y = startY + Math.cos(shmObject.angle) * shmParam1;
+
+                ctx.strokeStyle = '#334155'; ctx.lineWidth = 24; ctx.lineCap = 'round';
+                ctx.beginPath(); ctx.moveTo(cx - 160, startY); ctx.lineTo(cx + 160, startY); ctx.stroke();
+                ctx.strokeStyle = 'rgba(255,255,255,0.2)'; ctx.lineWidth = 6;
+                ctx.beginPath(); ctx.moveTo(cx, startY); ctx.lineTo(shmObject.x, shmObject.y); ctx.stroke();
+
+                ctx.save();
+                ctx.translate(shmObject.x, shmObject.y);
+                ctx.rotate(shmObject.angle * 2.5);
+                ctx.shadowBlur = shmObject.isDragging ? 60 : 40; ctx.shadowColor = 'rgba(0,0,0,0.6)';
+                drawImageAspect(assets.ball, 0, 0, 160); // Massive Ball
+                ctx.restore();
+
+                document.getElementById('hud-val-1').innerText = period.toFixed(2) + " s";
+                document.getElementById('hud-val-2').innerText = Math.round(shmObject.angle * 180 / Math.PI) + "°";
+            } 
+            else {
+                const k = shmParam1; const m = shmParam2;
+                const omega = Math.sqrt(k / m);
+                const period = 2 * Math.PI / omega;
+                if (!shmObject.isDragging) shmObject.displacement = 160 * Math.sin(omega * time + shmObject.phaseOffset);
+                
+                oscPos = shmObject.displacement;
+                const anchorY = cy - canvas.height * 0.38;
+                const blockH = 180;
+                const blockY = cy + shmObject.displacement;
+                shmObject.x = cx;
+                shmObject.y = blockY + blockH/2; 
+
+                ctx.fillStyle = '#334155';
+                ctx.beginPath(); ctx.roundRect(cx - 160, anchorY, 320, 30, 10); ctx.fill();
+
+                ctx.strokeStyle = '#94a3b8'; ctx.lineWidth = 8; ctx.beginPath();
+                const turns = 18; const spacing = (blockY - anchorY) / turns;
+                ctx.moveTo(cx, anchorY);
+                for(let i=1; i<=turns; i++) {
+                    const ty = anchorY + (i - 0.5) * spacing;
+                    const side = i % 2 === 0 ? 80 : -80;
+                    ctx.lineTo(cx + side, ty);
+                    ctx.lineTo(cx, anchorY + i * spacing);
+                }
+                ctx.stroke();
+
+                ctx.fillStyle = '#6366f1'; ctx.shadowBlur = 60; ctx.shadowColor = '#6366f1';
+                ctx.beginPath(); ctx.roundRect(cx - 110, blockY, 220, blockH, 24); ctx.fill();
+                ctx.shadowBlur = 0;
+
+                document.getElementById('hud-val-1').innerText = period.toFixed(2) + " s";
+                document.getElementById('hud-val-2').innerText = Math.round(shmObject.displacement) + " px";
+            }
+
+            posHistory.push(oscPos);
+            if(posHistory.length > maxHistory) posHistory.shift();
+            ctx.save();
+            ctx.translate(graphX, graphY);
+            ctx.fillStyle = 'rgba(0,0,0,0.75)';
+            ctx.beginPath(); ctx.roundRect(0, -220, graphW, 440, 30); ctx.fill();
+            ctx.strokeStyle = 'rgba(255,255,255,0.1)'; ctx.lineWidth = 2; ctx.stroke();
+            ctx.setLineDash([10, 10]); ctx.beginPath(); ctx.moveTo(0,0); ctx.lineTo(graphW, 0); ctx.stroke(); ctx.setLineDash([]);
+            ctx.strokeStyle = '#22d3ee'; ctx.lineWidth = 6; ctx.lineJoin = 'round';
+            ctx.beginPath();
+            posHistory.forEach((pos, i) => {
+                const x = (i / maxHistory) * graphW;
+                const y = pos * 0.95; 
+                if(i === 0) ctx.moveTo(x, y); else ctx.lineTo(x, y);
+            });
+            ctx.stroke();
+            ctx.restore();
+        }
+
+        // --- MODULE 2: COULOMB ---
+        function drawCoulomb() {
+            const ke = 2.4e4; 
+            
+            // 1. Physical separation check
+            const dx = charges[1].x - charges[0].x;
+            const dy = charges[1].y - charges[0].y;
+            const rawDistSq = dx*dx + dy*dy;
+            const rawDist = Math.sqrt(rawDistSq);
+            const minDist = 220; // Ensure charges never merge/intersect
+
+            if (rawDist < minDist && rawDist > 0) {
+                const overlap = (minDist - rawDist) / 2;
+                const nx = dx / rawDist; const ny = dy / rawDist;
+                if (!charges[0].isDragging) { charges[0].x -= nx * overlap; charges[0].y -= ny * overlap; }
+                if (!charges[1].isDragging) { charges[1].x += nx * overlap; charges[1].y += ny * overlap; }
+            }
+
+            // Recalculate distance after boundary check
+            const fdx = charges[1].x - charges[0].x;
+            const fdy = charges[1].y - charges[0].y;
+            const distSq = Math.max(fdx*fdx + fdy*fdy, 12000);
+            const dist = Math.sqrt(distSq);
+            const forceMag = ke * (charges[0].q * charges[1].q) / distSq;
+            const dirX = fdx / dist; const dirY = fdy / dist;
+
+            // Glows
+            charges.forEach(c => {
+                const grad = ctx.createRadialGradient(c.x, c.y, 0, c.x, c.y, Math.abs(c.q) * 80);
+                const color = c.q > 0 ? '239, 68, 68' : '59, 130, 246';
+                grad.addColorStop(0, `rgba(${color}, 0.3)`);
+                grad.addColorStop(1, `rgba(${color}, 0)`);
+                ctx.fillStyle = grad;
+                ctx.beginPath(); ctx.arc(c.x, c.y, Math.abs(c.q) * 80, 0, Math.PI * 2); ctx.fill();
+            });
+
+            // Forces
+            ctx.lineWidth = 12; ctx.lineCap = 'round';
+            const drawVec = (c, fx, fy) => {
+                const len = Math.min(Math.abs(forceMag) * 35, 380);
+                if (len < 20) return;
+                ctx.strokeStyle = '#ffffff'; ctx.beginPath(); ctx.moveTo(c.x, c.y); ctx.lineTo(c.x + fx * len, c.y + fy * len); ctx.stroke();
+                const ang = Math.atan2(fy, fx);
+                ctx.fillStyle = '#ffffff'; ctx.beginPath();
+                ctx.moveTo(c.x + fx * len + Math.cos(ang)*28, c.y + fy * len + Math.sin(ang)*28);
+                ctx.lineTo(c.x + fx * len + Math.cos(ang + 2.4)*32, c.y + fy * len + Math.sin(ang + 2.4)*32);
+                ctx.lineTo(c.x + fx * len + Math.cos(ang - 2.4)*32, c.y + fy * len + Math.sin(ang - 2.4)*32);
+                ctx.fill();
+            };
+
+            drawVec(charges[0], Math.sign(forceMag) * -dirX, Math.sign(forceMag) * -dirY);
+            drawVec(charges[1], Math.sign(forceMag) * dirX, Math.sign(forceMag) * dirY);
+
+            // Large Proportional Assets
+            charges.forEach(c => {
+                ctx.save();
+                ctx.translate(c.x, c.y);
+                const asset = c.q >= 0 ? assets.pos : assets.neg;
+                ctx.shadowBlur = c.isDragging ? 80 : 50;
+                ctx.shadowColor = c.q >= 0 ? '#ef4444' : '#3b82f6';
+                drawImageAspect(asset, 0, 0, 200); // 200px diameter base
+                ctx.fillStyle = '#fff'; ctx.font = 'bold 50px Inter'; ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+                ctx.fillText(c.q > 0 ? '+' : (c.q < 0 ? '-' : '0'), 0, 0);
+                ctx.restore();
+            });
+
+            document.getElementById('hud-val-1').innerText = (dist / 100).toFixed(2) + " m";
+            document.getElementById('hud-val-2').innerText = Math.abs(forceMag).toFixed(2) + " N";
+        }
+
+        // --- INTERACTION ---
+        let dragTarget = null;
+        let dragOffsetX = 0, dragOffsetY = 0;
+
+        function getMousePos(e) {
+            const rect = canvas.getBoundingClientRect();
+            const clientX = e.touches ? e.touches[0].clientX : e.clientX;
+            const clientY = e.touches ? e.touches[0].clientY : e.clientY;
+            return { x: clientX - rect.left, y: clientY - rect.top };
+        }
+
+        function onDown(e) {
+            if (e.target.closest('.glass-panel')) return;
+            const pos = getMousePos(e);
+            if (currentMode === 'shm') {
+                if (Math.hypot(pos.x - shmObject.x, pos.y - shmObject.y) < 180) {
+                    shmObject.isDragging = true; dragTarget = shmObject;
+                }
+            } else {
+                charges.forEach(c => {
+                    if (Math.hypot(pos.x - c.x, pos.y - c.y) < 120) {
+                        c.isDragging = true; dragTarget = c;
+                        dragOffsetX = c.x - pos.x; dragOffsetY = c.y - pos.y;
+                    }
+                });
+            }
+        }
+
+        function onMove(e) {
+            if (!dragTarget) return;
+            const pos = getMousePos(e);
+
+            if (currentMode === 'shm') {
+                if (shmType === 'pendulum') {
+                    const dy = pos.y - (cy - canvas.height * 0.35);
+                    const dx = pos.x - cx;
+                    shmObject.angle = Math.atan2(dx, dy);
+                    shmObject.phaseOffset = Math.asin(shmObject.angle / 0.7) - (time * Math.sqrt(9.81 / (shmParam1/100)));
+                } else {
+                    shmObject.displacement = pos.y - cy - 90;
+                    shmObject.phaseOffset = Math.asin(shmObject.displacement / 160) - (time * Math.sqrt(shmParam1 / shmParam2));
+                }
+            } else {
+                dragTarget.x = Math.max(100, Math.min(canvas.width - 100, pos.x + dragOffsetX));
+                dragTarget.y = Math.max(100, Math.min(canvas.height - 100, pos.y + dragOffsetY));
+            }
+        }
+
+        function onUp() {
+            if (dragTarget) {
+                if (dragTarget === shmObject) shmObject.isDragging = false;
+                else dragTarget.isDragging = false;
+                dragTarget = null;
+            }
+        }
+
+        canvas.addEventListener('mousedown', onDown);
+        window.addEventListener('mousemove', onMove);
+        window.addEventListener('mouseup', onUp);
+        canvas.addEventListener('touchstart', (e) => { e.preventDefault(); onDown(e); }, {passive: false});
+        canvas.addEventListener('touchmove', (e) => { e.preventDefault(); onMove(e); }, {passive: false});
+        window.addEventListener('touchend', onUp);
+
+        function render() {
+            time += 0.016;
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+            ctx.fillStyle = '#02020a'; ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+            ctx.strokeStyle = 'rgba(255,255,255,0.03)'; ctx.lineWidth = 1;
+            ctx.beginPath();
+            for(let i=0; i<canvas.width; i+=100) { ctx.moveTo(i,0); ctx.lineTo(i,canvas.height); }
+            for(let i=0; i<canvas.height; i+=100) { ctx.moveTo(0,i); ctx.lineTo(canvas.width,i); }
+            ctx.stroke();
+
+            if (currentMode === 'shm') drawSHM();
+            else drawCoulomb();
+
+            requestAnimationFrame(render);
+        }
+        render();
+
+        const tabs = document.querySelectorAll('.tab-btn');
+        tabs.forEach(btn => {
+            btn.addEventListener('click', (e) => {
+                tabs.forEach(t => t.classList.remove('active', 'bg-white', 'text-gray-900'));
+                tabs.forEach(t => t.classList.add('text-gray-400'));
+                btn.classList.add('active', 'bg-white', 'text-gray-900');
+                currentMode = btn.dataset.tab;
+                document.getElementById('controls-shm').classList.toggle('hidden', currentMode !== 'shm');
+                document.getElementById('controls-coulomb').classList.toggle('hidden', currentMode !== 'coulomb');
+                const info = {
+                    shm: { title: "Simple Harmonic Motion", formula: "T = 2π√(L/g)" },
+                    coulomb: { title: "Coulomb's Law", formula: "Fe = ke |q1 q2| / r²" }
+                };
+                document.getElementById('info-title').innerText = info[currentMode].title;
+                document.getElementById('formula-display').innerText = info[currentMode].formula;
+                document.getElementById('hud-label-1').innerText = currentMode === 'shm' ? "Period (T)" : "Distance (r)";
+                document.getElementById('hud-label-2').innerText = currentMode === 'shm' ? "Angular Pos" : "Force (Fe)";
+            });
+        });
+
+        document.getElementById('mode-pendulum').onclick = () => {
+            shmType = 'pendulum';
+            document.getElementById('mode-pendulum').className = 'flex-1 py-1.5 text-[10px] font-bold uppercase rounded-lg bg-white text-slate-900';
+            document.getElementById('mode-spring').className = 'flex-1 py-1.5 text-[10px] font-bold uppercase rounded-lg text-gray-400';
+            document.getElementById('shm-param-1-label').innerText = "Length (L)";
+            document.getElementById('formula-display').innerText = "T = 2π√(L/g)";
+        };
+        document.getElementById('mode-spring').onclick = () => {
+            shmType = 'spring';
+            document.getElementById('mode-spring').className = 'flex-1 py-1.5 text-[10px] font-bold uppercase rounded-lg bg-white text-slate-900';
+            document.getElementById('mode-pendulum').className = 'flex-1 py-1.5 text-[10px] font-bold uppercase rounded-lg text-gray-400';
+            document.getElementById('shm-param-1-label').innerText = "Constant (k)";
+            document.getElementById('formula-display').innerText = "T = 2π√(m/k)";
+        };
+
+    </script>
+</body>
+</html>

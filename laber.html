@@ -1,0 +1,982 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Island Lab | ClonBrow OS</title>
+    
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Nunito:wght@700;900&display=swap" rel="stylesheet">
+    
+    <!-- Three.js & Cannon.js -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/cannon.js/0.6.2/cannon.min.js"></script>
+
+    <style>
+        body { 
+            margin: 0; overflow: hidden; background-color: #87CEEB; 
+            font-family: 'Nunito', sans-serif; user-select: none; touch-action: none; 
+        }
+        canvas { display: block; width: 100vw; height: 100vh; }
+        
+        #ui-layer { position: absolute; inset: 0; pointer-events: none; z-index: 10; }
+        
+        .crosshair {
+            position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%);
+            width: 20px; height: 20px; transition: all 0.1s;
+        }
+        .crosshair::before, .crosshair::after {
+            content: ''; position: absolute; background: white; border-radius: 2px; box-shadow: 0 0 4px rgba(0,0,0,0.8);
+        }
+        .crosshair::before { top: 9px; left: 0; width: 20px; height: 2px; }
+        .crosshair::after { top: 0; left: 9px; width: 2px; height: 20px; }
+        .crosshair.active::before, .crosshair.active::after { background: #4ade80; box-shadow: 0 0 10px #4ade80; }
+
+        #interaction-prompt {
+            position: absolute; bottom: 20%; left: 50%; transform: translateX(-50%);
+            background: #2563eb; color: white; padding: 15px 40px; border-radius: 15px;
+            font-size: 24px; font-weight: 900; border: 4px solid #1e3a8a;
+            box-shadow: 0px 8px 0px #1e3a8a; display: none; text-transform: uppercase; pointer-events: auto; cursor: pointer;
+            transition: transform 0.1s;
+        }
+        #interaction-prompt:active { transform: translate(-50%, 8px); box-shadow: 0px 0px 0px #1e3a8a; }
+
+        #desktop-hint {
+            position: absolute; top: 20px; left: 50%; transform: translateX(-50%);
+            background: rgba(0,0,0,0.6); color: white; padding: 10px 24px; border-radius: 20px;
+            font-size: 14px; font-weight: bold; pointer-events: none; z-index: 10;
+        }
+
+        /* Iframe Overlay for Laptop */
+        #iframe-overlay {
+            display: none; position: absolute; inset: 5%; z-index: 50; 
+            background: rgba(0,0,0,0.85); border: 4px solid #4ade80; 
+            border-radius: 15px; box-shadow: 0 0 30px #4ade80; backdrop-filter: blur(10px);
+        }
+        #close-iframe {
+            position: absolute; top: -15px; right: -15px; background: #ef4444; color: white; 
+            border-radius: 50%; width: 40px; height: 40px; font-weight: 900; font-size: 20px; 
+            cursor: pointer; border: 4px solid #7f1d1d; box-shadow: 0 4px 0 #7f1d1d; z-index: 51;
+            transition: transform 0.1s;
+        }
+        #close-iframe:active { transform: translateY(4px); box-shadow: 0 0 0 #7f1d1d; }
+
+        /* Mobile Controls */
+        #mobile-controls { position: absolute; inset: 0; pointer-events: none; display: none; z-index: 20; }
+        @media (hover: none) and (pointer: coarse) {
+            #mobile-controls { display: block; }
+            .crosshair { display: none; }
+            #desktop-hint { display: none; }
+        }
+        
+        #joystick-zone {
+            position: absolute; bottom: 40px; left: 40px; width: 140px; height: 140px;
+            background: rgba(255, 255, 255, 0.15); border: 4px solid rgba(255, 255, 255, 0.4);
+            border-radius: 50%; pointer-events: auto; touch-action: none;
+        }
+        #joystick-knob {
+            position: absolute; top: 50%; left: 50%; width: 60px; height: 60px;
+            background: #38bdf8; border: 4px solid #0284c7; border-radius: 50%;
+            transform: translate(-50%, -50%); pointer-events: none;
+        }
+    </style>
+</head>
+<body>
+
+    <div id="ui-layer">
+        <div class="crosshair" id="crosshair"></div>
+        <div id="desktop-hint">Click & Drag to look around • WASD/Arrows to move</div>
+        <div id="interaction-prompt">ENTER</div>
+    </div>
+
+    <div id="mobile-controls">
+        <div id="joystick-zone"><div id="joystick-knob"></div></div>
+    </div>
+
+    <!-- The Floating In-Game Screen -->
+    <div id="iframe-overlay">
+        <button id="close-iframe" onclick="document.getElementById('iframe-overlay').style.display='none'; document.getElementById('inner-frame').src='';">X</button>
+        <iframe id="inner-frame" src="" style="width:100%; height:100%; border:none; border-radius: 10px;"></iframe>
+    </div>
+
+    <script>
+        let scene, camera, renderer, clock, raycaster;
+        let world, playerBody;
+        let interactables = [];
+        let clouds = [];
+        window.animatables = []; // Array for moving parts like windmills
+        
+        let moveForward = false, moveBackward = false, moveLeft = false, moveRight = false;
+        let joystickVec = { x: 0, y: 0 };
+        
+        // Decoupled Camera Angles to prevent NaN crashes
+        let camYaw = 0;
+        let camPitch = 0;
+
+        const ISLAND_RADIUS = 60;
+
+        window.onload = function() { init(); };
+
+        function init() {
+            world = new CANNON.World();
+            world.gravity.set(0, -30, 0); 
+            world.broadphase = new CANNON.NaiveBroadphase();
+            world.solver.iterations = 10;
+
+            scene = new THREE.Scene();
+            scene.background = new THREE.Color(0x87CEEB);
+            scene.fog = new THREE.FogExp2(0x87CEEB, 0.005);
+
+            camera = new THREE.PerspectiveCamera(70, window.innerWidth / window.innerHeight, 0.1, 1000);
+            clock = new THREE.Clock();
+            raycaster = new THREE.Raycaster();
+
+            renderer = new THREE.WebGLRenderer({ antialias: true, powerPreference: "high-performance" });
+            renderer.setSize(window.innerWidth, window.innerHeight);
+            renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+            renderer.shadowMap.enabled = true;
+            renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+            document.body.appendChild(renderer.domElement);
+
+            buildLighting();
+            buildPlayer();
+            buildIsland();
+            buildGrass();
+            buildPath();
+            buildCaves();
+            buildForest();
+            buildFarm();
+            buildWindmill();
+            buildGarden();
+            buildRocks();
+            buildLogs();
+            buildLaptopAndPapers();
+            buildClouds();
+            setupControls();
+
+            window.addEventListener('resize', onWindowResize, false);
+            animate();
+        }
+
+        function buildLighting() {
+            const ambient = new THREE.AmbientLight(0xffffff, 0.4);
+            scene.add(ambient);
+
+            const sunLight = new THREE.DirectionalLight(0xffffee, 1.5);
+            sunLight.position.set(100, 150, 50);
+            sunLight.castShadow = true;
+            sunLight.shadow.mapSize.width = 1024;
+            sunLight.shadow.mapSize.height = 1024;
+            sunLight.shadow.camera.near = 0.5;
+            sunLight.shadow.camera.far = 300;
+            const d = 80;
+            sunLight.shadow.camera.left = -d; sunLight.shadow.camera.right = d;
+            sunLight.shadow.camera.top = d; sunLight.shadow.camera.bottom = -d;
+            sunLight.shadow.bias = -0.001;
+            scene.add(sunLight);
+
+            // Visual Sun Sphere
+            const sunGeo = new THREE.SphereGeometry(10, 32, 32);
+            const sunMat = new THREE.MeshBasicMaterial({ color: 0xffd700 });
+            const sunMesh = new THREE.Mesh(sunGeo, sunMat);
+            sunMesh.position.copy(sunLight.position);
+            scene.add(sunMesh);
+
+            // Sun Halo
+            const haloGeo = new THREE.SphereGeometry(15, 32, 32);
+            const haloMat = new THREE.MeshBasicMaterial({ color: 0xffaa00, transparent: true, opacity: 0.3, blending: THREE.AdditiveBlending });
+            const haloMesh = new THREE.Mesh(haloGeo, haloMat);
+            haloMesh.position.copy(sunLight.position);
+            scene.add(haloMesh);
+        }
+
+        function buildPlayer() {
+            const shape = new CANNON.Sphere(1);
+            playerBody = new CANNON.Body({ mass: 5, shape: shape });
+            playerBody.position.set(0, 5, 0); // Center spawn
+            playerBody.linearDamping = 0.9;
+            world.addBody(playerBody);
+        }
+
+        function buildIsland() {
+            const islandGroup = new THREE.Group();
+
+            // Dirt Base
+            const dirtGeo = new THREE.CylinderGeometry(ISLAND_RADIUS, ISLAND_RADIUS - 10, 20, 64);
+            const dirtMat = new THREE.MeshStandardMaterial({ color: 0x4a3219, roughness: 1.0 });
+            const dirt = new THREE.Mesh(dirtGeo, dirtMat);
+            dirt.position.y = -10;
+            dirt.receiveShadow = true;
+            islandGroup.add(dirt);
+
+            // Grass Top
+            const grassGeo = new THREE.CylinderGeometry(ISLAND_RADIUS + 0.5, ISLAND_RADIUS, 2, 64);
+            const grassMat = new THREE.MeshStandardMaterial({ color: 0x22c55e, roughness: 0.9 });
+            const grass = new THREE.Mesh(grassGeo, grassMat);
+            grass.position.y = 1;
+            grass.receiveShadow = true;
+            islandGroup.add(grass);
+
+            scene.add(islandGroup);
+
+            // Physics Floor (Box is mathematically safer than Cylinder in Cannon.js)
+            const groundShape = new CANNON.Box(new CANNON.Vec3(ISLAND_RADIUS, 50, ISLAND_RADIUS));
+            const groundBody = new CANNON.Body({ mass: 0, shape: groundShape });
+            groundBody.position.set(0, -48, 0);
+            world.addBody(groundBody);
+        }
+
+        function buildGrass() {
+            const grassCount = 65000; // MASSIVE GRASS UPGRADE for lush, dense feel
+            const bladeGeo = new THREE.PlaneGeometry(0.15, 0.7, 1, 3); // Taller, more segmented for curving
+            bladeGeo.translate(0, 0.35, 0); 
+            
+            // Taper and curve the grass blade so it looks like a real, organic pointy leaf
+            const pos = bladeGeo.attributes.position.array;
+            for (let i = 0; i < pos.length; i += 3) {
+                const y = pos[i + 1];
+                if (y > 0.2) {
+                    pos[i] *= (0.8 - y); // Smooth pinch to a point
+                    pos[i+2] += y * 0.15; // Natural forward curve
+                }
+            }
+            bladeGeo.computeVertexNormals();
+            
+            // Lighter, vibrant green
+            const grassMat = new THREE.MeshStandardMaterial({ color: 0x22c55e, roughness: 0.8, side: THREE.DoubleSide });
+            const instancedGrass = new THREE.InstancedMesh(bladeGeo, grassMat, grassCount);
+            instancedGrass.receiveShadow = true; 
+            
+            const dummy = new THREE.Object3D();
+            let addedCount = 0;
+
+            for (let i = 0; i < grassCount; i++) {
+                let r = Math.sqrt(Math.random()) * (ISLAND_RADIUS - 2);
+                let theta = Math.random() * Math.PI * 2;
+                let x = Math.cos(theta) * r;
+                let z = Math.sin(theta) * r;
+
+                // --- STRICT EXCLUSION ZONES (NO GRASS ALLOWED) ---
+                if (Math.hypot(x, z) < 12) continue; // Keep spawn completely clear
+                if (Math.abs(x) < 4 || Math.abs(z) < 4) continue; // Keep cardinal paths completely clear
+                if (Math.hypot(x - (-6), z - (-6)) < 6) continue; // Keep Laptop area clear
+                if (x < 0 && z > 0 && Math.hypot(x, z) < 42) continue; // Keep Farm & Dutch House (NW) mostly clear
+                if (x > 0 && z > 0 && Math.hypot(x, z) < 35) continue; // Keep Garden (NE) clear
+
+                dummy.position.set(x, 2, z);
+                dummy.rotation.y = Math.random() * Math.PI;
+                dummy.rotation.x = (Math.random() - 0.5) * 0.3;
+                dummy.rotation.z = (Math.random() - 0.5) * 0.3;
+                dummy.scale.setScalar(0.6 + Math.random() * 0.6);
+                dummy.updateMatrix();
+                instancedGrass.setMatrixAt(addedCount, dummy.matrix);
+                addedCount++;
+            }
+            instancedGrass.count = addedCount;
+            scene.add(instancedGrass);
+        }
+
+        function buildPath() {
+            const pathGroup = new THREE.Group();
+            const stoneGeo = new THREE.CylinderGeometry(1.8, 1.8, 0.4, 6); // Thicker, wider stones
+            const stoneMat = new THREE.MeshStandardMaterial({ color: 0x94a3b8, roughness: 0.9, flatShading: true });
+
+            // Create paths branching from center to the 4 cardinal directions
+            const directions = [
+                {x: 0, z: -1}, {x: 1, z: 0}, {x: 0, z: 1}, {x: -1, z: 0}
+            ];
+
+            directions.forEach(dir => {
+                for(let i = 4; i < 45; i += 3.5) {
+                    const stone = new THREE.Mesh(stoneGeo, stoneMat);
+                    // Elevate stones slightly so they pop out of the dirt
+                    stone.position.set(dir.x * i + (Math.random()-0.5), 2.2, dir.z * i + (Math.random()-0.5));
+                    stone.rotation.y = Math.random() * Math.PI;
+                    stone.rotation.x = (Math.random() - 0.5) * 0.1;
+                    stone.scale.setScalar(0.8 + Math.random() * 0.4);
+                    stone.receiveShadow = true;
+                    stone.castShadow = true;
+                    pathGroup.add(stone);
+                }
+            });
+            scene.add(pathGroup);
+        }
+
+        function buildCaves() {
+            const cavesData = [
+                { pos: new THREE.Vector3(0, 2, -45), color: 0xef4444, title: "HOSPITAL", url: 'hospital.html' },
+                { pos: new THREE.Vector3(45, 2, 0), color: 0x3b82f6, title: "RESEARCH CENTRE", url: 'research-c.html' },
+                { pos: new THREE.Vector3(0, 2, 45), color: 0xf59e0b, title: "RESEARCH CENTRE FOR PHYSICS", url: 'physics-lab.html' },
+                { pos: new THREE.Vector3(-45, 2, 0), color: 0xa855f7, title: "RESEARCH CENTRE FOR MATHEMATICS", url: 'shreet.html' }
+            ];
+
+            const rockGeo = new THREE.DodecahedronGeometry(3.5, 0); // Bigger rocks for a chunkier cave
+            const rockMat = new THREE.MeshStandardMaterial({ color: 0x4b5563, roughness: 0.9, flatShading: true });
+            
+            cavesData.forEach(data => {
+                const caveGroup = new THREE.Group();
+                
+                // Build Arch (Wider and deeper to hug the portal perfectly)
+                for(let i = -2; i <= 14; i++) { // Extends below ground to anchor it
+                    const angle = (i / 12) * Math.PI;
+                    const r = 7.5; 
+                    const rock = new THREE.Mesh(rockGeo, rockMat);
+                    rock.position.set(Math.cos(angle) * r, Math.sin(angle) * r, 0);
+                    rock.position.z += (Math.random() - 0.5) * 2;
+                    rock.rotation.set(Math.random(), Math.random(), Math.random());
+                    rock.scale.setScalar(0.9 + Math.random() * 0.6);
+                    rock.castShadow = true; rock.receiveShadow = true;
+                    caveGroup.add(rock);
+                }
+
+                // Black void behind portal for depth
+                const voidGeo = new THREE.CircleGeometry(6.8, 32);
+                const voidMat = new THREE.MeshBasicMaterial({ color: 0x000000, side: THREE.DoubleSide });
+                const caveVoid = new THREE.Mesh(voidGeo, voidMat);
+                caveVoid.position.set(0, 5, -2.0);
+                caveGroup.add(caveVoid);
+
+                // Portal - Sized perfectly to fit inside the inner rim of the rocks
+                const portalGeo = new THREE.CircleGeometry(6.5, 32);
+                const portalMat = new THREE.MeshBasicMaterial({ color: data.color, transparent: true, opacity: 0.8, side: THREE.DoubleSide });
+                const portal = new THREE.Mesh(portalGeo, portalMat);
+                portal.position.set(0, 5, -1.5);
+                caveGroup.add(portal);
+
+                // Additive Glow
+                const glowGeo = new THREE.CircleGeometry(6.8, 32);
+                const glowMat = new THREE.MeshBasicMaterial({ color: data.color, transparent: true, opacity: 0.4, blending: THREE.AdditiveBlending, side: THREE.DoubleSide });
+                const glow = new THREE.Mesh(glowGeo, glowMat);
+                glow.position.set(0, 5, -1.3);
+                caveGroup.add(glow);
+
+                // Position Cave
+                caveGroup.position.copy(data.pos);
+                caveGroup.lookAt(0, 2, 0); // Face center
+                scene.add(caveGroup);
+
+                // Physics Wall behind portal
+                const wallShape = new CANNON.Box(new CANNON.Vec3(8, 10, 2));
+                const wallBody = new CANNON.Body({ mass: 0, shape: wallShape });
+                wallBody.position.copy(data.pos);
+                const lookVec = new THREE.Vector3(0,0,0).sub(data.pos).normalize();
+                const angle = Math.atan2(lookVec.x, lookVec.z);
+                wallBody.quaternion.setFromAxisAngle(new CANNON.Vec3(0,1,0), angle);
+                world.addBody(wallBody);
+
+                // Interaction Hitbox
+                const hitGeo = new THREE.BoxGeometry(14, 14, 10);
+                const hitMat = new THREE.MeshBasicMaterial({ visible: false });
+                const hitbox = new THREE.Mesh(hitGeo, hitMat);
+                hitbox.position.copy(data.pos);
+                hitbox.position.y = 7;
+                scene.add(hitbox);
+                
+                interactables.push({ mesh: hitbox, prompt: `ENTER ${data.title}`, url: data.url });
+            });
+        }
+
+        function buildForest() {
+            const treeGroup = new THREE.Group();
+            const trunkGeo = new THREE.CylinderGeometry(0.8, 1.2, 5, 6);
+            const trunkMat = new THREE.MeshStandardMaterial({ color: 0x4a3219, flatShading: true });
+            const leavesGeo = new THREE.DodecahedronGeometry(3.5, 0);
+            const leavesMat = new THREE.MeshStandardMaterial({ color: 0x065f46, flatShading: true });
+
+            for(let i = 0; i < 300; i++) {
+                let x = (Math.random() - 0.5) * 100;
+                let z = (Math.random() - 0.5) * 100;
+                
+                // Keep out of farm (NW), garden (NE), and paths/center
+                if (Math.hypot(x, z) < 15) continue;
+                if (Math.abs(x) < 8 || Math.abs(z) < 8) continue; 
+                if (x < 0 && z > 0) continue; // NW Farm, House & Equipment area
+                if (x > 0 && z > 0) continue; // NE Garden
+                if (Math.hypot(x, z) > ISLAND_RADIUS - 5) continue;
+                
+                // Keep strictly away from the 4 Cave Entrances
+                if (Math.hypot(x - 0, z - (-45)) < 14) continue;
+                if (Math.hypot(x - 45, z - 0) < 14) continue;
+                if (Math.hypot(x - 0, z - 45) < 14) continue;
+                if (Math.hypot(x - (-45), z - 0) < 14) continue;
+
+                const tree = new THREE.Group();
+                
+                const trunk = new THREE.Mesh(trunkGeo, trunkMat);
+                trunk.position.y = 2.5;
+                trunk.castShadow = true; trunk.receiveShadow = true;
+                tree.add(trunk);
+
+                const leaves1 = new THREE.Mesh(leavesGeo, leavesMat);
+                leaves1.position.y = 5; leaves1.castShadow = true; leaves1.receiveShadow = true; tree.add(leaves1);
+                
+                const leaves2 = new THREE.Mesh(leavesGeo, leavesMat);
+                leaves2.position.y = 7.5; leaves2.scale.setScalar(0.8); leaves2.rotation.y = Math.PI/4; leaves2.castShadow = true; leaves2.receiveShadow = true; tree.add(leaves2);
+
+                const scale = 0.8 + Math.random() * 0.6;
+                tree.scale.setScalar(scale);
+                tree.position.set(x, 2, z);
+                treeGroup.add(tree);
+
+                // Physics
+                const treeShape = new CANNON.Box(new CANNON.Vec3(1 * scale, 5 * scale, 1 * scale));
+                const treeBody = new CANNON.Body({ mass: 0, shape: treeShape });
+                treeBody.position.set(x, 2 + (5 * scale), z);
+                world.addBody(treeBody);
+            }
+            scene.add(treeGroup);
+        }
+
+        function buildFarm() {
+            // Farm is in NW quadrant
+            const farmGroup = new THREE.Group();
+            
+            // Scaled up, larger soil patches
+            const soilGeo = new THREE.BoxGeometry(16, 0.6, 4);
+            const soilMat = new THREE.MeshStandardMaterial({ color: 0x3e2723, roughness: 1.0 });
+            
+            // Scaled up crops
+            const cropGeo1 = new THREE.ConeGeometry(0.6, 1.8, 5);
+            const cropGeo2 = new THREE.DodecahedronGeometry(0.8, 0); 
+            const cropMat1 = new THREE.MeshStandardMaterial({ color: 0x84cc16, flatShading: true });
+            const cropMat2 = new THREE.MeshStandardMaterial({ color: 0xef4444, flatShading: true });
+
+            for(let row = 0; row < 3; row++) {
+                const soil = new THREE.Mesh(soilGeo, soilMat);
+                soil.position.set(-25, 2.1, 15 + (row * 6));
+                soil.receiveShadow = true;
+                farmGroup.add(soil);
+
+                for(let col = 0; col < 8; col++) {
+                    const isRound = Math.random() > 0.5;
+                    const crop = new THREE.Mesh(isRound ? cropGeo2 : cropGeo1, isRound ? cropMat2 : cropMat1);
+                    crop.position.set(-32 + (col * 2.0), 2.8, 15 + (row * 6) + (Math.random()-0.5)*0.5);
+                    crop.rotation.x = (Math.random() - 0.5) * 0.2;
+                    crop.rotation.z = (Math.random() - 0.5) * 0.2;
+                    crop.castShadow = true;
+                    farmGroup.add(crop);
+
+                    // Create an invisible, larger hitbox around each crop to make clicking easy
+                    const hitGeo = new THREE.BoxGeometry(2, 4, 2);
+                    const hitMat = new THREE.MeshBasicMaterial({ transparent: true, opacity: 0 });
+                    const hitbox = new THREE.Mesh(hitGeo, hitMat);
+                    hitbox.position.copy(crop.position);
+                    farmGroup.add(hitbox);
+                    
+                    // Register the crop hitbox to open croppy.html
+                    interactables.push({ mesh: hitbox, prompt: "HARVEST CROP", url: 'croppy.html' });
+                }
+            }
+
+            // --- Small Isometric Orchard Trees ---
+            const oTrunkGeo = new THREE.CylinderGeometry(0.4, 0.6, 3, 6);
+            const oTrunkMat = new THREE.MeshStandardMaterial({ color: 0x4a3219, flatShading: true });
+            const oLeavesGeo = new THREE.DodecahedronGeometry(2.5, 0);
+            const oLeavesMat = new THREE.MeshStandardMaterial({ color: 0x65a30d, flatShading: true }); // Lighter green for fruit trees
+
+            for(let r=0; r<2; r++) {
+                for(let c=0; c<3; c++) { // Reduced to 3 to strictly avoid path intersection
+                    const tree = new THREE.Group();
+                    
+                    const trunk = new THREE.Mesh(oTrunkGeo, oTrunkMat);
+                    trunk.position.y = 1.5; trunk.castShadow = true; trunk.receiveShadow = true; tree.add(trunk);
+                    
+                    const leaves1 = new THREE.Mesh(oLeavesGeo, oLeavesMat);
+                    leaves1.position.y = 3.5; leaves1.castShadow = true; leaves1.receiveShadow = true; tree.add(leaves1);
+                    
+                    const leaves2 = new THREE.Mesh(oLeavesGeo, oLeavesMat);
+                    leaves2.position.y = 5; leaves2.scale.setScalar(0.8); leaves2.rotation.y = Math.PI/4; leaves2.castShadow = true; tree.add(leaves2);
+
+                    tree.scale.setScalar(0.6 + Math.random() * 0.2); // Mini scale
+                    tree.position.set(-25 + (c * 5), 2, 6 + (r * 6)); // Shifted left to clear the path completely
+                    farmGroup.add(tree);
+                }
+            }
+
+            // --- Rock Water Well ---
+            const wellGroup = new THREE.Group();
+            const rockGeo = new THREE.DodecahedronGeometry(0.8, 0);
+            const rockMat = new THREE.MeshStandardMaterial({ color: 0x6b7280, flatShading: true });
+            
+            // Circular rock wall
+            for(let i=0; i<14; i++) {
+                const angle = (i/14) * Math.PI * 2;
+                for(let layer=0; layer<3; layer++) {
+                    const rock = new THREE.Mesh(rockGeo, rockMat);
+                    rock.position.set(Math.cos(angle)*2.5, 2.5 + layer*1.2, Math.sin(angle)*2.5);
+                    rock.rotation.set(Math.random(), Math.random(), Math.random());
+                    rock.castShadow = true;
+                    wellGroup.add(rock);
+                }
+            }
+            
+            // Well Water
+            const water = new THREE.Mesh(new THREE.CylinderGeometry(2.2, 2.2, 0.5, 16), new THREE.MeshBasicMaterial({color: 0x3b82f6, transparent: true, opacity: 0.8}));
+            water.position.y = 4;
+            wellGroup.add(water);
+            
+            // Well Roof
+            const postGeo = new THREE.CylinderGeometry(0.2, 0.2, 6);
+            const woodMat = new THREE.MeshStandardMaterial({ color: 0x5c3a21 });
+            const post1 = new THREE.Mesh(postGeo, woodMat); post1.position.set(2.5, 5, 0); wellGroup.add(post1);
+            const post2 = new THREE.Mesh(postGeo, woodMat); post2.position.set(-2.5, 5, 0); wellGroup.add(post2);
+            
+            const roofGeo = new THREE.ConeGeometry(4, 2.5, 4);
+            const roofMat = new THREE.MeshStandardMaterial({ color: 0x7c2d12, flatShading: true });
+            const roof = new THREE.Mesh(roofGeo, roofMat);
+            roof.position.y = 8;
+            roof.rotation.y = Math.PI/4;
+            roof.castShadow = true;
+            wellGroup.add(roof);
+
+            wellGroup.position.set(-10, 0, 32);
+            farmGroup.add(wellGroup);
+
+            // Well Physics Box
+            const wellShape = new CANNON.Box(new CANNON.Vec3(3, 5, 3));
+            const wellBody = new CANNON.Body({ mass: 0, shape: wellShape });
+            wellBody.position.set(-10, 2.5, 32);
+            world.addBody(wellBody);
+
+            scene.add(farmGroup);
+        }
+
+        function buildWindmill() {
+            const millGroup = new THREE.Group();
+            
+            const brickMat = new THREE.MeshStandardMaterial({ color: 0x8b3a3a, roughness: 0.9, flatShading: true });
+            const roofMat = new THREE.MeshStandardMaterial({ color: 0x1f2937, flatShading: true });
+            
+            // Stone Base
+            const base = new THREE.Mesh(new THREE.CylinderGeometry(6, 6, 1, 16), new THREE.MeshStandardMaterial({color: 0x4b5563}));
+            base.position.y = 0.5;
+            base.receiveShadow = true; base.castShadow = true;
+            millGroup.add(base);
+
+            // Tower
+            const tower = new THREE.Mesh(new THREE.CylinderGeometry(2.5, 4, 18, 8), brickMat);
+            tower.position.y = 9; tower.castShadow = true; millGroup.add(tower);
+            
+            // Roof
+            const mRoof = new THREE.Mesh(new THREE.ConeGeometry(3.5, 5, 8), roofMat);
+            mRoof.position.y = 20.5; mRoof.castShadow = true; millGroup.add(mRoof);
+            
+            // Blades
+            const blades = new THREE.Group();
+            const hub = new THREE.Mesh(new THREE.CylinderGeometry(0.8, 0.8, 2), new THREE.MeshStandardMaterial({color: 0x000000}));
+            hub.rotation.x = Math.PI/2; blades.add(hub);
+            
+            const woodMat = new THREE.MeshStandardMaterial({color: 0xd97706});
+            for(let i=0; i<4; i++) {
+                const pivot = new THREE.Group();
+                pivot.rotation.z = (Math.PI/2) * i;
+                
+                const arm = new THREE.Mesh(new THREE.BoxGeometry(0.4, 12, 0.4), woodMat);
+                arm.position.y = 6; blades.add(arm); pivot.add(arm);
+                
+                const sail = new THREE.Mesh(new THREE.BoxGeometry(2.5, 10, 0.1), new THREE.MeshStandardMaterial({color: 0xfef3c7}));
+                sail.position.set(1.4, 7, 0); pivot.add(sail);
+                blades.add(pivot);
+            }
+            // Offset blades to front
+            blades.position.set(0, 16, 3.5);
+            millGroup.add(blades);
+            
+            window.animatables.push({ mesh: blades, speed: 0.015, axis: 'z' }); // Animate in render loop
+
+            millGroup.position.set(-28, 2, 28);
+            millGroup.lookAt(0, 2, 0); // Mathematically forces the windmill to face the center spawn point
+            scene.add(millGroup);
+            
+            // Physics Box
+            const millShape = new CANNON.Box(new CANNON.Vec3(4, 10, 4));
+            const millBody = new CANNON.Body({ mass: 0, shape: millShape });
+            millBody.position.set(-28, 12, 28);
+            world.addBody(millBody);
+        }
+
+        function buildGarden() {
+            // Garden is in NE quadrant (x > 10, z > 10)
+            const gardenGroup = new THREE.Group();
+            
+            const flowerGeo = new THREE.DodecahedronGeometry(0.4, 0);
+            const stemGeo = new THREE.CylinderGeometry(0.05, 0.05, 1);
+            const stemMat = new THREE.MeshStandardMaterial({ color: 0x15803d });
+            const colors = [0xec4899, 0xa855f7, 0xef4444, 0xeab308];
+
+            for(let i=0; i<60; i++) {
+                const flower = new THREE.Group();
+                const stem = new THREE.Mesh(stemGeo, stemMat);
+                stem.position.y = 0.5; stem.castShadow = true;
+                
+                const petalMat = new THREE.MeshStandardMaterial({ color: colors[Math.floor(Math.random()*colors.length)], flatShading: true });
+                const petal = new THREE.Mesh(flowerGeo, petalMat);
+                petal.position.y = 1; petal.castShadow = true;
+
+                flower.add(stem); flower.add(petal);
+                
+                flower.position.set(15 + Math.random()*25, 2, 15 + Math.random()*25);
+                flower.rotation.y = Math.random() * Math.PI;
+                flower.rotation.z = (Math.random() - 0.5) * 0.5;
+                gardenGroup.add(flower);
+            }
+
+            scene.add(gardenGroup);
+        }
+
+        function buildRocks() {
+            const rockGroup = new THREE.Group();
+            const rockGeo = new THREE.DodecahedronGeometry(2.8, 0); // Increased size to prominently pop out of the grass
+            const rockMat = new THREE.MeshStandardMaterial({ color: 0x6b7280, roughness: 0.9, flatShading: true });
+            const darkRockMat = new THREE.MeshStandardMaterial({ color: 0x4b5563, roughness: 0.9, flatShading: true });
+            
+            const numRocks = 350; 
+            for(let i=0; i<numRocks; i++) {
+                let r = 5 + Math.random() * (ISLAND_RADIUS - 6); 
+                let t = Math.random() * Math.PI * 2;
+                let x = Math.cos(t)*r;
+                let z = Math.sin(t)*r;
+                
+                // Strict Collision Exclusions for Rocks
+                if (Math.abs(x) < 6 || Math.abs(z) < 6) continue; // Paths
+                if (Math.hypot(x, z) < 18) continue; // Center spawn
+                if (Math.hypot(x - (-8), z - (-8)) < 10) continue; // Laptop Area
+                if (x < 0 && z > 0 && Math.hypot(x, z) < 45) continue; // NW Farm & House & Windmill
+                if (x > 0 && z > 0 && Math.hypot(x, z) < 35) continue; // NE Garden
+                
+                // Cave exclusions
+                if (Math.hypot(x - 0, z - (-45)) < 15) continue;
+                if (Math.hypot(x - 45, z - 0) < 15) continue;
+                if (Math.hypot(x - 0, z - 45) < 15) continue;
+                if (Math.hypot(x - (-45), z - 0) < 15) continue;
+
+                const mat = Math.random() > 0.5 ? rockMat : darkRockMat;
+                const rock = new THREE.Mesh(rockGeo, mat);
+                rock.position.set(x, 2.2, z);
+                
+                // Randomize chunky scaling - make some of them huge!
+                const scaleBase = 0.5 + Math.random() * 1.8; 
+                rock.scale.set(scaleBase, scaleBase * 0.6 + Math.random()*0.4, scaleBase + Math.random()*0.5);
+                
+                rock.rotation.set(Math.random()*Math.PI, Math.random()*Math.PI, Math.random()*Math.PI);
+                rock.castShadow = true; rock.receiveShadow = true;
+                rockGroup.add(rock);
+            }
+            scene.add(rockGroup);
+        }
+
+        function buildLogs() {
+            const logGroup = new THREE.Group();
+            const logGeo = new THREE.CylinderGeometry(0.5, 0.5, 3.5, 6);
+            const logMat = new THREE.MeshStandardMaterial({ color: 0x4a3219, roughness: 0.9, flatShading: true });
+            const ringMat = new THREE.MeshStandardMaterial({ color: 0xd97706, roughness: 0.9, flatShading: true });
+
+            const numLogs = 40;
+            for(let i=0; i<numLogs; i++) {
+                let r = 10 + Math.random() * (ISLAND_RADIUS - 12); 
+                let t = Math.random() * Math.PI * 2;
+                let x = Math.cos(t)*r;
+                let z = Math.sin(t)*r;
+                
+                // Strict Collision Exclusions for Logs
+                if (Math.abs(x) < 6 || Math.abs(z) < 6) continue; // Paths
+                if (Math.hypot(x, z) < 18) continue; // Center spawn
+                if (Math.hypot(x - (-8), z - (-8)) < 10) continue; // Laptop Area
+                if (x < 0 && z > 0 && Math.hypot(x, z) < 45) continue; // NW Farm & House & Windmill
+                if (x > 0 && z > 0 && Math.hypot(x, z) < 35) continue; // NE Garden
+                
+                // Cave exclusions
+                if (Math.hypot(x - 0, z - (-45)) < 15) continue;
+                if (Math.hypot(x - 45, z - 0) < 15) continue;
+                if (Math.hypot(x - 0, z - 45) < 15) continue;
+                if (Math.hypot(x - (-45), z - 0) < 15) continue;
+
+                const logMesh = new THREE.Group();
+
+                const outerBark = new THREE.Mesh(logGeo, logMat);
+                outerBark.castShadow = true; outerBark.receiveShadow = true;
+                
+                // Inner tree rings
+                const innerWood = new THREE.Mesh(new THREE.CylinderGeometry(0.4, 0.4, 3.55, 6), ringMat);
+                
+                logMesh.add(outerBark);
+                logMesh.add(innerWood);
+
+                // Lay the log flat on the ground and rotate it randomly
+                logMesh.rotation.x = Math.PI / 2;
+                logMesh.rotation.z = Math.random() * Math.PI;
+                logMesh.position.set(x, 2.4, z);
+                
+                logGroup.add(logMesh);
+
+                // Safe Box Physics (Width/Depth 2x2 covers the rotation cleanly)
+                const logShape = new CANNON.Box(new CANNON.Vec3(1.5, 0.6, 1.5));
+                const logBody = new CANNON.Body({ mass: 0, shape: logShape });
+                logBody.position.set(x, 2.4, z);
+                world.addBody(logBody);
+            }
+            scene.add(logGroup);
+        }
+
+        function buildLaptopAndPapers() {
+            const group = new THREE.Group();
+
+            // Flat Stone Slab Base to elevate the setup
+            const slabGeo = new THREE.CylinderGeometry(3.5, 3.5, 0.4, 7);
+            const slabMat = new THREE.MeshStandardMaterial({ color: 0x9ca3af, flatShading: true });
+            const slab = new THREE.Mesh(slabGeo, slabMat);
+            slab.position.set(0, 0.2, 0);
+            slab.castShadow = true; slab.receiveShadow = true;
+            group.add(slab);
+
+            // Laptop Base
+            const baseGeo = new THREE.BoxGeometry(1.5, 0.1, 1);
+            const darkMat = new THREE.MeshStandardMaterial({ color: 0x1f2937 });
+            const base = new THREE.Mesh(baseGeo, darkMat);
+            base.position.set(0, 0.45, 0); // Elevated onto slab
+            base.castShadow = true;
+            group.add(base);
+
+            // Laptop Screen
+            const screenGroup = new THREE.Group();
+            const lidGeo = new THREE.BoxGeometry(1.5, 1, 0.1);
+            const lid = new THREE.Mesh(lidGeo, darkMat);
+            lid.position.set(0, 0.5, -0.05);
+            screenGroup.add(lid);
+
+            const displayGeo = new THREE.PlaneGeometry(1.3, 0.8);
+            const displayMat = new THREE.MeshBasicMaterial({ color: 0x22c55e });
+            const display = new THREE.Mesh(displayGeo, displayMat);
+            display.position.set(0, 0.5, 0.01);
+            screenGroup.add(display);
+
+            screenGroup.position.set(0, 0.5, -0.5); // Elevated onto slab
+            screenGroup.rotation.x = -Math.PI / 6; 
+            group.add(screenGroup);
+
+            // Scattered Papers on the slab
+            const paperGeo = new THREE.PlaneGeometry(0.8, 1.1);
+            const paperMat = new THREE.MeshStandardMaterial({ color: 0xffffff });
+            for(let i=0; i<5; i++) {
+                const paper = new THREE.Mesh(paperGeo, paperMat);
+                paper.position.set((Math.random()-0.5)*4, 0.41, (Math.random()-0.5)*4);
+                paper.rotation.x = -Math.PI/2;
+                paper.rotation.z = Math.random() * Math.PI;
+                group.add(paper);
+            }
+
+            group.position.set(-8, 2, -8);
+            scene.add(group);
+
+            // Hitbox
+            const hitGeo = new THREE.BoxGeometry(6, 6, 6);
+            const hitMat = new THREE.MeshBasicMaterial({ visible: false });
+            const hitbox = new THREE.Mesh(hitGeo, hitMat);
+            hitbox.position.copy(group.position);
+            hitbox.position.y += 2;
+            scene.add(hitbox);
+            interactables.push({ mesh: hitbox, prompt: "ACCESS CONTROL PANEL", url: "SansKoder.html", isIframe: true });
+        }
+
+        function buildClouds() {
+            const cloudGeo = new THREE.DodecahedronGeometry(4, 0);
+            const cloudMat = new THREE.MeshStandardMaterial({ color: 0xffffff, flatShading: true });
+
+            for(let i = 0; i < 15; i++) {
+                const cloud = new THREE.Group();
+                const puffs = 3 + Math.floor(Math.random() * 4);
+                
+                for(let p=0; p<puffs; p++) {
+                    const puff = new THREE.Mesh(cloudGeo, cloudMat);
+                    puff.position.set((Math.random()-0.5)*8, (Math.random()-0.5)*4, (Math.random()-0.5)*8);
+                    puff.scale.setScalar(0.5 + Math.random() * 1.5);
+                    puff.rotation.set(Math.random(), Math.random(), Math.random());
+                    puff.castShadow = true;
+                    cloud.add(puff);
+                }
+                
+                cloud.position.set((Math.random() - 0.5) * 150, 40 + Math.random() * 20, (Math.random() - 0.5) * 150);
+                scene.add(cloud);
+                clouds.push(cloud);
+            }
+        }
+
+        function setupControls() {
+            // Keyboard
+            document.addEventListener('keydown', (e) => {
+                switch(e.code) {
+                    case 'KeyW': case 'ArrowUp': moveForward = true; break;
+                    case 'KeyA': case 'ArrowLeft': moveLeft = true; break;
+                    case 'KeyS': case 'ArrowDown': moveBackward = true; break;
+                    case 'KeyD': case 'ArrowRight': moveRight = true; break;
+                    case 'Space': if(playerBody.position.y < 7) playerBody.velocity.y = 12; break; // Simple jump check
+                }
+            });
+            document.addEventListener('keyup', (e) => {
+                switch(e.code) {
+                    case 'KeyW': case 'ArrowUp': moveForward = false; break;
+                    case 'KeyA': case 'ArrowLeft': moveLeft = false; break;
+                    case 'KeyS': case 'ArrowDown': moveBackward = false; break;
+                    case 'KeyD': case 'ArrowRight': moveRight = false; break;
+                }
+            });
+
+            // Click & Drag to Look (Bulletproof Math)
+            let isDragging = false;
+            document.addEventListener('mousedown', (e) => {
+                if (e.target.id === 'interaction-prompt') return;
+                isDragging = true;
+            });
+            document.addEventListener('mouseup', () => isDragging = false);
+            
+            document.addEventListener('mousemove', (e) => {
+                if (!isDragging) return;
+                // Safe movement deltas
+                const movX = Number(e.movementX) || 0;
+                const movY = Number(e.movementY) || 0;
+
+                camYaw -= movX * 0.003;
+                camPitch -= movY * 0.003;
+                
+                // Clamp pitch so you don't break your neck
+                camPitch = Math.max(-Math.PI/2 + 0.1, Math.min(Math.PI/2 - 0.1, camPitch));
+            });
+
+            // Mobile Joystick
+            const joystickZone = document.getElementById('joystick-zone');
+            const joystickKnob = document.getElementById('joystick-knob');
+            let moveTouchId = null;
+
+            joystickZone.addEventListener('touchstart', (e) => {
+                e.preventDefault();
+                moveTouchId = e.changedTouches[0].identifier;
+            }, {passive: false});
+
+            document.addEventListener('touchmove', (e) => {
+                for(let i=0; i<e.changedTouches.length; i++) {
+                    const touch = e.changedTouches[i];
+                    if(touch.identifier === moveTouchId) {
+                        const rect = joystickZone.getBoundingClientRect();
+                        const cx = rect.left + rect.width/2;
+                        const cy = rect.top + rect.height/2;
+                        let dx = touch.clientX - cx; let dy = touch.clientY - cy;
+                        const dist = Math.min(Math.sqrt(dx*dx + dy*dy), 40);
+                        const angle = Math.atan2(dy, dx);
+                        const kx = Math.cos(angle)*dist; const ky = Math.sin(angle)*dist;
+                        joystickKnob.style.transform = `translate(calc(-50% + ${kx}px), calc(-50% + ${ky}px))`;
+                        joystickVec = { x: kx/40, y: ky/40 };
+                    } else if (!document.getElementById('interaction-prompt').contains(e.target)) {
+                        // Look around on mobile right side
+                        camYaw -= (touch.clientX - (touch.lastX || touch.clientX)) * 0.005;
+                        camPitch -= (touch.clientY - (touch.lastY || touch.clientY)) * 0.005;
+                        camPitch = Math.max(-Math.PI/2 + 0.1, Math.min(Math.PI/2 - 0.1, camPitch));
+                        touch.lastX = touch.clientX; touch.lastY = touch.clientY;
+                    }
+                }
+            }, {passive: false});
+
+            const endTouch = (e) => {
+                for(let i=0; i<e.changedTouches.length; i++) {
+                    if(e.changedTouches[i].identifier === moveTouchId) {
+                        moveTouchId = null; joystickVec = {x:0, y:0};
+                        joystickKnob.style.transform = 'translate(-50%, -50%)';
+                    }
+                }
+            };
+            document.addEventListener('touchend', endTouch);
+            document.addEventListener('touchcancel', endTouch);
+
+            // Interaction Click Logic
+            document.getElementById('interaction-prompt').addEventListener('click', () => {
+                const prompt = document.getElementById('interaction-prompt');
+                if (prompt.dataset.url) {
+                    if (prompt.dataset.isIframe === 'true') {
+                        document.getElementById('iframe-overlay').style.display = 'block';
+                        document.getElementById('inner-frame').src = prompt.dataset.url;
+                    } else {
+                        window.location.href = prompt.dataset.url;
+                    }
+                }
+            });
+        }
+
+        function onWindowResize() {
+            camera.aspect = window.innerWidth / window.innerHeight;
+            camera.updateProjectionMatrix();
+            renderer.setSize(window.innerWidth, window.innerHeight);
+        }
+
+        function animate() {
+            requestAnimationFrame(animate);
+            
+            try {
+                // Fixed Time-Step for Physics to prevent NaN crash on load
+                world.step(1/60);
+
+                // Anti-NaN Rescue System
+                if (isNaN(playerBody.position.x) || playerBody.position.y < -50) {
+                    playerBody.position.set(0, 5, 0);
+                    playerBody.velocity.set(0, 0, 0);
+                }
+
+                // Movement Math
+                const speed = 15.0;
+                let inputX = Number(moveRight) - Number(moveLeft) + joystickVec.x;
+                let inputZ = Number(moveBackward) - Number(moveForward) + joystickVec.y;
+                
+                const inputVec = new THREE.Vector3(inputX, 0, inputZ);
+                if (inputVec.lengthSq() > 0) inputVec.normalize();
+                
+                // Align movement to where camera is facing (Yaw)
+                inputVec.applyAxisAngle(new THREE.Vector3(0, 1, 0), camYaw);
+                
+                playerBody.velocity.x = inputVec.x * speed;
+                playerBody.velocity.z = inputVec.z * speed;
+
+                // Sync Camera
+                camera.position.copy(playerBody.position);
+                camera.position.y += 2; // Eye level
+                camera.rotation.set(camPitch, camYaw, 0, 'YXZ');
+
+                // Animate mechanical parts (like the windmill)
+                if (window.animatables) {
+                    window.animatables.forEach(a => a.mesh.rotation[a.axis] -= a.speed);
+                }
+
+                // Cloud Animation
+                clouds.forEach(cloud => {
+                    cloud.rotation.y += 0.002;
+                    cloud.position.x -= 0.05;
+                    if(cloud.position.x < -150) cloud.position.x = 150;
+                });
+
+                // Raycast Interactions
+                const prompt = document.getElementById('interaction-prompt');
+                const crosshair = document.getElementById('crosshair');
+                
+                raycaster.setFromCamera(new THREE.Vector2(0,0), camera);
+                const intersects = raycaster.intersectObjects(interactables.map(i => i.mesh));
+                
+                if (intersects.length > 0 && intersects[0].distance < 12) {
+                    const hitData = interactables.find(i => i.mesh === intersects[0].object);
+                    if (hitData) {
+                        prompt.innerText = hitData.prompt;
+                        prompt.dataset.url = hitData.url;
+                        prompt.dataset.isIframe = hitData.isIframe ? 'true' : 'false';
+                        prompt.style.display = 'block';
+                        crosshair.classList.add('active');
+                    }
+                } else {
+                    prompt.style.display = 'none';
+                    crosshair.classList.remove('active');
+                }
+
+                renderer.render(scene, camera);
+            } catch (e) {
+                console.error("Safeguard caught render error: ", e);
+            }
+        }
+    </script>
+</body>
+</html>

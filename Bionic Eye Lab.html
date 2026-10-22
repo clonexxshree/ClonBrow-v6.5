@@ -1,0 +1,477 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Bionic Eye Resolution & Neural Prosthetics Lab</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;700&family=Inter:wght@300;400;600;700&display=swap');
+
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: #020617; /* Slate 950 */
+            color: #f8fafc;
+            overflow-x: hidden;
+            user-select: none;
+        }
+
+        .font-mono { font-family: 'JetBrains Mono', monospace; }
+
+        .glass-card {
+            background: rgba(15, 23, 42, 0.85);
+            backdrop-filter: blur(20px);
+            border: 1px solid rgba(255, 255, 255, 0.08);
+            box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.5);
+        }
+
+        .digital-readout {
+            background: #061021;
+            color: #22d3ee; /* Cyan base */
+            text-shadow: 0 0 12px rgba(34, 211, 238, 0.5);
+            border: 1px solid #1e293b;
+            transition: all 0.3s ease;
+        }
+
+        .readout-danger {
+            color: #f43f5e !important; /* Rose Red */
+            text-shadow: 0 0 15px rgba(244, 63, 94, 0.8) !important;
+            border-color: rgba(244, 63, 94, 0.5) !important;
+        }
+
+        .readout-warning {
+            color: #fbbf24 !important; /* Amber */
+            text-shadow: 0 0 15px rgba(251, 191, 36, 0.8) !important;
+            border-color: rgba(251, 191, 36, 0.5) !important;
+        }
+
+        /* Grid Background */
+        .lab-grid {
+            background-size: 50px 50px;
+            background-image: 
+                linear-gradient(to right, rgba(34, 211, 238, 0.03) 1px, transparent 1px),
+                linear-gradient(to bottom, rgba(34, 211, 238, 0.03) 1px, transparent 1px);
+        }
+
+        .scanline {
+            width: 100%;
+            height: 2px;
+            background: rgba(34, 211, 238, 0.1);
+            position: absolute;
+            z-index: 10;
+            animation: scan 6s linear infinite;
+        }
+        @keyframes scan { 0% { top: 0%; } 100% { top: 100%; } }
+
+        /* Custom Slider */
+        input[type=range] {
+            -webkit-appearance: none;
+            background: transparent;
+            cursor: pointer;
+        }
+        input[type=range]::-webkit-slider-runnable-track {
+            background: linear-gradient(to right, #1e293b, #0ea5e9, #22d3ee);
+            height: 8px;
+            border-radius: 4px;
+            border: 1px solid rgba(255,255,255,0.1);
+        }
+        input[type=range]::-webkit-slider-thumb {
+            -webkit-appearance: none;
+            height: 24px;
+            width: 24px;
+            border-radius: 50%;
+            background: #0f172a;
+            border: 3px solid #22d3ee;
+            margin-top: -8px;
+            box-shadow: 0 0 10px rgba(34, 211, 238, 0.5);
+            transition: transform 0.1s;
+        }
+        input[type=range]::-webkit-slider-thumb:active { transform: scale(1.1); }
+
+        .viewport-container {
+            position: relative;
+            width: 100%;
+            max-width: 500px;
+            aspect-ratio: 1 / 1;
+            background: #000;
+            border: 2px solid #334155;
+            border-radius: 50%;
+            overflow: hidden;
+            box-shadow: 0 0 30px rgba(34, 211, 238, 0.2);
+        }
+
+        #source-canvas {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            opacity: 0.15; /* Faint background overlay */
+            filter: grayscale(100%);
+            z-index: 1;
+        }
+
+        #bionic-canvas {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            z-index: 2;
+            mix-blend-mode: screen;
+        }
+        
+        .reticle {
+            position: absolute;
+            inset: 0;
+            border: 2px solid rgba(34, 211, 238, 0.3);
+            border-radius: 50%;
+            z-index: 3;
+            pointer-events: none;
+        }
+        .reticle::before, .reticle::after {
+            content: '';
+            position: absolute;
+            background: rgba(34, 211, 238, 0.3);
+        }
+        .reticle::before { top: 50%; left: 0; right: 0; height: 1px; }
+        .reticle::after { left: 50%; top: 0; bottom: 0; width: 1px; }
+
+    </style>
+</head>
+<body class="min-h-screen p-4 md:p-8 flex items-center justify-center">
+
+    <div class="max-w-7xl w-full grid grid-cols-1 lg:grid-cols-12 gap-8 items-stretch">
+        
+        <!-- Simulation Viewport -->
+        <div class="lg:col-span-8 flex flex-col gap-6">
+            <div id="sim-viewport" class="glass-card rounded-3xl p-0 relative flex-grow min-h-[550px] flex flex-col overflow-hidden border border-slate-800 lab-grid">
+                <div class="scanline"></div>
+                
+                <!-- HUD Header -->
+                <div class="absolute top-6 left-8 flex items-center gap-3 z-30">
+                    <div id="status-dot" class="w-2.5 h-2.5 rounded-full bg-cyan-500 shadow-[0_0_10px_#22d3ee] animate-pulse"></div>
+                    <span class="text-[10px] font-bold text-slate-400 uppercase tracking-widest font-mono">Neural Interface: <span id="hud-mode" class="text-cyan-400">ACTIVE STIMULATION</span></span>
+                </div>
+
+                <!-- Main Simulation Area -->
+                <div class="relative w-full flex-grow flex items-center justify-center py-10">
+                    
+                    <div class="viewport-container">
+                        <!-- Hidden Source Environment -->
+                        <canvas id="source-canvas" width="400" height="400"></canvas>
+                        <!-- Phosphene Mapping Array -->
+                        <canvas id="bionic-canvas" width="400" height="400"></canvas>
+                        <!-- Targeting Reticle -->
+                        <div class="reticle"></div>
+                    </div>
+
+                </div>
+
+                <!-- Labels -->
+                <div class="absolute bottom-6 left-8 flex flex-col gap-1 z-30">
+                    <span class="text-[9px] font-mono text-slate-500 uppercase">Input: Optical Camera Feed</span>
+                    <span class="text-[9px] font-mono text-slate-500 uppercase">Output: Visual Cortex Electrostimulation</span>
+                </div>
+            </div>
+
+            <!-- Controls -->
+            <div class="glass-card p-6 rounded-3xl flex flex-col gap-4">
+                <div class="flex justify-between items-end mb-2">
+                    <div>
+                        <div class="text-xs font-bold text-slate-200 uppercase tracking-widest flex items-center gap-2">
+                            <svg class="w-4 h-4 text-cyan-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 3v2m6-2v2M9 19v2m6-2v2M5 9H3m2 6H3m18-6h-2m2 6h-2M7 19h10a2 2 0 002-2V7a2 2 0 00-2-2H7a2 2 0 00-2 2v10a2 2 0 002 2zM9 9h6v6H9V9z"></path></svg>
+                            Microelectrode Array Density
+                        </div>
+                        <div class="text-[10px] text-slate-400 font-mono mt-1">Adjust the physical resolution of the neural implant.</div>
+                    </div>
+                    <div class="text-right">
+                        <div id="grid-val" class="text-3xl font-bold font-mono text-cyan-400 leading-none">16x16</div>
+                    </div>
+                </div>
+                
+                <!-- Logarithmic-feeling slider mapping: 4x4 up to 80x80 -->
+                <input type="range" id="resolution-slider" min="4" max="80" value="16" step="2" class="w-full mt-2">
+                <div class="flex justify-between text-[9px] font-mono font-bold uppercase mt-1 text-slate-500">
+                    <span class="text-rose-500">16 (Basic Detection)</span>
+                    <span class="text-amber-400">1,024 (Navigation)</span>
+                    <span class="text-cyan-400">6,400 (Facial Recog)</span>
+                </div>
+            </div>
+        </div>
+
+        <!-- Sidebar: Analytics & Data -->
+        <div class="lg:col-span-4 flex flex-col gap-6">
+            
+            <!-- Digital Readout -->
+            <div id="telemetry-panel" class="digital-readout rounded-3xl p-6 space-y-6 flex-grow">
+                <div class="flex justify-between items-center border-b border-current pb-3 opacity-60">
+                    <span class="text-[10px] font-bold tracking-tighter uppercase">Visual Cortex Telemetry</span>
+                    <span class="text-xs font-mono animate-pulse">LIVE DATA</span>
+                </div>
+
+                <div class="space-y-6">
+                    <!-- Electrode Count -->
+                    <div class="space-y-1">
+                        <label class="text-[10px] uppercase font-bold opacity-60">Active Electrodes (Phosphenes)</label>
+                        <div class="flex items-baseline gap-2">
+                            <div id="data-electrodes" class="text-6xl font-bold font-mono">256</div>
+                            <span class="text-xl font-mono font-bold opacity-60">Ch</span>
+                        </div>
+                    </div>
+
+                    <div class="grid grid-cols-2 gap-4 pt-4 border-t border-current opacity-80">
+                        <div class="space-y-1">
+                            <label class="text-[9px] uppercase font-bold text-current">Estimated Acuity</label>
+                            <div id="data-acuity" class="text-xl font-bold font-mono">20/1200</div>
+                        </div>
+                        <div class="space-y-1 text-right">
+                            <label class="text-[9px] uppercase font-bold text-current">Recognition</label>
+                            <div id="data-recognition" class="text-xl font-bold font-mono text-rose-400">POOR</div>
+                        </div>
+                    </div>
+
+                    <!-- Data Bandwidth Bar -->
+                    <div class="p-4 bg-black/40 rounded-xl border border-current space-y-2">
+                        <div class="flex justify-between items-center">
+                            <label class="text-[9px] uppercase font-bold text-current">Neural Bandwidth Utilized</label>
+                            <span id="data-bw-val" class="text-[10px] font-mono">5%</span>
+                        </div>
+                        <div class="h-1.5 w-full bg-slate-900 rounded-full overflow-hidden">
+                            <div id="bw-bar" class="h-full bg-cyan-400 transition-all duration-300" style="width: 5%"></div>
+                        </div>
+                        <p class="text-[8px] opacity-60 leading-tight italic mt-2">
+                            Higher electrode density requires exponentially more computational power and surgical precision.
+                        </p>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Pathophysiology Card -->
+            <div class="glass-card p-6 rounded-3xl space-y-4 flex-grow flex flex-col">
+                <h3 class="text-xs font-bold text-slate-400 uppercase tracking-widest flex items-center gap-2">
+                    <svg class="w-4 h-4 text-cyan-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"></path><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"></path></svg>
+                    Mechanics of Bionic Sight
+                </h3>
+                
+                <div class="space-y-3 text-[11px] text-slate-300 leading-relaxed overflow-y-auto">
+                    <p>Visual prostheses bypass damaged photoreceptors (like in Macular Degeneration) and directly stimulate surviving retinal ganglion cells or the visual cortex.</p>
+                    
+                    <div class="p-3 bg-slate-900/50 rounded-xl border border-slate-800">
+                        <strong class="text-cyan-400 block mb-1">Phosphene Generation</strong>
+                        Patients do not see normal images. They see "Phosphenes"—flashes of light created by each individual electrode firing.
+                    </div>
+
+                    <div class="p-3 bg-slate-900/50 rounded-xl border border-slate-800">
+                        <strong class="text-cyan-400 block mb-1">The Resolution Bottleneck</strong>
+                        Normal human vision uses ~100 million photoreceptors. Early bionic eyes (like the Argus II) had only <strong>60 electrodes</strong>. Reading large text requires at least <strong>1,000 electrodes</strong>.
+                    </div>
+                </div>
+
+                <div class="flex gap-2 mt-auto">
+                    <button id="btn-toggle-color" class="flex-1 py-3 bg-slate-800 hover:bg-slate-700 text-slate-300 rounded-xl text-[10px] font-bold uppercase tracking-widest border border-slate-700 transition-all shadow-inner">
+                        Toggle Monochrome / Color
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', () => {
+            const sourceCanvas = document.getElementById('source-canvas');
+            const bionicCanvas = document.getElementById('bionic-canvas');
+            const sCtx = sourceCanvas.getContext('2d');
+            const bCtx = bionicCanvas.getContext('2d', { willReadFrequently: true });
+            
+            const resSlider = document.getElementById('resolution-slider');
+            const gridVal = document.getElementById('grid-val');
+            const btnColor = document.getElementById('btn-toggle-color');
+            
+            const dataElectrodes = document.getElementById('data-electrodes');
+            const dataAcuity = document.getElementById('data-acuity');
+            const dataRecognition = document.getElementById('data-recognition');
+            const dataBwVal = document.getElementById('data-bw-val');
+            const bwBar = document.getElementById('bw-bar');
+            const telemetryPanel = document.getElementById('telemetry-panel');
+
+            // --- State ---
+            let gridSize = 16; // N x N array
+            let isMonochrome = true;
+            let time = 0;
+
+            // Target objects for the dynamic scene
+            let ball = { x: 200, y: 200, vx: 3, vy: 2.5, r: 30 };
+
+            // --- Source Scene Rendering ---
+            // We draw a complex but recognizable scene on the hidden canvas
+            function drawSourceScene() {
+                sCtx.clearRect(0, 0, sourceCanvas.width, sourceCanvas.height);
+
+                // Background Sky
+                sCtx.fillStyle = '#0f172a'; // Night sky
+                sCtx.fillRect(0, 0, 400, 400);
+
+                // Moon / Light source
+                sCtx.fillStyle = '#fef08a';
+                sCtx.beginPath();
+                sCtx.arc(320, 80, 40, 0, Math.PI * 2);
+                sCtx.fill();
+
+                // House
+                sCtx.fillStyle = '#94a3b8';
+                sCtx.fillRect(50, 200, 150, 150); // Body
+                sCtx.fillStyle = '#f43f5e';
+                sCtx.beginPath(); // Roof
+                sCtx.moveTo(30, 200);
+                sCtx.lineTo(125, 120);
+                sCtx.lineTo(220, 200);
+                sCtx.fill();
+                sCtx.fillStyle = '#fef08a'; // Window
+                sCtx.fillRect(80, 230, 40, 40);
+                sCtx.fillStyle = '#475569'; // Door
+                sCtx.fillRect(140, 270, 40, 80);
+
+                // Moving Target (Patient tracking test)
+                ball.x += ball.vx;
+                ball.y += ball.vy;
+                if (ball.x < ball.r || ball.x > 400 - ball.r) ball.vx *= -1;
+                // Bounce on ground (y=350)
+                if (ball.y < ball.r || ball.y > 350 - ball.r) ball.vy *= -1;
+
+                sCtx.fillStyle = '#22c55e'; // Bright green ball
+                sCtx.beginPath();
+                sCtx.arc(ball.x, ball.y, ball.r, 0, Math.PI * 2);
+                sCtx.fill();
+                
+                // Add a Snellen "E" to test acuity
+                sCtx.fillStyle = '#ffffff';
+                sCtx.font = 'bold 80px monospace';
+                sCtx.fillText('E', 250, 300);
+            }
+
+            // --- Bionic Conversion Engine ---
+            function renderPhosphenes() {
+                const w = sourceCanvas.width;
+                const h = sourceCanvas.height;
+                const imgData = sCtx.getImageData(0, 0, w, h).data;
+                
+                bCtx.clearRect(0, 0, w, h);
+                bCtx.fillStyle = '#000';
+                bCtx.fillRect(0, 0, w, h); // Black background
+
+                const blockW = w / gridSize;
+                const blockH = h / gridSize;
+                const phospheneRadius = Math.min(blockW, blockH) * 0.45; // Leave gap between electrodes
+
+                for (let y = 0; y < gridSize; y++) {
+                    for (let x = 0; x < gridSize; x++) {
+                        // Calculate circular mask (implants are circular usually, we ignore corners)
+                        const cx = (x + 0.5) * blockW;
+                        const cy = (y + 0.5) * blockH;
+                        
+                        const distToCenter = Math.hypot(cx - w/2, cy - h/2);
+                        if (distToCenter > w/2) continue; // Outside the circular viewport
+
+                        // Sample pixel data from the center of this block
+                        const sampleX = Math.floor(cx);
+                        const sampleY = Math.floor(cy);
+                        const index = (sampleY * w + sampleX) * 4;
+
+                        let r = imgData[index];
+                        let g = imgData[index + 1];
+                        let b = imgData[index + 2];
+
+                        // Calculate brightness (Luma)
+                        const luma = 0.299 * r + 0.587 * g + 0.114 * b;
+
+                        // Skip drawing if completely dark to save processing
+                        if (luma < 10) continue;
+
+                        bCtx.beginPath();
+                        bCtx.arc(cx, cy, phospheneRadius, 0, Math.PI * 2);
+
+                        if (isMonochrome) {
+                            // Monochromatic bionic vision (Cyan/White)
+                            // Intensity maps to opacity/brightness of cyan
+                            const intensity = luma / 255;
+                            bCtx.fillStyle = `rgba(34, 211, 238, ${intensity})`;
+                            // Add a core hot-spot
+                            if (intensity > 0.5) {
+                                bCtx.fill();
+                                bCtx.beginPath();
+                                bCtx.arc(cx, cy, phospheneRadius * 0.4, 0, Math.PI * 2);
+                                bCtx.fillStyle = `rgba(255, 255, 255, ${intensity})`;
+                            }
+                        } else {
+                            // Experimental Color Vision
+                            bCtx.fillStyle = `rgb(${r}, ${g}, ${b})`;
+                        }
+                        
+                        bCtx.fill();
+                    }
+                }
+            }
+
+            function updateTelemetry() {
+                const totalElectrodes = gridSize * gridSize;
+                dataElectrodes.textContent = totalElectrodes.toLocaleString();
+
+                // Snellen Acuity Approximation
+                // 16x16 (~20/1200), 64x64 (~20/200 legal blindness threshold)
+                let acuity = "";
+                if (gridSize <= 16) acuity = "20/2400";
+                else if (gridSize <= 32) acuity = "20/1200";
+                else if (gridSize <= 50) acuity = "20/600";
+                else if (gridSize <= 64) acuity = "20/200 (Legal)";
+                else acuity = "20/100";
+                dataAcuity.textContent = acuity;
+
+                // Recognition status
+                telemetryPanel.classList.remove('readout-danger', 'readout-warning');
+                if (gridSize < 24) {
+                    dataRecognition.textContent = "LIGHT/MOTION ONLY";
+                    dataRecognition.className = "text-xl font-bold font-mono text-rose-500";
+                    telemetryPanel.classList.add('readout-danger');
+                } else if (gridSize < 48) {
+                    dataRecognition.textContent = "BASIC SHAPES";
+                    dataRecognition.className = "text-xl font-bold font-mono text-amber-400";
+                    telemetryPanel.classList.add('readout-warning');
+                } else {
+                    dataRecognition.textContent = "OBJECTS & FACES";
+                    dataRecognition.className = "text-xl font-bold font-mono text-cyan-400";
+                }
+
+                // Bandwidth 
+                const maxElectrodes = 80 * 80;
+                const bw = Math.max(1, (totalElectrodes / maxElectrodes) * 100);
+                dataBwVal.textContent = `${Math.round(bw)}%`;
+                bwBar.style.width = `${bw}%`;
+            }
+
+            function animate() {
+                time++;
+                drawSourceScene();
+                renderPhosphenes();
+                requestAnimationFrame(animate);
+            }
+
+            // --- Events ---
+            resSlider.addEventListener('input', (e) => {
+                gridSize = parseInt(e.target.value);
+                gridVal.textContent = `${gridSize}x${gridSize}`;
+                updateTelemetry();
+            });
+
+            btnColor.addEventListener('click', () => {
+                isMonochrome = !isMonochrome;
+                sourceCanvas.style.filter = isMonochrome ? 'grayscale(100%)' : 'none';
+            });
+
+            // Initialize
+            updateTelemetry();
+            animate();
+        });
+    </script>
+</body>
+</html>

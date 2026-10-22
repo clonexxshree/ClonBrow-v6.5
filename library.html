@@ -1,0 +1,636 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Library | ClonBrow OS</title>
+    
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Nunito:wght@400;600;700;800;900&family=Lora:ital,wght@0,400;0,600;1,400&display=swap" rel="stylesheet">
+    
+    <!-- Three.js for 3D Background -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    fontFamily: { 
+                        sans: ['Nunito', 'sans-serif'],
+                        serif: ['Lora', 'serif'] 
+                    }
+                }
+            }
+        }
+    </script>
+    
+    <style>
+        body {
+            font-family: 'Nunito', sans-serif;
+            margin: 0; padding: 0;
+            min-height: 100vh;
+            overflow: hidden;
+            background-color: #0f172a; 
+        }
+
+        #bg-canvas {
+            position: fixed; top: 0; left: 0; width: 100vw; height: 100vh; z-index: 0; pointer-events: none;
+        }
+
+        .ui-layer { position: relative; z-index: 10; height: 100vh; display: flex; flex-direction: column; }
+
+        .toy-btn {
+            border: 4px solid #111827;
+            border-radius: 12px;
+            box-shadow: 4px 4px 0px #111827;
+            transition: all 0.1s ease;
+            font-weight: 900;
+            cursor: pointer;
+        }
+        .toy-btn:active {
+            transform: translate(4px, 4px);
+            box-shadow: 0px 0px 0px #111827;
+        }
+
+        .toy-input {
+            border: 4px solid #111827;
+            border-radius: 12px;
+            box-shadow: inset 4px 4px 0px rgba(0,0,0,0.05);
+            outline: none;
+        }
+        .toy-input:focus {
+            border-color: #fbbf24;
+            box-shadow: 0 0 0 4px rgba(251, 191, 36, 0.3), inset 4px 4px 0px rgba(0,0,0,0.05);
+        }
+
+        /* --- 3D BOOK STYLES --- */
+        .book-scene {
+            perspective: 2500px;
+            width: 100%;
+            max-width: 1000px;
+            flex: 1;
+            min-height: 450px;
+            margin: 0 auto;
+            position: relative;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+        }
+
+        .book-wrapper {
+            width: 100%;
+            height: 100%;
+            max-height: 600px;
+            position: relative;
+            transform-style: preserve-3d;
+            transition: transform 1s cubic-bezier(0.34, 1.56, 0.64, 1);
+            transform: rotateX(10deg) scale(0.9);
+            margin-bottom: 20px;
+            filter: drop-shadow(0 20px 30px rgba(0,0,0,0.5));
+        }
+
+        /* The Open Pages (Backdrop) - Ivory Paper */
+        .book-pages {
+            position: absolute;
+            inset: 0;
+            background-color: #faf9f6; /* Ivory Paper */
+            border: 4px solid #111827;
+            border-radius: 12px;
+            box-shadow: inset 0 0 40px rgba(0,0,0,0.05);
+            display: flex;
+            opacity: 0; 
+            transition: opacity 0.5s;
+            transform-style: preserve-3d;
+        }
+        
+        /* Book Spine Shadow */
+        .book-pages::after {
+            content: '';
+            position: absolute;
+            top: 0; bottom: 0; left: 50%;
+            width: 60px;
+            transform: translateX(-50%);
+            background: linear-gradient(to right, rgba(0,0,0,0) 0%, rgba(0,0,0,0.08) 45%, rgba(0,0,0,0.15) 50%, rgba(0,0,0,0.08) 55%, rgba(0,0,0,0) 100%);
+            pointer-events: none;
+            z-index: 20;
+        }
+
+        .page-content {
+            flex: 1;
+            padding: 30px 45px;
+            overflow-y: auto;
+            font-family: 'Lora', serif;
+            color: #2c2925;
+            line-height: 1.7;
+            font-size: 0.95rem;
+            position: relative;
+            background: #faf9f6;
+        }
+        
+        .page-content::-webkit-scrollbar { width: 6px; }
+        .page-content::-webkit-scrollbar-track { background: transparent; }
+        .page-content::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 4px; }
+
+        /* The Animated Cover (Leather bound look) */
+        .book-cover {
+            position: absolute;
+            top: 0; right: 0;
+            width: 50%;
+            height: 100%;
+            background: linear-gradient(135deg, #4c1d95, #2e1065);
+            border: 4px solid #111827;
+            border-radius: 0 12px 12px 0;
+            transform-origin: left center;
+            transition: transform 1.2s cubic-bezier(0.34, 1.56, 0.64, 1);
+            z-index: 30;
+            display: flex; flex-direction: column; align-items: center; justify-content: center; text-align: center; padding: 20px;
+            box-shadow: inset 10px 0 30px rgba(0,0,0,0.4), inset 0 0 0 8px rgba(251, 191, 36, 0.2);
+            backface-visibility: hidden;
+        }
+
+        .book-back {
+            position: absolute;
+            top: 0; left: 0;
+            width: 50%;
+            height: 100%;
+            background: #2e1065;
+            border: 4px solid #111827;
+            border-radius: 12px 0 0 12px;
+            z-index: 5;
+            box-shadow: inset -10px 0 30px rgba(0,0,0,0.4);
+            display: flex; align-items: center; justify-content: center;
+        }
+
+        /* OPEN STATE */
+        .is-open .book-wrapper { transform: rotateX(0deg) scale(1); }
+        .is-open .book-cover { transform: rotateY(-180deg); }
+        .is-open .book-pages { opacity: 1; }
+
+        /* --- 3D FLIPPING PAGE MECHANICS --- */
+        .flip-page-container {
+            position: absolute;
+            top: 0; right: 0;
+            width: 50%; height: 100%;
+            perspective: 3000px;
+            z-index: 25;
+            pointer-events: none;
+            display: none;
+        }
+
+        .flip-page {
+            width: 100%; height: 100%;
+            transform-origin: left center;
+            transform-style: preserve-3d;
+            position: relative;
+        }
+
+        .flip-front, .flip-back {
+            position: absolute;
+            inset: 0;
+            backface-visibility: hidden;
+            background: #faf9f6;
+            overflow: hidden;
+            border-radius: 0 8px 8px 0;
+        }
+
+        .flip-front {
+            box-shadow: inset 20px 0 30px rgba(0,0,0,0.05);
+        }
+
+        .flip-back {
+            transform: rotateY(180deg);
+            border-radius: 8px 0 0 8px;
+            box-shadow: inset -20px 0 30px rgba(0,0,0,0.05);
+        }
+
+        /* Page Turn Controls */
+        .page-controls {
+            display: flex; justify-content: space-between; align-items: center;
+            width: 100%; max-w: 600px; margin: 0 auto;
+            padding: 10px 20px;
+            opacity: 0; pointer-events: none; transition: opacity 0.5s;
+            background: rgba(255,255,255,0.1); backdrop-filter: blur(8px);
+            border-radius: 20px; border: 2px solid rgba(255,255,255,0.2);
+        }
+        .is-open .page-controls { opacity: 1; pointer-events: auto; }
+
+        /* Formatting dynamic text */
+        .page-content h3 { font-family: 'Nunito', sans-serif; font-weight: 900; font-size: 1.25rem; color: #4c1d95; margin-top: 1.5rem; margin-bottom: 0.5rem; border-bottom: 2px solid #e2e8f0; padding-bottom: 0.25rem; }
+        .page-content p { margin-bottom: 1rem; text-align: justify; }
+
+    </style>
+</head>
+<body>
+
+    <canvas id="bg-canvas"></canvas>
+
+    <div class="ui-layer">
+        <!-- Header -->
+        <header class="h-20 flex items-center justify-between px-6 md:px-10 mt-4 shrink-0 pointer-events-none">
+            <div class="flex items-center gap-4 bg-white/95 backdrop-blur border-4 border-gray-900 rounded-2xl p-2 shadow-[6px_6px_0px_#111827] pointer-events-auto">
+                <a href="lab_world.html" class="toy-btn bg-red-400 text-white w-12 h-12 flex items-center justify-center text-xl hover:bg-red-500">
+                    <i class="fas fa-arrow-left"></i>
+                </a>
+                <div class="pr-4">
+                    <h1 class="text-2xl font-black text-gray-900 leading-none">The Library</h1>
+                    <p class="text-sm font-bold text-gray-500">Global Knowledge Hub</p>
+                </div>
+            </div>
+        </header>
+
+        <main class="flex-1 w-full max-w-6xl mx-auto p-4 md:p-8 flex flex-col items-center relative pt-4 overflow-hidden">
+            
+            <!-- Search Bar -->
+            <div class="w-full max-w-2xl bg-white/95 backdrop-blur border-4 border-gray-900 rounded-[2rem] p-4 shadow-[8px_8px_0px_#111827] mb-6 flex flex-col md:flex-row gap-4 items-center shrink-0 z-20">
+                <div class="flex-1 relative w-full">
+                    <i class="fas fa-search absolute left-4 top-1/2 -translate-y-1/2 text-gray-400 text-xl"></i>
+                    <input type="text" id="search-input" class="toy-input w-full bg-gray-50 text-xl font-bold text-gray-900 py-3 pl-12 pr-4" placeholder="Search any topic..." onkeypress="if(event.key === 'Enter') searchKnowledge()">
+                </div>
+                <button onclick="searchKnowledge()" id="search-btn" class="toy-btn bg-amber-400 text-gray-900 hover:bg-amber-500 px-8 py-3 text-xl w-full md:w-auto flex items-center justify-center gap-2">
+                    <i class="fas fa-magic"></i> Fetch
+                </button>
+            </div>
+
+            <!-- The Book -->
+            <div id="book-scene-container" class="w-full flex-1 flex flex-col items-center relative z-10 hidden">
+                <div id="book-scene" class="book-scene">
+                    
+                    <div class="book-wrapper" id="book-wrapper">
+                        <div class="book-back">
+                            <div class="text-5xl opacity-20 text-white"><i class="fas fa-book-open"></i></div>
+                        </div>
+
+                        <div class="book-pages" id="book-pages">
+                            <!-- Base Left Page -->
+                            <div class="page-content hidden md:block rounded-l-[8px]" id="base-left-container">
+                                <h2 id="article-title-left" class="text-3xl font-black text-slate-800 mb-6 font-sans capitalize leading-tight"></h2>
+                                <div id="article-content-left"></div>
+                            </div>
+                            
+                            <!-- Base Right Page -->
+                            <div class="page-content rounded-r-[8px]" id="base-right-container">
+                                <h2 id="article-title-right" class="text-3xl font-black text-slate-800 mb-6 font-sans capitalize leading-tight md:hidden"></h2>
+                                <div id="article-content-right"></div>
+                            </div>
+
+                            <!-- 3D Flipping Page Overlay -->
+                            <div class="flip-page-container" id="flip-page-container">
+                                <div class="flip-page" id="flip-page">
+                                    <div class="flip-front page-content" id="flip-front"></div>
+                                    <div class="flip-back page-content" id="flip-back"></div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="book-cover" id="book-cover">
+                            <div class="w-full h-full border-4 border-amber-300 rounded-lg flex flex-col items-center justify-center p-6 relative">
+                                <div class="absolute inset-2 border-2 border-amber-300/50 rounded pointer-events-none"></div>
+                                <i class="fas fa-book-journal-whills text-6xl text-amber-300 mb-6 drop-shadow-md"></i>
+                                <h2 id="cover-title" class="text-3xl font-black text-white drop-shadow-[2px_2px_0px_#111827] capitalize leading-tight">Searching...</h2>
+                                <div class="mt-8 bg-gray-900 text-amber-300 font-bold px-4 py-1 rounded-full text-sm border-2 border-amber-300">Clonexx Archives</div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <!-- Controls -->
+                    <div class="page-controls" id="page-controls">
+                        <button onclick="prevPage()" id="btn-prev" class="toy-btn bg-white text-gray-900 px-6 py-2 hover:bg-gray-100 flex items-center gap-2 shadow-[4px_4px_0px_#111827]">
+                            <i class="fas fa-arrow-left"></i> Previous
+                        </button>
+                        <span id="page-indicator" class="font-black text-white drop-shadow-[2px_2px_0px_#111827] text-lg px-4">Page 1 / 1</span>
+                        <button onclick="nextPage()" id="btn-next" class="toy-btn bg-white text-gray-900 px-6 py-2 hover:bg-gray-100 flex items-center gap-2 shadow-[4px_4px_0px_#111827]">
+                            Next <i class="fas fa-arrow-right"></i>
+                        </button>
+                    </div>
+
+                </div>
+            </div>
+
+            <!-- Empty State -->
+            <div id="empty-state" class="text-center mt-20 z-10">
+                <i class="fas fa-wand-sparkles text-6xl text-purple-300 mb-4 animate-bounce"></i>
+                <h3 class="text-3xl font-black text-white drop-shadow-[2px_2px_0px_#111827]">The Archives await.</h3>
+                <p class="text-purple-200 font-bold text-lg mt-2 bg-gray-900/50 px-4 py-1 rounded-full inline-block backdrop-blur border border-purple-400/30">Type a topic above to summon a book.</p>
+            </div>
+
+        </main>
+    </div>
+
+    <script>
+        const canvas = document.getElementById('bg-canvas');
+        const scene = new THREE.Scene();
+        scene.fog = new THREE.FogExp2(0x0f172a, 0.015);
+
+        const camera = new THREE.PerspectiveCamera(60, window.innerWidth / window.innerHeight, 0.1, 1000);
+        camera.position.set(0, 5, 25);
+
+        const renderer = new THREE.WebGLRenderer({ canvas: canvas, antialias: true, alpha: true });
+        renderer.setSize(window.innerWidth, window.innerHeight);
+        renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+
+        const ambientLight = new THREE.AmbientLight(0x4c1d95, 0.8);
+        scene.add(ambientLight);
+        const pointLight = new THREE.PointLight(0xfbbf24, 1.5, 100);
+        pointLight.position.set(0, 10, 0);
+        scene.add(pointLight);
+
+        const flyingBooksGroup = new THREE.Group();
+        const bookColors = [0xef4444, 0x3b82f6, 0x10b981, 0xf59e0b, 0x8b5cf6, 0xf43f5e, 0xffffff];
+        const numBooks = 150;
+
+        for (let i = 0; i < numBooks; i++) {
+            const width = 1.5 + Math.random() * 0.5;
+            const height = 2 + Math.random() * 1;
+            const depth = 0.3 + Math.random() * 0.3;
+            
+            const bookGeo = new THREE.BoxGeometry(width, height, depth);
+            const bookMat = new THREE.MeshStandardMaterial({ 
+                color: bookColors[Math.floor(Math.random() * bookColors.length)],
+                roughness: 0.4,
+                metalness: 0.1
+            });
+            const book = new THREE.Mesh(bookGeo, bookMat);
+            
+            const radius = 15 + Math.random() * 30;
+            const theta = Math.random() * Math.PI * 2;
+            const yPos = (Math.random() - 0.5) * 60;
+
+            book.position.set(Math.cos(theta) * radius, yPos, Math.sin(theta) * radius);
+            book.rotation.set(Math.random() * Math.PI, Math.random() * Math.PI, Math.random() * Math.PI);
+            
+            book.userData = {
+                orbitRadius: radius,
+                orbitAngle: theta,
+                orbitSpeed: 0.001 + (Math.random() * 0.002),
+                spinSpeedX: (Math.random() - 0.5) * 0.02,
+                spinSpeedY: (Math.random() - 0.5) * 0.02
+            };
+
+            flyingBooksGroup.add(book);
+        }
+        scene.add(flyingBooksGroup);
+
+        const dustGeo = new THREE.BufferGeometry();
+        const dustCount = 800;
+        const posArray = new Float32Array(dustCount * 3);
+        for(let i=0; i<dustCount*3; i++) posArray[i] = (Math.random() - 0.5) * 80;
+        dustGeo.setAttribute('position', new THREE.BufferAttribute(posArray, 3));
+        const dustMat = new THREE.PointsMaterial({ size: 0.2, color: 0xfbbf24, transparent: true, opacity: 0.6 });
+        const dustParticles = new THREE.Points(dustGeo, dustMat);
+        scene.add(dustParticles);
+
+        window.addEventListener('resize', () => {
+            camera.aspect = window.innerWidth / window.innerHeight;
+            camera.updateProjectionMatrix();
+            renderer.setSize(window.innerWidth, window.innerHeight);
+        });
+
+        function animate3D() {
+            requestAnimationFrame(animate3D);
+            
+            flyingBooksGroup.children.forEach(book => {
+                book.userData.orbitAngle += book.userData.orbitSpeed;
+                book.position.x = Math.cos(book.userData.orbitAngle) * book.userData.orbitRadius;
+                book.position.z = Math.sin(book.userData.orbitAngle) * book.userData.orbitRadius;
+                book.rotation.x += book.userData.spinSpeedX;
+                book.rotation.y += book.userData.spinSpeedY;
+            });
+
+            flyingBooksGroup.rotation.y -= 0.0005;
+            dustParticles.rotation.y -= 0.001;
+            dustParticles.position.y = Math.sin(Date.now() * 0.001) * 2;
+            
+            renderer.render(scene, camera);
+        }
+        animate3D();
+
+        const bookSceneContainer = document.getElementById('book-scene-container');
+        const bookScene = document.getElementById('book-scene');
+        const emptyState = document.getElementById('empty-state');
+        const searchInput = document.getElementById('search-input');
+        const searchBtn = document.getElementById('search-btn');
+
+        let pagesData = [];
+        let currentPageIndex = 0;
+        let isMobile = window.innerWidth < 768;
+        let isAnimating = false;
+
+        window.addEventListener('resize', () => {
+            let wasMobile = isMobile;
+            isMobile = window.innerWidth < 768;
+            if (wasMobile !== isMobile && pagesData.length > 0) {
+                renderBasePages(); 
+                updatePaginationUI();
+            }
+        });
+
+        async function searchKnowledge() {
+            const query = searchInput.value.trim();
+            if (!query || isAnimating) return;
+
+            bookScene.classList.remove('is-open');
+            emptyState.classList.add('hidden');
+            bookSceneContainer.classList.remove('hidden');
+            bookSceneContainer.classList.add('flex');
+            
+            document.getElementById('cover-title').innerText = "Fetching...";
+            pagesData = [];
+            currentPageIndex = 0;
+            
+            searchBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Reading...';
+            searchBtn.disabled = true;
+
+            try {
+                const response = await fetch(`https://en.wikipedia.org/w/api.php?action=query&prop=extracts&titles=${encodeURIComponent(query)}&explaintext=1&format=json&origin=*`);
+                const data = await response.json();
+                const pages = data.query.pages;
+                const pageId = Object.keys(pages)[0];
+
+                if (pageId === "-1") throw new Error("Not found");
+
+                const articleTitle = pages[pageId].title;
+                const extract = pages[pageId].extract;
+
+                if (!extract || extract.trim() === "") throw new Error("Empty article");
+
+                document.getElementById('cover-title').innerText = articleTitle;
+                document.getElementById('article-title-left').innerText = articleTitle;
+                document.getElementById('article-title-right').innerText = articleTitle;
+
+                chunkTextIntoPages(extract);
+
+                setTimeout(() => { bookScene.classList.add('is-open'); }, 500);
+                setTimeout(() => { renderBasePages(); updatePaginationUI(); }, 1000); 
+
+            } catch (error) {
+                document.getElementById('cover-title').innerText = "Book Not Found";
+                pagesData = [`<p class="text-lg font-bold text-red-500 mt-10 text-center">The magical archives do not contain a book titled "${query}".<br><br>Try searching for a different term!</p>`];
+                currentPageIndex = 0;
+                setTimeout(() => { bookScene.classList.add('is-open'); renderBasePages(); updatePaginationUI(); }, 500);
+            }
+
+            searchBtn.innerHTML = '<i class="fas fa-magic"></i> Fetch';
+            searchBtn.disabled = false;
+        }
+
+        function chunkTextIntoPages(text) {
+            const paragraphs = text.split('\n').filter(p => p.trim().length > 0);
+            pagesData = [];
+            let currentChunk = '';
+            let currentLength = 0;
+            const MAX_CHARS_PER_PAGE = 1200; 
+
+            paragraphs.forEach(p => {
+                let htmlBlock = '';
+                if (p.startsWith('==')) {
+                    htmlBlock = `<h3>${p.replace(/=/g, '').trim()}</h3>`;
+                } else {
+                    htmlBlock = `<p>${p}</p>`;
+                }
+
+                if (currentLength + htmlBlock.length > MAX_CHARS_PER_PAGE && currentLength > 0) {
+                    pagesData.push(currentChunk);
+                    currentChunk = htmlBlock;
+                    currentLength = htmlBlock.length;
+                } else {
+                    currentChunk += htmlBlock;
+                    currentLength += htmlBlock.length;
+                }
+            });
+            if (currentChunk) pagesData.push(currentChunk);
+        }
+
+        function renderBasePages() {
+            const leftDiv = document.getElementById('article-content-left');
+            const rightDiv = document.getElementById('article-content-right');
+            const titleLeft = document.getElementById('article-title-left');
+            const titleRight = document.getElementById('article-title-right');
+
+            titleLeft.style.display = currentPageIndex === 0 ? 'block' : 'none';
+            titleRight.style.display = currentPageIndex === 0 ? 'block' : 'none';
+
+            if (isMobile) {
+                rightDiv.innerHTML = pagesData[currentPageIndex] || "";
+            } else {
+                leftDiv.innerHTML = pagesData[currentPageIndex] || "";
+                rightDiv.innerHTML = pagesData[currentPageIndex + 1] || "";
+            }
+            
+            leftDiv.parentElement.scrollTop = 0;
+            rightDiv.parentElement.scrollTop = 0;
+        }
+
+        function nextPage() {
+            if (isAnimating) return;
+            let step = isMobile ? 1 : 2;
+            if (currentPageIndex + step < pagesData.length) {
+                if (!isMobile) {
+                    animateFlip('next');
+                } else {
+                    currentPageIndex += step;
+                    renderBasePages();
+                    updatePaginationUI();
+                }
+            }
+        }
+
+        function prevPage() {
+            if (isAnimating) return;
+            let step = isMobile ? 1 : 2;
+            if (currentPageIndex - step >= 0) {
+                if (!isMobile) {
+                    animateFlip('prev');
+                } else {
+                    currentPageIndex -= step;
+                    renderBasePages();
+                    updatePaginationUI();
+                }
+            }
+        }
+
+        function animateFlip(direction) {
+            isAnimating = true;
+            const container = document.getElementById('flip-page-container');
+            const flipPage = document.getElementById('flip-page');
+            const flipFront = document.getElementById('flip-front');
+            const flipBack = document.getElementById('flip-back');
+            
+            const leftBase = document.getElementById('article-content-left');
+            const rightBase = document.getElementById('article-content-right');
+
+            container.style.display = 'block';
+            flipPage.style.transition = 'none';
+
+            if (direction === 'next') {
+                // Front shows current right page, Back shows NEXT left page
+                flipFront.innerHTML = pagesData[currentPageIndex + 1] || "";
+                flipBack.innerHTML = pagesData[currentPageIndex + 2] || "";
+                flipPage.style.transform = 'rotateY(0deg)';
+                
+                currentPageIndex += 2;
+                
+                // Base Right updates instantly to NEXT right page
+                rightBase.innerHTML = pagesData[currentPageIndex + 1] || "";
+                
+                void flipPage.offsetWidth; // force reflow
+                
+                flipPage.style.transition = 'transform 0.8s cubic-bezier(0.645, 0.045, 0.355, 1)';
+                flipPage.style.transform = 'rotateY(-180deg)';
+
+                setTimeout(() => {
+                    // Base Left catches up when animation finishes
+                    leftBase.innerHTML = pagesData[currentPageIndex] || "";
+                    document.getElementById('article-title-left').style.display = currentPageIndex === 0 ? 'block' : 'none';
+                    container.style.display = 'none';
+                    isAnimating = false;
+                    updatePaginationUI();
+                }, 800);
+
+            } else {
+                // Prev
+                // Front shows PREV right page, Back shows current left page
+                flipFront.innerHTML = pagesData[currentPageIndex - 1] || "";
+                flipBack.innerHTML = pagesData[currentPageIndex] || "";
+                flipPage.style.transform = 'rotateY(-180deg)';
+                
+                currentPageIndex -= 2;
+
+                // Base Left updates instantly to PREV left page
+                leftBase.innerHTML = pagesData[currentPageIndex] || "";
+                document.getElementById('article-title-left').style.display = currentPageIndex === 0 ? 'block' : 'none';
+
+                void flipPage.offsetWidth; // force reflow
+
+                flipPage.style.transition = 'transform 0.8s cubic-bezier(0.645, 0.045, 0.355, 1)';
+                flipPage.style.transform = 'rotateY(0deg)';
+
+                setTimeout(() => {
+                    // Base Right catches up when animation finishes
+                    rightBase.innerHTML = pagesData[currentPageIndex + 1] || "";
+                    container.style.display = 'none';
+                    isAnimating = false;
+                    updatePaginationUI();
+                }, 800);
+            }
+        }
+
+        function updatePaginationUI() {
+            const btnPrev = document.getElementById('btn-prev');
+            const btnNext = document.getElementById('btn-next');
+            const indicator = document.getElementById('page-indicator');
+
+            let totalViews = isMobile ? pagesData.length : Math.ceil(pagesData.length / 2);
+            let currentView = isMobile ? currentPageIndex + 1 : Math.floor(currentPageIndex / 2) + 1;
+
+            indicator.innerText = `Page ${currentView} / ${totalViews}`;
+
+            btnPrev.style.visibility = currentPageIndex === 0 ? 'hidden' : 'visible';
+            
+            let hasNext = isMobile ? (currentPageIndex < pagesData.length - 1) : (currentPageIndex + 2 < pagesData.length);
+            btnNext.style.visibility = hasNext ? 'visible' : 'hidden';
+        }
+
+    </script>
+</body>
+</html>

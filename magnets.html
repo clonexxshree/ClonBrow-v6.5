@@ -1,0 +1,644 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Physics Lab - Light & Magnets</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600&display=swap" rel="stylesheet">
+    <style>
+        body, html {
+            margin: 0;
+            padding: 0;
+            width: 100%;
+            height: 100%;
+            overflow: hidden;
+            background-color: #05080f; 
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+            touch-action: none;
+        }
+        
+        #sim-canvas {
+            display: block;
+            width: 100%;
+            height: 100%;
+            cursor: grab;
+        }
+        #sim-canvas:active {
+            cursor: grabbing;
+        }
+
+        input[type=range] {
+            -webkit-appearance: none;
+            width: 100%;
+            background: transparent;
+        }
+        input[type=range]::-webkit-slider-thumb {
+            -webkit-appearance: none;
+            height: 20px;
+            width: 20px;
+            border-radius: 50%;
+            background: #ffffff;
+            border: 1px solid #4b5563;
+            cursor: pointer;
+            margin-top: -8px;
+            box-shadow: 0 4px 10px rgba(0,0,0,0.3);
+            transition: transform 0.2s cubic-bezier(0.2, 0.8, 0.2, 1);
+        }
+        input[type=range]::-webkit-slider-thumb:hover {
+            transform: scale(1.15);
+        }
+        input[type=range]::-webkit-slider-runnable-track {
+            width: 100%;
+            height: 4px;
+            cursor: pointer;
+            background: rgba(255, 255, 255, 0.1);
+            border-radius: 2px;
+        }
+        
+        .glass-panel {
+            background: rgba(10, 15, 28, 0.75);
+            backdrop-filter: blur(24px);
+            -webkit-backdrop-filter: blur(24px);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            box-shadow: 0 12px 40px rgba(0, 0, 0, 0.6);
+        }
+
+        .scroll-area::-webkit-scrollbar {
+            width: 4px;
+        }
+        .scroll-area::-webkit-scrollbar-thumb {
+            background: rgba(255, 255, 255, 0.2);
+            border-radius: 4px;
+        }
+        
+        #loading-screen {
+            position: absolute;
+            inset: 0;
+            background: #05080f;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: white;
+            font-weight: 500;
+            z-index: 50;
+            transition: opacity 0.5s ease;
+        }
+    </style>
+</head>
+<body>
+
+    <!-- Loading Screen -->
+    <div id="loading-screen">
+        <div class="flex flex-col items-center gap-4">
+            <svg class="animate-spin h-8 w-8 text-blue-500" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path></svg>
+            <span>Loading 3 Custom Assets...</span>
+        </div>
+    </div>
+
+    <!-- Main UI Overlay -->
+    <div class="absolute top-4 left-4 md:top-6 md:left-6 z-10 w-80 glass-panel p-6 rounded-[1.5rem] pointer-events-auto flex flex-col select-none max-h-[92vh]">
+        <div class="mb-4 border-b border-white/10 pb-4 shrink-0">
+            <h1 class="text-2xl font-semibold tracking-tight text-white mb-1">Physics Lab</h1>
+            <p class="text-xs font-medium text-gray-400">Light, Shadows & Magnets</p>
+        </div>
+
+        <div class="space-y-6 scroll-area overflow-y-auto pr-2 pb-2">
+            
+            <div class="bg-black/30 p-3 rounded-xl border border-white/5">
+                <p class="text-xs text-gray-300 leading-relaxed">
+                    <strong class="text-white">Interact:</strong> Drag the bulb and magnets on the canvas to physically test light and magnetic interactions.
+                </p>
+            </div>
+
+            <!-- Magnet Controls -->
+            <div class="space-y-4">
+                <label class="text-xs font-bold uppercase tracking-wider text-gray-500">Magnets</label>
+                <div class="space-y-3">
+                    <div class="flex items-center gap-3">
+                        <span class="text-xs font-medium text-gray-400 w-16">Rot 1</span>
+                        <input type="range" id="rot-mag-1" min="0" max="360" step="1" value="0" class="flex-1">
+                    </div>
+                    <div class="flex items-center gap-3">
+                        <span class="text-xs font-medium text-gray-400 w-16">Rot 2</span>
+                        <input type="range" id="rot-mag-2" min="0" max="360" step="1" value="180" class="flex-1">
+                    </div>
+                </div>
+            </div>
+
+            <!-- Visual Toggles -->
+            <div class="pt-4 border-t border-white/10 space-y-4">
+                <label class="text-xs font-bold uppercase tracking-wider text-gray-500">Visuals</label>
+                
+                <label class="flex items-center space-x-3 cursor-pointer group">
+                    <div class="relative">
+                        <input type="checkbox" id="toggle-light" class="sr-only peer" checked>
+                        <div class="w-10 h-6 bg-gray-600 rounded-full shadow-inner transition-colors group-hover:bg-gray-500 peer-checked:bg-blue-500"></div>
+                        <div class="dot absolute left-1 top-1 bg-white w-4 h-4 rounded-full transition-transform peer-checked:translate-x-4 shadow"></div>
+                    </div>
+                    <span class="text-sm font-medium text-gray-300">Enable Light & Shadows</span>
+                </label>
+
+                <label class="flex items-center space-x-3 cursor-pointer group">
+                    <div class="relative">
+                        <input type="checkbox" id="toggle-field" class="sr-only peer" checked>
+                        <div class="w-10 h-6 bg-gray-600 rounded-full shadow-inner transition-colors group-hover:bg-gray-500 peer-checked:bg-blue-500"></div>
+                        <div class="dot absolute left-1 top-1 bg-white w-4 h-4 rounded-full transition-transform peer-checked:translate-x-4 shadow"></div>
+                    </div>
+                    <span class="text-sm font-medium text-gray-300">Show Magnetic Field</span>
+                </label>
+
+                <label class="flex items-center space-x-3 cursor-pointer group">
+                    <div class="relative">
+                        <!-- Iron Filings are now CHECKED by default so they appear immediately -->
+                        <input type="checkbox" id="toggle-filings" class="sr-only peer" checked>
+                        <div class="w-10 h-6 bg-gray-600 rounded-full shadow-inner transition-colors group-hover:bg-gray-500 peer-checked:bg-blue-500"></div>
+                        <div class="dot absolute left-1 top-1 bg-white w-4 h-4 rounded-full transition-transform peer-checked:translate-x-4 shadow"></div>
+                    </div>
+                    <span class="text-sm font-medium text-gray-300">Sprinkle Iron Filings</span>
+                </label>
+            </div>
+
+        </div>
+    </div>
+
+    <!-- 2D Canvas Container -->
+    <canvas id="sim-canvas"></canvas>
+
+    <script>
+        const canvas = document.getElementById('sim-canvas');
+        const ctx = canvas.getContext('2d');
+
+        function resize() {
+            canvas.width = window.innerWidth;
+            canvas.height = window.innerHeight;
+        }
+        window.addEventListener('resize', resize);
+        resize();
+
+        // --- ASSET LOADING ---
+        const imgMagnet = new Image();
+        const imgBulb = new Image();
+        const imgFiling = new Image();
+        
+        let assetsLoaded = 0;
+        let simStarted = false;
+
+        function checkLoad() {
+            assetsLoaded++;
+            if(assetsLoaded >= 3 && !simStarted) {
+                simStarted = true;
+                document.getElementById('loading-screen').style.opacity = 0;
+                setTimeout(() => document.getElementById('loading-screen').style.display = 'none', 500);
+                requestAnimationFrame(render);
+            }
+        }
+
+        // Failsafe: Start simulation after 3.5 seconds even if images fail/block
+        setTimeout(() => {
+            if (!simStarted) {
+                assetsLoaded = 3;
+                checkLoad();
+            }
+        }, 3500);
+
+        let magnetImgLoaded = false, bulbImgLoaded = false, filingImgLoaded = false;
+        
+        // Dynamically sized assets. Increased filing size significantly for high visibility.
+        let filingImgW = 28, filingImgH = 28; 
+
+        imgMagnet.onload = () => { magnetImgLoaded = true; checkLoad(); };
+        imgMagnet.onerror = checkLoad;
+
+        imgBulb.onload = () => {
+            bulbImgLoaded = true;
+            if(imgBulb.width && imgBulb.height) BULB_HEIGHT = BULB_WIDTH * (imgBulb.height / imgBulb.width);
+            checkLoad();
+        };
+        imgBulb.onerror = checkLoad;
+
+        imgFiling.onload = () => { 
+            filingImgLoaded = true; 
+            if(imgFiling.width && imgFiling.height) filingImgH = filingImgW * (imgFiling.height / imgFiling.width);
+            checkLoad(); 
+        };
+        imgFiling.onerror = checkLoad;
+
+        imgMagnet.src = 'https://res.cloudinary.com/ds93qby5a/image/upload/v1775825592/67c16b39-87d9-4a3c-8fc4-2fca6ac4feee-Photoroom_ovmewv.png';
+        imgBulb.src = 'https://res.cloudinary.com/ds93qby5a/image/upload/v1775825591/8be4c461-b6c5-4586-a620-c151aa4828a8-Photoroom_putbnt.png';
+        imgFiling.src = 'https://res.cloudinary.com/ds93qby5a/image/upload/q_auto/f_auto/v1775828011/f4a6c419-ff3c-4e83-9191-2db34ac139f1-Photoroom_arjnhx.png';
+
+        // --- CORE SETTINGS ---
+        const MAGNET_WIDTH = 220;
+        const MAGNET_HEIGHT = 60;
+        const BULB_WIDTH = 140; 
+        let BULB_HEIGHT = 140; 
+        const POLE_OFFSET = MAGNET_WIDTH * 0.38; 
+        const MAGNETIC_CONSTANT = 400000; 
+        const DAMPING = 0.82; 
+
+        // Entities - Init safely away from UI panel
+        const light = { x: Math.max(450, window.innerWidth/2), y: window.innerHeight * 0.25, isDragging: false };
+        const magnets = [
+            { x: Math.max(450, window.innerWidth/2 - 250), y: window.innerHeight/2, rot: 0, vx: 0, vy: 0, isDragging: false }, 
+            { x: Math.max(450, window.innerWidth/2 - 250) + 400, y: window.innerHeight/2, rot: Math.PI, vx: 0, vy: 0, isDragging: false } 
+        ];
+
+        // UI Binding
+        document.getElementById('rot-mag-1').addEventListener('input', (e) => magnets[0].rot = e.target.value * Math.PI / 180);
+        document.getElementById('rot-mag-2').addEventListener('input', (e) => magnets[1].rot = e.target.value * Math.PI / 180);
+        const toggleLight = document.getElementById('toggle-light');
+        const toggleField = document.getElementById('toggle-field');
+        const toggleFilings = document.getElementById('toggle-filings');
+
+        // --- IRON FILINGS SYSTEM ---
+        const NUM_FILINGS = 1200; // Increased amount for a denser field
+        let filings = [];
+
+        function initFilings() {
+            filings = [];
+            for (let i = 0; i < NUM_FILINGS; i++) {
+                filings.push({
+                    x: Math.random() * canvas.width,
+                    y: Math.random() * canvas.height,
+                    baseAngle: Math.random() * Math.PI * 2 
+                });
+            }
+        }
+        window.addEventListener('resize', initFilings);
+        initFilings();
+
+        // --- MAGNETIC PHYSICS ---
+        function getPoles(m) {
+            const dx = Math.cos(m.rot) * POLE_OFFSET;
+            const dy = Math.sin(m.rot) * POLE_OFFSET;
+            return {
+                N: { x: m.x + dx, y: m.y + dy, charge: 1 },
+                S: { x: m.x - dx, y: m.y - dy, charge: -1 }
+            };
+        }
+
+        function updatePhysics() {
+            const p1 = getPoles(magnets[0]);
+            const p2 = getPoles(magnets[1]);
+
+            function calcForce(poleA, poleB) {
+                const dx = poleA.x - poleB.x;
+                const dy = poleA.y - poleB.y;
+                const distSq = dx*dx + dy*dy;
+                if (Math.sqrt(distSq) < 10) return { x: 0, y: 0 }; 
+                const magnitude = (MAGNETIC_CONSTANT * poleA.charge * poleB.charge) / distSq;
+                return { x: (dx / Math.sqrt(distSq)) * magnitude, y: (dy / Math.sqrt(distSq)) * magnitude };
+            }
+
+            const netForceX = calcForce(p1.N, p2.N).x + calcForce(p1.N, p2.S).x + calcForce(p1.S, p2.N).x + calcForce(p1.S, p2.S).x;
+            const netForceY = calcForce(p1.N, p2.N).y + calcForce(p1.N, p2.S).y + calcForce(p1.S, p2.N).y + calcForce(p1.S, p2.S).y;
+
+            if (!magnets[0].isDragging) { magnets[0].vx += netForceX * 0.05; magnets[0].vy += netForceY * 0.05; }
+            if (!magnets[1].isDragging) { magnets[1].vx -= netForceX * 0.05; magnets[1].vy -= netForceY * 0.05; }
+
+            for (let i = 0; i < 2; i++) {
+                const m = magnets[i];
+                if (!m.isDragging) {
+                    m.x += m.vx; m.y += m.vy;
+                    m.vx *= DAMPING; m.vy *= DAMPING;
+
+                    if (m.x < 370 + MAGNET_WIDTH/2) { m.x = 370 + MAGNET_WIDTH/2; m.vx *= -0.5; }
+                    if (m.x > canvas.width - MAGNET_WIDTH/2) { m.x = canvas.width - MAGNET_WIDTH/2; m.vx *= -0.5; }
+                    if (m.y < MAGNET_HEIGHT/2) { m.y = MAGNET_HEIGHT/2; m.vy *= -0.5; }
+                    if (m.y > canvas.height - MAGNET_HEIGHT/2) { m.y = canvas.height - MAGNET_HEIGHT/2; m.vy *= -0.5; }
+                }
+            }
+
+            const dx = magnets[0].x - magnets[1].x, dy = magnets[0].y - magnets[1].y;
+            const dist = Math.sqrt(dx*dx + dy*dy);
+            const minDistance = MAGNET_WIDTH * 0.85; 
+            if (dist < minDistance && dist > 0.1) {
+                const overlap = minDistance - dist;
+                const nx = dx / dist, ny = dy / dist;
+                if(!magnets[0].isDragging) { magnets[0].x += nx * overlap * 0.5; magnets[0].vx *= 0.5; }
+                if(!magnets[1].isDragging) { magnets[1].x -= nx * overlap * 0.5; magnets[1].vx *= 0.5; }
+            }
+        }
+
+        // --- RENDER LOGIC ---
+        function getBFieldAt(x, y) {
+            let bx = 0, by = 0;
+            const kField = 6000;
+            for(let i=0; i<2; i++) {
+                const poles = getPoles(magnets[i]);
+                let dxN = x - poles.N.x, dyN = y - poles.N.y, distSqN = Math.max(dxN*dxN + dyN*dyN, 100), distN = Math.sqrt(distSqN);
+                bx += (dxN/distN) * (kField / distSqN); by += (dyN/distN) * (kField / distSqN);
+
+                let dxS = x - poles.S.x, dyS = y - poles.S.y, distSqS = Math.max(dxS*dxS + dyS*dyS, 100), distS = Math.sqrt(distSqS);
+                bx -= (dxS/distS) * (kField / distSqS); by -= (dyS/distS) * (kField / distSqS);
+            }
+            return { x: bx, y: by };
+        }
+
+        function drawFilings() {
+            if (!toggleFilings.checked) return;
+            
+            for (let f of filings) {
+                const B = getBFieldAt(f.x, f.y);
+                const mag = Math.sqrt(B.x*B.x + B.y*B.y);
+                
+                let angle = f.baseAngle;
+                
+                if (mag > 0.001) {
+                    // Align to magnetic field perfectly
+                    angle = Math.atan2(B.y, B.x);
+                    
+                    // Physically pull the iron filings towards the closest magnetic pole
+                    let closestPole = null;
+                    let minDistSq = Infinity;
+                    for (let m of magnets) {
+                        const poles = getPoles(m);
+                        const dN = (f.x-poles.N.x)**2 + (f.y-poles.N.y)**2;
+                        const dS = (f.x-poles.S.x)**2 + (f.y-poles.S.y)**2;
+                        if (dN < minDistSq) { minDistSq = dN; closestPole = poles.N; }
+                        if (dS < minDistSq) { minDistSq = dS; closestPole = poles.S; }
+                    }
+                    
+                    // MASSIVE physics update: Vastly increased pull strength and attraction radius.
+                    // Filings will now quickly slide to the poles and stick to them!
+                    if (closestPole && minDistSq < 250000 && minDistSq > 600) { 
+                        const dist = Math.sqrt(minDistSq);
+                        // Very strong pull, capped at 8px per frame so they don't overshoot wildly
+                        const pull = Math.min(8.0, 100000 / (minDistSq + 1000)); 
+                        f.x += ((closestPole.x - f.x) / dist) * pull;
+                        f.y += ((closestPole.y - f.y) / dist) * pull;
+                    }
+                }
+
+                ctx.save();
+                ctx.translate(f.x, f.y);
+                ctx.rotate(angle);
+                ctx.globalAlpha = 1.0; // 100% opacity so they are highly visible
+                
+                if (filingImgLoaded) {
+                    ctx.drawImage(imgFiling, -filingImgW/2, -filingImgH/2, filingImgW, filingImgH);
+                } else {
+                    ctx.fillStyle = '#cbd5e1';
+                    ctx.fillRect(-3, -1, 6, 2);
+                }
+                ctx.restore();
+            }
+        }
+
+        function drawFieldLines() {
+            if(!toggleField.checked) return;
+            const step = 45;
+            ctx.lineWidth = 1.5;
+            for (let x = 0; x < canvas.width; x += step) {
+                for (let y = 0; y < canvas.height; y += step) {
+                    
+                    let closestDist = Infinity;
+                    for(let m of magnets) {
+                        let d = Math.sqrt((x - m.x)**2 + (y - m.y)**2);
+                        if (d < closestDist) closestDist = d;
+                    }
+                    if (closestDist > MAGNET_WIDTH * 1.5) continue; 
+
+                    const B = getBFieldAt(x, y);
+                    const mag = Math.sqrt(B.x*B.x + B.y*B.y);
+                    if (mag < 0.01) continue;
+
+                    const dirX = B.x / mag, dirY = B.y / mag;
+                    const intensity = Math.min(mag * 5, 1);
+                    const r = Math.floor(107 + (255 - 107) * intensity);
+                    const g = Math.floor(114 + (255 - 114) * intensity);
+                    const b = Math.floor(128 + (255 - 128) * intensity);
+                    
+                    const fade = Math.max(0, 1 - (closestDist / (MAGNET_WIDTH * 1.5)));
+                    const globalAlpha = toggleLight.checked ? 0.35 : 0.8;
+                    
+                    ctx.strokeStyle = `rgba(${r},${g},${b}, ${globalAlpha * fade})`;
+                    const length = 12;
+                    ctx.beginPath();
+                    ctx.moveTo(x - dirX * length/2, y - dirY * length/2);
+                    ctx.lineTo(x + dirX * length/2, y + dirY * length/2);
+                    const angle = Math.atan2(dirY, dirX);
+                    ctx.lineTo(x + dirX * length/2 - 4 * Math.cos(angle - Math.PI/6), y + dirY * length/2 - 4 * Math.sin(angle - Math.PI/6));
+                    ctx.stroke();
+                }
+            }
+        }
+
+        function projectPoint(p, l) {
+            const FAR = 4000;
+            const dx = p.x - l.x, dy = p.y - l.y;
+            const len = Math.sqrt(dx*dx + dy*dy);
+            return { x: p.x + (dx/len)*FAR, y: p.y + (dy/len)*FAR };
+        }
+
+        function drawShadows() {
+            if(!toggleLight.checked) return;
+            
+            ctx.save();
+            ctx.filter = 'blur(12px)';
+
+            for(let m of magnets) {
+                const hw = MAGNET_WIDTH / 2;
+                const hh = MAGNET_HEIGHT / 2 - 5; 
+                const corners = [{x:-hw, y:-hh}, {x:hw, y:-hh}, {x:hw, y:hh}, {x:-hw, y:hh}];
+                
+                const cos = Math.cos(m.rot), sin = Math.sin(m.rot);
+                const worldCorners = corners.map(c => ({
+                    x: m.x + c.x * cos - c.y * sin,
+                    y: m.y + c.x * sin + c.y * cos
+                }));
+
+                let facingAway = [];
+                for(let i=0; i<4; i++) {
+                    let p1 = worldCorners[i], p2 = worldCorners[(i+1)%4];
+                    let nx = -(p2.y - p1.y), ny = (p2.x - p1.x); 
+                    let lx = (p1.x+p2.x)/2 - light.x, ly = (p1.y+p2.y)/2 - light.y; 
+                    facingAway.push(nx*lx + ny*ly > 0);
+                }
+
+                let startIdx = -1, count = 0;
+                for(let i=0; i<4; i++) if (facingAway[i]) count++;
+                for(let i=0; i<4; i++) {
+                    if (facingAway[i] && !facingAway[(i+3)%4]) { startIdx = i; break; }
+                }
+
+                if (startIdx !== -1) {
+                    let pts = [];
+                    for(let step=0; step<count; step++) {
+                        let edgeIdx = (startIdx + step) % 4;
+                        if(step === 0) pts.push(worldCorners[edgeIdx]);
+                        pts.push(worldCorners[(edgeIdx + 1) % 4]);
+                    }
+                    
+                    let first = pts[0], last = pts[pts.length-1];
+                    let projFirst = projectPoint(first, light), projLast = projectPoint(last, light);
+                    
+                    ctx.beginPath();
+                    ctx.moveTo(first.x, first.y);
+                    for(let i=1; i<pts.length; i++) ctx.lineTo(pts[i].x, pts[i].y);
+                    ctx.lineTo(projLast.x, projLast.y); ctx.lineTo(projFirst.x, projFirst.y);
+                    ctx.closePath();
+                    
+                    let midX = 0, midY = 0;
+                    for(let p of pts) { midX += p.x; midY += p.y; }
+                    midX /= pts.length; midY /= pts.length;
+                    
+                    let dx = projectPoint({x: midX, y: midY}, light).x - midX;
+                    let dy = projectPoint({x: midX, y: midY}, light).y - midY;
+                    let distToEdge = Math.sqrt(dx*dx + dy*dy);
+                    let fadeDist = Math.min(distToEdge, 1500); 
+                    
+                    let grad = ctx.createLinearGradient(midX, midY, midX + (dx/distToEdge)*fadeDist, midY + (dy/distToEdge)*fadeDist);
+                    grad.addColorStop(0, 'rgba(5, 8, 15, 0.98)');
+                    grad.addColorStop(0.1, 'rgba(5, 8, 15, 0.85)');
+                    grad.addColorStop(0.4, 'rgba(5, 8, 15, 0.4)');
+                    grad.addColorStop(1, 'rgba(5, 8, 15, 0)');
+                    
+                    ctx.fillStyle = grad; ctx.fill();
+                }
+            }
+            ctx.restore();
+        }
+
+        function drawEntities() {
+            // Draw Magnets
+            for (let m of magnets) {
+                ctx.save();
+                ctx.translate(m.x, m.y);
+                ctx.rotate(m.rot);
+                if(m.isDragging) {
+                    ctx.shadowColor = 'rgba(255,255,255,0.4)';
+                    ctx.shadowBlur = 25;
+                } else if (toggleLight.checked) {
+                    ctx.shadowColor = 'rgba(0,0,0,0.8)';
+                    ctx.shadowBlur = 15;
+                    ctx.shadowOffsetX = 5; ctx.shadowOffsetY = 5;
+                }
+                
+                if (magnetImgLoaded) {
+                    ctx.drawImage(imgMagnet, -MAGNET_WIDTH/2, -MAGNET_HEIGHT/2, MAGNET_WIDTH, MAGNET_HEIGHT);
+                } else {
+                    ctx.fillStyle = '#3b82f6'; ctx.fillRect(-MAGNET_WIDTH/2, -MAGNET_HEIGHT/2, MAGNET_WIDTH/2, MAGNET_HEIGHT);
+                    ctx.fillStyle = '#ef4444'; ctx.fillRect(0, -MAGNET_HEIGHT/2, MAGNET_WIDTH/2, MAGNET_HEIGHT);
+                }
+                ctx.restore();
+            }
+
+            // Draw Light Bulb
+            if(toggleLight.checked) {
+                ctx.save();
+                ctx.translate(light.x, light.y);
+                if(light.isDragging) {
+                    ctx.shadowColor = 'rgba(255, 255, 150, 0.8)';
+                    ctx.shadowBlur = 40;
+                }
+                if (bulbImgLoaded) {
+                    ctx.drawImage(imgBulb, -BULB_WIDTH/2, -BULB_HEIGHT/2, BULB_WIDTH, BULB_HEIGHT);
+                } else {
+                    ctx.fillStyle = '#fef08a'; ctx.beginPath(); ctx.arc(0, 0, BULB_WIDTH/2, 0, Math.PI*2); ctx.fill();
+                }
+                ctx.restore();
+            }
+        }
+
+        function render() {
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+            
+            // 1. Background
+            ctx.fillStyle = '#05080f';
+            ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+            updatePhysics();
+
+            // 2. Light Gradient (Illumination)
+            if(toggleLight.checked) {
+                const grad = ctx.createRadialGradient(light.x, light.y, 10, light.x, light.y, Math.max(canvas.width, canvas.height));
+                grad.addColorStop(0, 'rgba(255, 250, 220, 0.35)');
+                grad.addColorStop(0.5, 'rgba(255, 250, 220, 0.05)');
+                grad.addColorStop(1, 'rgba(255, 250, 220, 0)');
+                ctx.fillStyle = grad;
+                ctx.fillRect(0, 0, canvas.width, canvas.height);
+            }
+
+            // 3. Realistic Shadows
+            drawShadows();
+
+            // 3.5. Filings
+            drawFilings();
+
+            // 4. Localized Field Lines
+            drawFieldLines();
+
+            // 5. Entites
+            drawEntities();
+
+            requestAnimationFrame(render);
+        }
+
+        // --- INTERACTION LOGIC ---
+        let dragTarget = null;
+        let dragOffsetX = 0, dragOffsetY = 0;
+
+        function getMousePos(e) {
+            const rect = canvas.getBoundingClientRect();
+            const clientX = e.touches ? e.touches[0].clientX : e.clientX;
+            const clientY = e.touches ? e.touches[0].clientY : e.clientY;
+            return { x: clientX - rect.left, y: clientY - rect.top };
+        }
+
+        function onPointerDown(e) {
+            if(e.target !== canvas) return; 
+            const pos = getMousePos(e);
+            
+            if (toggleLight.checked) {
+                const dLight = Math.sqrt((pos.x - light.x)**2 + (pos.y - light.y)**2);
+                if(dLight < Math.max(BULB_WIDTH, BULB_HEIGHT) * 0.6) {
+                    light.isDragging = true; dragTarget = light;
+                    dragOffsetX = light.x - pos.x; dragOffsetY = light.y - pos.y;
+                    return;
+                }
+            }
+
+            for(let i=0; i<2; i++) {
+                const m = magnets[i];
+                const dist = Math.sqrt((pos.x - m.x)**2 + (pos.y - m.y)**2);
+                if (dist < MAGNET_WIDTH/1.5) {
+                    m.isDragging = true; dragTarget = m;
+                    dragOffsetX = m.x - pos.x; dragOffsetY = m.y - pos.y;
+                    m.vx = 0; m.vy = 0;
+                    return;
+                }
+            }
+        }
+
+        function onPointerMove(e) {
+            if(!dragTarget) return;
+            const pos = getMousePos(e);
+            let newX = pos.x + dragOffsetX, newY = pos.y + dragOffsetY;
+
+            const objW = dragTarget === light ? BULB_WIDTH : MAGNET_WIDTH;
+            const objH = dragTarget === light ? BULB_HEIGHT : MAGNET_HEIGHT;
+
+            if (newX < 370 + objW/2) newX = 370 + objW/2;
+            if (newX > canvas.width - objW/2) newX = canvas.width - objW/2;
+            if (newY < objH/2) newY = objH/2;
+            if (newY > canvas.height - objH/2) newY = canvas.height - objH/2;
+
+            dragTarget.x = newX; dragTarget.y = newY;
+        }
+
+        function onPointerUp() {
+            if(dragTarget) { dragTarget.isDragging = false; dragTarget = null; }
+        }
+
+        canvas.addEventListener('mousedown', onPointerDown);
+        canvas.addEventListener('mousemove', onPointerMove);
+        window.addEventListener('mouseup', onPointerUp);
+        canvas.addEventListener('touchstart', (e) => { e.preventDefault(); onPointerDown(e); }, {passive: false});
+        canvas.addEventListener('touchmove', (e) => { e.preventDefault(); onPointerMove(e); }, {passive: false});
+        window.addEventListener('touchend', onPointerUp);
+
+    </script>
+</body>
+</html>

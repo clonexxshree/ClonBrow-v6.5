@@ -1,0 +1,394 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Carbon Monoxide vs. Hemoglobin</title>
+    <style>
+        :root {
+            --bg-color: #f8fafc;
+            --panel-bg: #ffffff;
+            --text-main: #0f172a;
+            --text-muted: #64748b;
+            --accent: #ef4444;
+            --border-color: #e2e8f0;
+            --o2-color: #3b82f6;
+            --co-color: #1e293b;
+            --heme-color: #991b1b;
+        }
+
+        * { box-sizing: border-box; margin: 0; padding: 0; }
+
+        body {
+            background-color: var(--bg-color);
+            color: var(--text-main);
+            font-family: 'Inter', -apple-system, system-ui, sans-serif;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            padding: 20px;
+        }
+
+        .app-container {
+            display: flex;
+            background: var(--panel-bg);
+            border-radius: 20px;
+            box-shadow: 0 20px 50px -12px rgba(0, 0, 0, 0.1);
+            width: 100%;
+            max-width: 1100px;
+            height: 700px;
+            overflow: hidden;
+            border: 1px solid var(--border-color);
+        }
+
+        /* Sidebar UI */
+        .sidebar {
+            width: 350px;
+            padding: 40px;
+            border-right: 1px solid var(--border-color);
+            display: flex;
+            flex-direction: column;
+            gap: 20px;
+        }
+
+        .sidebar h1 { font-size: 22px; font-weight: 800; margin-bottom: 5px; }
+        .description { font-size: 13px; line-height: 1.5; color: var(--text-muted); margin-bottom: 10px; }
+
+        .control-group {
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+        }
+
+        .main-btn {
+            width: 100%;
+            padding: 14px;
+            background: var(--o2-color);
+            color: white;
+            border: none;
+            border-radius: 10px;
+            font-size: 14px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+        .main-btn:hover { opacity: 0.9; transform: translateY(-1px); }
+        .main-btn:active { transform: translateY(0); }
+
+        #btnCO { background: var(--co-color); }
+        #btnReset { background: #64748b; margin-top: auto; }
+
+        .status-card {
+            background: #f1f5f9;
+            padding: 15px;
+            border-radius: 10px;
+            font-size: 13px;
+            line-height: 1.4;
+            color: var(--text-muted);
+            border-left: 4px solid var(--o2-color);
+        }
+
+        /* Simulation Canvas Area */
+        .simulation-area {
+            flex: 1;
+            background: radial-gradient(circle at center, #fff1f2, #ffe4e6);
+            position: relative;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            overflow: hidden;
+        }
+
+        #particleCanvas {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            z-index: 1;
+        }
+
+        .svg-overlay {
+            position: relative;
+            z-index: 2;
+            width: 450px;
+            height: 450px;
+            pointer-events: none;
+        }
+
+        /* Hemoglobin Styles */
+        .hb-subunit {
+            fill: #fca5a5;
+            stroke: #ef4444;
+            stroke-width: 2;
+            opacity: 0.8;
+        }
+
+        .heme-seat {
+            fill: var(--heme-color);
+            stroke: #450a0a;
+            stroke-width: 3;
+            transition: all 0.3s ease;
+        }
+
+        .heme-seat.occupied-o2 { fill: #3b82f6; stroke: #1d4ed8; filter: drop-shadow(0 0 8px #3b82f6); }
+        .heme-seat.occupied-co { fill: #0f172a; stroke: #000000; filter: drop-shadow(0 0 8px #000000); }
+
+        .label-text {
+            font-size: 12px;
+            font-weight: bold;
+            fill: #7f1d1d;
+            text-anchor: middle;
+        }
+
+        @media (max-width: 900px) {
+            .app-container { flex-direction: column; height: auto; }
+            .sidebar { width: 100%; border-right: none; }
+            .simulation-area { min-height: 500px; }
+        }
+    </style>
+</head>
+<body>
+
+    <div class="app-container">
+        <aside class="sidebar">
+            <h1>Hemoglobin Binding</h1>
+            <p class="description">Oxygen ($O_2$) and Carbon Monoxide ($CO$) compete for the same four "seats" on a hemoglobin molecule.</p>
+
+            <div class="control-group">
+                <button class="main-btn" id="btnO2">Release Oxygen (Normal)</button>
+                <button class="main-btn" id="btnCO">Release Carbon Monoxide</button>
+            </div>
+
+            <div class="status-card" id="statusCard">
+                <strong>Current Status:</strong><br>
+                <span id="statusText">Hemoglobin is ready for gas exchange.</span>
+            </div>
+
+            <div style="font-size: 12px; color: var(--text-muted);">
+                <p><strong>Note:</strong> $CO$ has over 200x the affinity of $O_2$. Once it binds, it rarely lets go, effectively "stealing" the seat from Oxygen.</p>
+            </div>
+
+            <button class="main-btn" id="btnReset">Clear & Reset</button>
+        </aside>
+
+        <main class="simulation-area">
+            <canvas id="particleCanvas"></canvas>
+
+            <svg class="svg-overlay" viewBox="0 0 400 400">
+                <defs>
+                    <filter id="shadow" x="-20%" y="-20%" width="140%" height="140%">
+                        <feDropShadow dx="0" dy="4" stdDeviation="4" flood-opacity="0.2"/>
+                    </filter>
+                </defs>
+
+                <!-- Hemoglobin Subunits (Globins) -->
+                <g filter="url(#shadow)">
+                    <!-- Alpha 1 -->
+                    <path class="hb-subunit" d="M 200 200 Q 150 120 100 150 Q 50 180 80 230 Q 120 280 200 200" />
+                    <!-- Alpha 2 -->
+                    <path class="hb-subunit" d="M 200 200 Q 250 120 300 150 Q 350 180 320 230 Q 280 280 200 200" />
+                    <!-- Beta 1 -->
+                    <path class="hb-subunit" d="M 200 200 Q 150 280 100 250 Q 50 220 80 170 Q 120 120 200 200" />
+                    <!-- Beta 2 -->
+                    <path class="hb-subunit" d="M 200 200 Q 250 280 300 250 Q 350 220 320 170 Q 280 120 200 200" />
+                </g>
+
+                <!-- Heme Groups (The Seats) -->
+                <g id="seats">
+                    <circle id="seat-0" class="heme-seat" cx="120" cy="180" r="18" />
+                    <circle id="seat-1" class="heme-seat" cx="280" cy="180" r="18" />
+                    <circle id="seat-2" class="heme-seat" cx="120" cy="220" r="18" />
+                    <circle id="seat-3" class="heme-seat" cx="280" cy="220" r="18" />
+                </g>
+
+                <text x="200" y="380" class="label-text">HEMOGLOBIN PROTEIN</text>
+            </svg>
+        </main>
+    </div>
+
+    <script>
+        const canvas = document.getElementById('particleCanvas');
+        const ctx = canvas.getContext('2d');
+        const btnO2 = document.getElementById('btnO2');
+        const btnCO = document.getElementById('btnCO');
+        const btnReset = document.getElementById('btnReset');
+        const statusText = document.getElementById('statusText');
+        const statusCard = document.getElementById('statusCard');
+
+        let particles = [];
+        const seatCoords = [
+            { x: 0, y: 0, id: 'seat-0', state: 'empty' },
+            { x: 0, y: 0, id: 'seat-1', state: 'empty' },
+            { x: 0, y: 0, id: 'seat-2', state: 'empty' },
+            { x: 0, y: 0, id: 'seat-3', state: 'empty' }
+        ];
+
+        function resize() {
+            canvas.width = canvas.offsetWidth;
+            canvas.height = canvas.offsetHeight;
+            
+            // Map SVG coordinates to Canvas pixels
+            const rect = canvas.getBoundingClientRect();
+            const svgSize = 450; // Visual size in pixels
+            const scale = svgSize / 400;
+            const offsetX = (canvas.width - svgSize) / 2;
+            const offsetY = (canvas.height - svgSize) / 2;
+
+            const rawCoords = [
+                {x: 120, y: 180}, {x: 280, y: 180},
+                {x: 120, y: 220}, {x: 280, y: 220}
+            ];
+
+            rawCoords.forEach((c, i) => {
+                seatCoords[i].x = offsetX + (c.x * scale);
+                seatCoords[i].y = offsetY + (c.y * scale);
+            });
+        }
+
+        window.addEventListener('resize', resize);
+        resize();
+
+        class Particle {
+            constructor(type) {
+                this.type = type; // 'o2' or 'co'
+                this.reset();
+            }
+
+            reset() {
+                this.x = Math.random() < 0.5 ? -20 : canvas.width + 20;
+                this.y = Math.random() * canvas.height;
+                this.vx = (Math.random() - 0.5) * 4;
+                this.vy = (Math.random() - 0.5) * 4;
+                this.radius = 6;
+                this.isBinding = false;
+                this.targetSeat = null;
+                this.opacity = 1;
+                this.life = 1;
+            }
+
+            update() {
+                if (!this.isBinding) {
+                    this.x += this.vx;
+                    this.y += this.vy;
+
+                    // Bound check
+                    if (this.x < -50 || this.x > canvas.width + 50 || this.y < -50 || this.y > canvas.height + 50) {
+                        this.reset();
+                    }
+
+                    // Check for seat collision
+                    for (let seat of seatCoords) {
+                        if (seat.state === 'empty' || (seat.state === 'o2' && this.type === 'co')) {
+                            const dx = this.x - seat.x;
+                            const dy = this.y - seat.y;
+                            const dist = Math.sqrt(dx * dx + dy * dy);
+
+                            if (dist < 40) {
+                                // Aggressive CO binding logic
+                                if (this.type === 'co') {
+                                    this.bindTo(seat);
+                                    break;
+                                } else if (seat.state === 'empty') {
+                                    this.bindTo(seat);
+                                    break;
+                                }
+                            }
+                        }
+                    }
+                } else {
+                    // Move towards seat
+                    const dx = this.targetSeat.x - this.x;
+                    const dy = this.targetSeat.y - this.y;
+                    this.x += dx * 0.1;
+                    this.y += dy * 0.1;
+
+                    if (Math.abs(dx) < 2 && Math.abs(dy) < 2) {
+                        this.finishBinding();
+                    }
+                }
+            }
+
+            bindTo(seat) {
+                this.isBinding = true;
+                this.targetSeat = seat;
+                // Transition state
+                seat.state = 'locking';
+            }
+
+            finishBinding() {
+                const seatEl = document.getElementById(this.targetSeat.id);
+                // Use setAttribute('class', ...) for SVG elements to avoid read-only className property errors
+                const newClass = 'heme-seat ' + (this.type === 'o2' ? 'occupied-o2' : 'occupied-co');
+                seatEl.setAttribute('class', newClass);
+                
+                this.targetSeat.state = this.type;
+                
+                // Update status
+                checkStatus();
+
+                // Remove particle from pool
+                const idx = particles.indexOf(this);
+                if (idx > -1) particles.splice(idx, 1);
+            }
+
+            draw() {
+                ctx.beginPath();
+                ctx.arc(this.x, this.y, this.radius, 0, Math.PI * 2);
+                ctx.fillStyle = this.type === 'o2' ? '#3b82f6' : '#1e293b';
+                ctx.fill();
+                
+                // Molecule look
+                ctx.beginPath();
+                ctx.arc(this.x + 4, this.y, this.radius - 1, 0, Math.PI * 2);
+                ctx.fill();
+            }
+        }
+
+        function checkStatus() {
+            const countCO = seatCoords.filter(s => s.state === 'co').length;
+            const countO2 = seatCoords.filter(s => s.state === 'o2').length;
+
+            if (countCO > 0) {
+                statusText.textContent = `CRITICAL: ${countCO} seat(s) blocked by CO. Oxygen cannot bind here.`;
+                statusCard.style.borderLeftColor = 'var(--co-color)';
+            } else if (countO2 > 0) {
+                statusText.textContent = `Oxygenated: ${countO2} seat(s) carrying Oxygen to tissues.`;
+                statusCard.style.borderLeftColor = 'var(--o2-color)';
+            } else {
+                statusText.textContent = "Hemoglobin is ready for gas exchange.";
+                statusCard.style.borderLeftColor = '#64748b';
+            }
+        }
+
+        function animate() {
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+            particles.forEach(p => {
+                p.update();
+                p.draw();
+            });
+            requestAnimationFrame(animate);
+        }
+
+        btnO2.onclick = () => {
+            for(let i=0; i<15; i++) particles.push(new Particle('o2'));
+        };
+
+        btnCO.onclick = () => {
+            for(let i=0; i<10; i++) particles.push(new Particle('co'));
+        };
+
+        btnReset.onclick = () => {
+            particles = [];
+            seatCoords.forEach(s => {
+                s.state = 'empty';
+                document.getElementById(s.id).setAttribute('class', 'heme-seat');
+            });
+            checkStatus();
+        };
+
+        animate();
+    </script>
+</body>
+</html>

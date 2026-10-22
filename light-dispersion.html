@@ -1,0 +1,783 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Physics Lab - 2D Interactive Optics</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        body, html {
+            margin: 0;
+            padding: 0;
+            width: 100%;
+            height: 100%;
+            overflow: hidden;
+            background-color: #020617; /* Deep space slate */
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+            touch-action: none;
+            user-select: none;
+        }
+        
+        #sim-canvas {
+            display: block;
+            width: 100%;
+            height: 100%;
+            cursor: grab;
+        }
+        #sim-canvas:active {
+            cursor: grabbing;
+        }
+
+        /* Premium Minimalist Sliders */
+        input[type=range] {
+            -webkit-appearance: none;
+            width: 100%;
+            background: transparent;
+        }
+        input[type=range]::-webkit-slider-thumb {
+            -webkit-appearance: none;
+            height: 18px;
+            width: 18px;
+            border-radius: 50%;
+            background: #ffffff;
+            cursor: pointer;
+            margin-top: -7px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.6);
+            transition: transform 0.1s ease;
+            border: 1px solid rgba(255,255,255,0.2);
+        }
+        input[type=range]::-webkit-slider-thumb:hover {
+            transform: scale(1.15);
+        }
+        input[type=range]::-webkit-slider-runnable-track {
+            width: 100%;
+            height: 4px;
+            cursor: pointer;
+            background: rgba(255, 255, 255, 0.15);
+            border-radius: 2px;
+            box-shadow: inset 0 1px 2px rgba(0,0,0,0.5);
+        }
+        
+        /* Deep Glassmorphism Panel */
+        .glass-panel {
+            background: linear-gradient(145deg, rgba(15, 23, 42, 0.85) 0%, rgba(2, 6, 23, 0.95) 100%);
+            backdrop-filter: blur(30px);
+            -webkit-backdrop-filter: blur(30px);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            border-top: 1px solid rgba(255, 255, 255, 0.2);
+            box-shadow: 0 30px 60px -12px rgba(0, 0, 0, 0.8), inset 0 1px 10px rgba(255, 255, 255, 0.05);
+        }
+
+        .scroll-area::-webkit-scrollbar { width: 4px; }
+        .scroll-area::-webkit-scrollbar-thumb { background: rgba(255, 255, 255, 0.2); border-radius: 4px; }
+
+        /* Segmented Control Tabs */
+        .tab-btn {
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+        .tab-btn.active {
+            background-color: #ffffff;
+            color: #020617;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.4);
+        }
+        .tab-btn:not(.active):hover {
+            background-color: rgba(255,255,255,0.1);
+            color: #ffffff;
+        }
+    </style>
+</head>
+<body>
+
+    <!-- Main UI Overlay -->
+    <div class="absolute top-5 left-5 md:top-8 md:left-8 z-10 w-[380px] glass-panel p-6 rounded-[1.5rem] pointer-events-auto flex flex-col max-h-[90vh]">
+        
+        <!-- Header -->
+        <div class="mb-5 border-b border-white/10 pb-5 shrink-0 flex items-center justify-between">
+            <div>
+                <h1 class="text-2xl font-bold tracking-tight text-white mb-1">Optics Lab</h1>
+                <p class="text-[11px] font-medium text-blue-400 uppercase tracking-widest">2D Interactive Raytracing</p>
+            </div>
+            <div class="w-10 h-10 rounded-full bg-blue-500/20 flex items-center justify-center text-blue-400 shadow-[0_0_15px_rgba(59,130,246,0.3)]">
+                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9.663 17h4.673M12 3v1m6.364 1.636l-.707.707M21 12h-1M4 12H3m3.343-5.657l-.707-.707m2.828 9.9a5 5 0 117.072 0l-.548.547A3.374 3.374 0 0014 18.469V19a2 2 0 11-4 0v-.531c0-.895-.356-1.754-.988-2.386l-.548-.547z"></path></svg>
+            </div>
+        </div>
+
+        <!-- Module Navigation Tabs -->
+        <div class="flex p-1 bg-black/40 rounded-xl shadow-inner gap-1 mb-6 shrink-0 border border-white/5">
+            <button data-tab="reflection" class="tab-btn active flex-1 py-2 text-[11px] font-bold uppercase tracking-wider rounded-lg text-gray-400">Reflection</button>
+            <button data-tab="refraction" class="tab-btn flex-1 py-2 text-[11px] font-bold uppercase tracking-wider rounded-lg text-gray-400">Refraction</button>
+            <button data-tab="dispersion" class="tab-btn flex-1 py-2 text-[11px] font-bold uppercase tracking-wider rounded-lg text-gray-400">Dispersion</button>
+        </div>
+
+        <div class="scroll-area overflow-y-auto pr-2 pb-2 space-y-7">
+            
+            <!-- Dynamic Information Box -->
+            <div class="bg-black/30 p-4 rounded-xl border border-white/5 shadow-inner">
+                <h2 id="info-title" class="text-sm font-bold text-white mb-2">Law of Reflection</h2>
+                <p id="info-desc" class="text-xs text-gray-400 leading-relaxed">
+                    Drag the Laser or the Mirror. Notice how the light beam bounces off the mirror at the exact same angle it hits it (Angle of Incidence = Angle of Reflection).
+                </p>
+            </div>
+
+            <!-- REFLECTION CONTROLS -->
+            <div id="controls-reflection" class="space-y-5">
+                <div class="space-y-3">
+                    <div class="flex justify-between items-end">
+                        <label class="text-[11px] font-semibold text-red-400 uppercase tracking-widest">Laser Angle</label>
+                        <span id="laser-angle-display" class="text-[11px] font-mono bg-red-500/10 px-2 py-1 rounded text-red-300">0°</span>
+                    </div>
+                    <input type="range" id="laser-angle" min="0" max="360" step="1" value="0" style="accent-color: #ef4444;">
+                </div>
+                <div class="space-y-3">
+                    <div class="flex justify-between items-end">
+                        <label class="text-[11px] font-semibold text-blue-400 uppercase tracking-widest">Mirror Angle</label>
+                        <span id="mirror-angle-display" class="text-[11px] font-mono bg-blue-500/10 px-2 py-1 rounded text-blue-300">110°</span>
+                    </div>
+                    <input type="range" id="mirror-angle" min="0" max="180" step="1" value="110" style="accent-color: #3b82f6;">
+                </div>
+            </div>
+
+            <!-- REFRACTION CONTROLS -->
+            <div id="controls-refraction" class="space-y-5 hidden">
+                <div class="space-y-3">
+                    <div class="flex justify-between items-end">
+                        <label class="text-[11px] font-semibold text-yellow-400 uppercase tracking-widest">Pencil Angle</label>
+                        <span id="pencil-angle-display" class="text-[11px] font-mono bg-yellow-500/10 px-2 py-1 rounded text-yellow-300">60°</span>
+                    </div>
+                    <input type="range" id="pencil-angle" min="10" max="170" step="1" value="60" style="accent-color: #facc15;">
+                </div>
+                <div class="space-y-3">
+                    <div class="flex justify-between items-end">
+                        <label class="text-[11px] font-semibold text-cyan-400 uppercase tracking-widest">Liquid Density (IOR)</label>
+                        <span id="ior-display" class="text-[11px] font-mono bg-cyan-500/10 px-2 py-1 rounded text-cyan-300">Water (1.33)</span>
+                    </div>
+                    <input type="range" id="ior-slider" min="1.1" max="2.0" step="0.01" value="1.33" style="accent-color: #22d3ee;">
+                </div>
+            </div>
+
+            <!-- DISPERSION CONTROLS -->
+            <div id="controls-dispersion" class="space-y-5 hidden">
+                <div class="space-y-3">
+                    <div class="flex justify-between items-end">
+                        <label class="text-[11px] font-semibold text-purple-400 uppercase tracking-widest">Rotate Prism</label>
+                        <span id="prism-angle-display" class="text-[11px] font-mono bg-purple-500/10 px-2 py-1 rounded text-purple-300">0°</span>
+                    </div>
+                    <input type="range" id="prism-angle" min="-60" max="60" step="1" value="0" style="accent-color: #c084fc;">
+                </div>
+            </div>
+
+        </div>
+        
+        <div class="pt-4 border-t border-white/10 text-[11px] text-gray-500 font-medium text-center shrink-0 mt-4">
+            Physically drag objects on the canvas to interact.
+        </div>
+    </div>
+
+    <!-- 2D Physics Canvas -->
+    <canvas id="sim-canvas"></canvas>
+
+    <script>
+        const canvas = document.getElementById('sim-canvas');
+        const ctx = canvas.getContext('2d');
+
+        // Physics Entities (Initial dummy values, gets properly positioned immediately)
+        const objects = {
+            laser: { x: 0, y: 0, angle: 0, isDragging: false, radius: 40 },
+            mirror: { x: 0, y: 0, angle: 110 * Math.PI / 180, width: 300, isDragging: false, radius: 60 },
+            glass: { x: 0, y: 0, width: 280, height: 350, isDragging: false, radius: 120 },
+            pencil: { x: 0, y: 0, angle: 60 * Math.PI / 180, length: 450, isDragging: false, radius: 50 },
+            prism: { x: 0, y: 0, size: 220, angle: 0, isDragging: false, radius: 80 }
+        };
+
+        // Guaranteed Centering Function
+        function centerObjects(mode) {
+            // UI panel is ~380px wide on desktop, 0 on mobile. Center in the REMAINING space.
+            const uiWidth = window.innerWidth >= 768 ? 400 : 0;
+            const cx = uiWidth + (window.innerWidth - uiWidth) / 2;
+            const cy = window.innerHeight / 2;
+
+            if (mode === 'reflection') {
+                objects.laser.x = cx - 250;
+                objects.laser.y = cy;
+                objects.mirror.x = cx + 150;
+                objects.mirror.y = cy;
+            } else if (mode === 'refraction') {
+                objects.glass.x = cx;
+                objects.glass.y = cy + 50;
+                objects.pencil.x = cx;
+                objects.pencil.y = cy - 100;
+            } else if (mode === 'dispersion') {
+                objects.laser.x = cx - 250;
+                objects.laser.y = cy;
+                objects.prism.x = cx + 150;
+                objects.prism.y = cy;
+            }
+        }
+
+        function resize() {
+            canvas.width = window.innerWidth;
+            canvas.height = window.innerHeight;
+            centerObjects(currentMode); // Recenter on resize
+        }
+        window.addEventListener('resize', resize);
+        
+
+        // --- STATE & UI BINDING ---
+        let currentMode = 'reflection';
+        let currentIOR = 1.33; // Water
+        resize(); // Initial call
+
+        const infoData = {
+            reflection: {
+                title: 'Law of Reflection',
+                desc: 'Drag the Laser or the Mirror. Notice how the light beam bounces off the mirror at the exact same angle it hits it (Angle of Incidence = Angle of Reflection).'
+            },
+            refraction: {
+                title: 'Refraction & Snell\'s Law',
+                desc: 'Drag the Pencil into the glass of water. Because light travels slower in dense water, the light physically bends, causing the pencil to appear broken and shifted.'
+            },
+            dispersion: {
+                title: 'Prismatic Dispersion',
+                desc: 'Drag the Glass Prism into the white light beam. The light travels THROUGH the prism, and different colors bend at slightly different angles, splitting the white light into a beautiful rainbow.'
+            }
+        };
+
+        const tabs = document.querySelectorAll('.tab-btn');
+        tabs.forEach(btn => {
+            btn.addEventListener('click', (e) => {
+                tabs.forEach(t => { t.classList.remove('active'); t.classList.add('text-gray-400'); });
+                e.target.classList.add('active'); e.target.classList.remove('text-gray-400');
+
+                currentMode = e.target.getAttribute('data-tab');
+                
+                document.getElementById('info-title').innerText = infoData[currentMode].title;
+                document.getElementById('info-desc').innerText = infoData[currentMode].desc;
+
+                document.getElementById('controls-reflection').classList.add('hidden');
+                document.getElementById('controls-refraction').classList.add('hidden');
+                document.getElementById('controls-dispersion').classList.add('hidden');
+                document.getElementById(`controls-${currentMode}`).classList.remove('hidden');
+
+                // Re-center things for the new tab
+                centerObjects(currentMode);
+
+                // Reset standard angles to look good initially on switch
+                if(currentMode === 'reflection') {
+                    objects.laser.angle = 0; document.getElementById('laser-angle').value = 0; document.getElementById('laser-angle-display').innerText = `0°`;
+                    objects.mirror.angle = 110 * Math.PI / 180; document.getElementById('mirror-angle').value = 110; document.getElementById('mirror-angle-display').innerText = `110°`;
+                }
+                if(currentMode === 'dispersion') {
+                    objects.laser.angle = 0; document.getElementById('laser-angle').value = 0; document.getElementById('laser-angle-display').innerText = `0°`;
+                    objects.prism.angle = 0; document.getElementById('prism-angle').value = 0; document.getElementById('prism-angle-display').innerText = `0°`;
+                }
+            });
+        });
+
+        // Sliders
+        document.getElementById('laser-angle').addEventListener('input', (e) => {
+            objects.laser.angle = e.target.value * Math.PI / 180;
+            document.getElementById('laser-angle-display').innerText = `${e.target.value}°`;
+        });
+        document.getElementById('mirror-angle').addEventListener('input', (e) => {
+            objects.mirror.angle = e.target.value * Math.PI / 180;
+            document.getElementById('mirror-angle-display').innerText = `${e.target.value}°`;
+        });
+        document.getElementById('pencil-angle').addEventListener('input', (e) => {
+            objects.pencil.angle = e.target.value * Math.PI / 180;
+            document.getElementById('pencil-angle-display').innerText = `${e.target.value}°`;
+        });
+        document.getElementById('ior-slider').addEventListener('input', (e) => {
+            currentIOR = parseFloat(e.target.value);
+            document.getElementById('ior-display').innerText = `IOR (${currentIOR.toFixed(2)})`;
+        });
+        document.getElementById('prism-angle').addEventListener('input', (e) => {
+            objects.prism.angle = e.target.value * Math.PI / 180;
+            document.getElementById('prism-angle-display').innerText = `${e.target.value}°`;
+        });
+
+
+        // --- MATH & RAYCASTING ---
+
+        // Line-Line Intersection Algorithm
+        function getIntersection(p1, p2, p3, p4) {
+            const den = (p1.x - p2.x) * (p3.y - p4.y) - (p1.y - p2.y) * (p3.x - p4.x);
+            if (den === 0) return null; // Lines are parallel
+            const t = ((p1.x - p3.x) * (p3.y - p4.y) - (p1.y - p3.y) * (p3.x - p4.x)) / den;
+            const u = -((p1.x - p2.x) * (p1.y - p3.y) - (p1.y - p2.y) * (p1.x - p3.x)) / den;
+            if (t > 0 && t < 1 && u > 0 && u < 1) {
+                return { x: p1.x + t * (p2.x - p1.x), y: p1.y + t * (p2.y - p1.y) };
+            }
+            return null;
+        }
+
+        // --- DRAWING FUNCTIONS ---
+
+        function drawLaser(x, y, angle, color = '#ef4444') {
+            ctx.save();
+            ctx.translate(x, y);
+            ctx.rotate(angle);
+            
+            if(objects.laser.isDragging) {
+                ctx.shadowColor = 'rgba(255,255,255,0.4)';
+                ctx.shadowBlur = 20;
+            } else {
+                ctx.shadowColor = 'rgba(0,0,0,0.8)';
+                ctx.shadowBlur = 10;
+                ctx.shadowOffsetY = 5;
+            }
+
+            // Laser Body
+            ctx.fillStyle = '#1e293b';
+            ctx.beginPath(); ctx.roundRect(-40, -18, 80, 36, 8); ctx.fill();
+            
+            // Metallic nozzle
+            ctx.fillStyle = '#94a3b8';
+            ctx.fillRect(40, -12, 10, 24);
+
+            // Colored Tip
+            ctx.fillStyle = color;
+            ctx.beginPath(); ctx.roundRect(50, -8, 8, 16, 4); ctx.fill();
+
+            // Label
+            ctx.shadowBlur = 0;
+            ctx.fillStyle = '#ffffff';
+            ctx.font = 'bold 12px Inter';
+            ctx.textAlign = 'center';
+            ctx.textBaseline = 'middle';
+            ctx.fillText("LASER", 0, 0);
+
+            ctx.restore();
+        }
+
+        function drawShadows() {
+            ctx.shadowColor = 'rgba(0,0,0,0.7)';
+            ctx.shadowBlur = 25;
+            ctx.shadowOffsetY = 15;
+        }
+
+        function render() {
+            // Strict Bounds Enforcer (Ensures objects NEVER get stuck off-screen or behind UI)
+            for (let key in objects) {
+                const obj = objects[key];
+                const minX = (window.innerWidth >= 768 ? 400 : 20) + obj.radius; 
+                const maxX = canvas.width - obj.radius;
+                const minY = obj.radius;
+                const maxY = canvas.height - obj.radius;
+
+                if (obj.x < minX) obj.x = minX;
+                if (obj.x > maxX) obj.x = maxX;
+                if (obj.y < minY) obj.y = minY;
+                if (obj.y > maxY) obj.y = maxY;
+            }
+
+            // Clear & Draw Background
+            ctx.fillStyle = '#020617';
+            ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+            // Subtle Grid
+            ctx.strokeStyle = 'rgba(255, 255, 255, 0.03)';
+            ctx.lineWidth = 1;
+            ctx.beginPath();
+            for(let i=0; i<canvas.width; i+=50) { ctx.moveTo(i,0); ctx.lineTo(i,canvas.height); }
+            for(let i=0; i<canvas.height; i+=50) { ctx.moveTo(0,i); ctx.lineTo(canvas.width,i); }
+            ctx.stroke();
+
+            // --- MODULE 1: REFLECTION ---
+            if (currentMode === 'reflection') {
+                const laser = objects.laser;
+                const mirror = objects.mirror;
+
+                // Draw Mirror
+                ctx.save();
+                ctx.translate(mirror.x, mirror.y);
+                ctx.rotate(mirror.angle);
+                
+                if(mirror.isDragging) { ctx.shadowColor='rgba(255,255,255,0.3)'; ctx.shadowBlur=25; }
+                else drawShadows();
+
+                // Mirror back framing
+                ctx.fillStyle = '#1e293b';
+                ctx.fillRect(-mirror.width/2, -8, mirror.width, 16);
+                
+                // Mirror reflective surface
+                const grad = ctx.createLinearGradient(-mirror.width/2, 0, mirror.width/2, 0);
+                grad.addColorStop(0, '#bae6fd');
+                grad.addColorStop(0.5, '#ffffff');
+                grad.addColorStop(1, '#bae6fd');
+                ctx.fillStyle = grad;
+                ctx.fillRect(-mirror.width/2 - 2, -10, mirror.width + 4, 4);
+                
+                ctx.shadowBlur = 0;
+                ctx.fillStyle = 'rgba(255,255,255,0.7)';
+                ctx.font = 'bold 14px Inter';
+                ctx.textAlign = 'center';
+                ctx.fillText("MIRROR", 0, 25);
+                ctx.restore();
+
+                drawLaser(laser.x, laser.y, laser.angle);
+
+                // --- Reflection Raycasting Math ---
+                const rayDir = { x: Math.cos(laser.angle), y: Math.sin(laser.angle) };
+                const rayEnd = { x: laser.x + rayDir.x * 3000, y: laser.y + rayDir.y * 3000 };
+
+                // Get mirror line segment
+                const mx = Math.cos(mirror.angle), my = Math.sin(mirror.angle);
+                const mSeg1 = { x: mirror.x - mx * mirror.width/2, y: mirror.y - my * mirror.width/2 };
+                const mSeg2 = { x: mirror.x + mx * mirror.width/2, y: mirror.y + my * mirror.width/2 };
+
+                const hit = getIntersection(laser, rayEnd, mSeg1, mSeg2);
+
+                ctx.save();
+                ctx.globalCompositeOperation = 'screen';
+                ctx.lineWidth = 5;
+                ctx.strokeStyle = '#ef4444';
+                ctx.shadowColor = '#ef4444';
+                ctx.shadowBlur = 20;
+
+                ctx.beginPath();
+                ctx.moveTo(laser.x + Math.cos(laser.angle)*58, laser.y + Math.sin(laser.angle)*58); // Start at laser tip
+
+                if (hit) {
+                    ctx.lineTo(hit.x, hit.y);
+                    ctx.stroke();
+
+                    // Calculate Reflection Normal
+                    let nx = -my, ny = mx;
+                    // Ensure normal faces the incoming laser ray so dot product works correctly
+                    if (rayDir.x * nx + rayDir.y * ny > 0) {
+                        nx = my; ny = -mx;
+                    }
+
+                    // Formula: R = D - 2(D·N)N
+                    const dot = rayDir.x * nx + rayDir.y * ny;
+                    const rx = rayDir.x - 2 * dot * nx;
+                    const ry = rayDir.y - 2 * dot * ny;
+
+                    ctx.beginPath();
+                    ctx.moveTo(hit.x, hit.y);
+                    ctx.lineTo(hit.x + rx * 3000, hit.y + ry * 3000);
+                    ctx.stroke();
+                    
+                    // Normal line
+                    ctx.setLineDash([8, 8]);
+                    ctx.lineWidth = 2;
+                    ctx.strokeStyle = 'rgba(255,255,255,0.4)';
+                    ctx.shadowBlur = 0;
+                    ctx.beginPath();
+                    ctx.moveTo(hit.x, hit.y);
+                    ctx.lineTo(hit.x + nx * 150, hit.y + ny * 150);
+                    ctx.stroke();
+                    ctx.setLineDash([]);
+                } else {
+                    ctx.lineTo(rayEnd.x, rayEnd.y);
+                    ctx.stroke();
+                }
+                ctx.restore();
+            }
+
+            // --- MODULE 2: REFRACTION ---
+            if (currentMode === 'refraction') {
+                const glass = objects.glass;
+                const pencil = objects.pencil;
+
+                // Draw Glass of Water
+                ctx.save();
+                ctx.translate(glass.x, glass.y);
+                if(glass.isDragging) { ctx.shadowColor='rgba(255,255,255,0.3)'; ctx.shadowBlur=25; }
+                else drawShadows();
+
+                // Liquid fill
+                ctx.fillStyle = 'rgba(56, 189, 248, 0.25)'; // Transparent Cyan
+                ctx.beginPath(); 
+                ctx.roundRect(-glass.width/2, -glass.height/2, glass.width, glass.height, 16); 
+                ctx.fill();
+                
+                // Glass border
+                ctx.lineWidth = 6;
+                ctx.strokeStyle = 'rgba(255,255,255,0.3)';
+                ctx.stroke();
+                
+                // Water surface line
+                ctx.strokeStyle = 'rgba(255,255,255,0.7)';
+                ctx.lineWidth = 3;
+                ctx.beginPath(); 
+                ctx.moveTo(-glass.width/2, -glass.height/2 + 40); 
+                ctx.lineTo(glass.width/2, -glass.height/2 + 40); 
+                ctx.stroke();
+                
+                ctx.shadowBlur = 0;
+                ctx.fillStyle = 'rgba(255,255,255,0.6)';
+                ctx.font = 'bold 18px Inter';
+                ctx.textAlign = 'center';
+                ctx.fillText("WATER", 0, glass.height/2 + 30);
+                ctx.restore();
+
+                // Draw Pencil (With Perfect Snell's Law Refraction)
+                ctx.save();
+                if(pencil.isDragging) { ctx.shadowColor='rgba(255,255,255,0.3)'; ctx.shadowBlur=25; }
+                else drawShadows();
+
+                const waterTopY = glass.y - glass.height/2 + 40;
+
+                // Order pencil endpoints so p1 is always the top
+                let p1 = {x: pencil.x - Math.cos(pencil.angle) * pencil.length/2, y: pencil.y - Math.sin(pencil.angle) * pencil.length/2};
+                let p2 = {x: pencil.x + Math.cos(pencil.angle) * pencil.length/2, y: pencil.y + Math.sin(pencil.angle) * pencil.length/2};
+                if (p1.y > p2.y) { let tmp = p1; p1 = p2; p2 = tmp; }
+
+                function drawPencilSegment(sx, sy, ex, ey) {
+                    ctx.lineWidth = 22;
+                    ctx.lineCap = 'round';
+                    ctx.strokeStyle = '#facc15'; // Yellow wood
+                    ctx.beginPath(); ctx.moveTo(sx, sy); ctx.lineTo(ex, ey); ctx.stroke();
+                    ctx.lineWidth = 4;
+                    ctx.strokeStyle = '#334155'; // Graphite
+                    ctx.beginPath(); ctx.moveTo(sx, sy); ctx.lineTo(ex, ey); ctx.stroke();
+                }
+
+                // Check if pencil crosses the water surface boundary
+                if (p1.y < waterTopY && p2.y > waterTopY && 
+                    Math.max(p1.x, p2.x) > glass.x - glass.width/2 && 
+                    Math.min(p1.x, p2.x) < glass.x + glass.width/2) {
+                    
+                    // 1. Find exactly where the pencil hits the water
+                    const t = (waterTopY - p1.y) / (p2.y - p1.y);
+                    const hitX = p1.x + t * (p2.x - p1.x);
+
+                    // 2. Draw Top Part (In Air)
+                    drawPencilSegment(p1.x, p1.y, hitX, waterTopY);
+
+                    // 3. Draw Bottom Part (In Water - Visually "Broken" by Optical Depth & Lateral Shift)
+                    const dx = p2.x - hitX;
+                    const dy = p2.y - waterTopY;
+                    
+                    // True visual refraction effect:
+                    const iorFactor = currentIOR - 1.0; 
+                    
+                    // Lateral offset (the "break" at the waterline)
+                    const lateralShift = iorFactor * 40 * Math.sign(dx);
+                    
+                    // Magnification/Flattener (appears shallower and wider)
+                    const visualDx = dx * (1 + iorFactor * 0.4);
+                    const visualDy = dy / (1 + iorFactor * 0.3); 
+
+                    drawPencilSegment(hitX + lateralShift, waterTopY, hitX + lateralShift + visualDx, waterTopY + visualDy);
+                    
+                } else {
+                    // Fully outside or completely inside, draw normally
+                    drawPencilSegment(p1.x, p1.y, p2.x, p2.y);
+                }
+
+                ctx.restore();
+            }
+
+            // --- MODULE 3: DISPERSION ---
+            if (currentMode === 'dispersion') {
+                const laser = objects.laser;
+                const prism = objects.prism;
+
+                // Draw Prism
+                ctx.save();
+                ctx.translate(prism.x, prism.y);
+                ctx.rotate(prism.angle);
+                
+                if(prism.isDragging) { ctx.shadowColor='rgba(255,255,255,0.4)'; ctx.shadowBlur=30; }
+                else { ctx.shadowColor='rgba(0,0,0,0.8)'; ctx.shadowBlur=20; ctx.shadowOffsetY=10; }
+
+                // Calculate Equilateral Triangle vertices
+                const h = prism.size * Math.sqrt(3)/2;
+                ctx.beginPath();
+                ctx.moveTo(0, -h/2); // Top
+                ctx.lineTo(-prism.size/2, h/2); // Bottom Left
+                ctx.lineTo(prism.size/2, h/2); // Bottom Right
+                ctx.closePath();
+
+                // Glassy fill
+                const pGrad = ctx.createLinearGradient(0, -h/2, 0, h/2);
+                pGrad.addColorStop(0, 'rgba(255, 255, 255, 0.3)');
+                pGrad.addColorStop(1, 'rgba(255, 255, 255, 0.05)');
+                ctx.fillStyle = pGrad;
+                ctx.fill();
+                
+                ctx.lineWidth = 4;
+                ctx.strokeStyle = 'rgba(255, 255, 255, 0.8)';
+                ctx.stroke();
+                
+                ctx.shadowBlur = 0;
+                ctx.fillStyle = 'rgba(255,255,255,0.7)';
+                ctx.font = 'bold 16px Inter';
+                ctx.textAlign = 'center';
+                ctx.fillText("PRISM", 0, h/2 + 25);
+                
+                // Save world coordinates of vertices for exact raycasting intersection
+                const v1 = { x: prism.x + (0)*Math.cos(prism.angle) - (-h/2)*Math.sin(prism.angle), y: prism.y + (0)*Math.sin(prism.angle) + (-h/2)*Math.cos(prism.angle) };
+                const v2 = { x: prism.x + (-prism.size/2)*Math.cos(prism.angle) - (h/2)*Math.sin(prism.angle), y: prism.y + (-prism.size/2)*Math.sin(prism.angle) + (h/2)*Math.cos(prism.angle) };
+                const v3 = { x: prism.x + (prism.size/2)*Math.cos(prism.angle) - (h/2)*Math.sin(prism.angle), y: prism.y + (prism.size/2)*Math.sin(prism.angle) + (h/2)*Math.cos(prism.angle) };
+                
+                ctx.restore();
+
+                drawLaser(laser.x, laser.y, laser.angle, '#ffffff'); // White laser for dispersion
+
+                // --- True Dispersion Raycasting Math ---
+                const rayDir = { x: Math.cos(laser.angle), y: Math.sin(laser.angle) };
+                const rayEnd = { x: laser.x + rayDir.x * 3000, y: laser.y + rayDir.y * 3000 };
+
+                // 1. Find entry hit on front face
+                const hit1 = getIntersection(laser, rayEnd, v1, v2);
+                const hit2 = getIntersection(laser, rayEnd, v2, v3);
+                const hit3 = getIntersection(laser, rayEnd, v3, v1);
+                
+                let entryHits = [hit1, hit2, hit3].filter(h => h !== null);
+                let hit = null;
+                if (entryHits.length > 0) {
+                    entryHits.sort((a,b) => Math.hypot(a.x-laser.x, a.y-laser.y) - Math.hypot(b.x-laser.x, b.y-laser.y));
+                    hit = entryHits[0];
+                }
+
+                ctx.save();
+                ctx.globalCompositeOperation = 'screen';
+                ctx.lineWidth = 6;
+                ctx.strokeStyle = '#ffffff';
+                ctx.shadowColor = '#ffffff';
+                ctx.shadowBlur = 20;
+
+                ctx.beginPath();
+                ctx.moveTo(laser.x + Math.cos(laser.angle)*58, laser.y + Math.sin(laser.angle)*58);
+
+                if (hit) {
+                    // Draw beam up to the prism surface
+                    ctx.lineTo(hit.x, hit.y);
+                    ctx.stroke();
+
+                    // 2. Ray travels *THROUGH* the inside of the prism
+                    const interiorAngle = laser.angle + (prism.angle * 0.2); // Bend slightly based on prism rotation
+                    const iDir = { x: Math.cos(interiorAngle), y: Math.sin(interiorAngle) };
+                    
+                    // Push start point slightly inward so it doesn't self-intersect the entry face
+                    const iStart = { x: hit.x + iDir.x * 2, y: hit.y + iDir.y * 2 }; 
+                    const iEnd = { x: hit.x + iDir.x * 1000, y: hit.y + iDir.y * 1000 };
+
+                    // Find exit hit on back face
+                    const exitHit1 = getIntersection(iStart, iEnd, v1, v2);
+                    const exitHit2 = getIntersection(iStart, iEnd, v2, v3);
+                    const exitHit3 = getIntersection(iStart, iEnd, v3, v1);
+
+                    let exitHits = [exitHit1, exitHit2, exitHit3].filter(h => h !== null);
+                    let exitHit = null;
+                    if (exitHits.length > 0) {
+                        exitHits.sort((a,b) => Math.hypot(a.x-iStart.x, a.y-iStart.y) - Math.hypot(b.x-iStart.x, b.y-iStart.y));
+                        exitHit = exitHits[0];
+                    }
+
+                    if (exitHit) {
+                        // Draw interior beam (slightly dimmed as it travels through glass)
+                        ctx.beginPath();
+                        ctx.moveTo(hit.x, hit.y);
+                        ctx.lineTo(exitHit.x, exitHit.y);
+                        ctx.strokeStyle = 'rgba(255,255,255,0.4)';
+                        ctx.lineWidth = 4;
+                        ctx.stroke();
+
+                        // 3. Disperse into a Rainbow from the EXIT point!
+                        const colors = ['#ef4444', '#f97316', '#facc15', '#22c55e', '#3b82f6', '#6366f1', '#a855f7']; // ROYGBIV
+                        
+                        // Dynamic bend amount based on the rotation of the prism relative to the beam
+                        let bendFactor = Math.sin(laser.angle - prism.angle);
+                        const baseExitAngle = interiorAngle + bendFactor * 0.8; 
+                        
+                        for(let i=0; i<colors.length; i++) {
+                            // Spread colors out sequentially based on wavelength
+                            const spreadAngle = baseExitAngle + (i * 0.04 * Math.sign(bendFactor || 1)); 
+                            const cx = Math.cos(spreadAngle);
+                            const cy = Math.sin(spreadAngle);
+                            
+                            ctx.beginPath();
+                            ctx.moveTo(exitHit.x, exitHit.y);
+                            ctx.lineTo(exitHit.x + cx * 2000, exitHit.y + cy * 2000);
+                            
+                            ctx.strokeStyle = colors[i];
+                            ctx.shadowColor = colors[i];
+                            ctx.lineWidth = 4;
+                            ctx.shadowBlur = 15;
+                            ctx.stroke();
+                        }
+                    }
+
+                } else {
+                    // Missed the prism, draw straight line
+                    ctx.lineTo(rayEnd.x, rayEnd.y);
+                    ctx.stroke();
+                }
+                ctx.restore();
+            }
+
+            requestAnimationFrame(render);
+        }
+        render();
+
+        // --- STRICT DRAG & BOUNDARY LOGIC ---
+        let dragTarget = null;
+        let dragOffsetX = 0, dragOffsetY = 0;
+
+        function getMousePos(e) {
+            const rect = canvas.getBoundingClientRect();
+            const clientX = e.touches ? e.touches[0].clientX : e.clientX;
+            const clientY = e.touches ? e.touches[0].clientY : e.clientY;
+            return { x: clientX - rect.left, y: clientY - rect.top };
+        }
+
+        function onPointerDown(e) {
+            if(e.target !== canvas) return; 
+            const pos = getMousePos(e);
+            
+            for(let key in objects) {
+                const obj = objects[key];
+                // Only allow dragging objects relevant to the current mode
+                if (
+                    (currentMode === 'reflection' && (key === 'laser' || key === 'mirror')) ||
+                    (currentMode === 'refraction' && (key === 'glass' || key === 'pencil')) ||
+                    (currentMode === 'dispersion' && (key === 'laser' || key === 'prism'))
+                ) {
+                    const dist = Math.hypot(pos.x - obj.x, pos.y - obj.y);
+                    // Hitbox check
+                    if (dist < obj.radius) {
+                        obj.isDragging = true;
+                        dragTarget = obj;
+                        dragOffsetX = obj.x - pos.x;
+                        dragOffsetY = obj.y - pos.y;
+                        canvas.style.cursor = 'grabbing';
+                        return;
+                    }
+                }
+            }
+        }
+
+        function onPointerMove(e) {
+            if(!dragTarget) return;
+            const pos = getMousePos(e);
+            
+            let nx = pos.x + dragOffsetX;
+            let ny = pos.y + dragOffsetY;
+
+            dragTarget.x = nx;
+            dragTarget.y = ny;
+        }
+
+        function onPointerUp() {
+            if(dragTarget) {
+                dragTarget.isDragging = false;
+                dragTarget = null;
+                canvas.style.cursor = 'grab';
+            }
+        }
+
+        canvas.addEventListener('mousedown', onPointerDown);
+        canvas.addEventListener('mousemove', onPointerMove);
+        window.addEventListener('mouseup', onPointerUp);
+        canvas.addEventListener('touchstart', (e) => { e.preventDefault(); onPointerDown(e); }, {passive: false});
+        canvas.addEventListener('touchmove', (e) => { e.preventDefault(); onPointerMove(e); }, {passive: false});
+        window.addEventListener('touchend', onPointerUp);
+
+    </script>
+</body>
+</html>

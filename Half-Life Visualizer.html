@@ -1,0 +1,367 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Pharmacokinetics Engine</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <style>
+        /* Custom slider styles matching the engine aesthetic */
+        input[type=range] {
+            -webkit-appearance: none;
+            width: 100%;
+            background: transparent;
+        }
+        input[type=range]::-webkit-slider-thumb {
+            -webkit-appearance: none;
+            height: 20px;
+            width: 20px;
+            border-radius: 50%;
+            background: #10b981; /* emerald-500 */
+            cursor: pointer;
+            margin-top: -8px;
+            transition: transform 0.1s;
+        }
+        input[type=range]::-webkit-slider-thumb:active {
+            transform: scale(1.2);
+        }
+        input[type=range]::-webkit-slider-runnable-track {
+            width: 100%;
+            height: 6px;
+            cursor: pointer;
+            background: #e5e7eb;
+            border-radius: 3px;
+        }
+        /* Specific slider thumb colors */
+        #dose-input::-webkit-slider-thumb { background: #3b82f6; }
+        #halflife-input::-webkit-slider-thumb { background: #10b981; }
+        #mec-input::-webkit-slider-thumb { background: #f59e0b; }
+        #duration-input::-webkit-slider-thumb { background: #8b5cf6; }
+    </style>
+</head>
+<body class="bg-gray-50 text-gray-900 min-h-screen font-sans selection:bg-emerald-100 selection:text-emerald-900 pb-12">
+
+    <!-- Header -->
+    <header class="bg-white border-b border-gray-200 p-6">
+        <div class="max-w-6xl mx-auto flex items-center justify-between">
+            <div class="flex items-center gap-3">
+                <svg xmlns="http://www.w3.org/2000/svg" width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="#10b981" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                    <path d="M12 2v20"/><path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/>
+                </svg>
+                <h1 class="text-2xl font-bold tracking-tight text-gray-900">Pharmacokinetics <span class="text-emerald-600">Engine</span></h1>
+            </div>
+            <div class="text-sm text-gray-500 hidden sm:block">Real-time Half-Life Decay Visualizer</div>
+        </div>
+    </header>
+
+    <main class="max-w-6xl mx-auto mt-8 px-4 sm:px-6">
+        
+        <div class="grid grid-cols-1 lg:grid-cols-12 gap-8">
+            
+            <!-- Parameters Input Section -->
+            <div class="lg:col-span-4 space-y-6">
+                <div class="bg-white rounded-2xl p-6 border border-gray-200 h-full">
+                    
+                    <h2 class="text-xl font-semibold mb-6 flex items-center gap-2 text-gray-900">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="text-gray-400"><rect x="2" y="6" width="20" height="12" rx="2"/><path d="M12 12h.01"/></svg>
+                        Medication Parameters
+                    </h2>
+
+                    <!-- Initial Dosage -->
+                    <div class="mb-6">
+                        <div class="flex justify-between items-end mb-2">
+                            <label class="text-sm font-medium text-gray-700">Initial Dose (D₀)</label>
+                            <span class="text-lg font-bold text-blue-600"><span id="dose-val">500</span> <span class="text-xs text-gray-500 font-normal">mg</span></span>
+                        </div>
+                        <input type="range" id="dose-input" min="10" max="2000" value="500" step="10">
+                        <div class="flex justify-between text-xs text-gray-500 mt-1">
+                            <span>10 mg</span>
+                            <span>2000 mg</span>
+                        </div>
+                    </div>
+
+                    <!-- Half-Life -->
+                    <div class="mb-6">
+                        <div class="flex justify-between items-end mb-2">
+                            <label class="text-sm font-medium text-gray-700">Half-Life (t½)</label>
+                            <span class="text-lg font-bold text-emerald-600"><span id="halflife-val">6.0</span> <span class="text-xs text-gray-500 font-normal">hrs</span></span>
+                        </div>
+                        <input type="range" id="halflife-input" min="0.5" max="72" value="6.0" step="0.5">
+                        <div class="flex justify-between text-xs text-gray-500 mt-1">
+                            <span>Fast (0.5h)</span>
+                            <span>Slow (72h)</span>
+                        </div>
+                    </div>
+
+                    <div class="h-px bg-gray-200 my-6"></div>
+
+                    <!-- Minimum Effective Concentration (MEC) -->
+                    <div class="mb-6">
+                        <div class="flex justify-between items-end mb-2">
+                            <label class="text-sm font-medium text-gray-700">Min. Effective Conc. (MEC)</label>
+                            <span class="text-lg font-bold text-amber-600"><span id="mec-val">50</span> <span class="text-xs text-gray-500 font-normal">mg</span></span>
+                        </div>
+                        <input type="range" id="mec-input" min="0" max="1000" value="50" step="5">
+                        <div class="flex justify-between text-xs text-gray-500 mt-1 flex-col">
+                            <span>(Determines length of therapeutic effect)</span>
+                        </div>
+                    </div>
+
+                    <!-- Simulation Duration -->
+                    <div class="mb-2">
+                        <div class="flex justify-between items-end mb-2">
+                            <label class="text-sm font-medium text-gray-700">Simulation Time</label>
+                            <span class="text-lg font-bold text-purple-600"><span id="duration-val">48</span> <span class="text-xs text-gray-500 font-normal">hrs</span></span>
+                        </div>
+                        <input type="range" id="duration-input" min="12" max="336" value="48" step="12">
+                        <div class="flex justify-between text-xs text-gray-500 mt-1">
+                            <span>12h</span>
+                            <span>14 Days</span>
+                        </div>
+                    </div>
+
+                </div>
+            </div>
+
+            <!-- Visualization and Output Section -->
+            <div class="lg:col-span-8 space-y-6 flex flex-col">
+                
+                <!-- Chart Container -->
+                <div class="bg-white rounded-2xl p-6 border border-gray-200 flex-grow relative">
+                    <div class="absolute top-4 right-6 text-xs text-gray-400 font-mono">
+                        Formula: N(t) = N₀(1/2)^(t/t½)
+                    </div>
+                    <h3 class="text-sm font-medium text-gray-600 mb-4">Active Bloodstream Concentration Over Time</h3>
+                    <div class="relative w-full h-[350px]">
+                        <canvas id="decayChart"></canvas>
+                    </div>
+                </div>
+
+                <!-- Metrics Grid -->
+                <div class="grid grid-cols-1 sm:grid-cols-3 gap-4">
+                    
+                    <!-- Therapeutic Duration -->
+                    <div class="bg-white rounded-xl p-5 border border-gray-200">
+                        <p class="text-xs font-medium text-gray-600 mb-1">Therapeutic Duration</p>
+                        <h3 class="text-2xl font-bold text-amber-600"><span id="out-therapeutic">0.0</span> <span class="text-sm text-gray-500 font-normal">hrs</span></h3>
+                        <p class="text-[10px] text-gray-500 mt-1">Time spent above MEC</p>
+                    </div>
+
+                    <!-- 90% Elimination -->
+                    <div class="bg-white rounded-xl p-5 border border-gray-200">
+                        <p class="text-xs font-medium text-gray-600 mb-1">90% Elimination Time</p>
+                        <h3 class="text-2xl font-bold text-blue-600"><span id="out-90">0.0</span> <span class="text-sm text-gray-500 font-normal">hrs</span></h3>
+                        <p class="text-[10px] text-gray-500 mt-1">Approx. 3.32 × t½</p>
+                    </div>
+
+                    <!-- 99% Elimination -->
+                    <div class="bg-white rounded-xl p-5 border border-gray-200">
+                        <p class="text-xs font-medium text-gray-600 mb-1">Total Elimination (99%)</p>
+                        <h3 class="text-2xl font-bold text-emerald-600"><span id="out-99">0.0</span> <span class="text-sm text-gray-500 font-normal">hrs</span></h3>
+                        <p class="text-[10px] text-gray-500 mt-1">Approx. 6.64 × t½</p>
+                    </div>
+
+                </div>
+            </div>
+        </div>
+    </main>
+
+    <script>
+        // --- PHARMACOKINETICS ENGINE ---
+        
+        // Input Elements
+        const elDose = document.getElementById('dose-input');
+        const elHalfLife = document.getElementById('halflife-input');
+        const elMEC = document.getElementById('mec-input');
+        const elDuration = document.getElementById('duration-input');
+
+        // Display Labels
+        const valDose = document.getElementById('dose-val');
+        const valHalfLife = document.getElementById('halflife-val');
+        const valMEC = document.getElementById('mec-val');
+        const valDuration = document.getElementById('duration-val');
+
+        // Output Metrics
+        const outTherapeutic = document.getElementById('out-therapeutic');
+        const out90 = document.getElementById('out-90');
+        const out99 = document.getElementById('out-99');
+
+        // Chart Instance
+        let decayChart = null;
+
+        function updateEngine() {
+            // 1. Get Values
+            const dose = parseFloat(elDose.value);
+            const tHalf = parseFloat(elHalfLife.value);
+            const mec = parseFloat(elMEC.value);
+            const duration = parseFloat(elDuration.value);
+
+            // Update UI Labels
+            valDose.innerText = dose;
+            valHalfLife.innerText = tHalf.toFixed(1);
+            valMEC.innerText = mec;
+            valDuration.innerText = duration;
+
+            // 2. Mathematical Calculations
+            // Elimination metrics
+            const time90 = 3.3219 * tHalf;
+            const time99 = 6.6438 * tHalf;
+
+            // Calculate duration of action N(t) = N0 * (0.5)^(t/tHalf) => t = tHalf * log(N0/N) / log(2)
+            let therapeuticTime = 0;
+            if (dose > mec && mec > 0) {
+                therapeuticTime = tHalf * Math.log(dose / mec) / Math.LN2;
+            }
+
+            // Update UI Outputs
+            out90.innerText = time90.toFixed(1);
+            out99.innerText = time99.toFixed(1);
+            outTherapeutic.innerText = dose <= mec ? "0.0" : therapeuticTime.toFixed(1);
+
+            // 3. Generate Chart Data
+            const labels = [];
+            const activeData = [];
+            const mecData = [];
+            
+            // Determine resolution (more points for smoother curve)
+            const steps = 100;
+            const stepSize = duration / steps;
+
+            for (let t = 0; t <= duration; t += stepSize) {
+                labels.push(t.toFixed(1));
+                
+                // N(t) = N0 * (1/2)^(t/tHalf)
+                const amount = dose * Math.pow(0.5, t / tHalf);
+                activeData.push(amount);
+                
+                // Constant line for MEC
+                mecData.push(mec);
+            }
+
+            // 4. Render/Update Chart
+            renderChart(labels, activeData, mecData, duration);
+        }
+
+        function renderChart(labels, activeData, mecData, maxX) {
+            const ctx = document.getElementById('decayChart').getContext('2d');
+
+            // Chart.js global defaults for light theme
+            Chart.defaults.color = '#6b7280'; // gray-500
+            Chart.defaults.font.family = 'ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif';
+
+            if (decayChart) {
+                // Update existing chart
+                decayChart.data.labels = labels;
+                decayChart.data.datasets[0].data = activeData;
+                decayChart.data.datasets[1].data = mecData;
+                decayChart.options.scales.x.max = maxX;
+                decayChart.update();
+            } else {
+                // Initialize new chart
+                decayChart = new Chart(ctx, {
+                    type: 'line',
+                    data: {
+                        labels: labels,
+                        datasets: [
+                            {
+                                label: 'Active Drug (mg)',
+                                data: activeData,
+                                borderColor: '#10b981', // emerald-500
+                                backgroundColor: 'rgba(16, 185, 129, 0.05)', // very light transparent emerald for fill
+                                borderWidth: 3,
+                                fill: true,
+                                pointRadius: 0,
+                                pointHoverRadius: 6,
+                                tension: 0.4 // Smooth curve
+                            },
+                            {
+                                label: 'Minimum Effective Conc. (MEC)',
+                                data: mecData,
+                                borderColor: '#f59e0b', // amber-500
+                                backgroundColor: 'transparent',
+                                borderWidth: 2,
+                                borderDash: [5, 5], // Dashed line
+                                fill: false,
+                                pointRadius: 0,
+                                pointHoverRadius: 0,
+                                tension: 0
+                            }
+                        ]
+                    },
+                    options: {
+                        responsive: true,
+                        maintainAspectRatio: false,
+                        interaction: {
+                            mode: 'index',
+                            intersect: false,
+                        },
+                        plugins: {
+                            legend: {
+                                position: 'top',
+                                labels: {
+                                    usePointStyle: true,
+                                    boxWidth: 8
+                                }
+                            },
+                            tooltip: {
+                                backgroundColor: 'rgba(255, 255, 255, 0.95)', // white
+                                titleColor: '#111827', // gray-900
+                                bodyColor: '#4b5563', // gray-600
+                                borderColor: '#e5e7eb', // gray-200
+                                borderWidth: 1,
+                                padding: 12,
+                                callbacks: {
+                                    title: function(tooltipItems) {
+                                        return 'Time: ' + tooltipItems[0].label + ' hrs';
+                                    },
+                                    label: function(context) {
+                                        return context.dataset.label + ': ' + context.parsed.y.toFixed(1) + ' mg';
+                                    }
+                                }
+                            }
+                        },
+                        scales: {
+                            x: {
+                                title: {
+                                    display: true,
+                                    text: 'Time Elapsed (Hours)',
+                                    color: '#6b7280' // gray-500
+                                },
+                                grid: {
+                                    color: '#f3f4f6', // gray-100
+                                    drawBorder: false
+                                },
+                                ticks: {
+                                    maxTicksLimit: 10
+                                }
+                            },
+                            y: {
+                                title: {
+                                    display: true,
+                                    text: 'Amount (mg)',
+                                    color: '#6b7280' // gray-500
+                                },
+                                grid: {
+                                    color: '#f3f4f6', // gray-100
+                                    drawBorder: false
+                                },
+                                beginAtZero: true
+                            }
+                        }
+                    }
+                });
+            }
+        }
+
+        // Attach Event Listeners
+        [elDose, elHalfLife, elMEC, elDuration].forEach(input => {
+            input.addEventListener('input', updateEngine);
+        });
+
+        // Initialize on load
+        window.addEventListener('load', updateEngine);
+
+    </script>
+</body>
+</html>

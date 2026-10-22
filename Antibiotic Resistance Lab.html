@@ -1,0 +1,402 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Antibiotic Resistance & Evolution Lab</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;700&family=Inter:wght@300;400;600;700&display=swap');
+
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: #020617;
+            color: #f8fafc;
+            overflow-x: hidden;
+            user-select: none;
+        }
+
+        .font-mono { font-family: 'JetBrains Mono', monospace; }
+
+        .glass-card {
+            background: rgba(15, 23, 42, 0.75);
+            backdrop-filter: blur(16px);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.5);
+        }
+
+        .digital-readout {
+            background: #061021;
+            color: #10b981; /* Emerald base */
+            text-shadow: 0 0 10px rgba(16, 185, 129, 0.4);
+            border: 1px solid #1e293b;
+            transition: all 0.3s ease;
+        }
+
+        .readout-alert {
+            color: #f43f5e !important;
+            text-shadow: 0 0 12px rgba(244, 63, 94, 0.6) !important;
+            border-color: rgba(244, 63, 94, 0.3) !important;
+        }
+
+        /* Petri Dish Styles */
+        .petri-dish {
+            fill: rgba(15, 23, 42, 0.4);
+            stroke: #334155;
+            stroke-width: 8;
+        }
+        
+        .agar-surface {
+            fill: #0f172a;
+        }
+
+        .bacterium {
+            transition: transform 0.3s ease-out, fill 0.5s ease;
+            filter: drop-shadow(0 0 4px currentColor);
+        }
+
+        /* Antibiotic Mist */
+        @keyframes mist-fade {
+            0% { opacity: 0; transform: scale(0.8); }
+            20% { opacity: 0.6; transform: scale(1); }
+            100% { opacity: 0; transform: scale(1.1); }
+        }
+        .antibiotic-mist {
+            position: absolute;
+            inset: 0;
+            background: radial-gradient(circle, rgba(255,255,255,0.4) 0%, transparent 70%);
+            pointer-events: none;
+            opacity: 0;
+            z-index: 40;
+        }
+        .is-spraying { animation: mist-fade 1.5s ease-out forwards; }
+
+        input[type=range] { accent-color: #10b981; }
+        
+        .physics-grid {
+            background-size: 40px 40px;
+            background-image: 
+                linear-gradient(to right, rgba(16, 185, 129, 0.03) 1px, transparent 1px),
+                linear-gradient(to bottom, rgba(16, 185, 129, 0.03) 1px, transparent 1px);
+        }
+
+        @keyframes fission {
+            0% { transform: scale(1); }
+            50% { transform: scale(1.3); }
+            100% { transform: scale(1); }
+        }
+        .reproducing { animation: fission 0.5s ease-in-out; }
+    </style>
+</head>
+<body class="min-h-screen p-4 md:p-8 flex items-center justify-center">
+
+    <div class="max-w-7xl w-full grid grid-cols-1 lg:grid-cols-12 gap-8 items-stretch">
+        
+        <!-- Simulation Viewport -->
+        <div class="lg:col-span-8 flex flex-col gap-6">
+            <div id="sim-viewport" class="glass-card rounded-3xl p-0 relative flex-grow min-h-[500px] flex flex-col overflow-hidden border border-slate-800 physics-grid">
+                
+                <!-- Antibiotic Mist Overlay -->
+                <div id="mist" class="antibiotic-mist"></div>
+
+                <!-- HUD Header -->
+                <div class="absolute top-6 left-8 flex items-center gap-3 z-30">
+                    <div id="status-dot" class="w-2.5 h-2.5 rounded-full bg-emerald-500 shadow-[0_0_10px_#10b981]"></div>
+                    <span id="status-text" class="text-[10px] font-bold text-slate-400 uppercase tracking-widest font-mono">Population: <span id="hud-mode" class="text-emerald-400">Stable</span></span>
+                </div>
+
+                <!-- Main Petri Dish SVG -->
+                <div class="relative w-full flex-grow flex items-center justify-center">
+                    <svg id="petri-svg" viewBox="0 0 600 600" class="w-full h-full max-w-[480px] relative z-10 drop-shadow-2xl">
+                        <!-- The Dish -->
+                        <circle cx="300" cy="300" r="280" class="petri-dish" />
+                        <circle cx="300" cy="300" r="270" class="agar-surface" />
+                        
+                        <!-- Reflection on glass -->
+                        <path d="M 100 100 Q 150 50 250 80" fill="none" stroke="white" stroke-width="2" opacity="0.1" stroke-linecap="round" />
+
+                        <!-- Bacteria Layer -->
+                        <g id="bacteria-layer"></g>
+                    </svg>
+                </div>
+
+                <!-- Tags -->
+                <div class="absolute bottom-6 left-8 flex flex-col gap-1 z-20">
+                    <span class="text-[9px] font-mono text-slate-500 uppercase">Selection Pressure: Penicillin-class (Inhibitor)</span>
+                    <span class="text-[9px] font-mono text-slate-500 uppercase">Evolution: Vertical Gene Transfer</span>
+                </div>
+            </div>
+
+            <!-- Controls -->
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <button id="btn-dose" class="group relative overflow-hidden px-8 py-5 bg-emerald-600 hover:bg-emerald-500 text-white font-bold rounded-2xl transition-all shadow-lg shadow-emerald-900/40 flex items-center justify-center gap-3">
+                    <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19.428 15.428a2 2 0 00-1.022-.547l-2.387-.477a6 6 0 00-3.86.517l-.318.158a6 6 0 01-3.86.517L6.05 15.21a2 2 0 00-1.806.547M8 4h8l-1 1v5.172a2 2 0 00.586 1.414l5 5c1.26 1.26.367 3.414-1.415 3.414H4.828c-1.782 0-2.674-2.154-1.414-3.414l5-5A2 2 0 009 10.172V5L8 4z"></path></svg>
+                    <span>Apply Antibiotic Dose</span>
+                </button>
+                <button id="btn-multiply" class="group px-8 py-5 bg-slate-800 hover:bg-slate-700 text-white font-bold rounded-2xl transition-all border border-slate-600 flex items-center justify-center gap-3">
+                    <svg class="w-6 h-6 text-sky-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"></path></svg>
+                    <span>Incubate (Multiply)</span>
+                </button>
+            </div>
+        </div>
+
+        <!-- Sidebar: Analytics & Data -->
+        <div class="lg:col-span-4 flex flex-col gap-6">
+            
+            <!-- Digital Readout -->
+            <div id="telemetry-panel" class="digital-readout rounded-3xl p-6 space-y-6">
+                <div class="flex justify-between items-center border-b border-current pb-3 opacity-60">
+                    <span class="text-[10px] font-bold tracking-tighter uppercase">Strain Analytics</span>
+                    <span class="text-xs font-mono" id="sim-state">STABLE</span>
+                </div>
+
+                <div class="space-y-4">
+                    <!-- Mean Resistance -->
+                    <div class="space-y-1">
+                        <label class="text-[9px] uppercase font-bold opacity-60">Average Colony Resistance</label>
+                        <div class="flex items-baseline gap-2">
+                            <div id="data-resistance" class="text-5xl font-bold font-mono">0.15</div>
+                            <span class="text-lg font-mono font-bold opacity-60">R</span>
+                        </div>
+                    </div>
+
+                    <div class="grid grid-cols-2 gap-4 pt-4 border-t border-current opacity-80">
+                        <div class="space-y-1">
+                            <label class="text-[9px] uppercase font-bold text-current">Total Count</label>
+                            <div id="data-count" class="text-xl font-bold font-mono">100</div>
+                        </div>
+                        <div class="space-y-1 text-right">
+                            <label class="text-[9px] uppercase font-bold text-current">Generation</label>
+                            <div id="data-gen" class="text-xl font-bold font-mono">G1</div>
+                        </div>
+                    </div>
+
+                    <!-- Progress Bar (Resistance Scale) -->
+                    <div class="pt-2">
+                        <div class="flex justify-between text-[8px] font-bold uppercase mb-1">
+                            <span>Susceptible</span>
+                            <span>Superbug</span>
+                        </div>
+                        <div class="h-2 w-full bg-slate-900 rounded-full overflow-hidden border border-slate-800">
+                            <div id="res-bar" class="h-full bg-current transition-all duration-1000" style="width: 15%"></div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Pathophysiology Card -->
+            <div class="glass-card p-6 rounded-3xl space-y-4 flex-grow flex flex-col">
+                <h3 class="text-xs font-bold text-slate-400 uppercase tracking-widest flex items-center gap-2">
+                    <svg class="w-4 h-4 text-emerald-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"></path></svg>
+                    Evolutionary Filter
+                </h3>
+                
+                <div id="clinical-notes" class="space-y-3 text-[10px] text-slate-300 leading-relaxed">
+                    <p>
+                        Resistance often arises from <strong>random mutation</strong>. In a normal population, high-resistance mutants are rare.
+                    </p>
+                    <div class="bg-slate-900/50 p-3 rounded-xl border border-slate-800">
+                        <strong class="text-sky-400 block mb-1">Step 1: Selection</strong>
+                        Antibiotics kill the weak (blue). Survivors (orange/red) are the only ones left to pass on their genes.
+                    </div>
+                    <div class="bg-rose-900/20 p-3 rounded-xl border border-rose-900/50">
+                        <strong class="text-rose-400 block mb-1">Step 2: Proliferation</strong>
+                        Without competition, the resistant strain takes over the entire agar plate. The antibiotic is no longer effective.
+                    </div>
+                </div>
+
+                <div id="alert-box" class="hidden mt-auto p-4 bg-rose-600/20 border border-rose-600/50 rounded-xl animate-pulse">
+                    <div class="text-[10px] font-bold text-rose-500 uppercase flex items-center gap-1">
+                        <svg class="w-3 h-3" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M8.257 3.099c.765-1.36 2.722-1.36 3.486 0l5.58 9.92c.75 1.334-.213 2.98-1.742 2.98H4.42c-1.53 0-2.493-1.646-1.743-2.98l5.58-9.92zM11 13a1 1 0 11-2 0 1 1 0 012 0zm-1-8a1 1 0 00-1 1v3a1 1 0 002 0V6a1 1 0 00-1-1z" clip-rule="evenodd"></path></svg>
+                        SUPERBUG DETECTED
+                    </div>
+                    <p class="text-[9px] text-rose-300/80 leading-tight mt-1">Total resistance achieved. Current antibiotic therapy is 100% ineffective.</p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', () => {
+            const btnDose = document.getElementById('btn-dose');
+            const btnMultiply = document.getElementById('btn-multiply');
+            const bacteriaLayer = document.getElementById('bacteria-layer');
+            const mist = document.getElementById('mist');
+            
+            const dataResistance = document.getElementById('data-resistance');
+            const dataCount = document.getElementById('data-count');
+            const dataGen = document.getElementById('data-gen');
+            const resBar = document.getElementById('res-bar');
+            const telePanel = document.getElementById('telemetry-panel');
+            const alertBox = document.getElementById('alert-box');
+            const hudMode = document.getElementById('hud-mode');
+            const statusDot = document.getElementById('status-dot');
+
+            // --- State ---
+            let generation = 1;
+            let bacteria = [];
+            const DISH_RADIUS = 260;
+            const DISH_CENTER = 300;
+
+            function getResistanceColor(r) {
+                // r is 0.0 (susceptible) to 1.0 (highly resistant)
+                // Map to hue: 200 (Sky Blue) to 0 (Red)
+                const hue = 200 - (r * 200);
+                return `hsl(${hue}, 80%, 50%)`;
+            }
+
+            function createBacterium(x, y, r) {
+                const g = document.createElementNS('http://www.w3.org/2000/svg', 'g');
+                const b = document.createElementNS('http://www.w3.org/2000/svg', 'ellipse');
+                
+                const angle = Math.random() * 360;
+                b.setAttribute('rx', 8);
+                b.setAttribute('ry', 4);
+                b.setAttribute('fill', getResistanceColor(r));
+                b.setAttribute('class', 'bacterium');
+                b.style.color = getResistanceColor(r);
+                
+                g.setAttribute('transform', `translate(${x}, ${y}) rotate(${angle})`);
+                g.appendChild(b);
+                
+                return {
+                    el: g,
+                    x, y,
+                    resistance: r,
+                    active: true
+                };
+            }
+
+            function initPopulation() {
+                bacteriaLayer.innerHTML = '';
+                bacteria = [];
+                for (let i = 0; i < 60; i++) {
+                    const angle = Math.random() * Math.PI * 2;
+                    const dist = Math.sqrt(Math.random()) * DISH_RADIUS;
+                    const x = DISH_CENTER + Math.cos(angle) * dist;
+                    const y = DISH_CENTER + Math.sin(angle) * dist;
+                    
+                    // Initial resistance skewed low (wild types)
+                    // Occasionally a mutant with high resistance (0.5+)
+                    let res = Math.random() < 0.05 ? 0.4 + Math.random() * 0.4 : Math.random() * 0.2;
+                    
+                    const bObj = createBacterium(x, y, res);
+                    bacteriaLayer.appendChild(bObj.el);
+                    bacteria.push(bObj);
+                }
+                updateUI();
+            }
+
+            function applyAntibiotics() {
+                if (bacteria.length === 0) return;
+                
+                mist.classList.remove('is-spraying');
+                void mist.offsetWidth; // Trigger reflow
+                mist.classList.add('is-spraying');
+                
+                btnDose.disabled = true;
+                btnMultiply.disabled = true;
+
+                setTimeout(() => {
+                    // Filter based on resistance
+                    // Chance of survival = resistance coefficient
+                    bacteria.forEach(b => {
+                        if (Math.random() > b.resistance) {
+                            b.active = false;
+                            b.el.style.opacity = '0';
+                            b.el.style.transform += ' scale(0.5)';
+                        }
+                    });
+
+                    // Remove dead
+                    setTimeout(() => {
+                        bacteria = bacteria.filter(b => {
+                            if (!b.active) b.el.remove();
+                            return b.active;
+                        });
+                        btnDose.disabled = false;
+                        btnMultiply.disabled = false;
+                        updateUI();
+                        
+                        hudMode.textContent = "Selection Complete";
+                        hudMode.className = "text-amber-400";
+                        statusDot.className = "w-2.5 h-2.5 rounded-full bg-amber-500 animate-pulse";
+                    }, 500);
+                }, 800);
+            }
+
+            function multiply() {
+                if (bacteria.length === 0 || bacteria.length > 250) return;
+                
+                generation++;
+                const newBacteria = [];
+                
+                bacteria.forEach(b => {
+                    b.el.firstChild.classList.add('reproducing');
+                    
+                    // Create a clone nearby with slight mutation probability
+                    const offset = 20;
+                    const nx = b.x + (Math.random() - 0.5) * offset;
+                    const ny = b.y + (Math.random() - 0.5) * offset;
+                    
+                    // Check if inside dish
+                    const dist = Math.hypot(nx - DISH_CENTER, ny - DISH_CENTER);
+                    if (dist < DISH_RADIUS) {
+                        // Mutation: Inherit resistance +/- small noise
+                        let nRes = b.resistance + (Math.random() - 0.5) * 0.05;
+                        nRes = Math.max(0, Math.min(1.0, nRes));
+                        
+                        const clone = createBacterium(nx, ny, nRes);
+                        newBacteria.push(clone);
+                        bacteriaLayer.appendChild(clone.el);
+                    }
+                });
+
+                bacteria = [...bacteria, ...newBacteria];
+                
+                setTimeout(() => {
+                    document.querySelectorAll('.reproducing').forEach(el => el.classList.remove('reproducing'));
+                }, 500);
+                
+                updateUI();
+                
+                hudMode.textContent = "Incubation Phase";
+                hudMode.className = "text-sky-400";
+                statusDot.className = "w-2.5 h-2.5 rounded-full bg-sky-500 shadow-[0_0_10px_#38bdf8]";
+            }
+
+            function updateUI() {
+                const count = bacteria.length;
+                dataCount.textContent = count;
+                dataGen.textContent = `G${generation}`;
+                
+                if (count > 0) {
+                    const sumRes = bacteria.reduce((acc, b) => acc + b.resistance, 0);
+                    const avgRes = sumRes / count;
+                    dataResistance.textContent = avgRes.toFixed(2);
+                    resBar.style.width = `${avgRes * 100}%`;
+
+                    if (avgRes > 0.6) {
+                        telePanel.classList.add('readout-alert');
+                        alertBox.classList.remove('hidden');
+                    } else {
+                        telePanel.classList.remove('readout-alert');
+                        alertBox.classList.add('hidden');
+                    }
+                } else {
+                    dataResistance.textContent = "0.00";
+                    resBar.style.width = "0%";
+                    hudMode.textContent = "Eradicated";
+                    hudMode.className = "text-slate-500";
+                }
+            }
+
+            btnDose.addEventListener('click', applyAntibiotics);
+            btnMultiply.addEventListener('click', multiply);
+
+            // Init
+            initPopulation();
+        });
+    </script>
+</body>
+</html>

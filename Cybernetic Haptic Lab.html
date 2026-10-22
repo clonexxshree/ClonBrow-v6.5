@@ -1,0 +1,655 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Cybernetic Haptic Feedback Lab</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;700&family=Inter:wght@300;400;600;700&display=swap');
+
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: #020617; /* Slate 950 */
+            color: #f8fafc;
+            overflow-x: hidden;
+            user-select: none;
+            touch-action: none; 
+        }
+
+        .font-mono { font-family: 'JetBrains Mono', monospace; }
+
+        /* Unified Card Styling */
+        .glass-card {
+            background: rgba(15, 23, 42, 0.85);
+            backdrop-filter: blur(20px);
+            border: 1px solid rgba(255, 255, 255, 0.08);
+            box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.5);
+            border-radius: 1.5rem;
+        }
+
+        /* Digital Readout Screen */
+        .monitor-screen {
+            background: #020617;
+            border: 2px solid #1e293b;
+            border-radius: 1rem;
+            box-shadow: inset 0 0 20px rgba(0,0,0,0.8);
+            position: relative;
+            overflow: hidden;
+        }
+
+        /* Grid Background */
+        .lab-grid {
+            background-size: 40px 40px;
+            background-image: 
+                linear-gradient(to right, rgba(168, 85, 247, 0.03) 1px, transparent 1px),
+                linear-gradient(to bottom, rgba(168, 85, 247, 0.03) 1px, transparent 1px);
+        }
+
+        .scanline {
+            width: 100%;
+            height: 2px;
+            background: rgba(168, 85, 247, 0.08);
+            position: absolute;
+            z-index: 10;
+            animation: scan 6s linear infinite;
+            pointer-events: none;
+        }
+        @keyframes scan { 0% { top: 0%; } 100% { top: 100%; } }
+
+        /* Custom Sliders */
+        input[type=range] {
+            -webkit-appearance: none;
+            background: transparent;
+            cursor: pointer;
+            width: 100%;
+        }
+        input[type=range]::-webkit-slider-runnable-track {
+            height: 8px;
+            border-radius: 4px;
+            border: 1px solid rgba(255,255,255,0.1);
+        }
+        #pressure-slider::-webkit-slider-runnable-track {
+            background: linear-gradient(to right, #3b82f6, #a855f7, #f43f5e);
+        }
+        input[type=range]::-webkit-slider-thumb {
+            -webkit-appearance: none;
+            height: 24px;
+            width: 24px;
+            border-radius: 50%;
+            background: #0f172a;
+            border: 3px solid #a855f7;
+            margin-top: -9px;
+            box-shadow: 0 0 15px rgba(168, 85, 247, 0.6);
+            transition: transform 0.1s;
+        }
+        input[type=range]::-webkit-slider-thumb:active { transform: scale(1.1); }
+
+        /* Status Themes */
+        .text-cyan { color: #22d3ee; text-shadow: 0 0 12px rgba(34,211,238,0.5); }
+        .text-purple { color: #a855f7; text-shadow: 0 0 12px rgba(168,85,247,0.5); }
+        .text-rose { color: #f43f5e; text-shadow: 0 0 15px rgba(244,63,94,0.8); }
+
+        /* SVG Anatomy & Cybernetics */
+        .nerve-epineurium { fill: #fce7f3; stroke: #fbcfe8; stroke-width: 4; }
+        .nerve-perineurium { fill: #fbcfe8; stroke: #f9a8d4; stroke-width: 2; }
+        .nerve-axon { fill: #fdf2f8; stroke: #f472b6; stroke-width: 1; }
+        
+        .cuff-electrode { fill: #1e293b; stroke: #38bdf8; stroke-width: 3; }
+        .cuff-contact { fill: #a855f7; filter: drop-shadow(0 0 5px #a855f7); transition: fill 0.1s, filter 0.1s; }
+        .cuff-contact.active { fill: #fff; filter: drop-shadow(0 0 15px #fff); }
+
+        .bionic-metal { fill: url(#metal-grad); stroke: #475569; stroke-width: 2; }
+        .bionic-joint { fill: #0f172a; stroke: #334155; stroke-width: 2; }
+        
+        .sensor-pad { fill: url(#sensor-grad); transition: d 0.2s ease; }
+        .sensor-glow { opacity: 0; transition: opacity 0.2s ease; mix-blend-mode: screen; }
+
+        .data-wire { fill: none; stroke: #334155; stroke-width: 8; stroke-linecap: round; stroke-linejoin: round;}
+        .data-core { fill: none; stroke: #a855f7; stroke-width: 2; stroke-dasharray: 4 4; opacity: 0.5;}
+
+    </style>
+</head>
+<body class="min-h-screen p-4 lg:p-8 flex items-center justify-center">
+
+    <div class="max-w-7xl w-full grid grid-cols-1 lg:grid-cols-12 gap-6 lg:gap-8 items-stretch">
+        
+        <!-- Left Column: Physical & Cybernetic Field -->
+        <div class="lg:col-span-7 flex flex-col gap-6">
+            
+            <!-- Visual Viewport -->
+            <div id="viewport-container" class="glass-card relative flex-grow min-h-[550px] flex flex-col overflow-hidden lab-grid">
+                <div class="scanline"></div>
+                
+                <div class="absolute top-6 left-6 z-20 pointer-events-none">
+                    <h2 class="text-xs font-bold text-slate-400 uppercase tracking-widest flex items-center gap-2">
+                        <svg class="w-4 h-4 text-purple-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"></path></svg>
+                        Somatosensory Interface (Cross-Section)
+                    </h2>
+                </div>
+
+                <div class="relative w-full h-full flex-grow flex items-center justify-center">
+                    
+                    <!-- Anatomy & Cybernetics SVG -->
+                    <svg id="system-svg" viewBox="0 0 600 800" class="w-full h-full absolute inset-0 z-10 overflow-visible">
+                        <defs>
+                            <linearGradient id="metal-grad" x1="0%" y1="0%" x2="100%" y2="0%">
+                                <stop offset="0%" stop-color="#334155" />
+                                <stop offset="50%" stop-color="#64748b" />
+                                <stop offset="100%" stop-color="#1e293b" />
+                            </linearGradient>
+                            <radialGradient id="sensor-grad" cx="50%" cy="100%" r="100%">
+                                <stop offset="0%" stop-color="#22d3ee" />
+                                <stop offset="100%" stop-color="#0f172a" />
+                            </radialGradient>
+                            <radialGradient id="contact-glow" cx="50%" cy="50%" r="50%">
+                                <stop offset="0%" stop-color="rgba(168, 85, 247, 0.8)" />
+                                <stop offset="100%" stop-color="rgba(168, 85, 247, 0)" />
+                            </radialGradient>
+                        </defs>
+
+                        <!-- BIOLOGICAL NERVE (Top Half) -->
+                        <g id="nerve-bundle" transform="translate(300, 180)">
+                            <!-- Epineurium (Outer Sheath) -->
+                            <ellipse cx="0" cy="0" rx="120" ry="90" class="nerve-epineurium" />
+                            
+                            <!-- Fascicles (Bundles of Axons) -->
+                            <g id="fascicles">
+                                <!-- Fascicle 1 (Targeted by Cuff) -->
+                                <circle cx="-40" cy="-20" r="35" class="nerve-perineurium" id="target-fascicle" />
+                                <!-- Axons inside Fascicle 1 -->
+                                <circle cx="-50" cy="-30" r="4" class="nerve-axon" />
+                                <circle cx="-30" cy="-25" r="5" class="nerve-axon" />
+                                <circle cx="-45" cy="-10" r="3" class="nerve-axon" />
+                                <circle cx="-25" cy="-15" r="4" class="nerve-axon" />
+                                <circle cx="-35" cy="-5"  r="5" class="nerve-axon" />
+                                
+                                <!-- Fascicle 2 -->
+                                <circle cx="50" cy="-15" r="40" class="nerve-perineurium" />
+                                <circle cx="40" cy="-25" r="4" class="nerve-axon" />
+                                <circle cx="60" cy="-20" r="5" class="nerve-axon" />
+                                <circle cx="50" cy="-5" r="4" class="nerve-axon" />
+
+                                <!-- Fascicle 3 -->
+                                <circle cx="0" cy="40" r="30" class="nerve-perineurium" />
+                                <circle cx="-10" cy="35" r="4" class="nerve-axon" />
+                                <circle cx="10" cy="45" r="5" class="nerve-axon" />
+                            </g>
+
+                            <!-- Cybernetic Cuff Electrode -->
+                            <!-- Wraps around the nerve -->
+                            <path d="M -130,0 C -130,-110 130,-110 130,0" fill="none" stroke="#1e293b" stroke-width="15" stroke-linecap="round" />
+                            <path d="M -130,0 C -130,-110 130,-110 130,0" fill="none" stroke="#38bdf8" stroke-width="3" stroke-linecap="round" />
+                            
+                            <!-- Active Stimulation Contacts -->
+                            <!-- Placed near the target fascicle -->
+                            <circle cx="-60" cy="-85" r="6" class="cuff-contact" id="contact-1" />
+                            <circle cx="-20" cy="-96" r="6" class="cuff-contact" id="contact-2" />
+                            <circle cx="20" cy="-96" r="6" class="cuff-contact" id="contact-3" />
+                        </g>
+
+                        <!-- DATA CONDUIT (Connecting Wire) -->
+                        <path id="wire-path" class="data-wire" d="M 240,95 Q 100,100 100,400 Q 100,600 300,550" />
+                        <path class="data-core" d="M 240,95 Q 100,100 100,400 Q 100,600 300,550" />
+
+                        <!-- ROBOTIC FINGERTIP (Bottom Half) -->
+                        <g id="bionic-finger" transform="translate(300, 500)">
+                            <!-- Main Chassis -->
+                            <path class="bionic-metal" d="M -40,-50 L 40,-50 L 50,80 C 50,150 -50,150 -50,80 Z" />
+                            
+                            <!-- Mechanical Joints/Details -->
+                            <rect x="-45" y="-10" width="90" height="20" rx="4" class="bionic-joint" />
+                            <rect x="-30" y="30" width="60" height="10" rx="2" fill="#1e293b" />
+                            <circle cx="0" cy="0" r="15" fill="#475569" stroke="#0f172a" stroke-width="2" />
+                            
+                            <!-- Soft Sensor Pad (Deforms under pressure) -->
+                            <path id="sensor-pad" class="sensor-pad" d="M -45,100 C -45,160 45,160 45,100 Z" />
+                            
+                            <!-- Microcontroller / Encoder Chip -->
+                            <rect x="-15" y="50" width="30" height="30" rx="4" fill="#020617" stroke="#a855f7" stroke-width="2" />
+                            <path d="M -10,55 L 10,55 M -10,65 L 10,65 M -10,75 L 10,75" stroke="#a855f7" stroke-width="2" stroke-linecap="round" />
+                        </g>
+
+                        <!-- PHYSICAL ENVIRONMENT -->
+                        <!-- The block the finger presses against -->
+                        <g id="contact-surface" transform="translate(0, 640)">
+                            <rect x="150" y="0" width="300" height="160" fill="#0f172a" stroke="#334155" stroke-width="4" rx="8" />
+                            <line x1="150" y1="20" x2="450" y2="20" stroke="#1e293b" stroke-width="2" />
+                            <!-- Visual Force Ripples -->
+                            <ellipse id="force-ripple-1" cx="300" cy="0" rx="60" ry="10" fill="none" stroke="#22d3ee" stroke-width="2" opacity="0" />
+                            <ellipse id="force-ripple-2" cx="300" cy="0" rx="90" ry="15" fill="none" stroke="#22d3ee" stroke-width="2" opacity="0" />
+                        </g>
+
+                    </svg>
+
+                    <!-- Particle Canvas for Action Potentials -->
+                    <canvas id="pulse-canvas" class="absolute inset-0 w-full h-full z-20 pointer-events-none"></canvas>
+
+                </div>
+
+                <!-- Particle Legend -->
+                <div class="absolute bottom-4 left-6 z-30 pointer-events-none flex gap-4 bg-slate-900/80 p-2 rounded-lg border border-slate-700">
+                    <div class="flex items-center gap-2">
+                        <div class="w-3 h-3 rounded-full bg-cyan-400 shadow-[0_0_8px_#22d3ee]"></div>
+                        <span class="text-[9px] font-mono text-slate-300">Digital Encoding</span>
+                    </div>
+                    <div class="flex items-center gap-2">
+                        <div class="w-3 h-3 rounded-full bg-purple-500 shadow-[0_0_8px_#a855f7]"></div>
+                        <span class="text-[9px] font-mono text-slate-300">Neural Action Potential</span>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Controls Panel -->
+            <div class="glass-card p-6">
+                <div class="space-y-4">
+                    <div class="flex justify-between items-end">
+                        <div class="text-xs font-bold text-slate-400 uppercase tracking-widest flex items-center gap-2">
+                            <svg class="w-4 h-4 text-cyan-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 15l-2 5L9 9l11 4-5 2zm0 0l5 5M7.188 2.239l.777 2.897M5.136 7.965l-2.898-.777M13.95 4.05l-2.122 2.122m-5.657 5.656l-2.12 2.122"></path></svg>
+                            Actuator Downward Force
+                        </div>
+                        <div id="ctrl-force-val" class="text-xl font-bold font-mono text-cyan-400">0.0 N</div>
+                    </div>
+                    <input type="range" id="force-slider" min="0" max="100" value="0">
+                    <div class="flex justify-between text-[9px] font-mono text-slate-500 uppercase">
+                        <span class="text-slate-500">Resting (0 N)</span>
+                        <span class="text-purple-400">Firm Grasp (5 N)</span>
+                        <span class="text-rose-500">Crush Force (10 N)</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Right Column: Clinical Patient Monitor -->
+        <div class="lg:col-span-5 flex flex-col gap-6">
+            
+            <div id="monitor-panel" class="monitor-screen flex-grow flex flex-col p-6">
+                <div class="scanline"></div>
+                
+                <div class="flex justify-between items-center border-b border-slate-800 pb-3 mb-6 relative z-10">
+                    <span class="text-xs font-bold tracking-widest uppercase text-slate-500">Electrophysiology Data</span>
+                    <span id="monitor-status" class="text-[10px] font-mono font-bold px-2 py-1 rounded bg-slate-900/50 text-slate-400 border border-slate-800">NO SIGNAL</span>
+                </div>
+
+                <!-- Telemetry Values -->
+                <div class="space-y-6 relative z-10">
+                    
+                    <div class="grid grid-cols-2 gap-4">
+                        <div class="space-y-1">
+                            <label class="text-[10px] uppercase font-bold text-slate-500 tracking-widest">Sensor Force</label>
+                            <div class="flex items-baseline gap-1">
+                                <div id="readout-force" class="text-4xl font-bold font-mono text-cyan-400 leading-none">0.00</div>
+                                <span class="text-sm font-mono text-slate-500">N</span>
+                            </div>
+                        </div>
+                        <div class="space-y-1 text-right">
+                            <label class="text-[10px] uppercase font-bold text-slate-500 tracking-widest">Encoded Pulse Freq</label>
+                            <div class="flex items-baseline gap-1 justify-end">
+                                <div id="readout-freq" class="text-4xl font-bold font-mono text-purple-400 leading-none">0</div>
+                                <span class="text-sm font-mono text-slate-500">Hz</span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="grid grid-cols-2 gap-4 pt-4 border-t border-slate-800">
+                        <div class="space-y-1">
+                            <label class="text-[9px] uppercase font-bold text-slate-500">Encoding Algorithm</label>
+                            <div class="text-lg font-bold font-mono text-emerald-400">LINEAR FM</div>
+                        </div>
+                        <div class="space-y-1 text-right">
+                            <label class="text-[9px] uppercase font-bold text-slate-500">Stimulation Pulse Width</label>
+                            <div class="text-lg font-bold font-mono text-emerald-400">200 µs</div>
+                        </div>
+                    </div>
+
+                    <!-- Live Spike Train Canvas (Oscilloscope) -->
+                    <div class="pt-4 mt-2 border-t border-slate-800 flex-grow flex flex-col relative h-[180px]">
+                        <div class="flex justify-between items-center mb-2 z-10">
+                            <span class="text-[10px] font-bold uppercase text-slate-400">Afferent Action Potentials (Spike Train)</span>
+                        </div>
+                        <div class="flex-grow bg-[#020617] rounded-lg overflow-hidden border border-slate-700 relative">
+                            <!-- Graph Grid -->
+                            <div class="absolute inset-0" style="background-size: 20px 20px; background-image: linear-gradient(to right, rgba(255,255,255,0.03) 1px, transparent 1px), linear-gradient(to bottom, rgba(255,255,255,0.03) 1px, transparent 1px);"></div>
+                            <canvas id="spike-canvas" class="absolute inset-0 w-full h-full z-10"></canvas>
+                        </div>
+                        <div class="flex justify-between text-[8px] text-slate-500 font-mono mt-2 uppercase">
+                            <span>Time (t)</span>
+                            <span>Amplitude (mV)</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Theory Card -->
+            <div class="glass-card p-6 flex flex-col gap-3">
+                <h3 class="text-xs font-bold text-slate-400 uppercase tracking-widest flex items-center gap-2">
+                    <svg class="w-4 h-4 text-purple-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"></path></svg>
+                    Frequency Modulation in Nerves
+                </h3>
+                <div class="text-[11px] text-slate-300 leading-relaxed space-y-3">
+                    <p>The human nervous system cannot send "stronger" or "weaker" signals. Action potentials are binary (All-or-Nothing).</p>
+                    
+                    <div class="p-3 bg-slate-900/50 rounded-xl border border-slate-800">
+                        <strong class="text-purple-400 block mb-1">Rate Coding</strong>
+                        To communicate that a touch is "harder", mechanoreceptors fire action potentials <strong>faster</strong> (higher frequency). A light brush might trigger $10\text{ Hz}$, while a hard press triggers $150\text{ Hz}$.
+                    </div>
+                    
+                    <p>This bionic interface reads physical Newtons from the piezoresistive sensor and uses a Microcontroller to inject electrical pulses into the nerve at matching frequencies, tricking the brain into "feeling" the object.</p>
+                </div>
+            </div>
+
+        </div>
+    </div>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', () => {
+            const forceSlider = document.getElementById('force-slider');
+            const ctrlForceVal = document.getElementById('ctrl-force-val');
+            
+            const readoutForce = document.getElementById('readout-force');
+            const readoutFreq = document.getElementById('readout-freq');
+            const monitorStatus = document.getElementById('monitor-status');
+            
+            const pulseCanvas = document.getElementById('pulse-canvas');
+            const pCtx = pulseCanvas.getContext('2d');
+            const spikeCanvas = document.getElementById('spike-canvas');
+            const sCtx = spikeCanvas.getContext('2d');
+            
+            const bionicFinger = document.getElementById('bionic-finger');
+            const sensorPad = document.getElementById('sensor-pad');
+            const ripple1 = document.getElementById('force-ripple-1');
+            const ripple2 = document.getElementById('force-ripple-2');
+            const contacts = [
+                document.getElementById('contact-1'),
+                document.getElementById('contact-2'),
+                document.getElementById('contact-3')
+            ];
+
+            // --- State Variables ---
+            let forcePercent = 0; // 0 to 100
+            let forceNewtons = 0.0; // 0 to 10.0
+            let frequencyHz = 0; // 0 to 200
+            
+            let particles = [];
+            let lastFireTime = 0;
+            
+            // Spike Train History
+            const SPIKE_WINDOW = 200; // pixels wide logically
+            let spikeHistory = new Array(SPIKE_WINDOW).fill(0);
+            let scopeOffset = 0;
+
+            // --- Resize ---
+            function resizeCanvas() {
+                pulseCanvas.width = pulseCanvas.parentElement.clientWidth;
+                pulseCanvas.height = pulseCanvas.parentElement.clientHeight;
+                
+                spikeCanvas.width = spikeCanvas.parentElement.clientWidth;
+                spikeCanvas.height = spikeCanvas.parentElement.clientHeight;
+            }
+            window.addEventListener('resize', resizeCanvas);
+            resizeCanvas();
+
+            // Path for particles (From chip -> wire -> cuff -> fascicle)
+            // SVG Coordinates. We'll map them to canvas.
+            const SVG_W = 600;
+            const SVG_H = 800;
+            const wireWaypoints = [
+                {x: 300, y: 550}, // Microcontroller exit
+                {x: 100, y: 600}, // Loop down
+                {x: 100, y: 400}, // Up wire
+                {x: 100, y: 100}, // Top wire
+                {x: 240, y: 95},  // Cuff entry
+                {x: 240, y: 95}   // Fascicle scatter point
+            ];
+
+            function mapToCanvas(x, y) {
+                return {
+                    x: (x / SVG_W) * pulseCanvas.width,
+                    y: (y / SVG_H) * pulseCanvas.height
+                };
+            }
+
+            // --- Particle Engine ---
+            class ActionPotential {
+                constructor() {
+                    this.active = true;
+                    this.waypointIndex = 0;
+                    this.progress = 0;
+                    this.speed = 0.05 + Math.random() * 0.02; // Travel speed
+                    
+                    // Target coordinates (init)
+                    this.updateTargets();
+                    
+                    // Final scatter target inside the fascicle (Target Fascicle is cx:-40, cy:-20 relative to 300,180) -> 260, 160
+                    const scatterAngle = Math.random() * Math.PI * 2;
+                    const scatterR = Math.random() * 30;
+                    this.finalX = 260 + Math.cos(scatterAngle) * scatterR;
+                    this.finalY = 160 + Math.sin(scatterAngle) * scatterR;
+                }
+
+                updateTargets() {
+                    if (this.waypointIndex >= wireWaypoints.length - 1) return;
+                    const p1 = wireWaypoints[this.waypointIndex];
+                    const p2 = wireWaypoints[this.waypointIndex + 1];
+                    this.startX = p1.x;
+                    this.startY = p1.y;
+                    this.endX = p2.x;
+                    this.endY = p2.y;
+                }
+
+                update() {
+                    if (!this.active) return;
+                    
+                    this.progress += this.speed;
+                    
+                    if (this.progress >= 1.0) {
+                        this.progress = 0;
+                        this.waypointIndex++;
+                        
+                        // Hit the electrode cuff! Flash the contacts
+                        if (this.waypointIndex === wireWaypoints.length - 1) {
+                            flashContacts();
+                        }
+
+                        if (this.waypointIndex >= wireWaypoints.length - 1) {
+                            // Final stage: Scatter into fascicle
+                            this.startX = wireWaypoints[wireWaypoints.length - 1].x;
+                            this.startY = wireWaypoints[wireWaypoints.length - 1].y;
+                            this.endX = this.finalX;
+                            this.endY = this.finalY;
+                            // Slow down for the final scatter
+                            this.speed = 0.1;
+                            
+                            // If we hit the end of the scatter, die
+                            if (this.waypointIndex >= wireWaypoints.length) {
+                                this.active = false;
+                            }
+                        } else {
+                            this.updateTargets();
+                        }
+                    }
+
+                    // Quadratic Bezier interpolation for smooth wire curving?
+                    // For simplicity, linear interpolation between waypoints.
+                    const t = this.progress;
+                    this.currentX = this.startX + (this.endX - this.startX) * t;
+                    this.currentY = this.startY + (this.endY - this.startY) * t;
+                }
+
+                draw(ctx) {
+                    if (!this.active) return;
+                    const pos = mapToCanvas(this.currentX, this.currentY);
+                    
+                    ctx.beginPath();
+                    ctx.arc(pos.x, pos.y, 4, 0, Math.PI * 2);
+                    
+                    // Color shifts from Cyan (Digital) to Purple (Biological) near the end
+                    if (this.waypointIndex >= wireWaypoints.length - 1) {
+                        ctx.fillStyle = '#a855f7'; // Purple
+                        ctx.shadowColor = '#a855f7';
+                    } else {
+                        ctx.fillStyle = '#22d3ee'; // Cyan
+                        ctx.shadowColor = '#22d3ee';
+                    }
+                    
+                    ctx.shadowBlur = 10;
+                    ctx.fill();
+                    ctx.shadowBlur = 0;
+                }
+            }
+
+            function flashContacts() {
+                const c = contacts[Math.floor(Math.random() * contacts.length)];
+                c.classList.add('active');
+                setTimeout(() => c.classList.remove('active'), 50);
+            }
+
+            // --- Physical Simulation Logic ---
+            function updatePhysics() {
+                forcePercent = parseInt(forceSlider.value);
+                forceNewtons = (forcePercent / 100) * 10.0;
+                
+                // Map Force to Frequency (Linear encoding for simplicity: 0-10N -> 0-200Hz)
+                if (forceNewtons < 0.1) {
+                    frequencyHz = 0;
+                } else {
+                    frequencyHz = Math.round((forceNewtons / 10.0) * 200);
+                }
+
+                // Update UI Text
+                ctrlForceVal.textContent = `${forceNewtons.toFixed(1)} N`;
+                readoutForce.textContent = forceNewtons.toFixed(2);
+                readoutFreq.textContent = frequencyHz;
+
+                // Visual Themes
+                if (forceNewtons > 8.0) {
+                    ctrlForceVal.className = "text-xl font-bold font-mono text-rose-500";
+                    readoutForce.className = "text-4xl font-bold font-mono leading-none text-rose-500";
+                    monitorStatus.textContent = "NOCICEPTIVE OVERLOAD (PAIN)";
+                    monitorStatus.className = "text-[10px] font-mono font-bold px-2 py-1 rounded bg-rose-900/50 text-rose-400 border border-rose-800";
+                } else if (forceNewtons > 3.0) {
+                    ctrlForceVal.className = "text-xl font-bold font-mono text-purple-400";
+                    readoutForce.className = "text-4xl font-bold font-mono leading-none text-purple-400";
+                    monitorStatus.textContent = "FIRM CONTACT";
+                    monitorStatus.className = "text-[10px] font-mono font-bold px-2 py-1 rounded bg-purple-900/50 text-purple-400 border border-purple-800";
+                } else if (forceNewtons > 0.1) {
+                    ctrlForceVal.className = "text-xl font-bold font-mono text-cyan-400";
+                    readoutForce.className = "text-4xl font-bold font-mono leading-none text-cyan-400";
+                    monitorStatus.textContent = "LIGHT TOUCH DETECTED";
+                    monitorStatus.className = "text-[10px] font-mono font-bold px-2 py-1 rounded bg-cyan-900/50 text-cyan-400 border border-cyan-800";
+                } else {
+                    ctrlForceVal.className = "text-xl font-bold font-mono text-slate-500";
+                    readoutForce.className = "text-4xl font-bold font-mono leading-none text-cyan-400";
+                    monitorStatus.textContent = "NO SIGNAL";
+                    monitorStatus.className = "text-[10px] font-mono font-bold px-2 py-1 rounded bg-slate-900/50 text-slate-400 border border-slate-800";
+                }
+
+                // --- SVG Morphing (Robotic Finger pressing down) ---
+                // Finger moves down
+                const fingerY = forcePercent * 0.4; 
+                bionicFinger.setAttribute('transform', `translate(300, ${500 + fingerY})`);
+                
+                // Sensor pad deforms (flattens out)
+                // Original: d="M -45,100 C -45,160 45,160 45,100 Z"
+                // Pressed: control points move up
+                const deformY = 160 - (forcePercent * 0.6);
+                sensorPad.setAttribute('d', `M -45,100 C -45,${deformY} 45,${deformY} 45,100 Z`);
+
+                // Ripples on the block
+                if (forcePercent > 0) {
+                    ripple1.style.opacity = 0.5 + (forcePercent/200);
+                    ripple1.setAttribute('rx', 60 + forcePercent * 0.5);
+                    ripple1.setAttribute('ry', 10 + forcePercent * 0.1);
+                    
+                    ripple2.style.opacity = forcePercent > 50 ? 0.5 : 0;
+                    ripple2.setAttribute('rx', 90 + (forcePercent-50) * 0.5);
+                    ripple2.setAttribute('ry', 15 + (forcePercent-50) * 0.1);
+                } else {
+                    ripple1.style.opacity = 0;
+                    ripple2.style.opacity = 0;
+                }
+            }
+
+            // --- Oscilloscope Drawing ---
+            function drawOscilloscope() {
+                sCtx.clearRect(0, 0, spikeCanvas.width, spikeCanvas.height);
+                
+                const w = spikeCanvas.width;
+                const h = spikeCanvas.height;
+                const baseline = h * 0.8; // Resting potential
+                const spikeHeight = h * 0.1; // Peak action potential
+                
+                sCtx.beginPath();
+                sCtx.strokeStyle = '#a855f7'; // Purple spikes
+                sCtx.lineWidth = 2;
+                sCtx.lineJoin = 'round';
+                
+                const step = w / SPIKE_WINDOW;
+                
+                for (let i = 0; i < SPIKE_WINDOW; i++) {
+                    const x = i * step;
+                    // If history array has a 1, draw a spike. Otherwise baseline.
+                    const isSpike = spikeHistory[i];
+                    
+                    if (isSpike) {
+                        // Draw sharp peak
+                        sCtx.lineTo(x - step*0.5, baseline);
+                        sCtx.lineTo(x, spikeHeight);
+                        sCtx.lineTo(x + step*0.5, baseline + 10); // Hyperpolarization dip
+                    } else {
+                        sCtx.lineTo(x, baseline);
+                    }
+                }
+                sCtx.stroke();
+            }
+
+            // --- Main Animation Loop ---
+            function animate(timestamp) {
+                // 1. Manage Firing Logic based on Frequency
+                // Frequency is Hz (times per second). 
+                if (frequencyHz > 0) {
+                    const fireIntervalMs = 1000 / frequencyHz;
+                    if (timestamp - lastFireTime >= fireIntervalMs) {
+                        // FIRE!
+                        particles.push(new ActionPotential());
+                        spikeHistory.push(1); // 1 = spike
+                        lastFireTime = timestamp;
+                    } else {
+                        spikeHistory.push(0); // 0 = rest
+                    }
+                } else {
+                    spikeHistory.push(0);
+                }
+                
+                // Keep history array size constant
+                if (spikeHistory.length > SPIKE_WINDOW) {
+                    spikeHistory.shift();
+                }
+
+                // 2. Render Particles
+                pCtx.clearRect(0, 0, pulseCanvas.width, pulseCanvas.height);
+                for (let i = particles.length - 1; i >= 0; i--) {
+                    const p = particles[i];
+                    p.update();
+                    p.draw(pCtx);
+                    if (!p.active) {
+                        particles.splice(i, 1);
+                    }
+                }
+
+                // 3. Render Oscilloscope
+                drawOscilloscope();
+
+                requestAnimationFrame(animate);
+            }
+
+            // --- Event Listeners ---
+            forceSlider.addEventListener('input', updatePhysics);
+
+            // Initialize
+            updatePhysics();
+            requestAnimationFrame(animate);
+        });
+    </script>
+</body>
+</html>

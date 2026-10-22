@@ -1,0 +1,23 @@
+# Secrets and locally signed extension packages
+*.pem
+*.key
+*.p12
+*.crx
+
+# Packaged applications and archives belong in GitHub Releases
+*.exe
+*.zip
+Clonbrow-win32-x64/
+
+# Local API data and dependencies
+clonbrow-api/data/
+node_modules/
+
+# Historical duplicate of the root prototype collection
+archive/editorial-pacl/
+
+# OS and editor files
+.DS_Store
+Thumbs.db
+.vscode/
+.idea/

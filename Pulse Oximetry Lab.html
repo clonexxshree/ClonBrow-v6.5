@@ -1,0 +1,530 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Pulse Oximetry & Spectrophotometry Lab</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;700&family=Inter:wght@300;400;600;700&display=swap');
+
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: #020617; /* Slate 950 */
+            color: #f8fafc;
+            overflow-x: hidden;
+            user-select: none;
+            touch-action: none;
+        }
+
+        .font-mono { font-family: 'JetBrains Mono', monospace; }
+
+        /* Unified Card Styling */
+        .glass-card {
+            background: rgba(15, 23, 42, 0.85);
+            backdrop-filter: blur(20px);
+            border: 1px solid rgba(255, 255, 255, 0.08);
+            box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.5);
+            border-radius: 1.5rem;
+        }
+
+        /* Digital Readout Screen */
+        .monitor-screen {
+            background: #020617;
+            border: 2px solid #1e293b;
+            border-radius: 1rem;
+            box-shadow: inset 0 0 20px rgba(0,0,0,0.8);
+            position: relative;
+            overflow: hidden;
+        }
+
+        /* SVG Components */
+        .probe-casing {
+            fill: #1e293b;
+            stroke: #475569;
+            stroke-width: 3;
+            stroke-linejoin: round;
+        }
+
+        .probe-pad {
+            fill: #0f172a;
+            stroke: #334155;
+            stroke-width: 2;
+        }
+
+        .finger-base {
+            transition: fill 0.5s ease;
+            stroke: rgba(0,0,0,0.3);
+            stroke-width: 2;
+        }
+
+        .nail-bed {
+            transition: fill 0.5s ease;
+            stroke: rgba(0,0,0,0.1);
+        }
+        
+        .bone { fill: rgba(255, 255, 255, 0.2); }
+
+        /* Light Beams & LEDs */
+        .led-indicator { transition: all 0.3s ease; }
+        .beam-path { transition: opacity 0.3s ease, stroke-width 0.3s ease; stroke-linecap: round; }
+        .tissue-glow { transition: opacity 0.3s ease; mix-blend-mode: screen; }
+
+        /* Animations */
+        .scanline {
+            width: 100%;
+            height: 2px;
+            background: rgba(56, 189, 248, 0.05);
+            position: absolute;
+            z-index: 10;
+            animation: scan 6s linear infinite;
+            pointer-events: none;
+        }
+        @keyframes scan { 0% { top: 0%; } 100% { top: 100%; } }
+
+        /* Custom Sliders */
+        input[type=range] {
+            -webkit-appearance: none;
+            background: transparent;
+            cursor: pointer;
+            width: 100%;
+        }
+        input[type=range]::-webkit-slider-runnable-track {
+            height: 8px;
+            border-radius: 4px;
+            border: 1px solid rgba(255,255,255,0.1);
+        }
+        #spo2-slider::-webkit-slider-runnable-track {
+            background: linear-gradient(to right, #f43f5e, #fbbf24, #10b981, #38bdf8);
+        }
+        #hr-slider::-webkit-slider-runnable-track {
+            background: #1e293b;
+        }
+        input[type=range]::-webkit-slider-thumb {
+            -webkit-appearance: none;
+            height: 24px;
+            width: 24px;
+            border-radius: 50%;
+            background: #0f172a;
+            border: 3px solid #f8fafc;
+            margin-top: -9px;
+            box-shadow: 0 0 10px rgba(0,0,0,0.5);
+            transition: transform 0.1s;
+        }
+        input[type=range]::-webkit-slider-thumb:active { transform: scale(1.1); }
+
+        /* Status Colors */
+        .text-optimal { color: #38bdf8; text-shadow: 0 0 12px rgba(56,189,248,0.5); }
+        .text-warning { color: #fbbf24; text-shadow: 0 0 12px rgba(251,191,36,0.5); }
+        .text-critical { color: #f43f5e; text-shadow: 0 0 15px rgba(244,63,94,0.8); }
+    </style>
+</head>
+<body class="min-h-screen p-4 lg:p-8 flex items-center justify-center">
+
+    <div class="max-w-7xl w-full grid grid-cols-1 lg:grid-cols-12 gap-6 lg:gap-8 items-stretch">
+        
+        <!-- Left Column: Physical Sensor Simulation -->
+        <div class="lg:col-span-7 flex flex-col gap-6">
+            
+            <!-- Sensor SVG Viewport -->
+            <div class="glass-card relative flex-grow min-h-[450px] flex flex-col overflow-hidden">
+                <!-- Grid Background -->
+                <div class="absolute inset-0 opacity-20 pointer-events-none" style="background-image: radial-gradient(#475569 1px, transparent 1px); background-size: 20px 20px;"></div>
+                
+                <div class="absolute top-6 left-6 z-20">
+                    <h2 class="text-xs font-bold text-slate-400 uppercase tracking-widest flex items-center gap-2">
+                        <svg class="w-4 h-4 text-sky-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"></path><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"></path></svg>
+                        Optical Probe Cross-Section
+                    </h2>
+                </div>
+
+                <div class="relative w-full h-full flex items-center justify-center">
+                    <svg viewBox="0 0 600 400" class="w-full h-full relative z-10 max-w-[500px]">
+                        <defs>
+                            <linearGradient id="red-beam" x1="0" y1="0" x2="0" y2="1">
+                                <stop offset="0%" stop-color="#ef4444" stop-opacity="0.9" />
+                                <stop offset="100%" stop-color="#ef4444" stop-opacity="0.0" />
+                            </linearGradient>
+                            <linearGradient id="ir-beam" x1="0" y1="0" x2="0" y2="1">
+                                <stop offset="0%" stop-color="#c084fc" stop-opacity="0.9" />
+                                <stop offset="100%" stop-color="#c084fc" stop-opacity="0.0" />
+                            </linearGradient>
+                            <radialGradient id="scatter-red" cx="50%" cy="50%" r="50%">
+                                <stop offset="0%" stop-color="#ef4444" stop-opacity="0.6"/>
+                                <stop offset="100%" stop-color="#ef4444" stop-opacity="0"/>
+                            </radialGradient>
+                            <radialGradient id="scatter-ir" cx="50%" cy="50%" r="50%">
+                                <stop offset="0%" stop-color="#c084fc" stop-opacity="0.5"/>
+                                <stop offset="100%" stop-color="#c084fc" stop-opacity="0"/>
+                            </radialGradient>
+                        </defs>
+
+                        <!-- Central Finger -->
+                        <g id="finger-model" transform="translate(100, 150)">
+                            <!-- Main Tissue -->
+                            <path id="tissue-fill" class="finger-base" fill="#fca5a5" d="M -50,10 C 50,10 200,-10 320,-10 C 380,-10 420,20 420,60 C 420,100 380,120 300,120 C 150,120 0,110 -50,110 Z" />
+                            
+                            <!-- Bone Structure -->
+                            <path class="bone" d="M 250,40 Q 290,30 330,45 Q 350,55 330,65 Q 290,80 250,70 Q 230,55 250,40 Z" />
+                            <path class="bone" d="M 120,35 Q 180,30 220,45 Q 240,55 220,65 Q 180,80 120,75 Q 100,55 120,35 Z" />
+                            
+                            <!-- Nail Bed -->
+                            <path id="nail-fill" class="nail-bed" fill="#fecaca" d="M 330,2 C 380,-8 410,15 410,15 C 410,15 380,15 330,10 Z" />
+
+                            <!-- Subcutaneous Scattering Glows (Dynamic Opacity) -->
+                            <circle id="glow-red" cx="280" cy="50" r="80" fill="url(#scatter-red)" class="tissue-glow" />
+                            <circle id="glow-ir" cx="340" cy="50" r="80" fill="url(#scatter-ir)" class="tissue-glow" />
+                        </g>
+
+                        <!-- Top Probe Shell (LED Emitters) -->
+                        <g id="probe-top" transform="translate(150, 70)">
+                            <!-- Casing -->
+                            <path class="probe-casing" d="M 0,40 C 50,10 200,-10 300,-10 C 350,-10 380,30 380,50 C 380,70 350,80 300,80 L 0,80 Z" />
+                            <path class="probe-pad" d="M 100,80 L 350,80 C 370,80 370,60 350,60 L 100,60 Z" />
+                            <path class="probe-wire" d="M 0,60 Q -50,60 -80,-20" />
+                            
+                            <!-- Emitter Cavities -->
+                            <rect x="220" y="65" width="20" height="15" fill="#020617" rx="2" />
+                            <rect x="280" y="65" width="20" height="15" fill="#020617" rx="2" />
+
+                            <!-- LEDs -->
+                            <circle id="led-src-red" cx="230" cy="78" r="4" fill="#ef4444" class="led-indicator" />
+                            <circle id="led-src-ir" cx="290" cy="78" r="4" fill="#c084fc" class="led-indicator" />
+                        </g>
+
+                        <!-- Penetrating Light Beams -->
+                        <g id="optical-beams">
+                            <path id="beam-red" class="beam-path" stroke="url(#red-beam)" d="M 380,150 L 380,300" />
+                            <path id="beam-ir" class="beam-path" stroke="url(#ir-beam)" d="M 440,150 L 440,300" />
+                        </g>
+
+                        <!-- Bottom Probe Shell (Photodetector) -->
+                        <g id="probe-bottom" transform="translate(150, 290)">
+                            <!-- Casing -->
+                            <path class="probe-casing" d="M 0,30 C 50,60 200,80 300,80 C 350,80 380,40 380,20 C 380,0 350,-10 300,-10 L 0,-10 Z" />
+                            <path class="probe-pad" d="M 100,-10 L 350,-10 C 370,-10 370,10 350,10 L 100,10 Z" />
+                            
+                            <!-- Photodetector array -->
+                            <rect x="200" y="-12" width="120" height="10" fill="#020617" rx="2" />
+                            <rect x="210" y="-10" width="100" height="6" fill="#38bdf8" opacity="0.4" />
+                            
+                            <!-- Received Light Hits -->
+                            <circle id="hit-red" cx="230" cy="-7" r="3" fill="#ef4444" class="led-indicator" />
+                            <circle id="hit-ir" cx="290" cy="-7" r="3" fill="#c084fc" class="led-indicator" />
+                        </g>
+
+                        <!-- Labels -->
+                        <text x="380" y="55" fill="#ef4444" font-size="12" font-family="monospace" font-weight="bold" text-anchor="middle">660nm (RED)</text>
+                        <text x="440" y="55" fill="#c084fc" font-size="12" font-family="monospace" font-weight="bold" text-anchor="middle">940nm (IR)</text>
+                        <text x="410" y="380" fill="#38bdf8" font-size="12" font-family="monospace" font-weight="bold" text-anchor="middle">PHOTODIODE DETECTOR</text>
+
+                    </svg>
+                </div>
+            </div>
+
+            <!-- Controls Panel -->
+            <div class="glass-card p-6 grid grid-cols-1 md:grid-cols-2 gap-8">
+                <!-- SpO2 Control -->
+                <div class="space-y-4">
+                    <div class="flex justify-between items-end">
+                        <div class="text-xs font-bold text-slate-400 uppercase tracking-widest">Target SpO₂</div>
+                        <div id="ctrl-spo2-val" class="text-xl font-bold font-mono text-sky-400">99%</div>
+                    </div>
+                    <input type="range" id="slider-spo2" min="65" max="100" value="99">
+                    <div class="flex justify-between text-[9px] font-mono text-slate-500 uppercase">
+                        <span class="text-rose-500">Hypoxia</span>
+                        <span class="text-sky-400">Normal</span>
+                    </div>
+                </div>
+
+                <!-- Heart Rate Control -->
+                <div class="space-y-4">
+                    <div class="flex justify-between items-end">
+                        <div class="text-xs font-bold text-slate-400 uppercase tracking-widest">Pulse Rate</div>
+                        <div id="ctrl-hr-val" class="text-xl font-bold font-mono text-slate-200">75 BPM</div>
+                    </div>
+                    <input type="range" id="slider-hr" min="40" max="180" value="75">
+                    <div class="flex justify-between text-[9px] font-mono text-slate-500 uppercase">
+                        <span>Bradycardia</span>
+                        <span>Tachycardia</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Right Column: Clinical Patient Monitor -->
+        <div class="lg:col-span-5 flex flex-col gap-6">
+            
+            <div class="monitor-screen flex-grow flex flex-col p-6">
+                <div class="scanline"></div>
+                
+                <div class="flex justify-between items-center border-b border-slate-800 pb-3 mb-6">
+                    <span class="text-xs font-bold tracking-widest uppercase text-slate-500">ICU Telemetry</span>
+                    <span id="monitor-status" class="text-[10px] font-mono font-bold px-2 py-1 rounded bg-sky-900/30 text-sky-400">STABLE</span>
+                </div>
+
+                <!-- Vital Signs -->
+                <div class="grid grid-cols-2 gap-6 mb-6">
+                    <div class="space-y-1">
+                        <label class="text-[10px] uppercase font-bold text-sky-500 tracking-widest">SpO₂ %</label>
+                        <div id="readout-spo2" class="text-7xl font-bold font-mono leading-none text-optimal">99</div>
+                    </div>
+                    <div class="space-y-1 text-right">
+                        <label class="text-[10px] uppercase font-bold text-emerald-500 tracking-widest">♥ PR bpm</label>
+                        <div id="readout-hr" class="text-5xl font-bold font-mono leading-none text-emerald-400 mt-2">75</div>
+                    </div>
+                </div>
+
+                <div class="grid grid-cols-2 gap-4 border-t border-b border-slate-800 py-4 mb-6">
+                    <div class="space-y-1">
+                        <label class="text-[9px] uppercase font-bold text-slate-500">Ratio of Ratios (R)</label>
+                        <div id="readout-r" class="text-lg font-bold font-mono text-slate-300">0.40</div>
+                    </div>
+                    <div class="space-y-1 text-right">
+                        <label class="text-[9px] uppercase font-bold text-slate-500">Perfusion Index (PI)</label>
+                        <div class="text-lg font-bold font-mono text-slate-300">4.2%</div>
+                    </div>
+                </div>
+
+                <!-- PPG Waveform Canvas -->
+                <div class="flex-grow flex flex-col relative min-h-[160px]">
+                    <div class="flex justify-between items-center mb-2 z-10">
+                        <span class="text-[10px] font-bold uppercase text-slate-500">Plethysmograph (AC)</span>
+                        <div class="flex gap-3">
+                            <span class="text-[9px] font-mono font-bold text-red-500 flex items-center gap-1"><span class="w-2 h-2 bg-red-500 rounded-full"></span>660nm</span>
+                            <span class="text-[9px] font-mono font-bold text-purple-400 flex items-center gap-1"><span class="w-2 h-2 bg-purple-400 rounded-full"></span>940nm</span>
+                        </div>
+                    </div>
+                    <!-- Background Grid -->
+                    <div class="absolute inset-0 top-6 border border-slate-800 rounded-lg" style="background-size: 20px 20px; background-image: linear-gradient(to right, rgba(255,255,255,0.03) 1px, transparent 1px), linear-gradient(to bottom, rgba(255,255,255,0.03) 1px, transparent 1px);"></div>
+                    <canvas id="ppg-canvas" class="absolute inset-0 top-6 w-full h-[calc(100%-24px)]"></canvas>
+                </div>
+            </div>
+
+            <!-- Theory Card -->
+            <div class="glass-card p-6 flex flex-col gap-3">
+                <h3 class="text-xs font-bold text-slate-400 uppercase tracking-widest flex items-center gap-2">
+                    <svg class="w-4 h-4 text-emerald-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19.428 15.428a2 2 0 00-1.022-.547l-2.387-.477a6 6 0 00-3.86.517l-.318.158a6 6 0 01-3.86.517L6.05 15.21a2 2 0 00-1.806.547M8 4h8l-1 1v5.172a2 2 0 00.586 1.414l5 5c1.26 1.26.367 3.414-1.415 3.414H4.828c-1.782 0-2.674-2.154-1.414-3.414l5-5A2 2 0 009 10.172V5L8 4z"></path></svg>
+                    Beer-Lambert Principle
+                </h3>
+                <div class="text-[11px] text-slate-300 leading-relaxed grid grid-cols-2 gap-4">
+                    <div>
+                        <strong class="text-purple-400 block mb-1">Oxyhemoglobin (HbO₂)</strong>
+                        Absorbs Infrared light (940nm) more heavily. Allows Red light to transmit, making arterial blood appear bright red.
+                    </div>
+                    <div>
+                        <strong class="text-red-400 block mb-1">Deoxyhemoglobin (Hb)</strong>
+                        Absorbs Red light (660nm) heavily. Allows Infrared light to transmit. High presence indicates hypoxia and causes cyanosis.
+                    </div>
+                </div>
+            </div>
+
+        </div>
+    </div>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', () => {
+            // DOM Elements
+            const sliderSpo2 = document.getElementById('slider-spo2');
+            const sliderHr = document.getElementById('slider-hr');
+            const ctrlSpo2Val = document.getElementById('ctrl-spo2-val');
+            const ctrlHrVal = document.getElementById('ctrl-hr-val');
+            
+            const readoutSpo2 = document.getElementById('readout-spo2');
+            const readoutHr = document.getElementById('readout-hr');
+            const readoutR = document.getElementById('readout-r');
+            const monitorStatus = document.getElementById('monitor-status');
+            
+            const tissueFill = document.getElementById('tissue-fill');
+            const nailFill = document.getElementById('nail-fill');
+            const beamRed = document.getElementById('beam-red');
+            const beamIr = document.getElementById('beam-ir');
+            const glowRed = document.getElementById('glow-red');
+            const glowIr = document.getElementById('glow-ir');
+            const hitRed = document.getElementById('hit-red');
+            const hitIr = document.getElementById('hit-ir');
+            const srcRed = document.getElementById('led-src-red');
+            const srcIr = document.getElementById('led-src-ir');
+
+            const canvas = document.getElementById('ppg-canvas');
+            const ctx = canvas.getContext('2d');
+
+            // Application State
+            const state = {
+                spo2: 99,
+                hr: 75,
+                time: 0,
+                historyRed: new Array(150).fill(0),
+                historyIr: new Array(150).fill(0)
+            };
+
+            // Resize Canvas Helper
+            function resizeCanvas() {
+                canvas.width = canvas.parentElement.clientWidth;
+                canvas.height = canvas.parentElement.clientHeight - 24; // offset for the header inside the relative box
+            }
+            window.addEventListener('resize', resizeCanvas);
+            resizeCanvas();
+
+            // Interpolate Color for Cyanosis
+            // healthy: rgb(252, 165, 165) [fca5a5]
+            // hypoxic: rgb(100, 116, 139) [64748b]
+            function updateTissueColor(norm) {
+                const r = Math.round(100 + (152 * norm));
+                const g = Math.round(116 + (49 * norm));
+                const b = Math.round(139 + (26 * norm));
+                tissueFill.style.fill = `rgb(${r}, ${g}, ${b})`;
+                
+                // Nail bed (slightly bluer)
+                const nR = Math.round(148 + (106 * norm));
+                const nG = Math.round(163 + (39 * norm));
+                const nB = Math.round(184 + (18 * norm));
+                nailFill.style.fill = `rgb(${nR}, ${nG}, ${nB})`;
+            }
+
+            // Core Physics Update
+            function updatePhysics() {
+                state.spo2 = parseInt(sliderSpo2.value);
+                state.hr = parseInt(sliderHr.value);
+
+                // Update text
+                ctrlSpo2Val.textContent = `${state.spo2}%`;
+                ctrlHrVal.textContent = `${state.hr} BPM`;
+                readoutSpo2.textContent = state.spo2;
+                readoutHr.textContent = state.hr;
+
+                // Normalize SpO2 (0 = 65%, 1 = 100%)
+                const norm = Math.max(0, Math.min(1, (state.spo2 - 65) / 35));
+
+                // 1. Transmission Coefficients
+                // High SpO2 -> Absorbs IR, transmits Red
+                // Low SpO2 -> Absorbs Red, transmits IR
+                const transRed = 0.15 + (norm * 0.85); // 0.15 at 65%, 1.0 at 100%
+                const transIr = 1.0 - (norm * 0.85);   // 1.0 at 65%, 0.15 at 100%
+
+                // 2. Visual Update of Beams and Tissue Scatter
+                beamRed.style.strokeWidth = `${transRed * 20}px`;
+                beamRed.style.opacity = 0.1 + (transRed * 0.9);
+                glowRed.style.opacity = 0.2 + (transRed * 0.8);
+                hitRed.style.opacity = 0.2 + (transRed * 0.8);
+                hitRed.setAttribute('r', 1 + (transRed * 4));
+                srcRed.style.filter = `drop-shadow(0 0 ${4 + transRed*6}px #ef4444)`;
+
+                beamIr.style.strokeWidth = `${transIr * 20}px`;
+                beamIr.style.opacity = 0.1 + (transIr * 0.9);
+                glowIr.style.opacity = 0.2 + (transIr * 0.8);
+                hitIr.style.opacity = 0.2 + (transIr * 0.8);
+                hitIr.setAttribute('r', 1 + (transIr * 4));
+                srcIr.style.filter = `drop-shadow(0 0 ${4 + transIr*6}px #c084fc)`;
+
+                // 3. Cyanosis rendering
+                updateTissueColor(norm);
+
+                // 4. Calculate R value (SpO2 = 110 - 25R)
+                const rVal = (110 - state.spo2) / 25;
+                readoutR.textContent = rVal.toFixed(2);
+
+                // 5. Clinical Themes
+                if (state.spo2 >= 95) {
+                    readoutSpo2.className = "text-7xl font-bold font-mono leading-none text-optimal";
+                    ctrlSpo2Val.className = "text-xl font-bold font-mono text-sky-400";
+                    monitorStatus.textContent = "STABLE";
+                    monitorStatus.className = "text-[10px] font-mono font-bold px-2 py-1 rounded bg-sky-900/30 text-sky-400";
+                } else if (state.spo2 >= 88) {
+                    readoutSpo2.className = "text-7xl font-bold font-mono leading-none text-warning";
+                    ctrlSpo2Val.className = "text-xl font-bold font-mono text-amber-400";
+                    monitorStatus.textContent = "HYPOXIA ALARM";
+                    monitorStatus.className = "text-[10px] font-mono font-bold px-2 py-1 rounded bg-amber-900/30 text-amber-400 animate-pulse";
+                } else {
+                    readoutSpo2.className = "text-7xl font-bold font-mono leading-none text-critical";
+                    ctrlSpo2Val.className = "text-xl font-bold font-mono text-rose-500";
+                    monitorStatus.textContent = "CRITICAL DESAT";
+                    monitorStatus.className = "text-[10px] font-mono font-bold px-2 py-1 rounded bg-rose-900/30 text-rose-500 animate-pulse";
+                }
+
+                // Return trans values for PPG generator
+                return { transRed, transIr };
+            }
+
+            function generateWaveformPoint(phase, acAmplitude) {
+                // Synthesize a realistic arterial pulse wave (Systolic peak + dicrotic notch)
+                let val = Math.pow(Math.sin(phase), 4);
+                // Dicrotic notch
+                if (phase % Math.PI > Math.PI / 2 && phase % Math.PI < Math.PI * 0.8) {
+                    val += 0.15 * Math.sin((phase * 4)); 
+                }
+                // Respiration baseline wander
+                const baseline = Math.sin(state.time * 0.03) * 0.05;
+                
+                // Map to amplitude
+                return (val * acAmplitude) + baseline;
+            }
+
+            function drawGraph() {
+                state.time++;
+                const trans = updatePhysics();
+
+                // 60fps target. 60 bpm = 1 beat/sec = PI phase every 60 frames.
+                const phaseSpeed = (state.hr / 60) * (Math.PI / 60);
+                const currentPhase = state.time * phaseSpeed;
+
+                // Push new points based on current transmission strength
+                // Scale amplitudes so they fit nicely in the canvas
+                const redAC = generateWaveformPoint(currentPhase, trans.transRed * 50);
+                const irAC = generateWaveformPoint(currentPhase, trans.transIr * 50);
+
+                state.historyRed.push(redAC);
+                state.historyIr.push(irAC);
+                state.historyRed.shift();
+                state.historyIr.shift();
+
+                ctx.clearRect(0, 0, canvas.width, canvas.height);
+                const w = canvas.width;
+                const h = canvas.height;
+                const len = state.historyRed.length;
+                const step = w / (len - 1);
+                const baselineY = h - 20;
+
+                // Draw IR Waveform (Purple)
+                ctx.beginPath();
+                ctx.strokeStyle = '#c084fc';
+                ctx.lineWidth = 2;
+                ctx.lineJoin = 'round';
+                for(let i=0; i<len; i++) {
+                    const y = baselineY - state.historyIr[i];
+                    if (i===0) ctx.moveTo(i * step, y);
+                    else ctx.lineTo(i * step, y);
+                }
+                ctx.stroke();
+
+                // Draw Red Waveform (Red)
+                ctx.beginPath();
+                ctx.strokeStyle = '#ef4444';
+                ctx.lineWidth = 2;
+                ctx.lineJoin = 'round';
+                for(let i=0; i<len; i++) {
+                    const y = baselineY - state.historyRed[i];
+                    if (i===0) ctx.moveTo(i * step, y);
+                    else ctx.lineTo(i * step, y);
+                }
+                ctx.stroke();
+
+                // Draw play head
+                ctx.beginPath();
+                ctx.moveTo(w - 2, 0);
+                ctx.lineTo(w - 2, h);
+                ctx.strokeStyle = 'rgba(255,255,255,0.3)';
+                ctx.lineWidth = 1;
+                ctx.stroke();
+
+                requestAnimationFrame(drawGraph);
+            }
+
+            // Init
+            sliderSpo2.addEventListener('input', updatePhysics);
+            sliderHr.addEventListener('input', updatePhysics);
+            drawGraph();
+        });
+    </script>
+</body>
+</html>

@@ -1,0 +1,634 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Glomerular Sieve & Renal Filtration Lab</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;700&family=Inter:wght@300;400;600;700&display=swap');
+
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: #020617; /* Slate 950 */
+            color: #f8fafc;
+            overflow-x: hidden;
+            user-select: none;
+            touch-action: none;
+        }
+
+        .font-mono { font-family: 'JetBrains Mono', monospace; }
+
+        /* Unified Card Styling */
+        .glass-card {
+            background: rgba(15, 23, 42, 0.85);
+            backdrop-filter: blur(20px);
+            border: 1px solid rgba(255, 255, 255, 0.08);
+            box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.5);
+            border-radius: 1.5rem;
+        }
+
+        /* Digital Readout Screen */
+        .monitor-screen {
+            background: #020617;
+            border: 2px solid #1e293b;
+            border-radius: 1rem;
+            box-shadow: inset 0 0 20px rgba(0,0,0,0.8);
+            position: relative;
+            overflow: hidden;
+        }
+
+        /* SVG Components */
+        .capillary-lumen { fill: rgba(244, 63, 94, 0.05); }
+        .bowmans-space { fill: rgba(56, 189, 248, 0.05); }
+        
+        .endothelium {
+            fill: #fca5a5;
+            stroke: #ef4444;
+            stroke-width: 2;
+            transition: all 0.3s ease;
+        }
+
+        .gbm-layer {
+            fill: none;
+            stroke: #cbd5e1;
+            stroke-width: 8;
+            stroke-linecap: round;
+            transition: stroke 0.5s ease, stroke-width 0.5s ease;
+        }
+
+        .podocyte-body {
+            fill: #a855f7;
+            stroke: #7e22ce;
+            stroke-width: 2;
+        }
+
+        .foot-process {
+            fill: #a855f7;
+            transition: transform 0.5s ease, d 0.5s ease;
+        }
+
+        /* Damage States */
+        .gbm-damaged {
+            stroke: #f87171 !important; /* Inflamed/Damaged GBM */
+            stroke-width: 4 !important; /* Thinning */
+            stroke-dasharray: 20 5; /* Micro-tears */
+        }
+
+        /* Animations */
+        .scanline {
+            width: 100%;
+            height: 2px;
+            background: rgba(168, 85, 247, 0.1);
+            position: absolute;
+            z-index: 10;
+            animation: scan 6s linear infinite;
+            pointer-events: none;
+        }
+        @keyframes scan { 0% { top: 0%; } 100% { top: 100%; } }
+
+        /* Custom Sliders */
+        input[type=range] {
+            -webkit-appearance: none;
+            background: transparent;
+            cursor: pointer;
+            width: 100%;
+        }
+        input[type=range]::-webkit-slider-runnable-track {
+            height: 8px;
+            border-radius: 4px;
+            border: 1px solid rgba(255,255,255,0.1);
+        }
+        #pressure-slider::-webkit-slider-runnable-track {
+            background: linear-gradient(to right, #38bdf8, #10b981, #fbbf24, #ef4444);
+        }
+        #damage-slider::-webkit-slider-runnable-track {
+            background: linear-gradient(to right, #10b981, #fbbf24, #f43f5e, #9f1239);
+        }
+        input[type=range]::-webkit-slider-thumb {
+            -webkit-appearance: none;
+            height: 24px;
+            width: 24px;
+            border-radius: 50%;
+            background: #0f172a;
+            border: 3px solid #a855f7;
+            margin-top: -9px;
+            box-shadow: 0 0 10px rgba(168, 85, 247, 0.5);
+            transition: transform 0.1s;
+        }
+        input[type=range]::-webkit-slider-thumb:active { transform: scale(1.1); }
+
+        /* Status Colors */
+        .text-optimal { color: #10b981; text-shadow: 0 0 12px rgba(16,185,129,0.5); }
+        .text-warning { color: #fbbf24; text-shadow: 0 0 12px rgba(251,191,36,0.5); }
+        .text-critical { color: #f43f5e; text-shadow: 0 0 15px rgba(244,63,94,0.8); }
+    </style>
+</head>
+<body class="min-h-screen p-4 lg:p-8 flex items-center justify-center">
+
+    <div class="max-w-7xl w-full grid grid-cols-1 lg:grid-cols-12 gap-6 lg:gap-8 items-stretch">
+        
+        <!-- Left Column: Physical Sensor Simulation -->
+        <div class="lg:col-span-7 flex flex-col gap-6">
+            
+            <!-- Sensor SVG Viewport -->
+            <div class="glass-card relative flex-grow min-h-[450px] flex flex-col overflow-hidden">
+                <!-- Grid Background -->
+                <div class="absolute inset-0 opacity-20 pointer-events-none" style="background-image: radial-gradient(#475569 1px, transparent 1px); background-size: 20px 20px;"></div>
+                
+                <div class="absolute top-6 left-6 z-20">
+                    <h2 class="text-xs font-bold text-slate-400 uppercase tracking-widest flex items-center gap-2">
+                        <svg class="w-4 h-4 text-purple-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19.428 15.428a2 2 0 00-1.022-.547l-2.387-.477a6 6 0 00-3.86.517l-.318.158a6 6 0 01-3.86.517L6.05 15.21a2 2 0 00-1.806.547M8 4h8l-1 1v5.172a2 2 0 00.586 1.414l5 5c1.26 1.26.367 3.414-1.415 3.414H4.828c-1.782 0-2.674-2.154-1.414-3.414l5-5A2 2 0 009 10.172V5L8 4z"></path></svg>
+                        Glomerular Filtration Barrier (Electron Microscopy)
+                    </h2>
+                </div>
+
+                <div class="relative w-full h-full flex items-center justify-center mt-8">
+                    <!-- SVG Anatomy Background -->
+                    <svg id="sieve-svg" viewBox="0 0 800 500" class="w-full h-full relative z-10 overflow-visible">
+                        <!-- Lumen & Bowman's Backgrounds -->
+                        <rect x="0" y="0" width="800" height="230" class="capillary-lumen" />
+                        <rect x="0" y="270" width="800" height="230" class="bowmans-space" />
+
+                        <!-- Region Labels -->
+                        <text x="20" y="30" fill="#f43f5e" font-size="12" font-family="monospace" font-weight="bold" opacity="0.6">BLOOD (CAPILLARY LUMEN)</text>
+                        <text x="20" y="480" fill="#38bdf8" font-size="12" font-family="monospace" font-weight="bold" opacity="0.6">URINE (BOWMAN'S CAPSULE)</text>
+
+                        <!-- The Filtration Barrier -->
+                        <g id="filtration-barrier" transform="translate(0, 250)">
+                            
+                            <!-- Layer 1: Fenestrated Endothelium (Top) -->
+                            <g id="endothelium">
+                                <!-- Gaps generated by JS -->
+                            </g>
+
+                            <!-- Layer 2: Glomerular Basement Membrane (Middle) -->
+                            <!-- Contains negative charge barrier -->
+                            <path id="gbm" class="gbm-layer" d="M 0,0 L 800,0" />
+                            
+                            <!-- Negative charge markers (Visual) -->
+                            <g id="charge-barrier" opacity="0.5">
+                                <text x="100" y="4" fill="#64748b" font-size="16" font-weight="bold">-</text>
+                                <text x="300" y="4" fill="#64748b" font-size="16" font-weight="bold">-</text>
+                                <text x="500" y="4" fill="#64748b" font-size="16" font-weight="bold">-</text>
+                                <text x="700" y="4" fill="#64748b" font-size="16" font-weight="bold">-</text>
+                            </g>
+
+                            <!-- Layer 3: Podocytes (Bottom) -->
+                            <g id="podocytes" transform="translate(0, 5)">
+                                <!-- Main cell bodies -->
+                                <path class="podocyte-body" d="M 150,50 C 120,50 100,30 110,10 C 130,-10 170,-10 190,10 C 200,30 180,50 150,50 Z" />
+                                <circle cx="150" cy="20" r="8" fill="#581c87" />
+                                
+                                <path class="podocyte-body" d="M 550,60 C 520,60 500,40 510,20 C 530,0 570,0 590,20 C 600,40 580,60 550,60 Z" />
+                                <circle cx="550" cy="30" r="8" fill="#581c87" />
+
+                                <!-- Foot Processes (Slit Diaphragms) -->
+                                <!-- We draw these dynamically so they can "efface" (widen) upon damage -->
+                                <g id="foot-processes"></g>
+                            </g>
+                        </g>
+                    </svg>
+
+                    <!-- Particle Engine Canvas -->
+                    <canvas id="physics-canvas" class="absolute inset-0 w-full h-full z-20 pointer-events-none"></canvas>
+                </div>
+
+                <!-- Particle Legend -->
+                <div class="absolute bottom-4 left-6 z-30 flex gap-4 bg-slate-900/80 p-2 rounded-lg border border-slate-700">
+                    <div class="flex items-center gap-2">
+                        <div class="w-3 h-3 rounded-full bg-red-500 shadow-[0_0_5px_#ef4444]"></div>
+                        <span class="text-[9px] font-mono text-slate-300">RBC</span>
+                    </div>
+                    <div class="flex items-center gap-2">
+                        <div class="w-3 h-3 rounded-full bg-amber-400 shadow-[0_0_5px_#fbbf24]"></div>
+                        <span class="text-[9px] font-mono text-slate-300">Protein (Albumin)</span>
+                    </div>
+                    <div class="flex items-center gap-2">
+                        <div class="w-2 h-2 rounded-full bg-sky-400 shadow-[0_0_5px_#38bdf8]"></div>
+                        <span class="text-[9px] font-mono text-slate-300">Urea/Water</span>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Controls Panel -->
+            <div class="glass-card p-6 grid grid-cols-1 md:grid-cols-2 gap-8">
+                <!-- Hydrostatic Pressure Control -->
+                <div class="space-y-4">
+                    <div class="flex justify-between items-end">
+                        <div class="text-xs font-bold text-slate-400 uppercase tracking-widest flex items-center gap-2">
+                            <svg class="w-4 h-4 text-emerald-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"></path></svg>
+                            Hydrostatic Pressure
+                        </div>
+                        <div id="ctrl-bp-val" class="text-xl font-bold font-mono text-emerald-400">120 mmHg</div>
+                    </div>
+                    <input type="range" id="pressure-slider" min="60" max="180" value="120">
+                    <div class="flex justify-between text-[9px] font-mono text-slate-500 uppercase">
+                        <span>Hypotension</span>
+                        <span>Hypertension</span>
+                    </div>
+                </div>
+
+                <!-- Membrane Integrity (Damage) Control -->
+                <div class="space-y-4">
+                    <div class="flex justify-between items-end">
+                        <div class="text-xs font-bold text-slate-400 uppercase tracking-widest flex items-center gap-2">
+                            <svg class="w-4 h-4 text-purple-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19.428 15.428a2 2 0 00-1.022-.547l-2.387-.477a6 6 0 00-3.86.517l-.318.158a6 6 0 01-3.86.517L6.05 15.21a2 2 0 00-1.806.547M8 4h8l-1 1v5.172a2 2 0 00.586 1.414l5 5c1.26 1.26.367 3.414-1.415 3.414H4.828c-1.782 0-2.674-2.154-1.414-3.414l5-5A2 2 0 009 10.172V5L8 4z"></path></svg>
+                            Nephropathy Level
+                        </div>
+                        <div id="ctrl-dmg-val" class="text-xl font-bold font-mono text-emerald-400">Healthy</div>
+                    </div>
+                    <input type="range" id="damage-slider" min="0" max="100" value="0">
+                    <div class="flex justify-between text-[9px] font-mono text-slate-500 uppercase">
+                        <span>Intact Filter</span>
+                        <span class="text-rose-500">Podocyte Effacement</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Right Column: Clinical Patient Monitor -->
+        <div class="lg:col-span-5 flex flex-col gap-6">
+            
+            <div class="monitor-screen flex-grow flex flex-col p-6">
+                <div class="scanline"></div>
+                
+                <div class="flex justify-between items-center border-b border-slate-800 pb-3 mb-6">
+                    <span class="text-xs font-bold tracking-widest uppercase text-slate-500">Urinalysis Telemetry</span>
+                    <span id="monitor-status" class="text-[10px] font-mono font-bold px-2 py-1 rounded bg-emerald-900/30 text-emerald-400">NORMAL RENAL FUNCTION</span>
+                </div>
+
+                <!-- Vital Signs -->
+                <div class="grid grid-cols-2 gap-6 mb-6">
+                    <div class="space-y-1">
+                        <label class="text-[10px] uppercase font-bold text-sky-500 tracking-widest">Est. GFR</label>
+                        <div class="flex items-baseline gap-1">
+                            <div id="readout-gfr" class="text-6xl font-bold font-mono leading-none text-optimal">120</div>
+                            <span class="text-xs font-mono text-slate-500">mL/min</span>
+                        </div>
+                    </div>
+                    <div class="space-y-1 text-right">
+                        <label class="text-[10px] uppercase font-bold text-amber-400 tracking-widest">Urine Protein</label>
+                        <div class="flex items-baseline gap-1 justify-end">
+                            <div id="readout-protein" class="text-4xl font-bold font-mono leading-none text-emerald-400 mt-2">15</div>
+                            <span class="text-xs font-mono text-slate-500">mg/dL</span>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="grid grid-cols-2 gap-4 border-t border-b border-slate-800 py-4 mb-6">
+                    <div class="space-y-1">
+                        <label class="text-[9px] uppercase font-bold text-slate-500">Filtration Fraction</label>
+                        <div id="readout-ff" class="text-lg font-bold font-mono text-slate-300">20%</div>
+                    </div>
+                    <div class="space-y-1 text-right">
+                        <label class="text-[9px] uppercase font-bold text-slate-500">Charge Barrier</label>
+                        <div id="readout-charge" class="text-lg font-bold font-mono text-emerald-400">INTACT</div>
+                    </div>
+                </div>
+
+                <!-- Live Proteinuria Bar -->
+                <div class="flex-grow flex flex-col justify-end relative">
+                    <div class="flex justify-between items-center mb-2 z-10">
+                        <span class="text-[10px] font-bold uppercase text-slate-500">Albuminuria Severity</span>
+                    </div>
+                    <div class="h-4 w-full bg-slate-900 rounded-full overflow-hidden border border-slate-700">
+                        <div id="protein-bar" class="h-full bg-emerald-500 transition-all duration-300" style="width: 5%"></div>
+                    </div>
+                    <div class="flex justify-between text-[8px] font-mono text-slate-500 mt-1 uppercase">
+                        <span>Normal</span>
+                        <span>Micro</span>
+                        <span class="text-rose-500">Macroalbuminuria</span>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Theory Card -->
+            <div class="glass-card p-6 flex flex-col gap-3">
+                <h3 class="text-xs font-bold text-slate-400 uppercase tracking-widest flex items-center gap-2">
+                    <svg class="w-4 h-4 text-purple-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19.428 15.428a2 2 0 00-1.022-.547l-2.387-.477a6 6 0 00-3.86.517l-.318.158a6 6 0 01-3.86.517L6.05 15.21a2 2 0 00-1.806.547M8 4h8l-1 1v5.172a2 2 0 00.586 1.414l5 5c1.26 1.26.367 3.414-1.415 3.414H4.828c-1.782 0-2.674-2.154-1.414-3.414l5-5A2 2 0 009 10.172V5L8 4z"></path></svg>
+                    Mechanisms of Filtration
+                </h3>
+                <div class="text-[11px] text-slate-300 leading-relaxed space-y-3">
+                    <p>The kidney filters 180 liters of blood a day through millions of these microscopic sieves.</p>
+                    
+                    <div class="flex items-start gap-3">
+                        <div class="w-2 h-2 rounded-full bg-sky-400 mt-1 shrink-0"></div>
+                        <div>
+                            <strong class="text-sky-400">Size Exclusion:</strong> Small molecules like Urea, Glucose, and Water ($< 4\text{ nm}$) easily slip through the fenestrations and slit diaphragms.
+                        </div>
+                    </div>
+
+                    <div class="flex items-start gap-3">
+                        <div class="w-2 h-2 rounded-full bg-amber-400 mt-1 shrink-0"></div>
+                        <div>
+                            <strong class="text-amber-400">Charge Repulsion:</strong> Proteins (like Albumin) are negatively charged. The Basement Membrane is lined with polyanions (heparan sulfate) that repel them like magnets, keeping them in the blood.
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+        </div>
+    </div>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', () => {
+            // DOM Elements
+            const sliderPressure = document.getElementById('pressure-slider');
+            const sliderDamage = document.getElementById('damage-slider');
+            const ctrlBpVal = document.getElementById('ctrl-bp-val');
+            const ctrlDmgVal = document.getElementById('ctrl-dmg-val');
+            
+            const readoutGfr = document.getElementById('readout-gfr');
+            const readoutProtein = document.getElementById('readout-protein');
+            const readoutFf = document.getElementById('readout-ff');
+            const readoutCharge = document.getElementById('readout-charge');
+            const monitorStatus = document.getElementById('monitor-status');
+            const proteinBar = document.getElementById('protein-bar');
+            
+            const gbm = document.getElementById('gbm');
+            const chargeBarrier = document.getElementById('charge-barrier');
+            const endotheliumGroup = document.getElementById('endothelium');
+            const footProcessesGroup = document.getElementById('foot-processes');
+
+            const canvas = document.getElementById('physics-canvas');
+            const ctx = canvas.getContext('2d');
+
+            // --- State ---
+            let pressure = 120; // 60 to 180
+            let damage = 0; // 0 to 100
+            
+            let gfr = 120;
+            let proteinuria = 15; // Base normal level
+            
+            let particles = [];
+
+            // SVG setup constants
+            const SVG_WIDTH = 800;
+            const SVG_HEIGHT = 500;
+            const BARRIER_Y = 250; // The y-coordinate of the filtration barrier
+
+            // --- Resize Handler ---
+            function resizeCanvas() {
+                canvas.width = canvas.parentElement.clientWidth;
+                canvas.height = canvas.parentElement.clientHeight;
+            }
+            window.addEventListener('resize', resizeCanvas);
+            resizeCanvas();
+
+            // Coordinate mapping (Canvas to SVG logic)
+            function getScaleX() { return canvas.width / SVG_WIDTH; }
+            function getScaleY() { return canvas.height / SVG_HEIGHT; }
+
+            // --- SVG Generation ---
+            function drawSVGFilter() {
+                // Endothelium (Dashed line)
+                endotheliumGroup.innerHTML = '';
+                for (let i = 0; i < 800; i += 40) {
+                    const rect = document.createElementNS('http://www.w3.org/2000/svg', 'rect');
+                    rect.setAttribute('x', i);
+                    rect.setAttribute('y', -12); // relative to BARRIER_Y
+                    rect.setAttribute('width', 30); // 10px gap (fenestration)
+                    rect.setAttribute('height', 8);
+                    rect.setAttribute('rx', 4);
+                    endotheliumGroup.appendChild(rect);
+                }
+
+                // Podocyte Foot Processes
+                // We recreate these based on damage to simulate effacement
+                footProcessesGroup.innerHTML = '';
+                const gapBase = 5;
+                // Damage widens gaps and flattens feet
+                const gapWiden = (damage / 100) * 15; 
+                const processWidth = Math.max(5, 20 - gapWiden);
+                const step = processWidth + gapBase + gapWiden;
+
+                for (let i = 0; i < 800; i += step) {
+                    const path = document.createElementNS('http://www.w3.org/2000/svg', 'path');
+                    // Draw a little foot that connects to the membrane
+                    path.setAttribute('d', `M ${i},5 L ${i+processWidth/2},0 L ${i+processWidth},5 L ${i+processWidth},20 L ${i},20 Z`);
+                    path.setAttribute('class', 'foot-process');
+                    footProcessesGroup.appendChild(path);
+                }
+
+                // Visual damage effects
+                if (damage > 30) {
+                    gbm.classList.add('gbm-damaged');
+                    chargeBarrier.style.opacity = Math.max(0, 0.5 - (damage/100)); // Charge is lost
+                } else {
+                    gbm.classList.remove('gbm-damaged');
+                    chargeBarrier.style.opacity = 0.5;
+                }
+            }
+
+            // --- Physics & Physiology Engine ---
+            function updatePhysiology() {
+                pressure = parseInt(sliderPressure.value);
+                damage = parseInt(sliderDamage.value);
+
+                // Update Controls Text
+                ctrlBpVal.textContent = `${pressure} mmHg`;
+                if (damage === 0) {
+                    ctrlDmgVal.textContent = "Healthy";
+                    ctrlDmgVal.className = "text-xl font-bold font-mono text-emerald-400";
+                } else if (damage < 50) {
+                    ctrlDmgVal.textContent = "Moderate Damage";
+                    ctrlDmgVal.className = "text-xl font-bold font-mono text-amber-400";
+                } else {
+                    ctrlDmgVal.textContent = "Severe Effacement";
+                    ctrlDmgVal.className = "text-xl font-bold font-mono text-rose-500";
+                }
+
+                drawSVGFilter();
+
+                // GFR Calculation (Simplified Starling Forces)
+                // Base GFR is driven by hydrostatic pressure.
+                // Normal BP (120) -> GFR 120.
+                let calculatedGfr = pressure; 
+                // Extreme damage slightly reduces overall filtering surface area
+                if (damage > 80) calculatedGfr *= 0.8;
+                gfr = Math.round(calculatedGfr);
+
+                // Proteinuria Calculation
+                // Healthy: < 30. Damaged: Exponential rise due to loss of charge/size barrier.
+                const baseProtein = 15;
+                const leakFactor = Math.pow(damage / 100, 2) * 3500; // Up to 3500+ mg/dL (Nephrotic)
+                proteinuria = Math.round(baseProtein + leakFactor);
+
+                // UI Updates
+                readoutGfr.textContent = gfr;
+                readoutProtein.textContent = proteinuria > 999 ? (proteinuria/1000).toFixed(1) + "k" : proteinuria;
+
+                const ff = 20 + ((pressure - 120) / 10);
+                readoutFf.textContent = `${Math.round(ff)}%`;
+
+                // Themes
+                if (damage > 60) {
+                    readoutCharge.textContent = "DESTROYED";
+                    readoutCharge.className = "text-lg font-bold font-mono text-rose-500";
+                    monitorStatus.textContent = "NEPHROTIC SYNDROME";
+                    monitorStatus.className = "text-[10px] font-mono font-bold px-2 py-1 rounded bg-rose-900/30 text-rose-500 animate-pulse";
+                    readoutProtein.className = "text-4xl font-bold font-mono leading-none text-critical mt-2";
+                } else if (damage > 20) {
+                    readoutCharge.textContent = "COMPROMISED";
+                    readoutCharge.className = "text-lg font-bold font-mono text-amber-400";
+                    monitorStatus.textContent = "MICROALBUMINURIA";
+                    monitorStatus.className = "text-[10px] font-mono font-bold px-2 py-1 rounded bg-amber-900/30 text-amber-400";
+                    readoutProtein.className = "text-4xl font-bold font-mono leading-none text-warning mt-2";
+                } else {
+                    readoutCharge.textContent = "INTACT";
+                    readoutCharge.className = "text-lg font-bold font-mono text-emerald-400";
+                    monitorStatus.textContent = "NORMAL RENAL FUNCTION";
+                    monitorStatus.className = "text-[10px] font-mono font-bold px-2 py-1 rounded bg-emerald-900/30 text-emerald-400";
+                    readoutProtein.className = "text-4xl font-bold font-mono leading-none text-optimal mt-2";
+                }
+
+                // Progress Bar
+                const protPct = Math.min(100, (proteinuria / 3000) * 100);
+                proteinBar.style.width = `${Math.max(2, protPct)}%`;
+                if (protPct > 50) proteinBar.style.backgroundColor = '#f43f5e';
+                else if (protPct > 10) proteinBar.style.backgroundColor = '#fbbf24';
+                else proteinBar.style.backgroundColor = '#10b981';
+            }
+
+            // --- Particle Engine ---
+            class Molecule {
+                constructor(type) {
+                    this.type = type; // 'rbc', 'protein', 'solute'
+                    this.reset(true);
+                }
+
+                reset(initial = false) {
+                    this.x = initial ? Math.random() * SVG_WIDTH : -20;
+                    // Start in capillary lumen (Top half)
+                    this.y = Math.random() * (BARRIER_Y - 40) + 20;
+                    
+                    // Blood flow velocity (horizontal), scales with pressure
+                    this.baseVx = (pressure / 120) * 3 + Math.random();
+                    this.vx = this.baseVx;
+                    
+                    // Filtration force (vertical)
+                    this.vy = (pressure / 120) * 1 + Math.random() * 0.5;
+
+                    this.passedBarrier = false;
+
+                    switch(this.type) {
+                        case 'rbc':
+                            this.radius = 12;
+                            this.color = '#ef4444'; // Red
+                            this.vy *= 0.2; // Heavy, mostly goes straight
+                            break;
+                        case 'protein':
+                            this.radius = 6;
+                            this.color = '#fbbf24'; // Amber
+                            break;
+                        case 'solute':
+                            this.radius = 2.5;
+                            this.color = '#38bdf8'; // Cyan
+                            this.vy *= 1.5; // Light, pushed down easily
+                            break;
+                    }
+                }
+
+                update() {
+                    this.x += this.vx;
+                    this.y += this.vy;
+
+                    // Interaction with the Filtration Barrier
+                    if (!this.passedBarrier && this.y > BARRIER_Y - this.radius - 5) {
+                        if (this.type === 'rbc') {
+                            // RBCs NEVER pass. They bounce hard.
+                            this.y = BARRIER_Y - this.radius - 5;
+                            this.vy = -Math.abs(this.vy) * 0.5; // Bounce up
+                        } 
+                        else if (this.type === 'protein') {
+                            // Proteins bounce if healthy, leak if damaged
+                            // Probability to leak is based on damage level
+                            const leakChance = Math.pow(damage / 100, 2);
+                            if (Math.random() < leakChance) {
+                                this.passedBarrier = true; // Leak into urine!
+                            } else {
+                                this.y = BARRIER_Y - this.radius - 5;
+                                this.vy = -Math.abs(this.vy) * 0.8; // Bounce off charge barrier
+                            }
+                        }
+                        else if (this.type === 'solute') {
+                            // Solutes almost always pass
+                            if (Math.random() > 0.05) {
+                                this.passedBarrier = true;
+                            } else {
+                                this.y = BARRIER_Y - this.radius - 5;
+                                this.vy = -Math.abs(this.vy) * 0.5;
+                            }
+                        }
+                    }
+
+                    // Top wall bounce
+                    if (this.y < this.radius) {
+                        this.y = this.radius;
+                        this.vy = Math.abs(this.vy);
+                    }
+
+                    // If passed into Bowman's space, curve them to flow down/right
+                    if (this.passedBarrier) {
+                        this.vy += 0.1; // gravity/flow pull into tubule
+                        this.vx *= 0.98; // slow horizontal
+                    }
+
+                    // Reset if off screen (right side or bottom)
+                    if (this.x > SVG_WIDTH + 20 || this.y > SVG_HEIGHT + 20) {
+                        this.reset();
+                    }
+                }
+
+                draw(ctx, scaleX, scaleY) {
+                    ctx.beginPath();
+                    ctx.arc(this.x * scaleX, this.y * scaleY, this.radius * scaleX, 0, Math.PI * 2);
+                    ctx.fillStyle = this.color;
+                    
+                    if (this.type === 'protein' && this.passedBarrier) {
+                        // Highlight leaked proteins
+                        ctx.shadowBlur = 10;
+                        ctx.shadowColor = '#fbbf24';
+                    } else {
+                        ctx.shadowBlur = 0;
+                    }
+                    
+                    ctx.fill();
+                }
+            }
+
+            // Initialize Particles
+            // Proportions: lots of solutes, moderate RBCs, moderate proteins
+            for (let i = 0; i < 40; i++) particles.push(new Molecule('rbc'));
+            for (let i = 0; i < 80; i++) particles.push(new Molecule('protein'));
+            for (let i = 0; i < 200; i++) particles.push(new Molecule('solute'));
+
+            // --- Main Render Loop ---
+            function animate() {
+                // Clear canvas
+                ctx.clearRect(0, 0, canvas.width, canvas.height);
+                
+                const scaleX = getScaleX();
+                const scaleY = getScaleY();
+
+                // Update & Draw
+                particles.forEach(p => {
+                    p.update();
+                    p.draw(ctx, scaleX, scaleY);
+                });
+
+                requestAnimationFrame(animate);
+            }
+
+            // --- Event Listeners ---
+            sliderPressure.addEventListener('input', updatePhysiology);
+            sliderDamage.addEventListener('input', updatePhysiology);
+
+            // Start
+            updatePhysiology();
+            animate();
+        });
+    </script>
+</body>
+</html>

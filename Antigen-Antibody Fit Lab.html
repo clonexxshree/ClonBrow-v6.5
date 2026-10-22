@@ -1,0 +1,489 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Antigen-Antibody Specificity Lab</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;700&family=Inter:wght@300;400;600;700&display=swap');
+
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: #020617;
+            color: #f8fafc;
+            overflow: hidden;
+            user-select: none;
+            touch-action: none;
+        }
+
+        .font-mono { font-family: 'JetBrains Mono', monospace; }
+
+        .glass-card {
+            background: rgba(15, 23, 42, 0.75);
+            backdrop-filter: blur(16px);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.5);
+        }
+
+        .digital-readout {
+            background: #061021;
+            color: #22d3ee; /* Cyan 400 */
+            text-shadow: 0 0 10px rgba(34, 211, 238, 0.4);
+            border: 1px solid #1e293b;
+            transition: all 0.3s ease;
+        }
+
+        .status-neutralized {
+            color: #10b981 !important; /* Emerald */
+            text-shadow: 0 0 12px rgba(16, 185, 129, 0.6) !important;
+            border-color: rgba(16, 185, 129, 0.3) !important;
+        }
+
+        /* SVG Components */
+        .antibody {
+            cursor: grab;
+            filter: drop-shadow(0 0 5px rgba(34, 211, 238, 0.3));
+            transition: transform 0.1s ease-out;
+        }
+        .antibody:active { cursor: grabbing; }
+
+        .virus-body {
+            fill: #1e1b4b;
+            stroke: #4338ca;
+            stroke-width: 3;
+            transition: all 0.5s ease;
+        }
+
+        .antigen-spike {
+            transition: fill 0.3s ease;
+        }
+
+        .neutralized .virus-body { fill: #334155; stroke: #475569; }
+        .neutralized .antigen-spike { fill: #475569 !important; }
+
+        /* Physics Grid */
+        .bio-grid {
+            background-size: 50px 50px;
+            background-image: 
+                linear-gradient(to right, rgba(34, 211, 238, 0.03) 1px, transparent 1px),
+                linear-gradient(to bottom, rgba(34, 211, 238, 0.03) 1px, transparent 1px);
+        }
+
+        .scanline {
+            width: 100%;
+            height: 2px;
+            background: rgba(34, 211, 238, 0.05);
+            position: absolute;
+            z-index: 10;
+            animation: scan 8s linear infinite;
+        }
+        @keyframes scan { 0% { top: 0%; } 100% { top: 100%; } }
+
+        @keyframes success-ping {
+            0% { transform: scale(1); opacity: 1; }
+            100% { transform: scale(1.5); opacity: 0; }
+        }
+        .ping {
+            position: absolute;
+            border-radius: 50%;
+            border: 2px solid #10b981;
+            pointer-events: none;
+            animation: success-ping 0.6s ease-out forwards;
+        }
+    </style>
+</head>
+<body class="min-h-screen p-4 md:p-8 flex items-center justify-center">
+
+    <div class="max-w-7xl w-full grid grid-cols-1 lg:grid-cols-12 gap-8 items-stretch">
+        
+        <!-- Simulation Viewport -->
+        <div class="lg:col-span-8 flex flex-col gap-6">
+            <div id="sim-viewport" class="glass-card rounded-3xl p-0 relative flex-grow min-h-[550px] flex flex-col overflow-hidden border border-slate-800 bio-grid">
+                <div class="scanline"></div>
+                
+                <!-- HUD Header -->
+                <div class="absolute top-6 left-8 flex items-center gap-3 z-30">
+                    <div id="status-dot" class="w-2.5 h-2.5 rounded-full bg-cyan-500 shadow-[0_0_10px_#22d3ee]"></div>
+                    <span id="status-text" class="text-[10px] font-bold text-slate-400 uppercase tracking-widest font-mono">Immune Status: <span id="hud-mode" class="text-cyan-400">Searching for Antigenic Match</span></span>
+                </div>
+
+                <!-- Simulation Area (SVG) -->
+                <div id="interaction-layer" class="relative w-full h-full flex items-center justify-center overflow-visible">
+                    <svg id="main-svg" class="w-full h-full absolute inset-0 z-10 overflow-visible">
+                        <!-- Virus Strains will be injected here -->
+                        <g id="virus-container"></g>
+                        <!-- Antibodies will be injected here -->
+                        <g id="antibody-container"></g>
+                    </svg>
+                </div>
+
+                <!-- Instruction Overlay -->
+                <div class="absolute bottom-6 left-8 flex flex-col gap-1 z-30 pointer-events-none">
+                    <span class="text-[9px] font-mono text-slate-500 uppercase">Interactive: Drag Antibodies to matching Viral Spikes</span>
+                    <span class="text-[9px] font-mono text-slate-500 uppercase">Principle: Molecular Complementarity (Lock & Key)</span>
+                </div>
+            </div>
+
+            <!-- Dashboard Message -->
+            <div class="glass-card p-4 rounded-2xl flex items-center justify-between">
+                <div class="flex items-center gap-4">
+                    <div class="w-10 h-10 rounded-full bg-slate-800 border border-slate-700 flex items-center justify-center">
+                        <svg class="w-5 h-5 text-cyan-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19.428 15.428a2 2 0 00-1.022-.547l-2.387-.477a6 6 0 00-3.86.517l-.318.158a6 6 0 01-3.86.517L6.05 15.21a2 2 0 00-1.806.547M8 4h8l-1 1v5.172a2 2 0 00.586 1.414l5 5c1.26 1.26.367 3.414-1.415 3.414H4.828c-1.782 0-2.674-2.154-1.414-3.414l5-5A2 2 0 009 10.172V5L8 4z"></path></svg>
+                    </div>
+                    <div>
+                        <div class="text-xs font-bold text-slate-200 uppercase tracking-widest">Immunological Docking Simulation</div>
+                        <div id="instruction-text" class="text-[10px] text-slate-500 font-mono">Select an antibody and pair it with the corresponding viral epitope.</div>
+                    </div>
+                </div>
+                <button id="btn-reset" class="px-6 py-2 bg-slate-800 hover:bg-slate-700 text-slate-300 border border-slate-600 rounded-lg text-[10px] font-bold uppercase transition-all">
+                    Reset Serology
+                </button>
+            </div>
+        </div>
+
+        <!-- Sidebar: Analytics & Data -->
+        <div class="lg:col-span-4 flex flex-col gap-6">
+            
+            <!-- Digital Readout -->
+            <div id="telemetry-panel" class="digital-readout rounded-3xl p-6 space-y-6">
+                <div class="flex justify-between items-center border-b border-current pb-3 opacity-60">
+                    <span class="text-[10px] font-bold tracking-tighter uppercase">Affinity Telemetry</span>
+                    <span class="text-xs font-mono animate-pulse">LIVE</span>
+                </div>
+
+                <div class="space-y-6">
+                    <!-- Progress -->
+                    <div class="space-y-1">
+                        <label class="text-[9px] uppercase font-bold opacity-60">Neutralization Efficiency</label>
+                        <div class="flex items-baseline gap-2">
+                            <div id="data-efficiency" class="text-6xl font-bold font-mono">0</div>
+                            <span class="text-xl font-mono font-bold opacity-60">%</span>
+                        </div>
+                    </div>
+
+                    <div class="grid grid-cols-2 gap-4 pt-4 border-t border-current opacity-80">
+                        <div class="space-y-1">
+                            <label class="text-[9px] uppercase font-bold text-current">Specificity</label>
+                            <div id="data-specificity" class="text-xl font-bold font-mono">--</div>
+                        </div>
+                        <div class="space-y-1 text-right">
+                            <label class="text-[9px] uppercase font-bold text-current">Complexes</label>
+                            <div id="data-complexes" class="text-xl font-bold font-mono">0 / 3</div>
+                        </div>
+                    </div>
+
+                    <!-- Binding Force Bar -->
+                    <div class="p-4 bg-black/30 rounded-xl border border-current space-y-2">
+                        <div class="flex justify-between items-center">
+                            <label class="text-[9px] uppercase font-bold text-current">Docking Accuracy</label>
+                            <span id="data-dock-val" class="text-[10px] font-mono">0%</span>
+                        </div>
+                        <div class="h-1.5 w-full bg-slate-900 rounded-full overflow-hidden">
+                            <div id="dock-bar" class="h-full bg-cyan-400 transition-all duration-300" style="width: 0%"></div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Structural Biology Card -->
+            <div class="glass-card p-6 rounded-3xl space-y-4 flex-grow flex flex-col">
+                <h3 class="text-xs font-bold text-slate-400 uppercase tracking-widest">Epitope vs. Paratope</h3>
+                
+                <div class="space-y-4">
+                    <div class="p-3 bg-indigo-900/20 rounded-xl border border-indigo-500/20">
+                        <div class="text-[11px] font-bold text-indigo-400 mb-1">Epitope (Viral Spike)</div>
+                        <p class="text-[10px] text-slate-400 leading-snug">The specific part of an antigen that is recognized by the immune system. Different viruses evolve different geometries to evade detection.</p>
+                    </div>
+
+                    <div class="p-3 bg-cyan-900/20 rounded-xl border border-cyan-500/20">
+                        <div class="text-[11px] font-bold text-cyan-400 mb-1">Paratope (Antibody Tip)</div>
+                        <p class="text-[10px] text-slate-400 leading-snug">The binding site on an antibody. It is highly variable, allowing for the trillions of combinations needed to fight diverse pathogens.</p>
+                    </div>
+
+                    <div class="p-3 bg-emerald-900/20 rounded-xl border border-emerald-500/20">
+                        <div class="text-[11px] font-bold text-emerald-400 mb-1">Neutralization</div>
+                        <p class="text-[10px] text-slate-400 leading-snug">Once bound, antibodies physically block the virus from entering host cells and "flag" the pathogen for destruction by macrophages.</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', () => {
+            const virusContainer = document.getElementById('virus-container');
+            const antibodyContainer = document.getElementById('antibody-container');
+            const viewport = document.getElementById('sim-viewport');
+            const btnReset = document.getElementById('btn-reset');
+            
+            const dataEfficiency = document.getElementById('data-efficiency');
+            const dataSpecificity = document.getElementById('data-specificity');
+            const dataComplexes = document.getElementById('data-complexes');
+            const dataDockVal = document.getElementById('data-dock-val');
+            const dockBar = document.getElementById('dock-bar');
+            const hudMode = document.getElementById('hud-mode');
+            const telePanel = document.getElementById('telemetry-panel');
+            const statusDot = document.getElementById('status-dot');
+
+            const COLORS = {
+                alpha: { light: '#f43f5e', dark: '#9f1239' }, // Red (Triangle)
+                beta: { light: '#10b981', dark: '#064e3b' },  // Green (Circle)
+                gamma: { light: '#fbbf24', dark: '#92400e' }  // Amber (Square)
+            };
+
+            let viruses = [];
+            let antibodies = [];
+            let activeDrag = null;
+            let neutralizedCount = 0;
+
+            function createVirus(type, x, y) {
+                const g = document.createElementNS('http://www.w3.org/2000/svg', 'g');
+                g.setAttribute('transform', `translate(${x}, ${y})`);
+                g.classList.add('virus-group');
+                
+                const body = document.createElementNS('http://www.w3.org/2000/svg', 'circle');
+                body.setAttribute('r', 40);
+                body.setAttribute('class', 'virus-body');
+                g.appendChild(body);
+
+                // Add 8 spikes
+                for (let i = 0; i < 8; i++) {
+                    const angle = (i / 8) * 360;
+                    const spike = document.createElementNS('http://www.w3.org/2000/svg', 'path');
+                    let d = '';
+                    
+                    if (type === 'alpha') d = 'M -8,0 L 0,-25 L 8,0 Z'; // Triangle
+                    else if (type === 'beta') d = 'M -10,0 A 10,10 0 0 1 10,0 L 10,5 L -10,5 Z'; // Round
+                    else d = 'M -8,0 L -8,-20 L 8,-20 L 8,0 Z'; // Square
+
+                    spike.setAttribute('d', d);
+                    spike.setAttribute('transform', `rotate(${angle}) translate(0, -40)`);
+                    spike.setAttribute('fill', COLORS[type].light);
+                    spike.setAttribute('class', 'antigen-spike');
+                    g.appendChild(spike);
+                }
+
+                const label = document.createElementNS('http://www.w3.org/2000/svg', 'text');
+                label.textContent = type.toUpperCase();
+                label.setAttribute('text-anchor', 'middle');
+                label.setAttribute('y', 5);
+                label.setAttribute('font-size', '10');
+                label.setAttribute('font-weight', 'bold');
+                label.setAttribute('fill', '#6366f1');
+                g.appendChild(label);
+
+                return { el: g, type, x, y, neutralized: false };
+            }
+
+            function createAntibody(type, x, y) {
+                const g = document.createElementNS('http://www.w3.org/2000/svg', 'g');
+                g.setAttribute('transform', `translate(${x}, ${y})`);
+                g.classList.add('antibody');
+                g.dataset.type = type;
+
+                // The Y-Shape
+                // Stem
+                const stem = document.createElementNS('http://www.w3.org/2000/svg', 'rect');
+                stem.setAttribute('x', -4); stem.setAttribute('y', 0);
+                stem.setAttribute('width', 8); stem.setAttribute('height', 25);
+                stem.setAttribute('fill', '#334155'); stem.setAttribute('rx', 2);
+                g.appendChild(stem);
+
+                // Left Arm
+                const lArm = document.createElementNS('http://www.w3.org/2000/svg', 'g');
+                lArm.setAttribute('transform', 'rotate(-45)');
+                const lRect = document.createElementNS('http://www.w3.org/2000/svg', 'rect');
+                lRect.setAttribute('x', -4); lRect.setAttribute('y', -30);
+                lRect.setAttribute('width', 8); lRect.setAttribute('height', 30);
+                lRect.setAttribute('fill', '#334155'); lRect.setAttribute('rx', 2);
+                lArm.appendChild(lRect);
+                
+                // Paratope (Binding Site)
+                const lTip = document.createElementNS('http://www.w3.org/2000/svg', 'path');
+                let d = '';
+                if (type === 'alpha') d = 'M -10,-30 L 0,-42 L 10,-30 Z';
+                else if (type === 'beta') d = 'M -10,-30 A 10,10 0 0 1 10,-30 Z';
+                else d = 'M -10,-30 L -10,-42 L 10,-42 L 10,-30 Z';
+                lTip.setAttribute('d', d);
+                lTip.setAttribute('fill', COLORS[type].light);
+                lArm.appendChild(lTip);
+                g.appendChild(lArm);
+
+                // Right Arm
+                const rArm = document.createElementNS('http://www.w3.org/2000/svg', 'g');
+                rArm.setAttribute('transform', 'rotate(45)');
+                const rRect = document.createElementNS('http://www.w3.org/2000/svg', 'rect');
+                rRect.setAttribute('x', -4); rRect.setAttribute('y', -30);
+                rRect.setAttribute('width', 8); rRect.setAttribute('height', 30);
+                rRect.setAttribute('fill', '#334155'); rRect.setAttribute('rx', 2);
+                rArm.appendChild(rRect);
+
+                const rTip = document.createElementNS('http://www.w3.org/2000/svg', 'path');
+                rTip.setAttribute('d', d);
+                rTip.setAttribute('fill', COLORS[type].light);
+                rArm.appendChild(rTip);
+                g.appendChild(rArm);
+
+                return { el: g, type, x, y, initialX: x, initialY: y, matched: false };
+            }
+
+            function initLab() {
+                virusContainer.innerHTML = '';
+                antibodyContainer.innerHTML = '';
+                viruses = [];
+                antibodies = [];
+                neutralizedCount = 0;
+                updateTelemetry();
+
+                const vData = [
+                    { type: 'alpha', x: 200, y: 150 },
+                    { type: 'beta', x: 400, y: 150 },
+                    { type: 'gamma', x: 600, y: 150 }
+                ];
+                vData.forEach(d => {
+                    const v = createVirus(d.type, d.x, d.y);
+                    viruses.push(v);
+                    virusContainer.appendChild(v.el);
+                });
+
+                const aData = [
+                    { type: 'beta', x: 200, y: 400 },
+                    { type: 'alpha', x: 400, y: 400 },
+                    { type: 'gamma', x: 600, y: 400 }
+                ];
+                aData.forEach(d => {
+                    const a = createAntibody(d.type, d.x, d.y);
+                    antibodies.push(a);
+                    antibodyContainer.appendChild(a.el);
+                });
+            }
+
+            function getMousePos(e) {
+                const rect = viewport.getBoundingClientRect();
+                const clientX = e.touches ? e.touches[0].clientX : e.clientX;
+                const clientY = e.touches ? e.touches[0].clientY : e.clientY;
+                return {
+                    x: (clientX - rect.left) * (800 / rect.width),
+                    y: (clientY - rect.top) * (600 / rect.height)
+                };
+            }
+
+            viewport.addEventListener('mousedown', startDrag);
+            viewport.addEventListener('touchstart', startDrag);
+            window.addEventListener('mousemove', drag);
+            window.addEventListener('touchmove', drag);
+            window.addEventListener('mouseup', endDrag);
+            window.addEventListener('touchend', endDrag);
+
+            function startDrag(e) {
+                const pos = getMousePos(e);
+                const target = antibodies.find(a => !a.matched && Math.hypot(a.x - pos.x, a.y - pos.y) < 50);
+                if (target) {
+                    activeDrag = target;
+                    target.el.style.zIndex = "100";
+                    hudMode.textContent = `Analyzing ${target.type.toUpperCase()} Paratope`;
+                }
+            }
+
+            function drag(e) {
+                if (!activeDrag) return;
+                const pos = getMousePos(e);
+                activeDrag.x = pos.x;
+                activeDrag.y = pos.y;
+                activeDrag.el.setAttribute('transform', `translate(${pos.x}, ${pos.y})`);
+
+                // Check proximity to matching virus
+                const targetVirus = viruses.find(v => !v.neutralized && v.type === activeDrag.type);
+                if (targetVirus) {
+                    const dist = Math.hypot(targetVirus.x - pos.x, targetVirus.y - (pos.y - 40));
+                    const accuracy = Math.max(0, 100 - (dist / 2));
+                    dockBar.style.width = `${accuracy}%`;
+                    dataDockVal.textContent = `${Math.round(accuracy)}%`;
+                } else {
+                    dockBar.style.width = '0%';
+                    dataDockVal.textContent = '0%';
+                }
+            }
+
+            function endDrag() {
+                if (!activeDrag) return;
+
+                const targetVirus = viruses.find(v => !v.neutralized && v.type === activeDrag.type);
+                if (targetVirus) {
+                    const dist = Math.hypot(targetVirus.x - activeDrag.x, targetVirus.y - (activeDrag.y - 40));
+                    
+                    if (dist < 45) {
+                        // SUCCESSFUL MATCH
+                        activeDrag.matched = true;
+                        targetVirus.neutralized = true;
+                        activeDrag.el.setAttribute('transform', `translate(${targetVirus.x}, ${targetVirus.y + 40})`);
+                        targetVirus.el.classList.add('neutralized');
+                        
+                        neutralizedCount++;
+                        createSuccessEffect(targetVirus.x, targetVirus.y);
+                        
+                        if (neutralizedCount === 3) {
+                            hudMode.textContent = "Serum Neutralization Complete";
+                            hudMode.className = "text-emerald-400";
+                            statusDot.className = "w-2.5 h-2.5 rounded-full bg-emerald-500 shadow-[0_0_10px_#10b981]";
+                            telePanel.classList.add('status-neutralized');
+                        } else {
+                            hudMode.textContent = `Complex Detected: ${activeDrag.type.toUpperCase()}`;
+                        }
+                    } else {
+                        // Return to home
+                        returnToStart(activeDrag);
+                    }
+                } else {
+                    returnToStart(activeDrag);
+                }
+
+                activeDrag = null;
+                updateTelemetry();
+                dockBar.style.width = '0%';
+                dataDockVal.textContent = '0%';
+            }
+
+            function returnToStart(a) {
+                a.x = a.initialX;
+                a.y = a.initialY;
+                a.el.style.transition = 'transform 0.4s cubic-bezier(0.4, 0, 0.2, 1)';
+                a.el.setAttribute('transform', `translate(${a.x}, ${a.y})`);
+                setTimeout(() => { a.el.style.transition = ''; }, 400);
+            }
+
+            function createSuccessEffect(x, y) {
+                const ping = document.createElement('div');
+                ping.className = 'ping';
+                // Scale from SVG to Screen
+                const rect = viewport.getBoundingClientRect();
+                const screenX = (x / 800) * rect.width;
+                const screenY = (y / 600) * rect.height;
+                
+                ping.style.left = `${screenX - 50}px`;
+                ping.style.top = `${screenY - 50}px`;
+                ping.style.width = '100px';
+                ping.style.height = '100px';
+                viewport.appendChild(ping);
+                setTimeout(() => ping.remove(), 600);
+            }
+
+            function updateTelemetry() {
+                const eff = Math.round((neutralizedCount / 3) * 100);
+                dataEfficiency.textContent = eff;
+                dataComplexes.textContent = `${neutralizedCount} / 3`;
+                
+                if (neutralizedCount === 0) dataSpecificity.textContent = "--";
+                else if (neutralizedCount < 3) dataSpecificity.textContent = "HIGH";
+                else dataSpecificity.textContent = "ABSOLUTE";
+            }
+
+            btnReset.addEventListener('click', initLab);
+
+            // Init
+            initLab();
+        });
+    </script>
+</body>
+</html>

@@ -1,0 +1,623 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Physics Lab - Pulleys & Mechanical Advantage</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        body, html {
+            margin: 0;
+            padding: 0;
+            width: 100%;
+            height: 100%;
+            overflow: hidden;
+            background-color: #09090b; /* Ultra-dark, professional background */
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+            touch-action: none;
+            user-select: none;
+        }
+        
+        #sim-canvas {
+            display: block;
+            width: 100%;
+            height: 100%;
+            /* Default cursor, changes to grab when hovering handle */
+        }
+
+        /* Minimalist Professional Slider */
+        input[type=range] {
+            -webkit-appearance: none;
+            width: 100%;
+            background: transparent;
+        }
+        input[type=range]::-webkit-slider-thumb {
+            -webkit-appearance: none;
+            height: 18px;
+            width: 18px;
+            border-radius: 50%;
+            background: #ffffff;
+            cursor: pointer;
+            margin-top: -7px;
+            box-shadow: 0 2px 6px rgba(0,0,0,0.5);
+            transition: transform 0.1s ease;
+        }
+        input[type=range]::-webkit-slider-thumb:hover {
+            transform: scale(1.2);
+        }
+        input[type=range]::-webkit-slider-runnable-track {
+            width: 100%;
+            height: 4px;
+            cursor: pointer;
+            background: rgba(255, 255, 255, 0.2);
+            border-radius: 2px;
+        }
+        
+        /* Premium Frosted Glass Panel */
+        .glass-panel {
+            background: linear-gradient(135deg, rgba(30, 41, 59, 0.7) 0%, rgba(15, 23, 42, 0.8) 100%);
+            backdrop-filter: blur(40px);
+            -webkit-backdrop-filter: blur(40px);
+            border: 1px solid rgba(255, 255, 255, 0.08);
+            border-top: 1px solid rgba(255, 255, 255, 0.15); 
+            box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.6), inset 0 0 30px rgba(0, 0, 0, 0.2);
+        }
+
+        .scroll-area::-webkit-scrollbar { width: 3px; }
+        .scroll-area::-webkit-scrollbar-thumb { background: rgba(255, 255, 255, 0.2); border-radius: 4px; }
+    </style>
+</head>
+<body>
+
+    <!-- Main UI Overlay -->
+    <div class="absolute top-5 left-5 md:top-8 md:left-8 z-10 w-[340px] glass-panel p-6 rounded-2xl pointer-events-auto flex flex-col select-none max-h-[90vh]">
+        
+        <!-- Header -->
+        <div class="mb-6 border-b border-white/5 pb-5 shrink-0 flex items-center justify-between">
+            <div>
+                <h1 class="text-xl font-semibold tracking-tight text-gray-100 mb-1">Simple Machines</h1>
+                <p class="text-[11px] font-medium text-blue-400 uppercase tracking-widest">Pulleys & Advantage</p>
+            </div>
+            <div class="w-8 h-8 rounded-full bg-blue-500/10 flex items-center justify-center text-blue-400">
+                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
+            </div>
+        </div>
+
+        <div class="space-y-7 scroll-area overflow-y-auto pr-2 pb-2">
+            
+            <div class="bg-black/20 p-3.5 rounded-xl border border-white/5">
+                <p class="text-[12px] text-gray-400 leading-relaxed">
+                    <strong class="text-gray-200">The Golden Rule:</strong> Increase the number of pulleys to reduce the effort needed to lift the heavy block. Notice that you must pull the rope <span class="text-white">much further</span> to lift it the same height!
+                </p>
+            </div>
+
+            <!-- Controls -->
+            <div class="space-y-5">
+                <!-- Mechanical Advantage (Pulleys) -->
+                <div class="space-y-3">
+                    <div class="flex justify-between items-end">
+                        <label class="text-[11px] font-bold uppercase tracking-wider text-blue-400">Pulleys (Advantage)</label>
+                        <span id="ma-display" class="text-[11px] font-mono bg-blue-500/10 px-2 py-1 rounded text-blue-300">MA: 2</span>
+                    </div>
+                    <input type="range" id="ma-slider" min="1" max="4" step="1" value="2" class="w-full" style="accent-color: #3b82f6;">
+                    <div class="flex justify-between px-1">
+                        <span class="text-[10px] text-gray-500 font-bold">1</span>
+                        <span class="text-[10px] text-gray-500 font-bold">2</span>
+                        <span class="text-[10px] text-gray-500 font-bold">3</span>
+                        <span class="text-[10px] text-gray-500 font-bold">4</span>
+                    </div>
+                </div>
+
+                <!-- Load Mass -->
+                <div class="space-y-3 pt-2">
+                    <div class="flex justify-between items-end">
+                        <label class="text-[11px] font-bold uppercase tracking-wider text-red-400">Load Mass</label>
+                        <span id="load-display" class="text-[11px] font-mono bg-red-500/10 px-2 py-1 rounded text-red-300">120 kg</span>
+                    </div>
+                    <input type="range" id="load-slider" min="10" max="300" step="10" value="120" class="w-full" style="accent-color: #ef4444;">
+                </div>
+            </div>
+
+            <!-- Visual Toggles -->
+            <div class="pt-5 border-t border-white/5 space-y-4">
+                <label class="flex items-center justify-between cursor-pointer group">
+                    <div>
+                        <div class="text-[13px] font-semibold text-gray-200 mb-1">Show Forces & Math</div>
+                        <div class="text-[11px] text-gray-500 font-medium">Display Tension & Work</div>
+                    </div>
+                    <div class="relative">
+                        <input type="checkbox" id="toggle-math" class="sr-only peer" checked>
+                        <div class="w-10 h-5 bg-gray-800 rounded-full shadow-inner transition-colors peer-checked:bg-blue-500"></div>
+                        <div class="dot absolute left-1 top-1 bg-gray-400 w-3 h-3 rounded-full transition-all peer-checked:translate-x-5 peer-checked:bg-white shadow-sm"></div>
+                    </div>
+                </label>
+            </div>
+
+        </div>
+    </div>
+
+    <!-- Instruction Overlay -->
+    <div class="absolute bottom-10 left-1/2 -translate-x-1/2 z-10 pointer-events-none flex flex-col items-center opacity-60">
+        <span class="text-xs font-bold tracking-widest uppercase text-white drop-shadow-md">Drag the green handle downwards</span>
+    </div>
+
+    <!-- 2D Canvas Container -->
+    <canvas id="sim-canvas"></canvas>
+
+    <script>
+        const canvas = document.getElementById('sim-canvas');
+        const ctx = canvas.getContext('2d');
+
+        let cx = 0; 
+        let canvasHeight = 0;
+
+        function resize() {
+            canvas.width = window.innerWidth;
+            canvas.height = window.innerHeight;
+            canvasHeight = canvas.height;
+            // Center the simulation in the remaining space on desktop
+            cx = window.innerWidth >= 768 ? (window.innerWidth + 340) / 2 : window.innerWidth / 2;
+        }
+        window.addEventListener('resize', resize);
+        resize();
+
+        // --- PHYSICS SETTINGS & STATE ---
+        const g = 9.8; 
+        
+        let MA = 2; // Mechanical Advantage (Number of supporting ropes/pulleys)
+        let loadMass = 120;
+        let pullAmount = 0; // How far the effort handle has been pulled (in pixels)
+
+        // UI Binding
+        const maSlider = document.getElementById('ma-slider');
+        const loadSlider = document.getElementById('load-slider');
+        const toggleMath = document.getElementById('toggle-math');
+        
+        const maDisplay = document.getElementById('ma-display');
+        const loadDisplay = document.getElementById('load-display');
+
+        maSlider.addEventListener('input', (e) => {
+            MA = parseInt(e.target.value);
+            maDisplay.innerText = "MA: " + MA;
+            // Reset pull when switching systems to prevent boundary bugs
+            pullAmount = 0; 
+        });
+
+        loadSlider.addEventListener('input', (e) => {
+            loadMass = parseInt(e.target.value);
+            loadDisplay.innerText = loadMass + " kg";
+        });
+
+        // Initialize display
+        maSlider.dispatchEvent(new Event('input'));
+        loadSlider.dispatchEvent(new Event('input'));
+
+        // --- INTERACTION LOGIC ---
+        let isDragging = false;
+        let dragStartY = 0;
+        let pullStartAmount = 0;
+
+        function getMousePos(e) {
+            const rect = canvas.getBoundingClientRect();
+            const clientX = e.touches ? e.touches[0].clientX : e.clientX;
+            const clientY = e.touches ? e.touches[0].clientY : e.clientY;
+            return { x: clientX - rect.left, y: clientY - rect.top };
+        }
+
+        // Get coordinates of the effort handle
+        function getEffortHandleRect() {
+            const R = 25; 
+            const startX = cx - (MA * 2 * R) / 2;
+            const x_MA = startX + MA * 2 * R;
+            const y_effort = 250 + pullAmount;
+            return { x: x_MA, y: y_effort, w: 50, h: 30 };
+        }
+
+        function onPointerDown(e) {
+            if(e.target !== canvas) return; 
+            const pos = getMousePos(e);
+            
+            const handle = getEffortHandleRect();
+            
+            // Check if clicking inside/near the effort handle
+            if (pos.x > handle.x - handle.w && pos.x < handle.x + handle.w &&
+                pos.y > handle.y - handle.h*2 && pos.y < handle.y + handle.h*2) {
+                isDragging = true;
+                dragStartY = pos.y;
+                pullStartAmount = pullAmount;
+                canvas.style.cursor = 'grabbing';
+            }
+        }
+
+        function onPointerMove(e) {
+            const pos = getMousePos(e);
+            
+            // Hover effect
+            if (!isDragging) {
+                const handle = getEffortHandleRect();
+                if (pos.x > handle.x - handle.w && pos.x < handle.x + handle.w &&
+                    pos.y > handle.y - handle.h*2 && pos.y < handle.y + handle.h*2) {
+                    canvas.style.cursor = 'grab';
+                } else {
+                    canvas.style.cursor = 'default';
+                }
+            }
+
+            if (isDragging) {
+                const dy = pos.y - dragStartY;
+                let newPull = pullStartAmount + dy;
+                
+                // Constraints:
+                // 1. Don't push rope backwards (pullAmount >= 0)
+                if (newPull < 0) newPull = 0;
+                
+                // 2. Don't pull so far that handle goes off screen
+                const maxEffortY = canvasHeight - 80;
+                if (250 + newPull > maxEffortY) {
+                    newPull = maxEffortY - 250;
+                }
+                
+                // 3. Don't pull so far that Load crashes into Fixed Pulleys
+                const R = 25;
+                const Y_fixed = 120;
+                // Minimum load Y is Fixed Block Y + Pulley Radius + Gap
+                const minLoadY = Y_fixed + R + 60;
+                // Load Y is 550 - pullAmount / MA
+                const currentLoadY = 550 - newPull / MA;
+                if (currentLoadY < minLoadY) {
+                    // 550 - newPull/MA = minLoadY -> newPull = MA * (550 - minLoadY)
+                    newPull = MA * (550 - minLoadY);
+                }
+
+                pullAmount = newPull;
+            }
+        }
+
+        function onPointerUp() {
+            if (isDragging) {
+                isDragging = false;
+                canvas.style.cursor = 'grab';
+            }
+        }
+
+        canvas.addEventListener('mousedown', onPointerDown);
+        canvas.addEventListener('mousemove', onPointerMove);
+        window.addEventListener('mouseup', onPointerUp);
+        canvas.addEventListener('touchstart', (e) => { e.preventDefault(); onPointerDown(e); }, {passive: false});
+        canvas.addEventListener('touchmove', (e) => { e.preventDefault(); onPointerMove(e); }, {passive: false});
+        window.addEventListener('touchend', onPointerUp);
+
+
+        // --- RENDER LOOP ---
+        function render() {
+            // Background
+            const bgGrad = ctx.createRadialGradient(canvas.width/2, canvas.height/3, 10, canvas.width/2, canvas.height/2, canvas.width);
+            bgGrad.addColorStop(0, '#1e293b'); 
+            bgGrad.addColorStop(1, '#020617'); 
+            ctx.fillStyle = bgGrad;
+            ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+            // Grid
+            ctx.strokeStyle = 'rgba(255, 255, 255, 0.02)';
+            ctx.lineWidth = 1;
+            ctx.beginPath();
+            for(let y = 0; y < canvas.height; y += 80) { ctx.moveTo(0, y); ctx.lineTo(canvas.width, y); }
+            for(let x = 0; x < canvas.width; x += 80) { ctx.moveTo(x, 0); ctx.lineTo(x, canvas.height); }
+            ctx.stroke();
+
+            // Dimensions & Calculations
+            const R = 25; // Pulley radius
+            const startX = cx - (MA * 2 * R) / 2; // Center the entire block system
+            
+            const Y_fixed = 120; // Center of fixed pulleys
+            const FixedBlockY = Y_fixed - R - 15;
+            
+            const baseLoadY = 550; // Starting position of load when pull is 0
+            const Y_load = baseLoadY - pullAmount / MA; // Center of movable pulleys
+            const MovableBlockY = Y_load + R + 15;
+            
+            const Y_effort = 250 + pullAmount; // Position of pulling hand
+
+            // --- 1. Draw Structural Blocks ---
+            
+            // Ceiling Anchor Block
+            ctx.fillStyle = '#334155';
+            ctx.beginPath();
+            ctx.roundRect(startX - 20, FixedBlockY - 15, (MA * 2 * R) + 40, 15, 4);
+            ctx.fill();
+            ctx.lineWidth = 2; ctx.strokeStyle = '#475569'; ctx.stroke();
+            
+            // Movable Anchor Block
+            if (MA > 1) {
+                ctx.fillStyle = '#334155';
+                ctx.beginPath();
+                ctx.roundRect(startX - 20, MovableBlockY, ((MA-1) * 2 * R) + 40, 15, 4);
+                ctx.fill();
+                ctx.lineWidth = 2; ctx.strokeStyle = '#475569'; ctx.stroke();
+            }
+
+            // --- 2. Draw Continuous Rope ---
+            ctx.beginPath();
+            
+            // Determine starting anchor (Left side at x_0)
+            const x_0 = startX;
+            let isAnchorFixed = (MA % 2 === 0);
+            
+            if (isAnchorFixed) {
+                ctx.moveTo(x_0, FixedBlockY);
+            } else {
+                ctx.moveTo(x_0, MovableBlockY);
+            }
+
+            // Route the rope through all pulleys
+            for (let j = 0; j < MA; j++) {
+                const x_j = startX + j * 2 * R;
+                const k = MA - 1 - j;
+                const isFixedPulley = (k % 2 === 0);
+                const pulleyY = isFixedPulley ? Y_fixed : Y_load;
+                
+                ctx.lineTo(x_j, pulleyY);
+                // Arc across the pulley perfectly to the next segment
+                ctx.arc(x_j + R, pulleyY, R, Math.PI, 0, !isFixedPulley); 
+            }
+            
+            // Final segment down to effort handle
+            const x_MA = startX + MA * 2 * R;
+            ctx.lineTo(x_MA, Y_effort);
+
+            // Style the rope
+            ctx.strokeStyle = '#d4a373'; // Thick brown rope
+            ctx.lineWidth = 5;
+            ctx.lineCap = 'round';
+            ctx.lineJoin = 'round';
+            
+            // Add subtle drop shadow to rope to give it depth
+            ctx.shadowColor = 'rgba(0,0,0,0.5)';
+            ctx.shadowBlur = 8;
+            ctx.shadowOffsetY = 4;
+            ctx.stroke();
+
+            // Clear shadow for next elements
+            ctx.shadowBlur = 0;
+            ctx.shadowOffsetY = 0;
+
+            // --- 3. Draw Pulley Struts ---
+            ctx.lineWidth = 6;
+            ctx.strokeStyle = '#64748b';
+            ctx.beginPath();
+            for (let j = 0; j < MA; j++) {
+                const k = MA - 1 - j;
+                const isFixedPulley = (k % 2 === 0);
+                const pCenterX = startX + j * 2 * R + R;
+                
+                if (isFixedPulley) {
+                    ctx.moveTo(pCenterX, FixedBlockY);
+                    ctx.lineTo(pCenterX, Y_fixed);
+                } else {
+                    ctx.moveTo(pCenterX, MovableBlockY);
+                    ctx.lineTo(pCenterX, Y_load);
+                }
+            }
+            ctx.stroke();
+
+
+            // --- 4. Draw Circular Pulleys ---
+            function drawPulley(px, py) {
+                ctx.save();
+                ctx.translate(px, py);
+                
+                // Outer Rim
+                ctx.fillStyle = '#1e293b';
+                ctx.beginPath(); ctx.arc(0, 0, R, 0, Math.PI*2); ctx.fill();
+                
+                // Inner metallic groove
+                const pGrad = ctx.createRadialGradient(0, 0, 5, 0, 0, R-2);
+                pGrad.addColorStop(0, '#94a3b8');
+                pGrad.addColorStop(1, '#475569');
+                ctx.fillStyle = pGrad;
+                ctx.beginPath(); ctx.arc(0, 0, R-3, 0, Math.PI*2); ctx.fill();
+                
+                // Axle
+                ctx.fillStyle = '#0f172a';
+                ctx.beginPath(); ctx.arc(0, 0, 4, 0, Math.PI*2); ctx.fill();
+                
+                ctx.restore();
+            }
+
+            for (let j = 0; j < MA; j++) {
+                const k = MA - 1 - j;
+                const isFixedPulley = (k % 2 === 0);
+                const pCenterX = startX + j * 2 * R + R;
+                drawPulley(pCenterX, isFixedPulley ? Y_fixed : Y_load);
+            }
+
+            // --- 5. Draw Load Crate ---
+            const loadW = 90;
+            const loadH = 70;
+            const loadCenterX = startX + (MA > 1 ? ((MA-1) * 2 * R)/2 : R - 15);
+            // Suspend crate from movable block, or from the single rope if MA=1
+            const crateTopY = MA > 1 ? MovableBlockY + 15 : MovableBlockY;
+            
+            ctx.save();
+            ctx.translate(loadCenterX, crateTopY + loadH/2);
+            
+            // Draw hook/cable to crate
+            ctx.strokeStyle = '#94a3b8';
+            ctx.lineWidth = 4;
+            ctx.beginPath();
+            ctx.moveTo(0, -loadH/2 - 15);
+            ctx.lineTo(0, -loadH/2);
+            ctx.stroke();
+
+            // Crate Body
+            ctx.shadowColor = 'rgba(0,0,0,0.6)';
+            ctx.shadowBlur = 15;
+            ctx.shadowOffsetY = 10;
+            
+            ctx.fillStyle = '#ef4444'; // Red
+            ctx.beginPath(); ctx.roundRect(-loadW/2, -loadH/2, loadW, loadH, 8); ctx.fill();
+            
+            // Shading
+            const cGrad = ctx.createLinearGradient(0, -loadH/2, 0, loadH/2);
+            cGrad.addColorStop(0, 'rgba(255,255,255,0.2)');
+            cGrad.addColorStop(1, 'rgba(0,0,0,0.2)');
+            ctx.fillStyle = cGrad; ctx.fill();
+            
+            // Crate details (lines)
+            ctx.strokeStyle = 'rgba(0,0,0,0.3)';
+            ctx.lineWidth = 2;
+            ctx.strokeRect(-loadW/2, -loadH/2, loadW, loadH);
+            ctx.beginPath();
+            ctx.moveTo(-loadW/2, -loadH/2); ctx.lineTo(loadW/2, loadH/2);
+            ctx.moveTo(loadW/2, -loadH/2); ctx.lineTo(-loadW/2, loadH/2);
+            ctx.stroke();
+
+            // Crate Mass Text
+            ctx.shadowBlur = 0;
+            ctx.fillStyle = '#ffffff';
+            ctx.textAlign = 'center';
+            ctx.textBaseline = 'middle';
+            ctx.font = 'bold 15px Inter';
+            
+            // Background pill for text visibility
+            ctx.fillStyle = 'rgba(0,0,0,0.6)';
+            ctx.beginPath(); ctx.roundRect(-25, -12, 50, 24, 12); ctx.fill();
+            
+            ctx.fillStyle = '#ffffff';
+            ctx.fillText(`${loadMass} kg`, 0, 0);
+
+            ctx.restore();
+
+            // --- 6. Draw Effort Handle ---
+            ctx.save();
+            ctx.translate(x_MA, Y_effort);
+            
+            if (isDragging) {
+                ctx.shadowColor = '#34d399'; // Emerald glow
+                ctx.shadowBlur = 20;
+                ctx.scale(1.1, 1.1);
+            }
+
+            // Hook loop
+            ctx.strokeStyle = '#94a3b8';
+            ctx.lineWidth = 4;
+            ctx.beginPath(); ctx.arc(0, -12, 8, 0, Math.PI*2); ctx.stroke();
+
+            // Handle bar
+            ctx.fillStyle = '#10b981'; // Emerald
+            ctx.beginPath(); ctx.roundRect(-25, 0, 50, 15, 6); ctx.fill();
+            ctx.lineWidth = 1; ctx.strokeStyle = '#ffffff'; ctx.stroke();
+
+            ctx.fillStyle = '#ffffff';
+            ctx.font = 'bold 10px Inter';
+            ctx.textAlign = 'center';
+            ctx.fillText("PULL", 0, 8);
+
+            ctx.restore();
+
+
+            // --- 7. Draw HUD (Forces & Math) ---
+            if (toggleMath.checked) {
+                const loadForce = loadMass * g;
+                const effortForce = loadForce / MA;
+                
+                // Distance in 'meters' (100px = 1m)
+                const dEffort = pullAmount / 100;
+                const dLoad = dEffort / MA;
+                const workDone = effortForce * dEffort; // Should equal loadForce * dLoad
+
+                function drawArrowWithText(x, y, isUp, color, textLines) {
+                    ctx.save();
+                    ctx.translate(x, y);
+                    
+                    ctx.strokeStyle = color;
+                    ctx.fillStyle = color;
+                    ctx.lineWidth = 3;
+                    
+                    const dir = isUp ? -1 : 1;
+                    const len = 40;
+                    
+                    ctx.beginPath();
+                    ctx.moveTo(0, 0);
+                    ctx.lineTo(0, dir * len);
+                    ctx.stroke();
+                    
+                    // Arrowhead
+                    ctx.beginPath();
+                    ctx.moveTo(0, dir * (len + 5));
+                    ctx.lineTo(-6, dir * (len - 5));
+                    ctx.lineTo(6, dir * (len - 5));
+                    ctx.fill();
+
+                    // Text Box
+                    ctx.textAlign = 'left';
+                    ctx.textBaseline = 'top';
+                    ctx.font = 'bold 11px Inter';
+                    
+                    const textX = 15;
+                    const textY = isUp ? -len : 10;
+                    
+                    ctx.fillStyle = 'rgba(15, 23, 42, 0.8)';
+                    ctx.beginPath();
+                    ctx.roundRect(textX - 5, textY - 5, 120, textLines.length * 15 + 10, 6);
+                    ctx.fill();
+                    ctx.strokeStyle = color;
+                    ctx.lineWidth = 1;
+                    ctx.stroke();
+
+                    for(let i=0; i<textLines.length; i++) {
+                        ctx.fillStyle = i === 0 ? color : '#e2e8f0';
+                        ctx.fillText(textLines[i], textX, textY + i * 15);
+                    }
+
+                    ctx.restore();
+                }
+
+                // Load Vector (Downwards)
+                drawArrowWithText(loadCenterX - loadW/2 - 10, crateTopY + loadH/2, false, '#ef4444', [
+                    "LOAD FORCE",
+                    `${loadMass} kg × 9.8`,
+                    `= ${Math.round(loadForce)} N`
+                ]);
+
+                // Tension Vector (Upwards from Load)
+                drawArrowWithText(loadCenterX + loadW/2 + 10, crateTopY + loadH/2, true, '#3b82f6', [
+                    "TOTAL TENSION",
+                    `${MA} rope(s) pulling`,
+                    `Lift: ${dLoad.toFixed(2)} m`
+                ]);
+
+                // Effort Vector (Downwards from Handle)
+                drawArrowWithText(x_MA + 35, Y_effort - 10, false, '#10b981', [
+                    "EFFORT REQUIRED",
+                    `${Math.round(loadForce)} N / ${MA}`,
+                    `= ${Math.round(effortForce)} N`,
+                    `Pulled: ${dEffort.toFixed(2)} m`
+                ]);
+
+                // Global Work HUD
+                ctx.fillStyle = 'rgba(2, 6, 23, 0.8)';
+                ctx.strokeStyle = '#fcd34d'; // Amber
+                ctx.lineWidth = 1;
+                ctx.beginPath();
+                ctx.roundRect(cx - 100, canvas.height - 60, 200, 45, 8);
+                ctx.fill(); ctx.stroke();
+                
+                ctx.textAlign = 'center';
+                ctx.textBaseline = 'middle';
+                ctx.fillStyle = '#fcd34d';
+                ctx.font = 'bold 12px Inter';
+                ctx.fillText(`Work = Force × Distance`, cx, canvas.height - 45);
+                ctx.fillStyle = '#ffffff';
+                ctx.font = '12px Inter';
+                ctx.fillText(`${Math.round(effortForce)} N × ${dEffort.toFixed(2)} m = ${Math.round(workDone)} Joules`, cx, canvas.height - 25);
+            }
+
+            requestAnimationFrame(render);
+        }
+
+        requestAnimationFrame(render);
+    </script>
+</body>
+</html>

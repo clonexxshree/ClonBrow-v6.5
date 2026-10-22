@@ -1,0 +1,628 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Physics Lab - Gravity</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        body, html {
+            margin: 0;
+            padding: 0;
+            width: 100%;
+            height: 100%;
+            overflow: hidden;
+            background-color: #09090b; /* Ultra-dark, professional background */
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+            touch-action: none;
+        }
+        
+        #sim-canvas {
+            display: block;
+            width: 100%;
+            height: 100%;
+            cursor: grab;
+        }
+        #sim-canvas:active {
+            cursor: grabbing;
+        }
+
+        /* Minimalist Professional Slider */
+        input[type=range] {
+            -webkit-appearance: none;
+            width: 100%;
+            background: transparent;
+        }
+        input[type=range]::-webkit-slider-thumb {
+            -webkit-appearance: none;
+            height: 16px;
+            width: 16px;
+            border-radius: 50%;
+            background: #ffffff;
+            cursor: pointer;
+            margin-top: -6px;
+            box-shadow: 0 2px 6px rgba(0,0,0,0.5);
+            transition: transform 0.1s ease;
+        }
+        input[type=range]::-webkit-slider-thumb:hover {
+            transform: scale(1.2);
+        }
+        input[type=range]::-webkit-slider-runnable-track {
+            width: 100%;
+            height: 3px;
+            cursor: pointer;
+            background: rgba(255, 255, 255, 0.2);
+            border-radius: 2px;
+        }
+        
+        /* Premium Frosted Glass Panel */
+        .glass-panel {
+            background: rgba(24, 24, 27, 0.5);
+            backdrop-filter: blur(40px);
+            -webkit-backdrop-filter: blur(40px);
+            border: 1px solid rgba(255, 255, 255, 0.08);
+            box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.5);
+        }
+
+        /* Smooth Custom Scrollbar */
+        .scroll-area::-webkit-scrollbar {
+            width: 3px;
+        }
+        .scroll-area::-webkit-scrollbar-thumb {
+            background: rgba(255, 255, 255, 0.2);
+            border-radius: 4px;
+        }
+
+        #loading-screen {
+            position: absolute;
+            inset: 0;
+            background: #09090b;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: white;
+            font-weight: 400;
+            z-index: 50;
+            transition: opacity 0.6s ease;
+        }
+    </style>
+</head>
+<body>
+
+    <!-- Loading Screen -->
+    <div id="loading-screen">
+        <div class="flex flex-col items-center gap-5">
+            <svg class="animate-spin h-8 w-8 text-gray-400" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="3"></circle><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path></svg>
+            <span class="text-xs font-medium tracking-widest text-gray-400 uppercase">Loading Environment</span>
+        </div>
+    </div>
+
+    <!-- Main UI Overlay -->
+    <div class="absolute top-5 left-5 md:top-8 md:left-8 z-10 w-80 glass-panel p-6 rounded-2xl pointer-events-auto flex flex-col select-none max-h-[90vh]">
+        
+        <!-- Header -->
+        <div class="mb-6 border-b border-white/5 pb-5 shrink-0 flex items-center justify-between">
+            <div>
+                <h1 class="text-xl font-semibold tracking-tight text-gray-100 mb-1">Kinematics Lab</h1>
+                <p class="text-[11px] font-medium text-gray-500 uppercase tracking-widest">Universal Gravity</p>
+            </div>
+            <div class="w-8 h-8 rounded-full bg-white/10 flex items-center justify-center text-gray-300">
+                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M19 14l-7 7m0 0l-7-7m7 7V3"></path></svg>
+            </div>
+        </div>
+
+        <div class="space-y-8 scroll-area overflow-y-auto pr-2 pb-2">
+            
+            <div class="bg-black/20 p-3.5 rounded-xl border border-white/5">
+                <p class="text-[12px] text-gray-400 leading-relaxed">
+                    <strong class="text-gray-200">Instructions:</strong> Drag and release to throw objects with spin. Toggle <span class="text-gray-100">Air Resistance</span> to observe how gravity acts uniformly in a pure vacuum.
+                </p>
+            </div>
+
+            <!-- Gravity Controls -->
+            <div class="space-y-4">
+                <div class="flex justify-between items-end">
+                    <label class="text-[11px] font-semibold uppercase tracking-wider text-gray-400">Gravitational Pull</label>
+                    <span id="grav-display" class="text-[11px] font-mono bg-white/10 px-2 py-1 rounded text-gray-200">Earth (9.8)</span>
+                </div>
+                <input type="range" id="grav-slider" min="1" max="25" step="0.1" value="9.8" class="w-full">
+                
+                <div class="flex justify-between text-[10px] text-gray-600 font-semibold uppercase tracking-wider">
+                    <span>Moon</span>
+                    <span>Earth</span>
+                    <span>Jupiter</span>
+                </div>
+            </div>
+
+            <!-- Air Resistance Toggle -->
+            <div class="pt-5 border-t border-white/5 space-y-4">
+                <label class="flex items-center justify-between cursor-pointer group">
+                    <div>
+                        <div class="text-[13px] font-semibold text-gray-200 mb-1">Air Resistance</div>
+                        <div class="text-[11px] text-gray-500 font-medium">Disable to simulate a vacuum</div>
+                    </div>
+                    <div class="relative">
+                        <input type="checkbox" id="toggle-air" class="sr-only peer" checked>
+                        <div class="w-10 h-5 bg-gray-800 rounded-full shadow-inner transition-colors peer-checked:bg-white"></div>
+                        <div class="dot absolute left-1 top-1 bg-gray-400 w-3 h-3 rounded-full transition-all peer-checked:translate-x-5 peer-checked:bg-black shadow-sm"></div>
+                    </div>
+                </label>
+            </div>
+
+            <!-- Actions -->
+            <div class="pt-6 border-t border-white/5">
+                <button id="btn-drop" class="w-full py-3 bg-white hover:bg-gray-200 text-black text-[13px] font-semibold tracking-wide rounded-xl transition-all shadow-lg flex items-center justify-center gap-2">
+                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"></path></svg>
+                    Line Up & Drop All
+                </button>
+            </div>
+
+        </div>
+    </div>
+
+    <!-- 2D Canvas Container -->
+    <canvas id="sim-canvas"></canvas>
+
+    <script>
+        const canvas = document.getElementById('sim-canvas');
+        const ctx = canvas.getContext('2d');
+
+        let floorY = 0;
+        let objects = []; 
+        let isFirstRender = true;
+        let globalTimestamp = 0;
+        
+        function getSpacingAndStart() {
+            const uiWallX = window.innerWidth >= 768 ? 380 : 0;
+            const availableWidth = canvas.width - uiWallX;
+            const spacing = availableWidth / 4;
+            return { uiWallX, spacing };
+        }
+
+        function resetPositions(dropFromTop = false) {
+            const { uiWallX, spacing } = getSpacingAndStart();
+            const startY = dropFromTop ? 150 : (floorY - 120);
+            
+            objects[0].x = uiWallX + (spacing * 1); 
+            objects[1].x = uiWallX + (spacing * 2); 
+            objects[2].x = uiWallX + (spacing * 3); 
+
+            for(let obj of objects) {
+                obj.y = startY; 
+                obj.vx = 0; 
+                obj.vy = 0;
+                
+                // Add a slight natural rotation when dropping
+                obj.angle = (Math.random() - 0.5) * 0.5;
+                obj.omega = dropFromTop ? (Math.random() - 0.5) * 2.0 : 0; 
+                
+                obj.history = []; 
+            }
+        }
+
+        function resize() {
+            canvas.width = window.innerWidth;
+            canvas.height = window.innerHeight;
+            floorY = canvas.height - 100; 
+            
+            for (let obj of objects) {
+                if (obj.x > canvas.width) obj.x = canvas.width - obj.radius;
+                if (obj.y > floorY) obj.y = floorY - obj.radius;
+            }
+        }
+        
+        window.addEventListener('resize', resize);
+        resize();
+
+        // --- ASSET LOADING ---
+        const imgAnvil = new Image();
+        const imgWood = new Image();
+        const imgFeather = new Image();
+        
+        let assetsLoaded = 0;
+        let simStarted = false;
+
+        function checkLoad() {
+            assetsLoaded++;
+            if(assetsLoaded >= 3 && !simStarted) {
+                simStarted = true;
+                const loader = document.getElementById('loading-screen');
+                if(loader) {
+                    loader.style.opacity = 0;
+                    setTimeout(() => loader.style.display = 'none', 600);
+                }
+                resetPositions(false);
+            }
+        }
+
+        setTimeout(() => { if (!simStarted) { assetsLoaded = 3; checkLoad(); } }, 3000);
+
+        imgAnvil.onload = checkLoad; imgAnvil.onerror = checkLoad;
+        imgWood.onload = checkLoad; imgWood.onerror = checkLoad;
+        imgFeather.onload = checkLoad; imgFeather.onerror = checkLoad;
+
+        imgAnvil.src = 'https://res.cloudinary.com/ds93qby5a/image/upload/q_auto/f_auto/v1775831166/anvil_rbwxpt.png';
+        imgWood.src = 'https://res.cloudinary.com/ds93qby5a/image/upload/q_auto/f_auto/v1775831166/wooden_ball_kce8nj.png';
+        imgFeather.src = 'https://res.cloudinary.com/ds93qby5a/image/upload/q_auto/f_auto/v1775831166/c7aaa878-5b6f-4c0d-8f9f-3eae6c4d9fa9-Photoroom_xxtuwj.png';
+
+        // --- UI CONTROLS ---
+        const gravSlider = document.getElementById('grav-slider');
+        const gravDisplay = document.getElementById('grav-display');
+        const toggleAir = document.getElementById('toggle-air');
+        const btnDrop = document.getElementById('btn-drop');
+
+        gravSlider.addEventListener('input', (e) => {
+            const val = parseFloat(e.target.value);
+            let label = val.toFixed(1);
+            if(Math.abs(val - 1.6) < 1) label = `Moon (${val.toFixed(1)})`;
+            else if(Math.abs(val - 9.8) < 1) label = `Earth (${val.toFixed(1)})`;
+            else if(val > 20) label = `Jupiter (${val.toFixed(1)})`;
+            gravDisplay.innerText = label;
+        });
+
+        btnDrop.addEventListener('click', () => { resetPositions(true); });
+
+        // --- PHYSICS SETTINGS & ENTITIES ---
+        objects = [
+            {
+                name: "Metal Anvil",
+                mass: 100,
+                radius: 75, 
+                x: -1000, y: -1000, 
+                vx: 0, vy: 0,
+                angle: 0, omega: 0, // Rotational Physics
+                img: imgAnvil,
+                scale: 3.2, 
+                dragCoef: 0.15, 
+                bounce: 0.15, 
+                isDragging: false,
+                history: []
+            },
+            {
+                name: "Wooden Ball",
+                mass: 10,
+                radius: 60, 
+                x: -1000, y: -1000,
+                vx: 0, vy: 0,
+                angle: 0, omega: 0,
+                img: imgWood,
+                scale: 2.3, 
+                dragCoef: 0.45, 
+                bounce: 0.65, 
+                isDragging: false,
+                history: []
+            },
+            {
+                name: "Feather",
+                mass: 0.1, 
+                radius: 50, 
+                x: -1000, y: -1000,
+                vx: 0, vy: 0,
+                angle: 0, omega: 0,
+                img: imgFeather,
+                scale: 4.0, 
+                dragCoef: 8.5, 
+                bounce: 0.1, 
+                isDragging: false,
+                history: []
+            }
+        ];
+
+        // --- PREMIUM DELTA-TIME PHYSICS ENGINE ---
+        const PX_PER_METER = 100; 
+        
+        function updatePhysics(dt) {
+            if (dt > 0.05) dt = 0.05; // Cap lag spikes
+
+            const gravityMeters = parseFloat(gravSlider.value); 
+            const gravityPx = gravityMeters * PX_PER_METER; 
+            
+            const hasAir = toggleAir.checked;
+            const rho = hasAir ? 0.012 : 0; 
+
+            for (let obj of objects) {
+                if (obj.isDragging) continue;
+
+                const forceGravityY = obj.mass * gravityPx;
+                const speed = Math.sqrt(obj.vx*obj.vx + obj.vy*obj.vy);
+                let dragForceX = 0;
+                let dragForceY = 0;
+                
+                // Realistic Aerodynamics & Fluttering
+                if (hasAir) {
+                    if (speed > 0) {
+                        const dragMagnitude = 0.5 * rho * (obj.radius * obj.dragCoef) * (speed * speed);
+                        dragForceX = -dragMagnitude * (obj.vx / speed);
+                        dragForceY = -dragMagnitude * (obj.vy / speed);
+                    }
+
+                    // Feather Aerodynamics (Flutter side-to-side dynamically)
+                    if (obj.name === "Feather" && obj.vy > 0) {
+                        // Creates a beautiful sine-wave flutter based on downward velocity
+                        const flutterForce = Math.sin(globalTimestamp / 150) * (obj.vy * 0.08);
+                        dragForceX += flutterForce;
+                        
+                        // Tilt the feather into the wind dynamically
+                        const targetAngle = Math.sin(globalTimestamp / 150) * 0.6 + (obj.vx * 0.005);
+                        obj.angle += (targetAngle - obj.angle) * 0.1; // Smooth angle interpolation
+                    }
+                } else if (obj.name === "Feather") {
+                    // In a vacuum, a feather plummets stiffly downwards
+                    obj.angle += (0 - obj.angle) * 0.1; 
+                }
+
+                // Rotational integration
+                if (obj.name !== "Feather" || !hasAir) {
+                    obj.angle += obj.omega * dt;
+                    if (hasAir) obj.omega *= (1 - 0.5 * dt); // Air resistance on spinning
+                }
+
+                const ax = dragForceX / obj.mass;
+                const ay = (forceGravityY + dragForceY) / obj.mass;
+
+                obj.vx += ax * dt;
+                obj.vy += ay * dt;
+                
+                obj.x += obj.vx * dt;
+                obj.y += obj.vy * dt;
+
+                // Ground Collision & Rolling Physics
+                if (obj.y + obj.radius > floorY) {
+                    obj.y = floorY - obj.radius;
+                    obj.vy = -obj.vy * obj.bounce;
+                    obj.vx *= 0.8; // Friction
+                    
+                    // Transfer spin to horizontal velocity (Rolling)
+                    obj.vx += obj.omega * obj.radius * 0.05;
+                    obj.omega -= obj.vx * 0.05;
+                    obj.omega *= 0.8; // Rotational friction with ground
+                }
+
+                // Wall Collisions
+                const uiWallX = window.innerWidth >= 768 ? 370 : 0; 
+                if (obj.x - obj.radius < uiWallX) {
+                    obj.x = uiWallX + obj.radius;
+                    obj.vx = -obj.vx * obj.bounce;
+                    obj.omega *= 0.5; // Bump wall
+                }
+                if (obj.x + obj.radius > canvas.width) {
+                    obj.x = canvas.width - obj.radius;
+                    obj.vx = -obj.vx * obj.bounce;
+                    obj.omega *= 0.5;
+                }
+
+                // Record Smooth Cinematic Motion Trail
+                if (Math.abs(obj.vx) > 2 || Math.abs(obj.vy) > 2) {
+                    // Only record every few frames for a spread out "ghost" effect
+                    if (Math.random() > 0.4) {
+                        obj.history.unshift({x: obj.x, y: obj.y, angle: obj.angle});
+                        if(obj.history.length > 12) obj.history.pop();
+                    }
+                } else {
+                    if(obj.history.length > 0) obj.history.pop(); 
+                }
+            }
+        }
+
+        // --- RENDER LOOP ---
+        let lastTime = 0;
+
+        function render(timestamp) {
+            globalTimestamp = timestamp;
+            if (!lastTime) lastTime = timestamp;
+            const dt = (timestamp - lastTime) / 1000;
+            lastTime = timestamp;
+
+            if (isFirstRender) {
+                resize();
+                resetPositions(false);
+                isFirstRender = false;
+            }
+
+            ctx.fillStyle = '#09090b'; 
+            ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+            // Sub-step physics engine for ultimate precision
+            const subSteps = 4;
+            const subDt = dt / subSteps;
+            for(let i=0; i<subSteps; i++) {
+                updatePhysics(subDt);
+            }
+
+            // Draw Minimalist Grid
+            ctx.strokeStyle = 'rgba(255, 255, 255, 0.02)';
+            ctx.lineWidth = 1;
+            ctx.beginPath();
+            for(let y = 0; y < canvas.height; y += 100) { ctx.moveTo(0, y); ctx.lineTo(canvas.width, y); }
+            for(let x = 0; x < canvas.width; x += 100) { ctx.moveTo(x, 0); ctx.lineTo(x, canvas.height); }
+            ctx.stroke();
+
+            // Draw Floor
+            ctx.fillStyle = '#18181b'; 
+            ctx.fillRect(0, floorY, canvas.width, canvas.height - floorY);
+            
+            ctx.strokeStyle = 'rgba(255,255,255, 0.1)'; 
+            ctx.lineWidth = 1;
+            ctx.beginPath();
+            ctx.moveTo(0, floorY);
+            ctx.lineTo(canvas.width, floorY);
+            ctx.stroke();
+
+            // Draw Objects
+            for (let obj of objects) {
+                
+                let drawW = obj.radius * 2;
+                let drawH = obj.radius * 2;
+                if (obj.img && obj.img.complete && obj.img.naturalWidth) {
+                    const aspect = obj.img.naturalWidth / obj.img.naturalHeight;
+                    drawW = obj.radius * obj.scale;
+                    drawH = drawW / aspect;
+                }
+
+                // Render Cinematic Ghost Motion Trail
+                if(obj.history.length > 1 && !obj.isDragging && obj.img && obj.img.complete) {
+                    for (let i = 0; i < obj.history.length; i++) {
+                        const h = obj.history[i];
+                        ctx.save();
+                        ctx.translate(h.x, h.y);
+                        ctx.rotate(h.angle);
+                        
+                        // Opacity fades out the further back in history it is
+                        ctx.globalAlpha = 0.25 * (1 - (i / obj.history.length)); 
+                        ctx.drawImage(obj.img, -drawW/2, -drawH/2, drawW, drawH);
+                        ctx.restore();
+                    }
+                }
+
+                ctx.save();
+                ctx.translate(obj.x, obj.y);
+
+                // Object Shadow (blur) - Doesn't rotate with object
+                ctx.shadowColor = 'rgba(0,0,0,0.6)';
+                ctx.shadowBlur = obj.isDragging ? 40 : 15;
+                ctx.shadowOffsetY = obj.isDragging ? 25 : 8;
+                
+                if (obj.isDragging) ctx.scale(1.05, 1.05);
+
+                // Rotate the actual graphic based on physics engine
+                ctx.save();
+                ctx.rotate(obj.angle);
+                
+                if (obj.img && obj.img.complete && obj.img.naturalWidth) {
+                    ctx.drawImage(obj.img, -drawW/2, -drawH/2, drawW, drawH);
+                } else {
+                    ctx.beginPath(); ctx.arc(0, 0, obj.radius, 0, Math.PI * 2); ctx.fillStyle = '#3f3f46'; ctx.fill();
+                }
+                ctx.restore(); // Restore just the rotation so the label stays upright
+
+                // Clean HUD Label (Remains Upright)
+                ctx.shadowBlur = 0;
+                ctx.shadowOffsetY = 0;
+                
+                const pillY = -(drawH/2) - 25;
+                
+                ctx.fillStyle = 'rgba(0, 0, 0, 0.6)'; 
+                ctx.strokeStyle = 'rgba(255, 255, 255, 0.1)';
+                ctx.lineWidth = 1;
+                
+                ctx.beginPath();
+                ctx.roundRect(-45, pillY - 14, 90, 28, 14);
+                ctx.fill();
+                ctx.stroke();
+
+                ctx.textAlign = 'center';
+                ctx.textBaseline = 'middle';
+                
+                ctx.fillStyle = '#ffffff'; 
+                ctx.font = '500 10px Inter';
+                ctx.fillText(obj.name, 0, pillY - 4);
+                
+                ctx.fillStyle = '#a1a1aa'; 
+                ctx.font = '400 9px Inter';
+                ctx.fillText(`${obj.mass} kg`, 0, pillY + 6);
+
+                ctx.restore(); // Restore global translation
+            }
+
+            requestAnimationFrame(render);
+        }
+
+        requestAnimationFrame(render);
+
+        // --- INTERACTION LOGIC ---
+        let dragTarget = null;
+        let dragOffsetX = 0, dragOffsetY = 0;
+        let pointerHistory = []; 
+
+        function getMousePos(e) {
+            const rect = canvas.getBoundingClientRect();
+            const clientX = e.touches ? e.touches[0].clientX : e.clientX;
+            const clientY = e.touches ? e.touches[0].clientY : e.clientY;
+            return { x: clientX - rect.left, y: clientY - rect.top };
+        }
+
+        function onPointerDown(e) {
+            if(e.target !== canvas) return; 
+            const pos = getMousePos(e);
+            
+            for(let i = objects.length - 1; i >= 0; i--) {
+                const obj = objects[i];
+                
+                let hitW = obj.radius * 2;
+                let hitH = obj.radius * 2;
+                if (obj.img && obj.img.complete && obj.img.naturalWidth) {
+                    const aspect = obj.img.naturalWidth / obj.img.naturalHeight;
+                    hitW = obj.radius * obj.scale;
+                    hitH = hitW / aspect;
+                }
+
+                if (pos.x > obj.x - hitW/2 && pos.x < obj.x + hitW/2 &&
+                    pos.y > obj.y - hitH/2 && pos.y < obj.y + hitH/2) {
+                    
+                    obj.isDragging = true;
+                    dragTarget = obj;
+                    dragOffsetX = obj.x - pos.x;
+                    dragOffsetY = obj.y - pos.y;
+                    
+                    obj.vx = 0; obj.vy = 0; obj.omega = 0;
+                    obj.history = [];
+                    
+                    pointerHistory = [{x: pos.x, y: pos.y, time: performance.now()}];
+                    return;
+                }
+            }
+        }
+
+        function onPointerMove(e) {
+            if(!dragTarget) return;
+            const pos = getMousePos(e);
+            const now = performance.now();
+            
+            pointerHistory.push({x: pos.x, y: pos.y, time: now});
+            if (pointerHistory.length > 5) pointerHistory.shift();
+
+            let newX = pos.x + dragOffsetX;
+            let newY = pos.y + dragOffsetY;
+
+            const uiWallX = window.innerWidth >= 768 ? 370 : 0;
+            if (newX < uiWallX + dragTarget.radius) newX = uiWallX + dragTarget.radius;
+            if (newX > canvas.width - dragTarget.radius) newX = canvas.width - dragTarget.radius;
+            if (newY < dragTarget.radius) newY = dragTarget.radius;
+            if (newY > floorY - dragTarget.radius) newY = floorY - dragTarget.radius;
+
+            dragTarget.x = newX;
+            dragTarget.y = newY;
+        }
+
+        function onPointerUp() {
+            if(dragTarget) { 
+                dragTarget.isDragging = false; 
+                
+                // Add physical throwing velocity AND throwing torque (spin)
+                if(pointerHistory.length > 1) {
+                    const oldest = pointerHistory[0];
+                    const newest = pointerHistory[pointerHistory.length - 1];
+                    const dt = (newest.time - oldest.time) / 1000;
+                    if(dt > 0) {
+                        dragTarget.vx = (newest.x - oldest.x) / dt * 0.5; 
+                        dragTarget.vy = (newest.y - oldest.y) / dt * 0.5;
+                        // Add spin based on horizontal swipe while dragging
+                        dragTarget.omega = (newest.x - oldest.x) / dt * 0.01;
+                    }
+                }
+                
+                dragTarget = null; 
+            }
+        }
+
+        canvas.addEventListener('mousedown', onPointerDown);
+        canvas.addEventListener('mousemove', onPointerMove);
+        window.addEventListener('mouseup', onPointerUp);
+        canvas.addEventListener('touchstart', (e) => { e.preventDefault(); onPointerDown(e); }, {passive: false});
+        canvas.addEventListener('touchmove', (e) => { e.preventDefault(); onPointerMove(e); }, {passive: false});
+        window.addEventListener('touchend', onPointerUp);
+
+    </script>
+</body>
+</html>

@@ -1,0 +1,451 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Cyanide Blockade: Mitochondrial Failure</title>
+    <style>
+        :root {
+            --bg-color: #fdfcfb;
+            --panel-bg: #ffffff;
+            --text-main: #1e293b;
+            --text-muted: #64748b;
+            --accent: #ef4444;
+            --border-color: #e2e8f0;
+            --mito-outer: #f87171;
+            --mito-inner: #fee2e2;
+            --atp-color: #fbbf24;
+            --cyanide-color: #06b6d4;
+            --gear-color: #475569;
+        }
+
+        * { box-sizing: border-box; margin: 0; padding: 0; }
+
+        body {
+            background-color: #f1f5f9;
+            color: var(--text-main);
+            font-family: 'Inter', -apple-system, system-ui, sans-serif;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            padding: 20px;
+        }
+
+        .app-container {
+            display: flex;
+            background: var(--panel-bg);
+            border-radius: 20px;
+            box-shadow: 0 20px 50px -12px rgba(0, 0, 0, 0.15);
+            width: 100%;
+            max-width: 1150px;
+            height: 750px;
+            overflow: hidden;
+            border: 1px solid var(--border-color);
+        }
+
+        /* Sidebar */
+        .sidebar {
+            width: 380px;
+            padding: 40px;
+            border-right: 1px solid var(--border-color);
+            display: flex;
+            flex-direction: column;
+            gap: 20px;
+            background: #fff;
+        }
+
+        .sidebar h1 { font-size: 24px; font-weight: 800; color: #991b1b; }
+        .description { font-size: 14px; line-height: 1.6; color: var(--text-muted); }
+
+        .control-group { display: flex; flex-direction: column; gap: 12px; }
+
+        .main-btn {
+            width: 100%;
+            padding: 14px;
+            background: #1e293b;
+            color: white;
+            border: none;
+            border-radius: 12px;
+            font-size: 15px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.2s;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            gap: 8px;
+        }
+        .main-btn:hover { opacity: 0.95; transform: translateY(-1px); }
+        .main-btn:active { transform: translateY(0); }
+        .main-btn:disabled { background: #cbd5e1; cursor: not-allowed; }
+
+        #btnCyanide { background: #0891b2; }
+        #btnReset { background: #64748b; margin-top: auto; }
+
+        .status-card {
+            background: #f8fafc;
+            padding: 20px;
+            border-radius: 12px;
+            font-size: 14px;
+            line-height: 1.5;
+            color: var(--text-main);
+            border-left: 4px solid #10b981;
+            transition: all 0.3s;
+        }
+
+        /* Simulation Canvas */
+        .simulation-area {
+            flex: 1;
+            background: radial-gradient(circle at center, #ffffff, #f1f5f9);
+            position: relative;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            overflow: hidden;
+        }
+
+        #particleCanvas {
+            position: absolute;
+            top: 0; left: 0; width: 100%; height: 100%;
+            z-index: 1;
+            pointer-events: none;
+        }
+
+        .svg-overlay {
+            position: relative;
+            z-index: 2;
+            width: 600px;
+            height: 600px;
+            pointer-events: none;
+        }
+
+        /* Mitochondria & Gears */
+        .mito-outer { fill: var(--mito-outer); opacity: 0.2; stroke: #ef4444; stroke-width: 2; }
+        .mito-inner { fill: var(--mito-inner); stroke: #ef4444; stroke-width: 2; stroke-dasharray: 4; }
+        
+        .gear {
+            fill: var(--gear-color);
+            transition: transform 0.1s linear;
+            transform-origin: center;
+        }
+        
+        .gear-hub { fill: #94a3b8; }
+        
+        .complex-label {
+            font-size: 10px;
+            font-weight: 800;
+            fill: #fff;
+            text-anchor: middle;
+        }
+
+        .status-indicator {
+            font-size: 14px;
+            font-weight: bold;
+            fill: #10b981;
+            text-anchor: middle;
+            transition: fill 0.3s;
+        }
+
+        .jam-spark {
+            fill: #fbbf24;
+            opacity: 0;
+            transition: opacity 0.2s;
+        }
+
+        @media (max-width: 900px) {
+            .app-container { flex-direction: column; height: auto; }
+            .sidebar { width: 100%; border-right: none; }
+            .simulation-area { min-height: 500px; }
+        }
+    </style>
+</head>
+<body>
+
+    <div class="app-container">
+        <aside class="sidebar">
+            <h1>Cyanide Blockade</h1>
+            <p class="description">
+                Mitochondria produce ATP (cellular energy) via the Electron Transport Chain (ETC). 
+                Cyanide is a deadly inhibitor that binds to <strong>Cytochrome c oxidase</strong>, 
+                effectively jamming the mechanical-chemical gears of life.
+            </p>
+
+            <div class="control-group">
+                <button class="main-btn" id="btnStart">Start Respiration</button>
+                <button class="main-btn" id="btnCyanide" disabled>Introduce Cyanide (CN⁻)</button>
+            </div>
+
+            <div class="status-card" id="statusCard">
+                <strong id="statusTitle">Status: Dormant</strong><br>
+                <span id="statusText">The cell is currently in a metabolic resting state.</span>
+            </div>
+
+            <div style="font-size: 12px; color: var(--text-muted); border-top: 1px solid var(--border-color); padding-top: 15px;">
+                <p><strong>Mechanism:</strong> Cyanide competes with Oxygen to bind at the iron center of Complex IV. This halts electron flow, stops the proton pump, and prevents ATP synthesis.</p>
+            </div>
+
+            <button class="main-btn" id="btnReset">Reset Simulation</button>
+        </aside>
+
+        <main class="simulation-area">
+            <canvas id="particleCanvas"></canvas>
+
+            <svg class="svg-overlay" viewBox="0 0 500 500">
+                <defs>
+                    <filter id="glow" x="-20%" y="-20%" width="140%" height="140%">
+                        <feGaussianBlur stdDeviation="3" result="blur" />
+                        <feComposite in="SourceGraphic" in2="blur" operator="over" />
+                    </filter>
+                    
+                    <!-- Gear Template -->
+                    <g id="gear-template">
+                        <path d="M 20,-5 L 25,-5 L 28,-15 L 22,-15 Z" transform="rotate(0, 0, 0)" />
+                        <path d="M 20,-5 L 25,-5 L 28,-15 L 22,-15 Z" transform="rotate(45, 0, 0)" />
+                        <path d="M 20,-5 L 25,-5 L 28,-15 L 22,-15 Z" transform="rotate(90, 0, 0)" />
+                        <path d="M 20,-5 L 25,-5 L 28,-15 L 22,-15 Z" transform="rotate(135, 0, 0)" />
+                        <path d="M 20,-5 L 25,-5 L 28,-15 L 22,-15 Z" transform="rotate(180, 0, 0)" />
+                        <path d="M 20,-5 L 25,-5 L 28,-15 L 22,-15 Z" transform="rotate(225, 0, 0)" />
+                        <path d="M 20,-5 L 25,-5 L 28,-15 L 22,-15 Z" transform="rotate(270, 0, 0)" />
+                        <path d="M 20,-5 L 25,-5 L 28,-15 L 22,-15 Z" transform="rotate(315, 0, 0)" />
+                        <circle cx="0" cy="0" r="22" />
+                    </g>
+                </defs>
+
+                <!-- Mitochondria Body -->
+                <ellipse class="mito-outer" cx="250" cy="250" rx="220" ry="140" />
+                <path class="mito-inner" d="M 80 250 
+                    Q 100 200, 120 250 T 160 250 T 200 250 T 240 250 T 280 250 T 320 250 T 360 250 T 420 250
+                    V 280
+                    Q 400 330, 380 280 T 340 280 T 300 280 T 260 280 T 220 280 T 180 280 T 140 280 T 80 280 Z" />
+
+                <!-- The Gear Train (The ETC) -->
+                <g id="etc-gears">
+                    <!-- Complex I -->
+                    <g transform="translate(140, 265)">
+                        <g id="gear-1" class="gear"><use href="#gear-template" /></g>
+                        <circle class="gear-hub" r="10" />
+                        <text y="4" class="complex-label">I</text>
+                    </g>
+                    <!-- Complex II -->
+                    <g transform="translate(190, 265)">
+                        <g id="gear-2" class="gear" transform="rotate(22.5)"><use href="#gear-template" /></g>
+                        <circle class="gear-hub" r="10" />
+                        <text y="4" class="complex-label">II</text>
+                    </g>
+                    <!-- Complex III -->
+                    <g transform="translate(240, 265)">
+                        <g id="gear-3" class="gear"><use href="#gear-template" /></g>
+                        <circle class="gear-hub" r="10" />
+                        <text y="4" class="complex-label">III</text>
+                    </g>
+                    <!-- Complex IV (The Target) -->
+                    <g transform="translate(290, 265)">
+                        <g id="gear-4" class="gear" transform="rotate(22.5)"><use href="#gear-template" /></g>
+                        <circle id="hub-4" class="gear-hub" r="10" />
+                        <text y="4" class="complex-label">IV</text>
+                        <!-- Jamming Sparks -->
+                        <path id="spark" class="jam-spark" d="M -15,-15 L -5,-5 M 15,-15 L 5,-5 M -15,15 L -5,5 M 15,15 L 5,5" stroke="#fbbf24" stroke-width="3" filter="url(#glow)" />
+                    </g>
+                    <!-- ATP Synthase (Output Gear) -->
+                    <g transform="translate(355, 265)">
+                        <g id="gear-atp" class="gear" transform="scale(1.4)"><use href="#gear-template" /></g>
+                        <circle class="gear-hub" r="14" fill="#fbbf24" />
+                        <text y="5" class="complex-label" fill="#92400e">ATP</text>
+                    </g>
+                </g>
+
+                <text x="250" y="160" id="mainStatusText" class="status-indicator">SYSTEM IDLE</text>
+                <text x="250" y="420" font-size="10" font-weight="bold" fill="#94a3b8">INNER MITOCHONDRIAL MEMBRANE</text>
+            </svg>
+        </main>
+    </div>
+
+    <script>
+        const canvas = document.getElementById('particleCanvas');
+        const ctx = canvas.getContext('2d');
+        const btnStart = document.getElementById('btnStart');
+        const btnCyanide = document.getElementById('btnCyanide');
+        const btnReset = document.getElementById('btnReset');
+        const statusTitle = document.getElementById('statusTitle');
+        const statusText = document.getElementById('statusText');
+        const statusCard = document.getElementById('statusCard');
+        const mainStatusText = document.getElementById('mainStatusText');
+        const spark = document.getElementById('spark');
+
+        const gears = [
+            document.getElementById('gear-1'),
+            document.getElementById('gear-2'),
+            document.getElementById('gear-3'),
+            document.getElementById('gear-4'),
+            document.getElementById('gear-atp')
+        ];
+
+        let particles = [];
+        let simulationState = 'idle'; // idle, running, jammed
+        let rotation = 0;
+        let rotationSpeed = 0;
+
+        function resize() {
+            canvas.width = canvas.offsetWidth;
+            canvas.height = canvas.offsetHeight;
+        }
+        window.addEventListener('resize', resize);
+        resize();
+
+        class Particle {
+            constructor(type) {
+                this.type = type; // 'atp' or 'cyanide'
+                this.reset();
+            }
+            reset() {
+                if (this.type === 'atp') {
+                    // ATP spawns from the ATP synthase gear
+                    this.x = canvas.width / 2 + 100;
+                    this.y = canvas.height / 2;
+                    this.vx = 2 + Math.random() * 3;
+                    this.vy = (Math.random() - 0.5) * 4;
+                    this.life = 1;
+                } else {
+                    // Cyanide comes from the left
+                    this.x = -20;
+                    this.y = canvas.height / 2 + (Math.random() - 0.5) * 100;
+                    this.vx = 4 + Math.random() * 2;
+                    this.vy = (Math.random() - 0.5) * 2;
+                    this.life = 1;
+                }
+                this.opacity = 1;
+            }
+            update() {
+                this.x += this.vx;
+                this.y += this.vy;
+                this.life -= 0.01;
+                this.opacity = this.life;
+
+                if (this.type === 'cyanide' && simulationState === 'running') {
+                    // Check distance to Complex IV (gear 4)
+                    const targetX = canvas.width / 2 + 35;
+                    const targetY = canvas.height / 2;
+                    const dx = targetX - this.x;
+                    const dy = targetY - this.y;
+                    if (Math.sqrt(dx*dx + dy*dy) < 20) {
+                        jamSimulation();
+                    }
+                }
+                
+                return this.life > 0;
+            }
+            draw() {
+                ctx.beginPath();
+                if (this.type === 'atp') {
+                    ctx.arc(this.x, this.y, 4, 0, Math.PI * 2);
+                    ctx.fillStyle = `rgba(251, 191, 36, ${this.opacity})`;
+                } else {
+                    // Cyanide is a small blue-ish diamond
+                    ctx.rect(this.x - 4, this.y - 4, 8, 8);
+                    ctx.fillStyle = `rgba(6, 182, 212, ${this.opacity})`;
+                }
+                ctx.fill();
+            }
+        }
+
+        function updateGears() {
+            if (simulationState === 'running') {
+                rotationSpeed = Math.min(rotationSpeed + 0.1, 5);
+            } else if (simulationState === 'jammed') {
+                rotationSpeed = Math.max(rotationSpeed - 0.5, 0);
+            } else {
+                rotationSpeed = Math.max(rotationSpeed - 0.05, 0);
+            }
+
+            rotation += rotationSpeed;
+
+            gears.forEach((gear, i) => {
+                // Alternate rotation direction for interlocking gears
+                const dir = (i % 2 === 0) ? 1 : -1;
+                const offset = (i % 2 === 0) ? 0 : 22.5;
+                gear.style.transform = `rotate(${dir * rotation + offset}deg)`;
+            });
+
+            // Production logic
+            if (simulationState === 'running' && rotationSpeed > 4 && Math.random() > 0.8) {
+                particles.push(new Particle('atp'));
+            }
+        }
+
+        function jamSimulation() {
+            simulationState = 'jammed';
+            spark.style.opacity = '1';
+            mainStatusText.textContent = "COMPLEX IV JAMMED";
+            mainStatusText.style.fill = "#ef4444";
+            statusTitle.textContent = "Status: Cyanide Blockade";
+            statusTitle.style.color = "#ef4444";
+            statusText.textContent = "Cyanide has bound to Cytochrome c oxidase. Electron flow is halted. ATP production has ceased.";
+            statusCard.style.borderLeftColor = "#ef4444";
+            btnCyanide.disabled = true;
+            
+            // Flash effect
+            statusCard.style.backgroundColor = "#fee2e2";
+            setTimeout(() => {
+                statusCard.style.backgroundColor = "#f8fafc";
+                spark.style.opacity = '0';
+            }, 500);
+        }
+
+        function animate() {
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+            
+            updateGears();
+            
+            particles = particles.filter(p => {
+                const alive = p.update();
+                if (alive) p.draw();
+                return alive;
+            });
+
+            requestAnimationFrame(animate);
+        }
+
+        btnStart.onclick = () => {
+            simulationState = 'running';
+            btnStart.disabled = true;
+            btnCyanide.disabled = false;
+            statusTitle.textContent = "Status: Active Respiration";
+            statusTitle.style.color = "#10b981";
+            statusText.textContent = "Oxygen is being reduced, and electrons are flowing. ATP Synthase is generating energy.";
+            statusCard.style.borderLeftColor = "#10b981";
+            mainStatusText.textContent = "AEROBIC METABOLISM ACTIVE";
+            mainStatusText.style.fill = "#10b981";
+        };
+
+        btnCyanide.onclick = () => {
+            for(let i=0; i<15; i++) {
+                setTimeout(() => {
+                    particles.push(new Particle('cyanide'));
+                }, i * 100);
+            }
+        };
+
+        btnReset.onclick = () => {
+            simulationState = 'idle';
+            rotationSpeed = 0;
+            particles = [];
+            btnStart.disabled = false;
+            btnCyanide.disabled = true;
+            statusTitle.textContent = "Status: Dormant";
+            statusTitle.style.color = "var(--accent)";
+            statusText.textContent = "The cell is currently in a metabolic resting state.";
+            statusCard.style.borderLeftColor = "#10b981";
+            mainStatusText.textContent = "SYSTEM IDLE";
+            mainStatusText.style.fill = "#10b981";
+            spark.style.opacity = '0';
+            gears.forEach((gear, i) => {
+                const offset = (i % 2 === 0) ? 0 : 22.5;
+                gear.style.transform = `rotate(${offset}deg)`;
+            });
+        };
+
+        animate();
+    </script>
+</body>
+</html>

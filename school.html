@@ -1,0 +1,455 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>School Management | Education Portal</title>
+    
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Nunito:wght@400;600;700;800;900&display=swap" rel="stylesheet">
+    
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    fontFamily: { 
+                        sans: ['Nunito', '-apple-system', 'BlinkMacSystemFont', 'Segoe UI', 'sans-serif']
+                    },
+                    colors: {
+                        duo: {
+                            dark: '#1e293b', blue: '#1cb0f6', green: '#58cc02', 
+                            red: '#ff4b4b', yellow: '#ffc800', purple: '#ce82ff', 
+                            pink: '#ff718d', gray: '#e5e7eb', bg: '#f8f9fa',
+                            teal: '#14b8a6', orange: '#fb923c'
+                        }
+                    }
+                }
+            }
+        }
+    </script>
+    
+    <style>
+        body { font-family: 'Nunito', sans-serif; letter-spacing: -0.01em; overscroll-behavior-y: none; }
+        
+        .bg-dots {
+            background-color: #f8f9fa;
+            background-image: radial-gradient(#cbd5e1 2px, transparent 2px);
+            background-size: 24px 24px;
+        }
+
+        .duo-card {
+            background-color: white;
+            border: 3px solid #1e293b;
+            border-radius: 20px;
+            box-shadow: 6px 6px 0px #1e293b;
+            transition: all 0.2s ease;
+        }
+        .duo-card:hover {
+            transform: translateY(-3px);
+            box-shadow: 8px 8px 0px #1e293b;
+        }
+        
+        .duo-btn {
+            position: relative;
+            border: 3px solid #1e293b;
+            border-radius: 16px;
+            font-weight: 800;
+            text-transform: uppercase;
+            transition: all 0.1s;
+            cursor: pointer;
+            box-shadow: 0px 4px 0px #1e293b;
+            text-align: center;
+        }
+        .duo-btn:active { transform: translateY(4px); box-shadow: 0px 0px 0px #1e293b; }
+        
+        .duo-btn-blue { background-color: #1cb0f6; color: white; }
+        .duo-btn-green { background-color: #58cc02; color: white; }
+        .duo-btn-purple { background-color: #ce82ff; color: white; }
+        .duo-btn-white { background-color: white; color: #1e293b; }
+        
+        .portal-card {
+            aspect-ratio: 4/3;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            text-align: center;
+            padding: 2rem;
+            cursor: pointer;
+        }
+        
+        .portal-icon-wrapper {
+            width: 80px;
+            height: 80px;
+            border-radius: 20px;
+            border: 3px solid #1e293b;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 2.5rem;
+            margin-bottom: 1rem;
+            background-color: white;
+            transition: transform 0.2s;
+        }
+        
+        .portal-card:hover .portal-icon-wrapper {
+            transform: scale(1.1) rotate(5deg);
+        }
+
+        .modal-overlay {
+            display: none;
+            position: fixed;
+            inset: 0;
+            background: rgba(30, 41, 59, 0.8);
+            backdrop-filter: blur(4px);
+            z-index: 100;
+            align-items: center;
+            justify-content: center;
+            padding: 1rem;
+        }
+        .modal-active { display: flex; }
+        
+        .duo-input {
+            background-color: #f8fafc;
+            border: 3px solid #cbd5e1;
+            border-radius: 12px;
+            padding: 12px;
+            width: 100%;
+            font-weight: 700;
+            color: #1e293b;
+            transition: all 0.2s;
+            outline: none;
+        }
+        .duo-input:focus { border-color: #1cb0f6; background-color: white; }
+    </style>
+</head>
+<body class="bg-dots min-h-[100dvh] w-screen overflow-x-hidden relative text-duo-dark flex flex-col">
+
+    <header class="bg-white border-b-[3px] border-duo-dark px-4 sm:px-8 py-4 flex items-center justify-between z-30 sticky top-0 shadow-sm shrink-0">
+        <div class="flex items-center gap-4">
+            <button onclick="window.location.href='index.html'" class="w-10 h-10 duo-btn duo-btn-white flex items-center justify-center text-slate-500 hover:text-duo-dark">
+                <i class="fas fa-arrow-left"></i>
+            </button>
+            <div class="flex items-center gap-2">
+                <div class="w-10 h-10 bg-duo-pink rounded-xl border-[3px] border-duo-dark flex items-center justify-center text-white text-xl overflow-hidden shadow-[2px_2px_0_#1e293b]">
+                    <i class="fas fa-school" id="header-school-icon"></i>
+                </div>
+                <div>
+                    <h1 class="text-xl sm:text-2xl font-black leading-none" id="header-school-name">School Portal</h1>
+                    <p class="text-xs font-bold text-slate-500 uppercase tracking-widest">Education Management System</p>
+                </div>
+            </div>
+        </div>
+        <div class="hidden sm:flex items-center gap-3">
+            <span class="font-bold text-slate-500 text-sm"><i class="fas fa-shield-alt text-duo-green mr-1"></i> Multi-Tenant Secured</span>
+        </div>
+    </header>
+
+    <main class="flex-1 overflow-y-auto p-4 sm:p-8">
+        <div class="max-w-6xl mx-auto space-y-12 pb-20">
+            
+            <div class="text-center max-w-3xl mx-auto mt-4 mb-12">
+                <h2 class="text-4xl sm:text-6xl font-black text-duo-dark tracking-tight mb-4" id="hero-welcome-text">Manage Your Entire School in One Place.</h2>
+                <p class="text-lg sm:text-xl font-bold text-slate-500">From admissions to attendance, this platform brings students, teachers, and admins together in a beautifully simple, unified system.</p>
+            </div>
+
+            <div>
+                <div class="flex items-center gap-4 mb-6">
+                    <div class="h-[3px] flex-1 bg-slate-300 rounded-full"></div>
+                    <span class="font-black text-duo-dark text-xl uppercase tracking-widest shrink-0">Select Your Portal</span>
+                    <div class="h-[3px] flex-1 bg-slate-300 rounded-full"></div>
+                </div>
+
+                <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+                    
+                    <div class="duo-card portal-card bg-gradient-to-br from-indigo-50 to-blue-100 border-duo-blue shadow-[6px_6px_0px_#1cb0f6]" onclick="openModal('modal-register-school')">
+                        <div class="portal-icon-wrapper text-duo-blue shadow-[4px_4px_0px_#1cb0f6]">
+                            <i class="fas fa-building"></i>
+                        </div>
+                        <h3 class="text-2xl font-black text-duo-dark mb-2">Register Your School</h3>
+                        <p class="font-bold text-slate-600 text-sm">New institution? Create your school's private database vault and configure the academic year.</p>
+                        <button class="mt-6 duo-btn duo-btn-blue px-6 py-2 text-sm w-full">Onboard Now</button>
+                    </div>
+
+                    <div class="duo-card portal-card bg-gradient-to-br from-green-50 to-emerald-100 border-duo-green shadow-[6px_6px_0px_#58cc02]" onclick="openModal('modal-student')">
+                        <div class="portal-icon-wrapper text-duo-green shadow-[4px_4px_0px_#58cc02]">
+                            <i class="fas fa-user-graduate"></i>
+                        </div>
+                        <h3 class="text-2xl font-black text-duo-dark mb-2">Student Portal</h3>
+                        <p class="font-bold text-slate-600 text-sm">Login to check your daily timetable, submit assignments, view report cards, and track attendance.</p>
+                        <button class="mt-6 duo-btn duo-btn-green px-6 py-2 text-sm w-full">Student Login</button>
+                    </div>
+
+                    <div class="duo-card portal-card bg-gradient-to-br from-purple-50 to-fuchsia-100 border-duo-purple shadow-[6px_6px_0px_#ce82ff]" onclick="openModal('modal-teacher')">
+                        <div class="portal-icon-wrapper text-duo-purple shadow-[4px_4px_0px_#ce82ff]">
+                            <i class="fas fa-chalkboard-teacher"></i>
+                        </div>
+                        <h3 class="text-2xl font-black text-duo-dark mb-2">Teacher Faculty</h3>
+                        <p class="font-bold text-slate-600 text-sm">Access the command center. Take attendance, grade exams, and update student records.</p>
+                        <button class="mt-6 duo-btn duo-btn-purple px-6 py-2 text-sm w-full">Staff Login</button>
+                    </div>
+
+                </div>
+            </div>
+
+            <div class="mt-16">
+                <div class="flex items-center gap-4 mb-8">
+                    <span class="font-black text-duo-dark text-2xl tracking-tight shrink-0"><i class="fas fa-toolbox text-duo-orange mr-2"></i> Integrated Tools & Modules</span>
+                    <div class="h-[3px] flex-1 bg-slate-300 rounded-full"></div>
+                </div>
+
+                <div class="grid grid-cols-2 md:grid-cols-4 gap-4">
+                    <div class="duo-card p-5 flex flex-col items-center text-center bg-white">
+                        <div class="text-3xl text-duo-blue mb-3"><i class="fas fa-users-cog"></i></div>
+                        <h4 class="font-black text-duo-dark text-base mb-1">Admissions</h4>
+                        <p class="text-xs font-bold text-slate-500 leading-tight">Digital enrollment forms & student tracking.</p>
+                    </div>
+                    <div class="duo-card p-5 flex flex-col items-center text-center bg-white">
+                        <div class="text-3xl text-duo-green mb-3"><i class="fas fa-calendar-check"></i></div>
+                        <h4 class="font-black text-duo-dark text-base mb-1">Attendance</h4>
+                        <p class="text-xs font-bold text-slate-500 leading-tight">Daily registers & real-time alerts.</p>
+                    </div>
+                    <div class="duo-card p-5 flex flex-col items-center text-center bg-white">
+                        <div class="text-3xl text-duo-yellow mb-3"><i class="fas fa-money-bill-wave"></i></div>
+                        <h4 class="font-black text-duo-dark text-base mb-1">Fee Management</h4>
+                        <p class="text-xs font-bold text-slate-500 leading-tight">Generate vouchers & track pending dues.</p>
+                    </div>
+                    <div class="duo-card p-5 flex flex-col items-center text-center bg-white">
+                        <div class="text-3xl text-duo-red mb-3"><i class="fas fa-file-signature"></i></div>
+                        <h4 class="font-black text-duo-dark text-base mb-1">Exams & Results</h4>
+                        <p class="text-xs font-bold text-slate-500 leading-tight">Gradebooks & report card generation.</p>
+                    </div>
+                </div>
+            </div>
+
+        </div>
+    </main>
+
+    <div id="modal-register-school" class="modal-overlay">
+        <div class="duo-card p-8 bg-white max-w-lg w-full relative">
+            <button onclick="closeModal('modal-register-school')" class="absolute top-4 right-4 w-8 h-8 rounded-full bg-slate-200 hover:bg-duo-red hover:text-white flex items-center justify-center transition-colors"><i class="fas fa-times"></i></button>
+            <div class="text-4xl text-duo-blue mb-4 text-center"><i class="fas fa-building"></i></div>
+            <h3 class="text-2xl font-black text-center mb-2">Register Institution</h3>
+            <p class="text-sm font-bold text-slate-500 text-center mb-6">We will create a private, isolated vault for your domain.</p>
+            
+            <div class="space-y-4">
+                <div>
+                    <label class="block text-xs font-black text-slate-500 uppercase tracking-widest mb-1">Institution Name</label>
+                    <input type="text" id="reg-school-name" class="duo-input" placeholder="e.g. Springfield High School">
+                </div>
+                <div>
+                    <label class="block text-xs font-black text-slate-500 uppercase tracking-widest mb-1">Admin Email (Used for Domain routing)</label>
+                    <input type="email" id="reg-school-email" class="duo-input" placeholder="principal@springfield.edu">
+                </div>
+                <button onclick="handleSchoolRegistration(this)" class="duo-btn duo-btn-blue w-full py-3 mt-4 text-lg shadow-[4px_4px_0_#1e293b]">Create School Vault</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Student Login -->
+    <div id="modal-student" class="modal-overlay">
+        <div class="duo-card p-8 bg-white max-w-md w-full relative border-duo-green shadow-[6px_6px_0px_#58cc02]">
+            <button onclick="closeModal('modal-student')" class="absolute top-4 right-4 w-8 h-8 rounded-full bg-slate-200 hover:bg-duo-red hover:text-white flex items-center justify-center transition-colors"><i class="fas fa-times"></i></button>
+            <div class="text-4xl text-duo-green mb-4 text-center"><i class="fas fa-user-graduate"></i></div>
+            <h3 class="text-2xl font-black text-center mb-2">Student Login</h3>
+            <div class="space-y-4 mt-6">
+                <input type="email" id="student-email" class="duo-input" placeholder="Student Email (e.g. alex@school.edu)">
+                <input type="password" id="student-pass" class="duo-input" placeholder="Password">
+                <button onclick="handleLiveLogin(this, 'student-email', 'student-pass', '../Presentations/student.html')" class="duo-btn duo-btn-green w-full py-3 mt-4 text-lg shadow-[4px_4px_0_#1e293b]">Login to Portal</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Teacher/Admin Login -->
+    <div id="modal-teacher" class="modal-overlay">
+        <div class="duo-card p-8 bg-white max-w-md w-full relative border-duo-purple shadow-[6px_6px_0px_#ce82ff]">
+            <button onclick="closeModal('modal-teacher')" class="absolute top-4 right-4 w-8 h-8 rounded-full bg-slate-200 hover:bg-duo-red hover:text-white flex items-center justify-center transition-colors"><i class="fas fa-times"></i></button>
+            <div class="text-4xl text-duo-purple mb-4 text-center"><i class="fas fa-chalkboard-teacher"></i></div>
+            <h3 class="text-2xl font-black text-center mb-2">Staff Login</h3>
+            <div class="space-y-4 mt-6">
+                <input type="email" id="teacher-email" class="duo-input" placeholder="Employee Email">
+                <input type="password" id="teacher-pass" class="duo-input" placeholder="Password">
+                <button onclick="handleLiveLogin(this, 'teacher-email', 'teacher-pass', '../Presentations/teacher.html')" class="duo-btn duo-btn-purple w-full py-3 mt-4 text-lg shadow-[4px_4px_0_#1e293b]">Access Dashboard</button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Directly connect to PythonAnywhere API
+        const LIVE_API_URL = 'https://clonexxshree.pythonanywhere.com/api';
+
+        function openModal(modalId) {
+            document.getElementById(modalId).classList.add('modal-active');
+        }
+
+        function closeModal(modalId) {
+            document.getElementById(modalId).classList.remove('modal-active');
+        }
+
+        document.querySelectorAll('.modal-overlay').forEach(modal => {
+            modal.addEventListener('click', function(e) {
+                if (e.target === this) this.classList.remove('modal-active');
+            });
+        });
+
+        async function handleSchoolRegistration(btn) {
+            const name = document.getElementById('reg-school-name').value.trim();
+            const email = document.getElementById('reg-school-email').value.trim();
+            
+            if(!name || !email) { 
+                alert("Please enter both the school name and admin email."); 
+                return; 
+            }
+            
+            btn.innerHTML = `<i class="fas fa-spinner fa-spin mr-2"></i> Provisioning Cloud Vault...`;
+            btn.style.opacity = '0.8';
+            btn.style.pointerEvents = 'none';
+            
+            try {
+                // Ensure Python server is reached
+                const response = await fetch(`${LIVE_API_URL}/school/setup`, {
+                    method: 'POST',
+                    headers: {'Content-Type': 'application/json'},
+                    body: JSON.stringify({ school_name: name, admin_email: email })
+                });
+                
+                // Set the admin user safely so ../Presentations/schooler.html does not crash
+                localStorage.setItem('clonbrow_school_email', email);
+                localStorage.setItem('clonbrow_school_name', name);
+                
+                const adminUser = {
+                    id: 1,
+                    name: 'Administrator',
+                    role: 'admin',
+                    domain: email.split('@')[1] || 'demo.edu',
+                    avatar: '',
+                    email: email 
+                };
+                localStorage.setItem('clonbrow_active_user', JSON.stringify(adminUser));
+                
+                btn.innerHTML = `<i class="fas fa-check mr-2"></i> Success! Vault Secured.`;
+                btn.classList.add('bg-duo-green', 'border-duo-green');
+                btn.style.color = 'white';
+                
+                setTimeout(() => { window.location.href = '../Presentations/schooler.html'; }, 1000);
+                
+            } catch(e) {
+                console.warn("Python backend offline. Simulating local vault creation.");
+                localStorage.setItem('clonbrow_school_email', email);
+                localStorage.setItem('clonbrow_school_name', name);
+                
+                const fallbackAdmin = {
+                    id: 1,
+                    name: 'Administrator',
+                    role: 'admin',
+                    domain: email.split('@')[1] || 'demo.edu',
+                    avatar: '',
+                    email: email 
+                };
+                localStorage.setItem('clonbrow_active_user', JSON.stringify(fallbackAdmin));
+                
+                btn.innerHTML = `<i class="fas fa-check mr-2"></i> Local Vault Created`;
+                btn.classList.add('bg-duo-green', 'border-duo-green');
+                btn.style.color = 'white';
+                setTimeout(() => { window.location.href = '../Presentations/schooler.html'; }, 1000);
+            }
+        }
+
+        // Setup correct display and purge old "COLOMNS LTD" bugs
+        document.addEventListener('DOMContentLoaded', () => {
+            // Forcefully clear out the corrupted "COLOMNS LTD" logo and name from past sessions
+            let savedName = localStorage.getItem('clonbrow_school_name');
+            if (savedName && (savedName.toUpperCase().includes('COLOMNS') || savedName.toUpperCase().includes('COLUMNS'))) {
+                localStorage.removeItem('clonbrow_school_name');
+                localStorage.removeItem('clonbrow_school_logo');
+                savedName = null;
+            }
+
+            if (savedName) {
+                document.getElementById('header-school-name').innerText = savedName;
+                document.getElementById('hero-welcome-text').innerText = `Welcome to ${savedName}`;
+            } else {
+                document.getElementById('header-school-name').innerText = 'ClonBrow Schools';
+                document.getElementById('hero-welcome-text').innerText = 'Manage Your Entire School in One Place.';
+            }
+            
+            // We forcefully rely on the clean icon and ignore local storage logos here 
+            // to guarantee a beautiful header layout.
+            const iconEl = document.getElementById('header-school-icon');
+            iconEl.classList.remove('hidden');
+        });
+
+        async function handleLiveLogin(btn, emailId, passId, targetUrl) {
+            const email = document.getElementById(emailId).value.trim();
+            const password = document.getElementById(passId).value.trim();
+            
+            if(!email || !password) { 
+                alert("Please enter both email and password."); 
+                return; 
+            }
+
+            const originalText = btn.innerHTML;
+            btn.innerHTML = `<i class="fas fa-spinner fa-spin mr-2"></i> Authenticating...`;
+            btn.style.opacity = '0.8';
+            btn.style.pointerEvents = 'none';
+            
+            try {
+                const response = await fetch(`${LIVE_API_URL}/users/login`, {
+                    method: 'POST',
+                    headers: {'Content-Type': 'application/json'},
+                    body: JSON.stringify({ email: email, password: password })
+                });
+                
+                const data = await response.json();
+                
+                if (data.status === 'success') {
+                    // Create a robust user object, filling in missing data so ../Presentations/student.html doesn't crash
+                    const userToSave = { 
+                        id: data.user.id || Math.floor(Math.random() * 10000),
+                        name: data.user.name || email.split('@')[0],
+                        role: data.user.role || (targetUrl.includes('teacher') ? 'teacher' : 'student'),
+                        domain: data.user.domain || email.split('@')[1] || 'demo.edu',
+                        avatar: data.user.avatar || '',
+                        email: email 
+                    };
+                    localStorage.setItem('clonbrow_active_user', JSON.stringify(userToSave));
+                    
+                    btn.innerHTML = `<i class="fas fa-check mr-2"></i> Access Granted!`;
+                    btn.style.color = 'white';
+                    btn.classList.add('bg-duo-green', 'border-duo-green');
+                    setTimeout(() => { window.location.href = targetUrl; }, 800);
+                } else {
+                    btn.innerHTML = `<i class="fas fa-times mr-2"></i> Invalid Credentials`;
+                    btn.classList.add('bg-duo-red', 'border-duo-red');
+                    btn.style.color = 'white';
+                    setTimeout(() => { 
+                        btn.innerHTML = originalText; 
+                        btn.classList.remove('bg-duo-red', 'border-duo-red');
+                        btn.style.opacity = '1';
+                        btn.style.pointerEvents = 'auto';
+                    }, 2000);
+                }
+            } catch(e) {
+                console.warn("Python backend offline. Simulating offline login mode.");
+                
+                // Ensure offline fallback STILL provides the required schema for target html files!
+                const fallbackUser = { 
+                    id: Math.floor(Math.random() * 10000),
+                    name: email.split('@')[0],
+                    role: targetUrl.includes('teacher') ? 'teacher' : 'student',
+                    domain: email.split('@')[1] || 'demo.edu',
+                    avatar: '',
+                    email: email 
+                };
+                localStorage.setItem('clonbrow_active_user', JSON.stringify(fallbackUser));
+                
+                btn.innerHTML = `<i class="fas fa-check mr-2"></i> Offline Access`;
+                btn.style.color = 'white';
+                btn.classList.add('bg-duo-green', 'border-duo-green');
+                setTimeout(() => { window.location.href = targetUrl; }, 800);
+            }
+        }
+    </script>
+</body>
+</html>

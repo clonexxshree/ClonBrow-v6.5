@@ -1,0 +1,459 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Physics Lab - Newton's Laws</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        body, html {
+            margin: 0;
+            padding: 0;
+            width: 100%;
+            height: 100%;
+            overflow: hidden;
+            background-color: #020617; /* Deep slate 950 */
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+            touch-action: none;
+            user-select: none;
+        }
+        
+        #sim-canvas {
+            display: block;
+            width: 100%;
+            height: 100%;
+        }
+
+        /* Glassmorphism UI */
+        .glass-panel {
+            background: linear-gradient(145deg, rgba(15, 23, 42, 0.85) 0%, rgba(2, 6, 23, 0.95) 100%);
+            backdrop-filter: blur(30px);
+            -webkit-backdrop-filter: blur(30px);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            border-top: 1px solid rgba(255, 255, 255, 0.2);
+            box-shadow: 0 30px 60px -12px rgba(0, 0, 0, 0.8), inset 0 1px 10px rgba(255, 255, 255, 0.05);
+        }
+
+        .scroll-area::-webkit-scrollbar { width: 4px; }
+        .scroll-area::-webkit-scrollbar-thumb { background: rgba(255, 255, 255, 0.2); border-radius: 4px; }
+
+        .tab-btn {
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+        .tab-btn.active {
+            background-color: #ffffff;
+            color: #020617;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.4);
+        }
+        .tab-btn:not(.active):hover {
+            background-color: rgba(255,255,255,0.1);
+            color: #ffffff;
+        }
+
+        .action-btn {
+            transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+        .action-btn:active { transform: scale(0.96); }
+
+        #loading-screen {
+            position: absolute;
+            inset: 0;
+            background: #020617;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: white;
+            z-index: 100;
+            transition: opacity 0.6s ease;
+        }
+    </style>
+</head>
+<body>
+
+    <!-- Loading Screen -->
+    <div id="loading-screen">
+        <div class="flex flex-col items-center gap-5">
+            <svg class="animate-spin h-8 w-8 text-indigo-500" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="3"></circle><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path></svg>
+            <span class="text-xs font-medium tracking-widest text-gray-400 uppercase">Aspect-Ratio Calibration...</span>
+        </div>
+    </div>
+
+    <!-- Main UI Overlay -->
+    <div class="absolute top-5 left-5 md:top-8 md:left-8 z-50 w-[380px] glass-panel p-6 rounded-[1.5rem] pointer-events-auto flex flex-col max-h-[92vh]">
+        
+        <div class="mb-5 border-b border-white/10 pb-5 shrink-0 flex items-center justify-between">
+            <div>
+                <h1 class="text-2xl font-bold tracking-tight text-white mb-1">Newton's Laws</h1>
+                <p class="text-[11px] font-medium text-indigo-400 uppercase tracking-widest">High-Fidelity Lab</p>
+            </div>
+            <div class="w-10 h-10 rounded-full bg-indigo-500/20 flex items-center justify-center text-indigo-400 shadow-[0_0_15px_rgba(99,102,241,0.3)]">
+                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"></path></svg>
+            </div>
+        </div>
+
+        <div class="flex p-1 bg-black/40 rounded-xl shadow-inner gap-1 mb-6 shrink-0 border border-white/5">
+            <button data-tab="inertia" class="tab-btn active flex-1 py-2 text-[10px] font-bold uppercase tracking-wider rounded-lg text-gray-400">1st: Inertia</button>
+            <button data-tab="acceleration" class="tab-btn flex-1 py-2 text-[10px] font-bold uppercase tracking-wider rounded-lg text-gray-400">2nd: F=ma</button>
+            <button data-tab="action" class="tab-btn flex-1 py-2 text-[10px] font-bold uppercase tracking-wider rounded-lg text-gray-400">3rd: Action</button>
+        </div>
+
+        <div class="scroll-area overflow-y-auto pr-2 pb-2 space-y-7">
+            <div class="bg-black/30 p-4 rounded-xl border border-white/5 shadow-inner">
+                <h2 id="info-title" class="text-sm font-bold text-white mb-2">1st Law: Inertia</h2>
+                <p id="info-desc" class="text-xs text-gray-400 leading-relaxed">
+                    An object at rest stays at rest. By pulling the tablecloth quickly, you minimize the time friction acts on the dish, allowing its inertia to keep it in place.
+                </p>
+            </div>
+
+            <!-- INERTIA CONTROLS -->
+            <div id="controls-inertia" class="space-y-5">
+                <div class="space-y-3">
+                    <div class="flex justify-between items-end">
+                        <label class="text-[11px] font-semibold text-indigo-400 uppercase tracking-widest">Pull Velocity</label>
+                        <span id="inertia-vel-display" class="text-[11px] font-mono bg-indigo-500/10 px-2 py-1 rounded text-indigo-300">Fast</span>
+                    </div>
+                    <input type="range" id="inertia-vel-slider" min="5" max="80" step="1" value="60" style="accent-color: #6366f1;">
+                </div>
+                <button id="btn-pull" class="action-btn w-full py-3 bg-indigo-600 hover:bg-indigo-500 text-white text-xs font-bold uppercase tracking-widest rounded-xl shadow-lg">Pull Tablecloth</button>
+                <button id="btn-reset-inertia" class="action-btn w-full py-2 bg-white/5 text-gray-400 text-[10px] font-bold uppercase tracking-widest rounded-xl border border-white/5">Reset Table</button>
+            </div>
+
+            <!-- ACCELERATION CONTROLS -->
+            <div id="controls-acceleration" class="space-y-5 hidden">
+                <div class="space-y-3">
+                    <div class="flex justify-between items-end">
+                        <label class="text-[11px] font-semibold text-emerald-400 uppercase tracking-widest">Engine Force (F)</label>
+                        <span id="accel-force-display" class="text-[11px] font-mono bg-emerald-500/10 px-2 py-1 rounded text-emerald-300">800 N</span>
+                    </div>
+                    <input type="range" id="accel-force-slider" min="100" max="2000" step="50" value="800" style="accent-color: #10b981;">
+                </div>
+                <button id="btn-launch-carts" class="action-btn w-full py-3 bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-bold uppercase tracking-widest rounded-xl shadow-lg">Apply Constant Force</button>
+                <button id="btn-reset-accel" class="action-btn w-full py-2 bg-white/5 text-gray-400 text-[10px] font-bold uppercase tracking-widest rounded-xl border border-white/5">Reset Position</button>
+            </div>
+
+            <!-- ACTION CONTROLS -->
+            <div id="controls-action" class="space-y-5 hidden">
+                <div class="space-y-3">
+                    <div class="flex justify-between items-end">
+                        <label class="text-[11px] font-semibold text-orange-400 uppercase tracking-widest">Engine Thrust</label>
+                        <span id="action-burn-display" class="text-[11px] font-mono bg-orange-500/10 px-2 py-1 rounded text-orange-300">100%</span>
+                    </div>
+                    <input type="range" id="action-burn-slider" min="5" max="15" step="0.5" value="10" style="accent-color: #f97316;">
+                </div>
+                <button id="btn-ignite" class="action-btn w-full py-3 bg-orange-600 hover:bg-orange-500 text-white text-xs font-bold uppercase tracking-widest rounded-xl shadow-lg">Engage Thrusters</button>
+                <button id="btn-reset-action" class="action-btn w-full py-2 bg-white/5 text-gray-400 text-[10px] font-bold uppercase tracking-widest rounded-xl border border-white/5">Reset Launch</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Live Physics HUD (Bottom Right) -->
+    <div id="hud" class="absolute bottom-6 right-6 z-10 glass-panel p-5 rounded-2xl pointer-events-none min-w-[220px]">
+        <div class="text-[10px] font-bold uppercase tracking-widest text-gray-500 mb-3 border-b border-white/10 pb-2">Sensor Readout</div>
+        <div id="hud-content" class="space-y-3">
+            <div class="flex justify-between items-center">
+                <span class="text-xs text-gray-300 font-medium" id="hud-label-1">Velocity</span>
+                <span id="hud-val-1" class="text-base font-mono font-bold text-white">0.0</span>
+            </div>
+            <div class="flex justify-between items-center border-t border-white/5 pt-3">
+                <span class="text-xs text-gray-300 font-medium" id="hud-label-2">Acceleration</span>
+                <span id="hud-val-2" class="text-base font-mono font-bold text-indigo-400">0.0</span>
+            </div>
+        </div>
+    </div>
+
+    <canvas id="sim-canvas"></canvas>
+
+    <script>
+        const canvas = document.getElementById('sim-canvas');
+        const ctx = canvas.getContext('2d');
+
+        // --- ASSETS ---
+        const assets = {
+            car: new Image(),
+            rocket: new Image(),
+            bus: new Image()
+        };
+        let loadedCount = 0;
+        function checkAssets() {
+            loadedCount++;
+            if(loadedCount >= 3) {
+                document.getElementById('loading-screen').style.opacity = '0';
+                setTimeout(() => document.getElementById('loading-screen').style.display = 'none', 600);
+            }
+        }
+        assets.car.onload = checkAssets;
+        assets.rocket.onload = checkAssets;
+        assets.bus.onload = checkAssets;
+        
+        assets.car.src = 'https://res.cloudinary.com/ds93qby5a/image/upload/v1775902319/photo-1502877338535-766e1452684a-Photoroom_wpphzt.png';
+        assets.rocket.src = 'https://res.cloudinary.com/ds93qby5a/image/upload/q_auto/f_auto/v1775902338/premium_photo-1676036793514-a637b11f392a-Photoroom_cbkdhh.png';
+        assets.bus.src = 'https://res.cloudinary.com/ds93qby5a/image/upload/v1775902320/photo-1525962898597-a4ae6402826e-Photoroom_bpkdc6.png';
+
+        // Helper to draw image without squishing
+        function drawImageAspect(img, x, y, targetWidth, pivotX = 0.5, pivotY = 0.5) {
+            if (!img.complete) return 0;
+            const ratio = img.naturalHeight / img.naturalWidth;
+            const targetHeight = targetWidth * ratio;
+            ctx.drawImage(img, x - (targetWidth * pivotX), y - (targetHeight * pivotY), targetWidth, targetHeight);
+            return targetHeight;
+        }
+
+        function resize() {
+            canvas.width = window.innerWidth;
+            canvas.height = window.innerHeight;
+            initPhysics();
+        }
+        window.addEventListener('resize', resize);
+
+        // --- GLOBAL PHYSICS ---
+        let currentMode = 'inertia';
+        let cx = 0, cy = 0;
+        let shake = 0;
+        const groundHeight = 80;
+
+        // --- MODULE 1: INERTIA ---
+        let clothX = 0, clothVel = 0, isPulling = false;
+        let dishX = 0, dishY = 0, dishVX = 0, dishVY = 0;
+        let tableX = 0, tableY = 0;
+        const clothLength = 400;
+
+        function initInertia() {
+            const sidebar = window.innerWidth >= 768 ? 380 : 0;
+            cx = sidebar + (window.innerWidth - sidebar) / 2;
+            cy = window.innerHeight / 2;
+            tableX = cx - 150; tableY = cy + 100;
+            clothX = tableX;
+            dishX = tableX + 150; dishY = tableY - 15;
+            dishVX = 0; dishVY = 0; clothVel = 0; isPulling = false;
+        }
+
+        function updateInertia() {
+            if (isPulling) {
+                clothVel = parseFloat(document.getElementById('inertia-vel-slider').value);
+                clothX += clothVel;
+                if (dishX > clothX && dishX < clothX + clothLength && dishY === tableY - 15) {
+                    const kineticFriction = 0.05; 
+                    dishVX += (clothVel - dishVX) * kineticFriction;
+                }
+            }
+            dishX += dishVX; dishY += dishVY;
+            if (dishX > tableX + 350 || dishX < tableX) dishVY += 0.6;
+            if (dishY > window.innerHeight - groundHeight) {
+                dishY = window.innerHeight - groundHeight; dishVX *= 0.8; dishVY = 0;
+            }
+            document.getElementById('hud-label-1').innerText = "Horizontal Inertia";
+            document.getElementById('hud-val-1').innerText = dishVX.toFixed(1) + " px/s";
+            document.getElementById('hud-label-2').innerText = "Status";
+            document.getElementById('hud-val-2').innerText = dishVX < 2.5 ? "Resting" : "Unstable";
+            document.getElementById('hud-val-2').style.color = dishVX < 2.5 ? "#4ade80" : "#fb7185";
+        }
+
+        function drawInertia() {
+            ctx.fillStyle = '#1e293b';
+            ctx.fillRect(tableX, tableY, 350, 25);
+            ctx.fillRect(tableX + 30, tableY, 15, 300);
+            ctx.fillRect(tableX + 305, tableY, 15, 300);
+            
+            ctx.fillStyle = 'rgba(255, 255, 255, 0.85)';
+            ctx.beginPath(); ctx.roundRect(clothX, tableY - 6, clothLength, 10, 2); ctx.fill();
+
+            ctx.save(); ctx.translate(dishX, dishY);
+            ctx.fillStyle = '#f8fafc'; ctx.shadowBlur = 20; ctx.shadowColor = 'rgba(0,0,0,0.5)';
+            ctx.beginPath(); ctx.ellipse(0, 0, 40, 10, 0, 0, Math.PI * 2); ctx.fill();
+            ctx.lineWidth = 2; ctx.strokeStyle = '#cbd5e1'; ctx.stroke();
+            ctx.restore();
+        }
+
+        // --- MODULE 2: F=MA ---
+        let vehicles = [];
+        let forceActive = false;
+
+        function initAcceleration() {
+            const sidebar = window.innerWidth >= 768 ? 380 : 0;
+            vehicles = [
+                { img: assets.car, mass: 1000, x: sidebar + 50, v: 0, a: 0, w: 160, label: "Light Car" },
+                { img: assets.bus, mass: 10000, x: sidebar + 50, v: 0, a: 0, w: 240, label: "Heavy Bus" }
+            ];
+            forceActive = false;
+        }
+
+        function updateAcceleration() {
+            const force = parseFloat(document.getElementById('accel-force-slider').value) * 12;
+            vehicles.forEach(v => {
+                if (forceActive) v.a = force / v.mass;
+                else { v.a = 0; v.v *= 0.985; }
+                v.v += v.a; v.x += v.v * 0.2;
+                if (v.x > window.innerWidth + 300) v.x = (window.innerWidth >= 768 ? 380 : 0) - 300;
+            });
+            document.getElementById('hud-label-1').innerText = "Car Acceleration";
+            document.getElementById('hud-val-1').innerText = (vehicles[0].a*10).toFixed(2) + " m/s²";
+            document.getElementById('hud-label-2').innerText = "Bus Acceleration";
+            document.getElementById('hud-val-2').innerText = (vehicles[1].a*10).toFixed(2) + " m/s²";
+            document.getElementById('hud-val-2').style.color = "#10b981";
+        }
+
+        function drawAcceleration() {
+            const trackY1 = cy - 80, trackY2 = cy + 140;
+            ctx.strokeStyle = 'rgba(255,255,255,0.04)'; ctx.lineWidth = 10;
+            ctx.beginPath(); ctx.moveTo(0, trackY1 + 2); ctx.lineTo(window.innerWidth, trackY1 + 2);
+            ctx.moveTo(0, trackY2 + 2); ctx.lineTo(window.innerWidth, trackY2 + 2); ctx.stroke();
+            
+            vehicles.forEach((v, i) => {
+                const y = i === 0 ? trackY1 : trackY2;
+                if (forceActive) {
+                    ctx.strokeStyle = '#facc15'; ctx.lineWidth = 4;
+                    ctx.beginPath(); ctx.moveTo(v.x - 120, y - 35); ctx.lineTo(v.x - 40, y - 35); ctx.stroke();
+                    ctx.beginPath(); ctx.moveTo(v.x-40, y-35); ctx.lineTo(v.x-55, y-43); ctx.lineTo(v.x-55, y-27); ctx.fillStyle="#facc15"; ctx.fill();
+                    ctx.font = 'bold 12px Inter'; ctx.fillText("APPLIED FORCE", v.x - 120, y - 50);
+                }
+                drawImageAspect(v.img, v.x, y, v.w, 0, 1.0);
+                ctx.fillStyle = '#fff'; ctx.font = 'bold 11px Inter';
+                ctx.fillText(`${v.label} (${v.mass} kg)`, v.x, y - 100);
+            });
+        }
+
+        // --- MODULE 3: ACTION/REACTION ---
+        let rY = 0, rVY = 0, rParticles = [], isBurning = false;
+        const rocketW = 140;
+
+        function initAction() {
+            rY = window.innerHeight - groundHeight - 10; 
+            rVY = 0; rParticles = []; isBurning = false;
+        }
+
+        function updateAction() {
+            const power = parseFloat(document.getElementById('action-burn-slider').value);
+            const rocketH = assets.rocket.naturalHeight ? (rocketW * (assets.rocket.naturalHeight/assets.rocket.naturalWidth)) : 220;
+            const groundY = window.innerHeight - groundHeight;
+
+            if (isBurning) {
+                rVY -= power * 0.085; shake = power * 0.6;
+                // Realistic multi-stage flame system
+                for (let i = 0; i < 18; i++) {
+                    rParticles.push({
+                        x: cx + (Math.random() - 0.5) * 35,
+                        y: rY - 10, // Flame emerges from base
+                        vx: (Math.random() - 0.5) * 7,
+                        vy: power * 1.6 + Math.random() * 8,
+                        life: 1.0, rad: Math.random() * 14 + 6,
+                        type: Math.random() > 0.25 ? 'flame' : 'smoke'
+                    });
+                }
+            } else { 
+                rVY += 0.28; // Gravity
+                shake *= 0.85; 
+            }
+            
+            rY += rVY;
+
+            // Landing Detection: Check if rocket bottom hits ground
+            if (rY >= groundY) {
+                rY = groundY;
+                rVY = 0;
+            }
+
+            for (let i = rParticles.length - 1; i >= 0; i--) {
+                let p = rParticles[i]; p.x += p.vx; p.y += p.vy; p.life -= 0.018;
+                if (p.life <= 0) rParticles.splice(i, 1);
+            }
+            document.getElementById('hud-label-1').innerText = "Thrust Force";
+            document.getElementById('hud-val-1').innerText = isBurning ? (power * 12).toFixed(1) + " MN" : "0.0";
+            document.getElementById('hud-label-2').innerText = "Rocket Velocity";
+            document.getElementById('hud-val-2').innerText = Math.abs(rVY).toFixed(1) + " m/s";
+            document.getElementById('hud-val-2').style.color = "#f97316";
+        }
+
+        function drawAction() {
+            // Space stars background
+            ctx.fillStyle = '#ffffff'; 
+            for(let i=0; i<50; i++) ctx.fillRect((Math.sin(i*123.4)*0.5+0.5)*canvas.width, (Math.cos(i*567.8)*0.5+0.5)*canvas.height, 1, 1);
+            
+            // Draw realistic multi-stage flames
+            ctx.globalCompositeOperation = 'screen';
+            rParticles.forEach(p => {
+                if (p.type === 'flame') {
+                    const grad = ctx.createRadialGradient(p.x, p.y, 0, p.x, p.y, p.rad * 1.8);
+                    grad.addColorStop(0, `rgba(255, 255, 255, ${p.life})`);
+                    grad.addColorStop(0.3, `rgba(253, 224, 71, ${p.life * 0.9})`);
+                    grad.addColorStop(0.6, `rgba(249, 115, 22, ${p.life * 0.5})`);
+                    grad.addColorStop(1, `rgba(239, 68, 68, 0)`);
+                    ctx.fillStyle = grad;
+                } else {
+                    ctx.fillStyle = `rgba(148, 163, 184, ${p.life * 0.4})`;
+                }
+                ctx.beginPath(); ctx.arc(p.x, p.y, p.rad, 0, Math.PI*2); ctx.fill();
+            });
+            ctx.globalCompositeOperation = 'source-over';
+
+            // Draw Rocket
+            ctx.save();
+            const sx = (Math.random()-0.5)*shake, sy = (Math.random()-0.5)*shake;
+            ctx.translate(cx + sx, rY + sy);
+            // Rocket pivots on bottom center for landing struts
+            drawImageAspect(assets.rocket, 0, 0, rocketW, 0.5, 1.0);
+            ctx.restore();
+
+            // The Ground Layer
+            ctx.fillStyle = '#1e293b'; 
+            ctx.fillRect(0, window.innerHeight - groundHeight, window.innerWidth, groundHeight);
+            ctx.strokeStyle = '#334155'; ctx.lineWidth = 4;
+            ctx.beginPath(); ctx.moveTo(0, window.innerHeight - groundHeight); ctx.lineTo(window.innerWidth, window.innerHeight - groundHeight); ctx.stroke();
+        }
+
+        // --- ENGINE ---
+        function initPhysics() {
+            if (currentMode === 'inertia') initInertia();
+            else if (currentMode === 'acceleration') initAcceleration();
+            else if (currentMode === 'action') initAction();
+        }
+
+        function render() {
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+            ctx.strokeStyle = 'rgba(255,255,255,0.02)'; ctx.lineWidth = 1;
+            ctx.beginPath();
+            for(let i=0; i<canvas.width; i+=60) { ctx.moveTo(i,0); ctx.lineTo(i,canvas.height); }
+            for(let i=0; i<canvas.height; i+=60) { ctx.moveTo(0,i); ctx.lineTo(canvas.width,i); }
+            ctx.stroke();
+
+            if (currentMode === 'inertia') { updateInertia(); drawInertia(); } 
+            else if (currentMode === 'acceleration') { updateAcceleration(); drawAcceleration(); }
+            else if (currentMode === 'action') { updateAction(); drawAction(); }
+            requestAnimationFrame(render);
+        }
+
+        const tabs = document.querySelectorAll('.tab-btn');
+        tabs.forEach(btn => {
+            btn.addEventListener('click', (e) => {
+                tabs.forEach(t => { t.classList.remove('active'); t.classList.add('text-gray-400'); });
+                e.target.classList.add('active'); e.target.classList.remove('text-gray-400');
+                currentMode = e.target.getAttribute('data-tab');
+                const info = {
+                    inertia: { title: '1st Law: Inertia', desc: 'An object at rest stays at rest. By pulling the tablecloth quickly, you minimize the time friction acts on the dish, allowing its inertia to keep it in place.' },
+                    acceleration: { title: '2nd Law: F=ma', desc: 'The Car and Bus are subject to the exact same engine force. Because the Bus is 10x heavier, it accelerates 10x slower. F/m = a.' },
+                    action: { title: '3rd Law: Action/Reaction', desc: 'The rocket engine ejects high-velocity exhaust particles downward (Action). This generates a massive upward force on the hull (Reaction).' }
+                };
+                document.getElementById('info-title').innerText = info[currentMode].title;
+                document.getElementById('info-desc').innerText = info[currentMode].desc;
+                ['inertia', 'acceleration', 'action'].forEach(m => document.getElementById(`controls-${m}`).classList.add('hidden'));
+                document.getElementById(`controls-${currentMode}`).classList.remove('hidden');
+                initPhysics();
+            });
+        });
+
+        document.getElementById('btn-pull').onclick = () => isPulling = true;
+        document.getElementById('btn-reset-inertia').onclick = initInertia;
+        document.getElementById('btn-launch-carts').onpointerdown = () => forceActive = true;
+        document.getElementById('btn-launch-carts').onpointerup = () => forceActive = false;
+        document.getElementById('btn-reset-accel').onclick = initAcceleration;
+        document.getElementById('btn-ignite').onpointerdown = () => isBurning = true;
+        document.getElementById('btn-ignite').onpointerup = () => isBurning = false;
+        document.getElementById('btn-reset-action').onclick = initAction;
+        document.getElementById('accel-force-slider').oninput = (e) => document.getElementById('accel-force-display').innerText = e.target.value + " N";
+        document.getElementById('action-burn-slider').oninput = (e) => document.getElementById('action-burn-display').innerText = Math.round((e.target.value/15)*100) + "%";
+
+        resize();
+        render();
+    </script>
+</body>
+</html>

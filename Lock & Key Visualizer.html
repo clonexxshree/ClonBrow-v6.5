@@ -1,0 +1,451 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Professional Molecular Docking Simulation</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        body {
+            background-color: #030712; /* gray-950 */
+            color: #f8fafc;
+            margin: 0;
+            overflow: hidden;
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+            touch-action: none; 
+        }
+
+        /* Refined Academic UI Panel */
+        .sci-panel {
+            background: rgba(17, 24, 39, 0.75);
+            backdrop-filter: blur(20px);
+            -webkit-backdrop-filter: blur(20px);
+            border: 1px solid rgba(148, 163, 184, 0.1);
+            box-shadow: 0 30px 60px -15px rgba(0, 0, 0, 0.8);
+        }
+
+        /* Ambient molecular drift */
+        @keyframes drift {
+            0%, 100% { transform: translateY(0px) rotate(0deg); }
+            50% { transform: translateY(-20px) rotate(3deg); }
+        }
+        .drifting {
+            animation: drift 7s ease-in-out infinite;
+        }
+
+        /* Biological pulse for conformational change */
+        @keyframes conform-pulse {
+            0% { transform: scale(1); filter: brightness(1); }
+            50% { transform: scale(1.01); filter: brightness(1.2); }
+            100% { transform: scale(1); filter: brightness(1); }
+        }
+
+        .active-receptor {
+            animation: conform-pulse 3s ease-in-out infinite;
+        }
+
+        /* Smooth interactivity transitions */
+        .molecule-group {
+            cursor: grab;
+            filter: drop-shadow(0 15px 25px rgba(0,0,0,0.6));
+        }
+        .molecule-group:active {
+            cursor: grabbing;
+        }
+
+        .snap-transition {
+            transition: transform 0.5s cubic-bezier(0.25, 1, 0.5, 1);
+        }
+
+        /* Smooth color/glow state changes */
+        .transition-material {
+            transition: fill 1s ease, stroke 1s ease, filter 1s ease, opacity 0.5s ease;
+        }
+    </style>
+</head>
+<body class="w-screen h-screen flex flex-col relative selection:bg-teal-500 selection:text-white bg-[radial-gradient(circle_at_center,_var(--tw-gradient-stops))] from-gray-900 via-gray-950 to-black">
+
+    <!-- Scientific HUD -->
+    <div class="absolute top-0 left-0 w-full p-6 md:p-12 z-20 pointer-events-none flex flex-col md:flex-row justify-between items-start gap-8">
+        <div class="sci-panel p-8 rounded-2xl max-w-xl pointer-events-auto">
+            <div class="flex items-center gap-4 mb-4">
+                <div class="h-[1px] w-12 bg-teal-500"></div>
+                <span class="text-teal-400 font-mono text-[10px] tracking-[0.2em] uppercase">Molecular Dynamics</span>
+            </div>
+            <h1 class="text-3xl md:text-4xl font-light text-white mb-3 tracking-tight">
+                Ligand-Receptor <span class="font-bold">Docking</span>
+            </h1>
+            <p class="text-gray-400 text-sm leading-relaxed mb-8 font-light">
+                This simulation visualizes the high structural specificity required for intermolecular binding. Drag the ball-and-stick ligand model into the corresponding folded surface pocket of the transmembrane protein.
+            </p>
+            
+            <!-- Telemetry / Status Panel -->
+            <div class="bg-black/40 rounded-lg p-5 border border-gray-800 flex items-center gap-6 relative overflow-hidden">
+                <div class="relative w-14 h-14 flex-shrink-0 flex items-center justify-center">
+                    <svg viewBox="0 0 100 100" class="absolute inset-0 w-full h-full transform -rotate-90">
+                        <circle cx="50" cy="50" r="45" fill="none" stroke="#1f2937" stroke-width="6" />
+                        <circle id="affinity-ring" cx="50" cy="50" r="45" fill="none" stroke="#0d9488" stroke-width="6" stroke-dasharray="283" stroke-dashoffset="283" class="transition-all duration-300 ease-out" />
+                    </svg>
+                    <div id="status-core" class="w-4 h-4 rounded-full bg-gray-700 transition-colors duration-500"></div>
+                </div>
+                
+                <div class="flex-grow">
+                    <div class="flex justify-between items-end mb-1">
+                        <h2 id="status-title" class="text-lg font-medium text-gray-300 transition-colors duration-300">Unbound State</h2>
+                        <span id="affinity-pct" class="text-xs font-mono text-gray-500">0%</span>
+                    </div>
+                    <div class="h-1 w-full bg-gray-800 rounded-full overflow-hidden">
+                        <div id="affinity-bar" class="h-full bg-teal-600 w-0 transition-all duration-300 ease-out"></div>
+                    </div>
+                    <p id="status-desc" class="text-[10px] text-gray-500 font-mono mt-2 uppercase tracking-wider">Electrostatic fit: null</p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Main Rendering Canvas -->
+    <div class="w-full h-full absolute inset-0 flex items-end justify-center overflow-hidden">
+        <svg id="simulation-canvas" viewBox="0 0 1200 900" preserveAspectRatio="xMidYMax slice" class="w-full h-full min-w-[1000px]">
+            <defs>
+                <!-- Protein Surface Material Gradients -->
+                <linearGradient id="proteinGrad" x1="0%" y1="0%" x2="0%" y2="100%">
+                    <stop offset="0%" stop-color="#0f766e" /> <!-- teal-600 -->
+                    <stop offset="60%" stop-color="#042f2e" /> <!-- teal-900 -->
+                    <stop offset="100%" stop-color="#020617" /> <!-- gray-950 -->
+                </linearGradient>
+
+                <linearGradient id="proteinActiveGrad" x1="0%" y1="0%" x2="0%" y2="100%">
+                    <stop offset="0%" stop-color="#059669" /> <!-- emerald-600 -->
+                    <stop offset="60%" stop-color="#064e3b" /> <!-- emerald-900 -->
+                    <stop offset="100%" stop-color="#020617" />
+                </linearGradient>
+
+                <!-- Ligand Materials (Atoms & Bonds) -->
+                <radialGradient id="atomGrad" cx="30%" cy="30%" r="70%">
+                    <stop offset="0%" stop-color="#fbbf24" /> <!-- amber-400 -->
+                    <stop offset="100%" stop-color="#d97706" /> <!-- amber-600 -->
+                </radialGradient>
+
+                <radialGradient id="atomActiveGrad" cx="30%" cy="30%" r="70%">
+                    <stop offset="0%" stop-color="#34d399" /> <!-- emerald-400 -->
+                    <stop offset="100%" stop-color="#059669" /> <!-- emerald-600 -->
+                </radialGradient>
+
+                <linearGradient id="bondGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+                    <stop offset="0%" stop-color="#cbd5e1" />
+                    <stop offset="100%" stop-color="#94a3b8" />
+                </linearGradient>
+
+                <!-- Soft Shading Filters for 3D Molecular Look -->
+                <filter id="soft-shadow" x="-20%" y="-20%" width="140%" height="140%">
+                    <feDropShadow dx="0" dy="20" stdDeviation="15" flood-color="#000" flood-opacity="0.8"/>
+                </filter>
+                
+                <filter id="pocket-glow-filter" x="-50%" y="-50%" width="200%" height="200%">
+                    <feGaussianBlur stdDeviation="25" result="blur" />
+                    <feMerge>
+                        <feMergeNode in="blur" />
+                        <feMergeNode in="SourceGraphic" />
+                    </feMerge>
+                </filter>
+
+                <filter id="inner-volume">
+                    <feOffset dx="0" dy="10"/>
+                    <feGaussianBlur stdDeviation="12" result="offset-blur"/>
+                    <feComposite operator="out" in="SourceGraphic" in2="offset-blur" result="inverse"/>
+                    <feFlood flood-color="black" flood-opacity="0.5" result="color"/>
+                    <feComposite operator="in" in="color" in2="inverse" result="shadow"/>
+                    <feComposite operator="over" in="shadow" in2="SourceGraphic"/>
+                </filter>
+            </defs>
+
+            <!-- Solvent / Extracellular Matrix background particles -->
+            <g opacity="0.15">
+                <circle cx="200" cy="300" r="8" fill="#5eead4" class="drifting" style="animation-duration: 9s;" />
+                <circle cx="1000" cy="400" r="12" fill="#5eead4" class="drifting" style="animation-duration: 14s; animation-delay: -3s;" />
+                <circle cx="300" cy="150" r="5" fill="#fcd34d" class="drifting" style="animation-duration: 8s; animation-delay: -5s;" />
+                <circle cx="850" cy="200" r="7" fill="#5eead4" class="drifting" style="animation-duration: 11s; animation-delay: -1s;" />
+            </g>
+
+            <!-- RECEPTOR (The Lock) - Smooth Organic Surface -->
+            <g id="receptor-group" filter="url(#soft-shadow)">
+                
+                <!-- Main Folded Protein Mass -->
+                <!-- A deeply curved, U-shaped pocket centered at x=600, bottom y=720 -->
+                <path id="protein-surface" class="transition-material" filter="url(#inner-volume)"
+                      d="M -100,1000 
+                         C -100,750 200,600 400,600 
+                         C 470,600 500,720 600,720 
+                         C 700,720 730,600 800,600 
+                         C 1000,600 1300,750 1300,1000 Z" 
+                      fill="url(#proteinGrad)" />
+                      
+                <!-- Back lip of the binding pocket to give 3D depth -->
+                <path d="M 400,600 C 470,580 500,680 600,680 C 700,680 730,580 800,600 C 730,630 700,720 600,720 C 500,720 470,630 400,600 Z" 
+                      fill="#022c22" opacity="0.6" />
+
+                <!-- Electrostatic Binding Pocket Glow (Activates on proximity) -->
+                <path id="pocket-aura" class="transition-material opacity-0" filter="url(#pocket-glow-filter)"
+                      d="M 450,620 C 500,700 700,700 750,620 C 700,680 500,680 450,620 Z"
+                      fill="#fbbf24" />
+            </g>
+
+            <!-- LIGAND (The Key) - Ball & Stick Molecular Model -->
+            <g id="ligand-wrapper">
+                <!-- Anchor point shifted up for initial floating state -->
+                <g id="ligand" class="molecule-group drifting" transform="translate(0, -350)">
+                    
+                    <!-- Structural Bonds (Connecting lines) -->
+                    <g stroke="url(#bondGrad)" stroke-width="14" stroke-linecap="round" class="transition-material" id="ligand-bonds">
+                        <line x1="600" y1="695" x2="490" y2="600" />
+                        <line x1="600" y1="695" x2="710" y2="600" />
+                        <line x1="490" y1="600" x2="600" y2="520" />
+                        <line x1="710" y1="600" x2="600" y2="520" />
+                        <line x1="600" y1="695" x2="600" y2="610" />
+                        <line x1="600" y1="610" x2="600" y2="520" />
+                    </g>
+
+                    <!-- Molecular Atoms -->
+                    <!-- Coordinates are designed to slot perfectly into the (400,600) -> (600,720) -> (800,600) pocket -->
+                    <g id="ligand-atoms" class="transition-material">
+                        <!-- Bottom Center Atom (Primary binding node) -->
+                        <circle cx="600" cy="695" r="28" fill="url(#atomGrad)" filter="url(#inner-volume)"/>
+                        <!-- Left Lobe Atom -->
+                        <circle cx="490" cy="600" r="24" fill="url(#atomGrad)" filter="url(#inner-volume)"/>
+                        <!-- Right Lobe Atom -->
+                        <circle cx="710" cy="600" r="24" fill="url(#atomGrad)" filter="url(#inner-volume)"/>
+                        <!-- Top Lobe Atom -->
+                        <circle cx="600" cy="520" r="24" fill="url(#atomGrad)" filter="url(#inner-volume)"/>
+                        <!-- Center Core Atom -->
+                        <circle cx="600" cy="610" r="18" fill="#fcd34d" filter="url(#inner-volume)"/>
+                    </g>
+
+                    <!-- Radiating conformational rings (hidden until docked) -->
+                    <g id="dock-ripples" class="opacity-0 transition-opacity duration-1000" fill="none" stroke="#10b981" stroke-width="2">
+                        <circle cx="600" cy="650" r="150" class="active-receptor" style="animation-delay: 0s" opacity="0.3"/>
+                        <circle cx="600" cy="650" r="250" class="active-receptor" style="animation-delay: 1s" opacity="0.2"/>
+                        <circle cx="600" cy="650" r="350" class="active-receptor" style="animation-delay: 2s" opacity="0.1"/>
+                    </g>
+                </g>
+            </g>
+        </svg>
+    </div>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', () => {
+            const svg = document.getElementById('simulation-canvas');
+            const ligandWrapper = document.getElementById('ligand');
+            const proteinSurface = document.getElementById('protein-surface');
+            const pocketAura = document.getElementById('pocket-aura');
+            const ligandAtoms = document.getElementById('ligand-atoms');
+            const dockRipples = document.getElementById('dock-ripples');
+            
+            // UI Elements
+            const affinityRing = document.getElementById('affinity-ring');
+            const affinityBar = document.getElementById('affinity-bar');
+            const affinityPct = document.getElementById('affinity-pct');
+            const statusCore = document.getElementById('status-core');
+            const statusTitle = document.getElementById('status-title');
+            const statusDesc = document.getElementById('status-desc');
+
+            // Physics state
+            let isDragging = false;
+            let isDocked = false;
+            
+            // Coordinates
+            const initialTransform = { x: 0, y: -350 };
+            const dockedTransform = { x: 0, y: 0 }; // 0,0 because we drew the molecule in the docked position initially
+            
+            let currentTransform = { ...initialTransform };
+            let dragOffset = { x: 0, y: 0 };
+
+            // Initialize position
+            updateTransform();
+
+            function getMousePosition(evt) {
+                const CTM = svg.getScreenCTM();
+                if (evt.touches && evt.touches.length > 0) {
+                    return {
+                        x: (evt.touches[0].clientX - CTM.e) / CTM.a,
+                        y: (evt.touches[0].clientY - CTM.f) / CTM.d
+                    };
+                }
+                return {
+                    x: (evt.clientX - CTM.e) / CTM.a,
+                    y: (evt.clientY - CTM.f) / CTM.d
+                };
+            }
+
+            function updateTransform() {
+                ligandWrapper.setAttribute('transform', `translate(${currentTransform.x}, ${currentTransform.y})`);
+            }
+
+            function getDistanceToDock() {
+                const dx = currentTransform.x - dockedTransform.x;
+                const dy = currentTransform.y - dockedTransform.y;
+                return Math.sqrt(dx * dx + dy * dy);
+            }
+
+            // Maps distance to a percentage (0 to 100)
+            function calculateAffinity(distance) {
+                const maxDist = 400; // Distance at which affinity starts registering
+                if (distance >= maxDist) return 0;
+                if (distance <= 10) return 100;
+                // Exponential curve for realistic feeling magnetic pull
+                let pct = Math.pow((maxDist - distance) / maxDist, 2) * 100;
+                return Math.min(100, Math.max(0, Math.round(pct)));
+            }
+
+            // Centralized UI updating logic
+            function updateUI(affinity, state) {
+                // Update meters
+                const offset = 283 - (283 * affinity / 100);
+                affinityRing.style.strokeDashoffset = offset;
+                affinityBar.style.width = `${affinity}%`;
+                affinityPct.textContent = `${affinity}%`;
+
+                // Update text and colors based on state
+                if (state === 'docked') {
+                    affinityRing.style.stroke = '#10b981'; // emerald-500
+                    affinityBar.style.backgroundColor = '#10b981';
+                    statusCore.className = "w-4 h-4 rounded-full bg-emerald-500 shadow-[0_0_15px_rgba(16,185,129,0.8)]";
+                    statusTitle.textContent = "Conformation Locked";
+                    statusTitle.className = "text-lg font-medium text-emerald-400";
+                    statusDesc.textContent = "Biological cascade initiated";
+                    
+                } else if (affinity > 50) {
+                    affinityRing.style.stroke = '#fbbf24'; // amber-400
+                    affinityBar.style.backgroundColor = '#fbbf24';
+                    statusCore.className = "w-4 h-4 rounded-full bg-amber-400 shadow-[0_0_10px_rgba(251,191,36,0.5)]";
+                    statusTitle.textContent = "High Affinity Range";
+                    statusTitle.className = "text-lg font-medium text-amber-300";
+                    statusDesc.textContent = "Electrostatic fit: highly favorable";
+                    
+                } else {
+                    affinityRing.style.stroke = '#0d9488'; // teal-600
+                    affinityBar.style.backgroundColor = '#0d9488';
+                    statusCore.className = "w-4 h-4 rounded-full bg-teal-700";
+                    statusTitle.textContent = "Unbound State";
+                    statusTitle.className = "text-lg font-medium text-gray-300";
+                    statusDesc.textContent = "Electrostatic fit: nominal";
+                }
+            }
+
+            function triggerDock() {
+                isDocked = true;
+                currentTransform = { ...dockedTransform };
+                
+                ligandWrapper.classList.add('snap-transition');
+                updateTransform();
+
+                // Material Transformations
+                proteinSurface.setAttribute('fill', 'url(#proteinActiveGrad)');
+                
+                // Change atom colors by updating inner HTML to use the active gradient
+                const atoms = ligandAtoms.querySelectorAll('circle');
+                atoms.forEach((atom, index) => {
+                    if(index !== 4) atom.setAttribute('fill', 'url(#atomActiveGrad)');
+                    else atom.setAttribute('fill', '#a7f3d0'); // Core atom highlight
+                });
+
+                pocketAura.setAttribute('fill', '#10b981');
+                pocketAura.style.opacity = '0.6';
+                dockRipples.style.opacity = '1';
+
+                updateUI(100, 'docked');
+            }
+
+            function triggerUndock() {
+                isDocked = false;
+                
+                ligandWrapper.classList.add('snap-transition');
+                ligandWrapper.classList.add('drifting');
+                currentTransform = { ...initialTransform };
+                updateTransform();
+
+                // Revert Materials
+                proteinSurface.setAttribute('fill', 'url(#proteinGrad)');
+                
+                const atoms = ligandAtoms.querySelectorAll('circle');
+                atoms.forEach((atom, index) => {
+                    if(index !== 4) atom.setAttribute('fill', 'url(#atomGrad)');
+                    else atom.setAttribute('fill', '#fcd34d');
+                });
+
+                pocketAura.setAttribute('fill', '#fbbf24');
+                pocketAura.style.opacity = '0';
+                dockRipples.style.opacity = '0';
+
+                updateUI(0, 'unbound');
+            }
+
+            // Drag Controls
+            function startDrag(evt) {
+                if (isDocked) {
+                    triggerUndock();
+                    return; 
+                }
+
+                isDragging = true;
+                ligandWrapper.classList.remove('drifting');
+                ligandWrapper.classList.remove('snap-transition');
+                
+                const pos = getMousePosition(evt);
+                dragOffset.x = pos.x - currentTransform.x;
+                dragOffset.y = pos.y - currentTransform.y;
+            }
+
+            function drag(evt) {
+                if (!isDragging) return;
+                evt.preventDefault();
+
+                const pos = getMousePosition(evt);
+                currentTransform.x = pos.x - dragOffset.x;
+                currentTransform.y = pos.y - dragOffset.y;
+                
+                updateTransform();
+
+                const distance = getDistanceToDock();
+                const affinity = calculateAffinity(distance);
+                
+                updateUI(affinity, 'dragging');
+
+                // Dynamic pocket glow based on proximity
+                if (distance < 200) {
+                    pocketAura.style.opacity = ((200 - distance) / 200 * 0.8).toString();
+                } else {
+                    pocketAura.style.opacity = '0';
+                }
+            }
+
+            function endDrag() {
+                if (!isDragging) return;
+                isDragging = false;
+
+                const distance = getDistanceToDock();
+                
+                if (distance < 70) {
+                    triggerDock();
+                } else {
+                    // Snap back if released too far
+                    ligandWrapper.classList.add('snap-transition');
+                    ligandWrapper.classList.add('drifting');
+                    currentTransform = { ...initialTransform };
+                    updateTransform();
+                    updateUI(0, 'unbound');
+                    pocketAura.style.opacity = '0';
+                }
+            }
+
+            // Attach Listeners
+            ligandWrapper.addEventListener('mousedown', startDrag);
+            window.addEventListener('mousemove', drag);
+            window.addEventListener('mouseup', endDrag);
+
+            ligandWrapper.addEventListener('touchstart', startDrag, {passive: false});
+            window.addEventListener('touchmove', drag, {passive: false});
+            window.addEventListener('touchend', endDrag);
+        });
+    </script>
+</body>
+</html>

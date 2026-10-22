@@ -1,0 +1,355 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>PCR Thermal Cycling Simulator</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;700&family=Inter:wght@300;400;600;700&display=swap');
+
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: #020617;
+            color: #f8fafc;
+        }
+
+        .font-mono {
+            font-family: 'JetBrains Mono', monospace;
+        }
+
+        /* DNA Strand Transitions */
+        .dna-strand {
+            transition: transform 1.5s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+
+        .base-pair {
+            transition: opacity 1s ease;
+        }
+
+        /* Thermocycler LCD */
+        .lcd-display {
+            background-color: #052e16;
+            color: #4ade80;
+            text-shadow: 0 0 8px rgba(74, 222, 128, 0.5);
+            box-shadow: inset 0 2px 15px rgba(0,0,0,0.8);
+        }
+
+        /* Gauge Animations */
+        .temp-bar {
+            transition: height 0.5s ease-out, background-color 0.5s ease;
+        }
+
+        /* Pulse for active stage */
+        .stage-active {
+            border-color: #3b82f6 !important;
+            background-color: rgba(30, 41, 59, 0.8) !important;
+            box-shadow: 0 0 15px rgba(59, 130, 246, 0.3);
+        }
+
+        /* Primer Appearance */
+        @keyframes fadeInScale {
+            from { opacity: 0; transform: scale(0.8); }
+            to { opacity: 1; transform: scale(1); }
+        }
+
+        .primer {
+            animation: fadeInScale 0.5s ease-out forwards;
+        }
+
+        /* Hide logic */
+        .hidden-dna { opacity: 0; pointer-events: none; }
+    </style>
+</head>
+<body class="min-h-screen p-4 md:p-8 flex items-center justify-center">
+
+    <div class="max-w-6xl w-full space-y-8">
+        
+        <!-- Header -->
+        <header class="flex flex-col md:flex-row justify-between items-start md:items-end gap-4 border-b border-slate-800 pb-6">
+            <div>
+                <div class="flex items-center space-x-3 mb-2">
+                    <span class="bg-blue-900/50 text-blue-400 border border-blue-800/50 text-xs font-semibold px-2.5 py-0.5 rounded uppercase tracking-wide">Molecular Biology</span>
+                    <span class="bg-emerald-900/50 text-emerald-400 border border-emerald-800/50 text-xs font-semibold px-2.5 py-0.5 rounded uppercase tracking-wide">Real-Time PCR</span>
+                </div>
+                <h1 class="text-3xl md:text-4xl font-bold text-white tracking-tight">Thermal Cycling Simulator</h1>
+                <p class="text-slate-400 text-sm mt-1 font-mono uppercase tracking-widest">DNA Amplification Protocol v4.2</p>
+            </div>
+
+            <div class="flex gap-3">
+                <button id="btn-start" class="bg-indigo-600 hover:bg-indigo-500 text-white font-bold py-2 px-6 rounded-lg shadow-lg transition-all active:scale-95 flex items-center gap-2">
+                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M14.752 11.168l-3.197-2.132A1 1 0 0010 9.87v4.263a1 1 0 001.555.832l3.197-2.132a1 1 0 000-1.664z"></path></svg>
+                    Start Cycle
+                </button>
+                <button id="btn-reset" class="bg-slate-800 hover:bg-slate-700 text-slate-300 font-bold py-2 px-6 rounded-lg transition-all">
+                    Reset
+                </button>
+            </div>
+        </header>
+
+        <div class="grid grid-cols-1 lg:grid-cols-12 gap-8">
+            
+            <!-- Left: DNA Simulation View -->
+            <div class="lg:col-span-8 bg-slate-900 rounded-2xl border border-slate-800 p-8 shadow-2xl relative overflow-hidden">
+                <div class="absolute inset-0 bg-[radial-gradient(#1e293b_1px,transparent_1px)] [background-size:20px_20px] opacity-20"></div>
+                
+                <div class="relative z-10">
+                    <div class="flex justify-between items-center mb-10">
+                        <h3 class="text-xs font-bold text-slate-500 uppercase tracking-widest">Reaction Chamber Visualization</h3>
+                        <div id="cycle-count" class="text-indigo-400 font-mono text-sm">Cycle: 0 / 30</div>
+                    </div>
+
+                    <div class="flex items-center justify-center min-h-[300px]">
+                        <svg id="pcr-svg" viewBox="0 0 800 300" class="w-full h-auto" xmlns="http://www.w3.org/2000/svg">
+                            <!-- Template DNA -->
+                            <g id="dna-molecule">
+                                <!-- Top Template Strand -->
+                                <g id="strand-top" class="dna-strand">
+                                    <path d="M 50 100 Q 100 80, 150 100 T 250 100 T 350 100 T 450 100 T 550 100 T 650 100 T 750 100" fill="none" stroke="#3b82f6" stroke-width="6" stroke-linecap="round"/>
+                                    <!-- Top Base Pairs -->
+                                    <g id="top-bases"></g>
+                                </g>
+
+                                <!-- Bottom Template Strand -->
+                                <g id="strand-bottom" class="dna-strand">
+                                    <path d="M 50 200 Q 100 220, 150 200 T 250 200 T 350 200 T 450 200 T 550 200 T 650 200 T 750 200" fill="none" stroke="#ef4444" stroke-width="6" stroke-linecap="round"/>
+                                    <!-- Bottom Base Pairs -->
+                                    <g id="bottom-bases"></g>
+                                </g>
+
+                                <!-- Joining Hydrogen Bonds (Visible at rest) -->
+                                <g id="h-bonds"></g>
+
+                                <!-- Primers (Hidden by default) -->
+                                <g id="primers-layer"></g>
+
+                                <!-- Extension Strands (Hidden by default) -->
+                                <g id="extension-layer"></g>
+                            </g>
+                        </svg>
+                    </div>
+
+                    <!-- Stage Legend -->
+                    <div class="mt-8 grid grid-cols-3 gap-4">
+                        <div id="leg-dna" class="flex items-center space-x-2">
+                            <div class="w-3 h-1 bg-blue-500 rounded"></div>
+                            <span class="text-[10px] font-bold text-slate-500 uppercase">5' Template</span>
+                        </div>
+                        <div id="leg-primer" class="flex items-center space-x-2 opacity-30">
+                            <div class="w-3 h-1 bg-emerald-400 rounded"></div>
+                            <span class="text-[10px] font-bold text-slate-500 uppercase">Forward Primer</span>
+                        </div>
+                        <div id="leg-new" class="flex items-center space-x-2 opacity-30">
+                            <div class="w-3 h-1 bg-indigo-400 rounded"></div>
+                            <span class="text-[10px] font-bold text-slate-500 uppercase">New Strand</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Right: Temperature Gauge & Controls -->
+            <div class="lg:col-span-4 flex flex-col gap-6">
+                
+                <!-- Digital LCD Gauge -->
+                <div class="lcd-display rounded-xl p-6 border-4 border-slate-700 flex items-center justify-between">
+                    <div class="space-y-1">
+                        <label class="text-[10px] font-bold opacity-60 uppercase tracking-widest">Current Temp</label>
+                        <div class="flex items-baseline gap-1">
+                            <span id="temp-val" class="text-5xl font-bold font-mono">25.0</span>
+                            <span class="text-xl font-bold font-mono">°C</span>
+                        </div>
+                    </div>
+                    
+                    <!-- Vertical Temp Bar -->
+                    <div class="h-32 w-8 bg-black/40 rounded-full p-1 relative border border-white/10">
+                        <div id="temp-bar" class="absolute bottom-1 left-1 right-1 rounded-full bg-emerald-500 temp-bar" style="height: 25%;"></div>
+                    </div>
+                </div>
+
+                <!-- Phase Cards -->
+                <div class="space-y-3">
+                    <div id="card-denat" class="bg-slate-800/30 border border-slate-800 p-4 rounded-xl transition-all duration-500">
+                        <div class="flex justify-between items-center mb-1">
+                            <span class="text-[10px] font-bold text-rose-500 uppercase">Phase 1</span>
+                            <span class="text-[10px] font-mono text-slate-500">95°C</span>
+                        </div>
+                        <h4 class="font-bold text-sm text-white">Denaturation</h4>
+                        <p class="text-[11px] text-slate-400 mt-1">Heat separates the double-stranded DNA into two single strands.</p>
+                    </div>
+
+                    <div id="card-anneal" class="bg-slate-800/30 border border-slate-800 p-4 rounded-xl transition-all duration-500">
+                        <div class="flex justify-between items-center mb-1">
+                            <span class="text-[10px] font-bold text-emerald-400 uppercase">Phase 2</span>
+                            <span class="text-[10px] font-mono text-slate-500">55°C</span>
+                        </div>
+                        <h4 class="font-bold text-sm text-white">Annealing</h4>
+                        <p class="text-[11px] text-slate-400 mt-1">Primers bind to the complementary sequences on the single strands.</p>
+                    </div>
+
+                    <div id="card-ext" class="bg-slate-800/30 border border-slate-800 p-4 rounded-xl transition-all duration-500">
+                        <div class="flex justify-between items-center mb-1">
+                            <span class="text-[10px] font-bold text-blue-400 uppercase">Phase 3</span>
+                            <span class="text-[10px] font-mono text-slate-500">72°C</span>
+                        </div>
+                        <h4 class="font-bold text-sm text-white">Extension</h4>
+                        <p class="text-[11px] text-slate-400 mt-1">DNA Polymerase synthesizes new strands from the 3' end of the primers.</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', () => {
+            const tempVal = document.getElementById('temp-val');
+            const tempBar = document.getElementById('temp-bar');
+            const strandTop = document.getElementById('strand-top');
+            const strandBottom = document.getElementById('strand-bottom');
+            const hBondsLayer = document.getElementById('h-bonds');
+            const primersLayer = document.getElementById('primers-layer');
+            const extensionLayer = document.getElementById('extension-layer');
+            const cycleText = document.getElementById('cycle-count');
+
+            const btnStart = document.getElementById('btn-start');
+            const btnReset = document.getElementById('btn-reset');
+
+            const cards = {
+                denat: document.getElementById('card-denat'),
+                anneal: document.getElementById('card-anneal'),
+                ext: document.getElementById('card-ext')
+            };
+
+            const legends = {
+                primer: document.getElementById('leg-primer'),
+                new: document.getElementById('leg-new')
+            };
+
+            let isRunning = false;
+            let currentCycle = 0;
+
+            // Build base pairs and hydrogen bonds
+            function initDNA() {
+                hBondsLayer.innerHTML = '';
+                for (let i = 0; i < 15; i++) {
+                    const x = 70 + i * 48;
+                    const line = document.createElementNS("http://www.w3.org/2000/svg", "line");
+                    line.setAttribute("x1", x);
+                    line.setAttribute("y1", 100);
+                    line.setAttribute("x2", x);
+                    line.setAttribute("y2", 200);
+                    line.setAttribute("stroke", "#64748b");
+                    line.setAttribute("stroke-width", "2");
+                    line.setAttribute("stroke-dasharray", "4 2");
+                    line.classList.add("base-pair");
+                    hBondsLayer.appendChild(line);
+                }
+            }
+
+            initDNA();
+
+            async function wait(ms) { return new Promise(resolve => setTimeout(resolve, ms)); }
+
+            function setTemp(t) {
+                tempVal.textContent = t.toFixed(1);
+                // Map 20-100 to 0-100 height
+                const h = Math.max(0, Math.min(100, (t - 20) / (100 - 20) * 100));
+                tempBar.style.height = `${h}%`;
+                
+                // Color shift
+                if (t > 85) tempBar.style.backgroundColor = "#ef4444"; // Red
+                else if (t < 60) tempBar.style.backgroundColor = "#10b981"; // Emerald
+                else tempBar.style.backgroundColor = "#3b82f6"; // Blue
+            }
+
+            async function runCycle() {
+                if (isRunning) return;
+                isRunning = true;
+                btnStart.disabled = true;
+                currentCycle++;
+                cycleText.textContent = `Cycle: ${currentCycle} / 30`;
+
+                // --- STAGE 1: DENATURATION (95°C) ---
+                Object.values(cards).forEach(c => c.classList.remove('stage-active'));
+                cards.denat.classList.add('stage-active');
+                
+                // Ramp temp
+                for(let t=25; t<=95; t+=2) { setTemp(t); await wait(20); }
+                
+                // Denature DNA
+                strandTop.style.transform = "translateY(-50px)";
+                strandBottom.style.transform = "translateY(50px)";
+                Array.from(hBondsLayer.children).forEach(bond => bond.style.opacity = "0");
+                await wait(1500);
+
+                // --- STAGE 2: ANNEALING (55°C) ---
+                cards.denat.classList.remove('stage-active');
+                cards.anneal.classList.add('stage-active');
+                legends.primer.style.opacity = "1";
+                
+                // Cool temp
+                for(let t=95; t>=55; t-=2) { setTemp(t); await wait(30); }
+
+                // Add Primers
+                primersLayer.innerHTML = `
+                    <path d="M 70 50 L 150 50" stroke="#34d399" stroke-width="6" stroke-linecap="round" class="primer"/>
+                    <path d="M 650 250 L 730 250" stroke="#34d399" stroke-width="6" stroke-linecap="round" class="primer"/>
+                `;
+                await wait(1500);
+
+                // --- STAGE 3: EXTENSION (72°C) ---
+                cards.anneal.classList.remove('stage-active');
+                cards.ext.classList.add('stage-active');
+                legends.new.style.opacity = "1";
+
+                // Ramp to Polymerase optimal temp
+                for(let t=55; t<=72; t+=1) { setTemp(t); await wait(40); }
+
+                // Extend strands
+                extensionLayer.innerHTML = `
+                    <path id="ext-top" d="M 150 50 L 150 50" stroke="#818cf8" stroke-width="6" stroke-linecap="round" fill="none"/>
+                    <path id="ext-bottom" d="M 650 250 L 650 250" stroke="#818cf8" stroke-width="6" stroke-linecap="round" fill="none"/>
+                `;
+                
+                const extTop = document.getElementById('ext-top');
+                const extBottom = document.getElementById('ext-bottom');
+                
+                let progress = 0;
+                const interval = setInterval(() => {
+                    progress += 10;
+                    extTop.setAttribute('d', `M 150 50 L ${150 + progress * 6} 50`);
+                    extBottom.setAttribute('d', `M 650 250 L ${650 - progress * 6} 250`);
+                    if (progress >= 100) clearInterval(interval);
+                }, 100);
+
+                await wait(2000);
+
+                // End of cycle
+                cards.ext.classList.remove('stage-active');
+                isRunning = false;
+                btnStart.disabled = false;
+                btnStart.innerHTML = '<svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"></path></svg> Next Cycle';
+            }
+
+            function reset() {
+                isRunning = false;
+                currentCycle = 0;
+                cycleText.textContent = `Cycle: 0 / 30`;
+                setTemp(25);
+                strandTop.style.transform = "translateY(0)";
+                strandBottom.style.transform = "translateY(0)";
+                Array.from(hBondsLayer.children).forEach(bond => bond.style.opacity = "1");
+                primersLayer.innerHTML = '';
+                extensionLayer.innerHTML = '';
+                Object.values(cards).forEach(c => c.classList.remove('stage-active'));
+                Object.values(legends).forEach(l => l.style.opacity = "0.3");
+                btnStart.disabled = false;
+                btnStart.innerHTML = '<svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M14.752 11.168l-3.197-2.132A1 1 0 0010 9.87v4.263a1 1 0 001.555.832l3.197-2.132a1 1 0 000-1.664z"></path></svg> Start Cycle';
+            }
+
+            btnStart.addEventListener('click', runCycle);
+            btnReset.addEventListener('click', reset);
+            setTemp(25);
+        });
+    </script>
+</body>
+</html>

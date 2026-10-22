@@ -1,0 +1,440 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Physics Lab - Dynamics & Fluids</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Fira+Code:wght@400;500&display=swap" rel="stylesheet">
+    <style>
+        body, html {
+            margin: 0;
+            padding: 0;
+            width: 100%;
+            height: 100%;
+            overflow: hidden;
+            background-color: #020617; /* Slate 950 */
+            font-family: 'Inter', sans-serif;
+            touch-action: none;
+            user-select: none;
+        }
+        
+        #sim-canvas {
+            display: block;
+            width: 100%;
+            height: 100%;
+        }
+
+        .glass-panel {
+            background: linear-gradient(145deg, rgba(15, 23, 42, 0.85) 0%, rgba(2, 6, 23, 0.95) 100%);
+            backdrop-filter: blur(30px);
+            -webkit-backdrop-filter: blur(30px);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            border-top: 1px solid rgba(255, 255, 255, 0.2);
+            box-shadow: 0 30px 60px -12px rgba(0, 0, 0, 0.8), inset 0 1px 10px rgba(255, 255, 255, 0.05);
+        }
+
+        .tab-btn {
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+        .tab-btn.active {
+            background-color: #ffffff;
+            color: #020617;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.4);
+        }
+
+        input[type=range] {
+            -webkit-appearance: none;
+            width: 100%;
+            background: transparent;
+        }
+        input[type=range]::-webkit-slider-thumb {
+            -webkit-appearance: none;
+            height: 18px;
+            width: 18px;
+            border-radius: 50%;
+            background: #ffffff;
+            cursor: pointer;
+            margin-top: -7px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.6);
+            border: 1px solid rgba(255,255,255,0.2);
+        }
+        input[type=range]::-webkit-slider-runnable-track {
+            width: 100%;
+            height: 4px;
+            cursor: pointer;
+            background: rgba(255, 255, 255, 0.15);
+            border-radius: 2px;
+        }
+
+        .formula-box {
+            font-family: 'Fira Code', monospace;
+        }
+
+        #loading-screen {
+            position: absolute;
+            inset: 0;
+            background: #020617;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: white;
+            z-index: 100;
+            transition: opacity 0.6s ease;
+        }
+    </style>
+</head>
+<body>
+
+    <!-- Loading Screen -->
+    <div id="loading-screen">
+        <div class="flex flex-col items-center gap-5">
+            <svg class="animate-spin h-8 w-8 text-blue-500" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="3"></circle><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path></svg>
+            <span class="text-xs font-medium tracking-widest text-gray-400 uppercase italic">Enhancing Dynamics Engine...</span>
+        </div>
+    </div>
+
+    <!-- Main UI Overlay -->
+    <div class="absolute top-5 left-5 md:top-8 md:left-8 z-50 w-[380px] glass-panel p-6 rounded-[1.5rem] pointer-events-auto flex flex-col max-h-[92vh]">
+        
+        <div class="mb-5 border-b border-white/10 pb-5 shrink-0 flex items-center justify-between">
+            <div>
+                <h1 class="text-2xl font-bold tracking-tight text-white mb-1">Dynamics Lab</h1>
+                <p class="text-[11px] font-medium text-blue-400 uppercase tracking-widest">Forces & Pressure</p>
+            </div>
+            <div class="w-10 h-10 rounded-full bg-blue-500/20 flex items-center justify-center text-blue-400 shadow-[0_0_15px_rgba(59,130,246,0.3)]">
+                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19.428 15.428a2 2 0 00-1.022-.547l-2.387-.477a6 6 0 00-3.86.517l-.318.158a6 6 0 01-3.86.517L6.05 15.21a2 2 0 00-1.806.547M8 4h8l-1 1v5.172a2 2 0 00.586 1.414l5 5c1.26 1.26.367 3.414-1.415 3.414H4.828c-1.782 0-2.674-2.154-1.414-3.414l5-5A2 2 0 009 10.172V5L8 4z"></path></svg>
+            </div>
+        </div>
+
+        <div class="flex p-1 bg-black/40 rounded-xl shadow-inner gap-1 mb-6 shrink-0 border border-white/5">
+            <button data-tab="bernoulli" class="tab-btn active flex-1 py-2 text-[10px] font-bold uppercase tracking-wider rounded-lg text-gray-400">Bernoulli</button>
+            <button data-tab="centripetal" class="tab-btn flex-1 py-2 text-[10px] font-bold uppercase tracking-wider rounded-lg text-gray-400">Centripetal</button>
+        </div>
+
+        <div class="scroll-area overflow-y-auto pr-2 pb-2 space-y-7 flex-1">
+            <div class="bg-black/30 p-4 rounded-xl border border-white/5 shadow-inner">
+                <h2 id="info-title" class="text-sm font-bold text-white mb-2 italic">Bernoulli's Principle</h2>
+                <div id="formula-display" class="formula-box bg-white/5 p-2 rounded text-[11px] text-blue-300 mb-3 border border-white/10">
+                    P + ½ρv² + ρgh = constant
+                </div>
+                <p id="info-desc" class="text-xs text-gray-400 leading-relaxed">
+                    Fast moving air creates low pressure. By shaping a wing to force air faster over the top than the bottom, a pressure difference is created that pushes the wing <b>upward</b>.
+                </p>
+            </div>
+
+            <!-- BERNOULLI CONTROLS -->
+            <div id="controls-bernoulli" class="space-y-6">
+                <div class="space-y-4">
+                    <label class="text-[10px] font-bold uppercase tracking-widest text-gray-500">Airflow Calibration</label>
+                    <div class="space-y-4">
+                        <div class="space-y-2">
+                            <div class="flex justify-between items-end">
+                                <label class="text-[11px] font-semibold text-cyan-400 uppercase tracking-widest">Air Velocity ($v$)</label>
+                                <span id="air-vel-display" class="text-[11px] font-mono bg-cyan-500/10 px-2 py-1 rounded text-cyan-300">250 km/h</span>
+                            </div>
+                            <input type="range" id="air-vel" min="0" max="500" step="10" value="250" class="w-full" style="accent-color: #22d3ee;">
+                        </div>
+                        <div class="space-y-2">
+                            <div class="flex justify-between items-end">
+                                <label class="text-[11px] font-semibold text-indigo-400 uppercase tracking-widest">Angle of Attack</label>
+                                <span id="aoa-display" class="text-[11px] font-mono bg-indigo-500/10 px-2 py-1 rounded text-indigo-300">5°</span>
+                            </div>
+                            <input type="range" id="aoa-slider" min="-15" max="30" step="1" value="5" class="w-full" style="accent-color: #6366f1;">
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- CENTRIPETAL CONTROLS -->
+            <div id="controls-centripetal" class="space-y-6 hidden">
+                <div class="space-y-4">
+                    <label class="text-[10px] font-bold uppercase tracking-widest text-gray-500">Motion Parameters</label>
+                    <div class="space-y-4">
+                        <div class="space-y-2">
+                            <div class="flex justify-between items-end">
+                                <label class="text-[11px] font-semibold text-orange-400 uppercase tracking-widest">Angular Speed ($\omega$)</label>
+                                <span id="ang-vel-display" class="text-[11px] font-mono bg-orange-500/10 px-2 py-1 rounded text-orange-300">2.5 rad/s</span>
+                            </div>
+                            <input type="range" id="ang-vel" min="0" max="8" step="0.1" value="2.5" class="w-full" style="accent-color: #f97316;">
+                        </div>
+                        <div class="space-y-2">
+                            <div class="flex justify-between items-end">
+                                <label class="text-[11px] font-semibold text-emerald-400 uppercase tracking-widest">Radius ($r$)</label>
+                                <span id="radius-display" class="text-[11px] font-mono bg-emerald-500/10 px-2 py-1 rounded text-emerald-300">180 px</span>
+                            </div>
+                            <input type="range" id="radius-slider" min="50" max="300" step="5" value="180" class="w-full" style="accent-color: #10b981;">
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Real-Time Metrics HUD (Bottom Right) -->
+    <div id="hud" class="absolute bottom-6 right-6 z-10 glass-panel p-5 rounded-2xl pointer-events-none min-w-[240px]">
+        <div class="text-[10px] font-bold uppercase tracking-widest text-gray-500 mb-3 border-b border-white/10 pb-2">Analysis Hub</div>
+        <div class="space-y-3">
+            <div class="flex justify-between items-center">
+                <span class="text-xs text-gray-300 font-medium" id="hud-label-1">Lift Force ($F_L$)</span>
+                <span id="hud-val-1" class="text-base font-mono font-bold text-cyan-400">---</span>
+            </div>
+            <div class="flex justify-between items-center border-t border-white/5 pt-3">
+                <span class="text-xs text-gray-300 font-medium" id="hud-label-2">Pressure Differential</span>
+                <span id="hud-val-2" class="text-base font-mono font-bold text-white">---</span>
+            </div>
+        </div>
+    </div>
+
+    <canvas id="sim-canvas"></canvas>
+
+    <script>
+        const canvas = document.getElementById('sim-canvas');
+        const ctx = canvas.getContext('2d');
+
+        // --- ASSETS ---
+        const assets = {
+            wing: new Image(),
+            ball: new Image()
+        };
+        let loadedCount = 0;
+        function checkAssets() {
+            loadedCount++;
+            if(loadedCount >= 2) {
+                document.getElementById('loading-screen').style.opacity = '0';
+                setTimeout(() => document.getElementById('loading-screen').style.display = 'none', 600);
+            }
+        }
+        assets.wing.onload = checkAssets;
+        assets.wing.onerror = checkAssets;
+        assets.ball.onload = checkAssets;
+        assets.ball.onerror = checkAssets;
+
+        // Using high-fidelity assets (Airfoil section and Wooden sphere)
+        assets.wing.src = 'https://res.cloudinary.com/ds93qby5a/image/upload/q_auto/f_auto/v1775936553/wing_section_hq_m9p9z2.png';
+        assets.ball.src = 'https://res.cloudinary.com/ds93qby5a/image/upload/v1775831166/wooden_ball_kce8nj.png';
+
+        function drawImageAspect(img, x, y, targetWidth, pivotX = 0.5, pivotY = 0.5) {
+            if (!img.complete || !img.naturalWidth) return 0;
+            const ratio = img.naturalHeight / img.naturalWidth;
+            const targetHeight = targetWidth * ratio;
+            ctx.drawImage(img, x - (targetWidth * pivotX), y - (targetHeight * pivotY), targetWidth, targetHeight);
+            return targetHeight;
+        }
+
+        // --- GLOBAL SETTINGS ---
+        let currentMode = 'bernoulli';
+        let cx, cy;
+        let time = 0;
+
+        function resize() {
+            canvas.width = window.innerWidth;
+            canvas.height = window.innerHeight;
+            const uiWidth = window.innerWidth >= 768 ? 380 : 0;
+            cx = uiWidth + (window.innerWidth - uiWidth) / 2;
+            cy = window.innerHeight / 2;
+        }
+        window.addEventListener('resize', resize);
+        resize();
+
+        // --- STATE & UI BINDING ---
+        let airVel = 250;
+        let aoa = 5;
+        let angVel = 2.5;
+        let radius = 180;
+        let mass = 2;
+
+        document.getElementById('air-vel').oninput = (e) => {
+            airVel = parseFloat(e.target.value);
+            document.getElementById('air-vel-display').innerText = airVel + " km/h";
+        };
+        document.getElementById('aoa-slider').oninput = (e) => {
+            aoa = parseFloat(e.target.value);
+            document.getElementById('aoa-display').innerText = aoa + "°";
+        };
+        document.getElementById('ang-vel').oninput = (e) => {
+            angVel = parseFloat(e.target.value);
+            document.getElementById('ang-vel-display').innerText = angVel.toFixed(1) + " rad/s";
+        };
+        document.getElementById('radius-slider').oninput = (e) => {
+            radius = parseFloat(e.target.value);
+            document.getElementById('radius-display').innerText = radius + " px";
+        };
+
+        // --- MODULE 1: BERNOULLI'S PRINCIPLE ---
+        let airParticles = [];
+        for(let i=0; i<120; i++) {
+            airParticles.push({
+                x: Math.random() * 2000,
+                y: Math.random() * 1200,
+                vx: 0,
+                size: Math.random() * 2 + 1
+            });
+        }
+
+        function drawBernoulli() {
+            const wingW = 480; // High-res image size
+            const wingX = cx;
+            const wingY = cy;
+
+            // 1. Air Particles (Streamlines)
+            airParticles.forEach(p => {
+                p.vx = airVel / 18;
+                p.x += p.vx;
+
+                if (p.x > canvas.width) p.x = (window.innerWidth >= 768 ? 380 : 0) - 50;
+
+                const dx = p.x - wingX;
+                const dy = p.y - wingY;
+                const dist = Math.hypot(dx, dy);
+
+                if (dist < 280) {
+                    const liftFactor = Math.sin(aoa * Math.PI / 180);
+                    if (dy < 0) {
+                        p.x += p.vx * 0.45; // Speed up over top
+                        p.y += (wingY - 60 - p.y) * 0.08;
+                    } else {
+                        p.y += (wingY + 60 - p.y) * 0.04;
+                    }
+                }
+
+                ctx.fillStyle = 'rgba(255, 255, 255, 0.4)';
+                ctx.beginPath(); ctx.arc(p.x, p.y, p.size, 0, Math.PI * 2); ctx.fill();
+            });
+
+            // 2. Lift Indicator (Glow)
+            if (airVel > 20) {
+                const intensity = (airVel / 500) * (aoa + 12) / 45;
+                const grad = ctx.createRadialGradient(wingX, wingY - 40, 0, wingX, wingY - 40, 180);
+                grad.addColorStop(0, `rgba(56, 189, 248, ${0.4 * intensity})`);
+                grad.addColorStop(1, 'rgba(56, 189, 248, 0)');
+                ctx.fillStyle = grad;
+                ctx.beginPath(); ctx.ellipse(wingX, wingY - 30, 300, 120, 0, 0, Math.PI * 2); ctx.fill();
+            }
+
+            // 3. Draw High-Res Wing
+            ctx.save();
+            ctx.translate(wingX, wingY);
+            ctx.rotate(aoa * Math.PI / 180);
+            ctx.shadowColor = 'rgba(0,0,0,0.5)'; ctx.shadowBlur = 20; ctx.shadowOffsetY = 10;
+            drawImageAspect(assets.wing, 0, 0, wingW);
+            ctx.restore();
+
+            // 4. Force Vector
+            if (airVel > 50) {
+                const liftMag = (airVel * airVel * (aoa + 12)) / 1400;
+                ctx.strokeStyle = '#22d3ee'; ctx.fillStyle = '#22d3ee'; ctx.lineWidth = 4;
+                ctx.beginPath(); ctx.moveTo(wingX, wingY); ctx.lineTo(wingX, wingY - liftMag); ctx.stroke();
+                ctx.beginPath();
+                ctx.moveTo(wingX, wingY - liftMag - 12); ctx.lineTo(wingX - 8, wingY - liftMag); ctx.lineTo(wingX + 8, wingY - liftMag);
+                ctx.fill();
+                ctx.fillStyle = 'white'; ctx.font = 'bold 12px Inter';
+                ctx.fillText("LIFT FORCE", wingX + 20, wingY - liftMag/2);
+            }
+
+            const liftCalc = ((airVel * airVel * (aoa+12)) / 5200).toFixed(1);
+            document.getElementById('hud-label-1').innerText = "Dynamic Lift";
+            document.getElementById('hud-val-1').innerText = liftCalc + " kN";
+            document.getElementById('hud-label-2').innerText = "Velocity Diff";
+            document.getElementById('hud-val-2').innerText = "+" + (airVel * 0.15).toFixed(0) + " km/h";
+        }
+
+        // --- MODULE 2: CENTRIPETAL FORCE ---
+        let trail = [];
+        function drawCentripetal() {
+            const angle = time * angVel;
+            const ballX = cx + Math.cos(angle) * radius;
+            const ballY = cy + Math.sin(angle) * radius;
+
+            trail.push({x: ballX, y: ballY});
+            if (trail.length > 40) trail.shift();
+            
+            ctx.beginPath();
+            ctx.strokeStyle = 'rgba(249, 115, 22, 0.25)';
+            ctx.lineWidth = 3;
+            trail.forEach((t, i) => {
+                if(i === 0) ctx.moveTo(t.x, t.y);
+                else ctx.lineTo(t.x, t.y);
+            });
+            ctx.stroke();
+
+            // String
+            ctx.strokeStyle = 'rgba(255,255,255,0.4)';
+            ctx.lineWidth = 1.5;
+            ctx.beginPath(); ctx.moveTo(cx, cy); ctx.lineTo(ballX, ballY); ctx.stroke();
+
+            // Anchor
+            ctx.fillStyle = '#1e293b';
+            ctx.beginPath(); ctx.arc(cx, cy, 12, 0, Math.PI*2); ctx.fill();
+            ctx.strokeStyle = '#3b82f6'; ctx.stroke();
+
+            // Force Vectors
+            const forceMag = radius * angVel * angVel / 15;
+            ctx.strokeStyle = '#ef4444'; ctx.fillStyle = '#ef4444'; ctx.lineWidth = 3;
+            ctx.beginPath();
+            ctx.moveTo(ballX, ballY);
+            ctx.lineTo(ballX + (cx - ballX) * (forceMag / radius), ballY + (cy - ballY) * (forceMag / radius));
+            ctx.stroke();
+            ctx.save(); ctx.translate(ballX + (cx - ballX) * (forceMag / radius), ballY + (cy - ballY) * (forceMag / radius));
+            ctx.rotate(angle + Math.PI); ctx.beginPath(); ctx.moveTo(0,0); ctx.lineTo(-6,-8); ctx.lineTo(6,-8); ctx.fill(); ctx.restore();
+
+            // The Physical Ball
+            ctx.save();
+            ctx.translate(ballX, ballY);
+            ctx.rotate(angle * 2.5); // Add spin to the asset
+            ctx.shadowBlur = 15; ctx.shadowColor = 'rgba(0,0,0,0.6)';
+            drawImageAspect(assets.ball, 0, 0, 45);
+            ctx.restore();
+
+            const Fc = mass * (radius/100) * angVel * angVel;
+            document.getElementById('hud-label-1').innerText = "Tension ($F_c$)";
+            document.getElementById('hud-val-1').innerText = Fc.toFixed(2) + " N";
+            document.getElementById('hud-label-2').innerText = "Force Magnitude";
+            document.getElementById('hud-val-2').innerText = (Fc * 10).toFixed(0) + " units";
+        }
+
+        // --- RENDER LOOP ---
+        function render(timestamp) {
+            time += 0.016;
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+            ctx.fillStyle = '#020617'; ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+            // Subtle Grid
+            ctx.strokeStyle = 'rgba(255,255,255,0.02)'; ctx.lineWidth = 1;
+            ctx.beginPath();
+            for(let i=0; i<canvas.width; i+=80) { ctx.moveTo(i,0); ctx.lineTo(i,canvas.height); }
+            for(let i=0; i<canvas.height; i+=80) { ctx.moveTo(0,i); ctx.lineTo(canvas.width,i); }
+            ctx.stroke();
+
+            if (currentMode === 'bernoulli') drawBernoulli();
+            else drawCentripetal();
+
+            requestAnimationFrame(render);
+        }
+
+        const tabs = document.querySelectorAll('.tab-btn');
+        tabs.forEach(btn => {
+            btn.addEventListener('click', (e) => {
+                tabs.forEach(t => t.classList.remove('active', 'bg-white', 'text-gray-900'));
+                tabs.forEach(t => t.classList.add('text-gray-400'));
+                btn.classList.add('active', 'bg-white', 'text-gray-900');
+                currentMode = btn.dataset.tab;
+
+                const info = {
+                    bernoulli: { title: "Bernoulli's Principle", formula: "P + ½ρv² + ρgh = const", desc: "Fast moving air creates low pressure. By shaping a wing to force air faster over the top than the bottom, a pressure difference is created that pushes the wing <b>upward</b>." },
+                    centripetal: { title: "Centripetal Force", formula: "F_c = m × v² / r", desc: "Any object moving in a circle is accelerating toward the center. This requires a <b>Net Force</b> (like tension in a string) pointing inward to maintain the circular path." }
+                };
+                
+                document.getElementById('info-title').innerText = info[currentMode].title;
+                document.getElementById('info-desc').innerHTML = info[currentMode].desc;
+                document.getElementById('formula-display').innerText = info[currentMode].formula;
+                document.getElementById('controls-bernoulli').classList.toggle('hidden', currentMode !== 'bernoulli');
+                document.getElementById('controls-centripetal').classList.toggle('hidden', currentMode !== 'centripetal');
+                if(currentMode === 'centripetal') trail = [];
+            });
+        });
+
+        requestAnimationFrame(render);
+    </script>
+</body>
+</html>

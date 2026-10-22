@@ -1,0 +1,142 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Clonexx AI - Worder</title>
+    
+    <script src="https://cdn.tailwindcss.com?plugins=typography"></script>
+    <script src="https://unpkg.com/@phosphor-icons/web"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Bodoni+Moda:ital,opsz,wght@0,6..96,400..900;1,6..96,400..900&family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    
+    <style>
+        body { margin: 0; overflow: hidden; background-color: #f8f9fa; color: #1f2937; -webkit-font-smoothing: antialiased; font-family: 'Inter', sans-serif; }
+        .font-bodoni { font-family: 'Bodoni Moda', serif; }
+        .glass-panel { background: rgba(255, 255, 255, 0.7); backdrop-filter: blur(20px); border: 1px solid rgba(255, 255, 255, 0.8); border-bottom-color: rgba(0, 0, 0, 0.05); border-right-color: rgba(0, 0, 0, 0.05); }
+        ::-webkit-scrollbar { width: 6px; height: 6px; } ::-webkit-scrollbar-track { background: transparent; } ::-webkit-scrollbar-thumb { background: rgba(0,0,0,0.15); border-radius: 10px; }
+        
+        #editor-content { min-height: 600px; outline: none; }
+        #editor-content[placeholder]:empty:before { content: attr(placeholder); color: #9ca3af; pointer-events: none; }
+        
+        /* Ensures custom fonts applied via toolbar work properly */
+        .prose * { font-family: inherit; }
+    </style>
+</head>
+<body class="flex h-screen text-gray-800 antialiased">
+
+    <!-- Standard OS Sidebar (Cleaned Up) -->
+    <aside class="w-64 h-full glass-panel border-r border-black/5 flex flex-col z-50 relative shrink-0">
+        <div class="h-16 flex items-center px-6 border-b border-black/5 shrink-0 justify-between">
+            <h1 class="font-bodoni text-2xl font-light tracking-tight italic text-gray-900 cursor-pointer" onclick="window.location.href='clonexx-chat.html'">Clonexx<span class="font-bold">AI</span></h1>
+        </div>
+        <div class="px-4 py-6 flex-1 overflow-y-auto space-y-6">
+            <div>
+                <p class="text-sm font-semibold text-gray-700 mb-2 px-2">Workspace</p>
+                <div class="space-y-0.5">
+                    <a href="clonmage.html" class="flex items-center gap-2.5 px-3 py-2 rounded-xl text-sm font-medium text-gray-700 hover:bg-black/5 transition-colors"><i class="ph ph-image text-lg text-purple-500"></i> Clonmage v1</a>
+                    <a href="worder.html" class="flex items-center gap-2.5 px-3 py-2 rounded-xl text-sm font-bold bg-cyan-500/10 text-cyan-700 transition-colors"><i class="ph-fill ph-file-text text-lg text-cyan-500"></i> Worder</a>
+                </div>
+            </div>
+        </div>
+    </aside>
+
+    <div class="flex-1 flex flex-col h-full relative z-10 min-w-0 bg-white">
+        <header class="h-auto min-h-16 border-b border-black/5 flex flex-wrap items-center justify-between px-6 py-2 shrink-0 z-20 gap-4">
+            <div class="flex items-center gap-2 shrink-0">
+                <i class="ph-fill ph-file-text text-2xl text-cyan-500"></i>
+                <h2 class="text-lg font-bold text-gray-800 tracking-tight">Worder <span class="font-normal text-gray-500">Document</span></h2>
+            </div>
+            
+            <!-- Upgraded Toolbar -->
+            <div class="flex items-center flex-wrap gap-1 bg-gray-50 p-1.5 rounded-xl shadow-sm border border-gray-200">
+                <!-- Font Family -->
+                <select onchange="format('fontName', this.value)" class="p-1.5 rounded-lg text-sm bg-white border border-gray-300 outline-none text-gray-700 cursor-pointer hover:border-cyan-400">
+                    <option value="Inter">Inter (Sans)</option>
+                    <option value="Arial">Arial</option>
+                    <option value="Times New Roman">Times New Roman</option>
+                    <option value="Bodoni Moda">Bodoni (Serif)</option>
+                    <option value="Courier New">Courier (Mono)</option>
+                </select>
+                
+                <!-- Text Format -->
+                <select onchange="format('formatBlock', this.value)" class="p-1.5 rounded-lg text-sm bg-white border border-gray-300 outline-none text-gray-700 cursor-pointer hover:border-cyan-400">
+                    <option value="P">Paragraph</option>
+                    <option value="H1">Heading 1</option>
+                    <option value="H2">Heading 2</option>
+                    <option value="H3">Heading 3</option>
+                </select>
+
+                <div class="w-px h-5 bg-gray-300 mx-1"></div>
+                
+                <!-- Styling -->
+                <button onclick="format('bold')" class="p-2 hover:bg-white rounded-lg text-gray-700 transition-colors" title="Bold"><i class="ph-bold ph-text-b"></i></button>
+                <button onclick="format('italic')" class="p-2 hover:bg-white rounded-lg text-gray-700 transition-colors" title="Italic"><i class="ph-bold ph-text-italic"></i></button>
+                <button onclick="format('underline')" class="p-2 hover:bg-white rounded-lg text-gray-700 transition-colors" title="Underline"><i class="ph-bold ph-text-underline"></i></button>
+                <button onclick="format('strikeThrough')" class="p-2 hover:bg-white rounded-lg text-gray-700 transition-colors" title="Strikethrough"><i class="ph-bold ph-text-strikethrough"></i></button>
+                
+                <div class="w-px h-5 bg-gray-300 mx-1"></div>
+                
+                <!-- Colors -->
+                <div class="flex items-center gap-1 px-1" title="Text Color">
+                    <i class="ph-bold ph-palette text-gray-500"></i>
+                    <input type="color" onchange="format('foreColor', this.value)" class="w-6 h-6 p-0 border-0 rounded cursor-pointer bg-transparent">
+                </div>
+                <div class="flex items-center gap-1 px-1" title="Highlight Color">
+                    <i class="ph-bold ph-highlighter text-gray-500"></i>
+                    <input type="color" onchange="format('hiliteColor', this.value)" value="#ffff00" class="w-6 h-6 p-0 border-0 rounded cursor-pointer bg-transparent">
+                </div>
+
+                <div class="w-px h-5 bg-gray-300 mx-1"></div>
+
+                <!-- Alignment -->
+                <button onclick="format('justifyLeft')" class="p-2 hover:bg-white rounded-lg text-gray-700 transition-colors" title="Align Left"><i class="ph-bold ph-text-align-left"></i></button>
+                <button onclick="format('justifyCenter')" class="p-2 hover:bg-white rounded-lg text-gray-700 transition-colors" title="Align Center"><i class="ph-bold ph-text-align-center"></i></button>
+                <button onclick="format('justifyRight')" class="p-2 hover:bg-white rounded-lg text-gray-700 transition-colors" title="Align Right"><i class="ph-bold ph-text-align-right"></i></button>
+                
+                <div class="w-px h-5 bg-gray-300 mx-1"></div>
+                
+                <!-- Lists -->
+                <button onclick="format('insertOrderedList')" class="p-2 hover:bg-white rounded-lg text-gray-700 transition-colors" title="Numbered List"><i class="ph-bold ph-list-numbers"></i></button>
+                <button onclick="format('insertUnorderedList')" class="p-2 hover:bg-white rounded-lg text-gray-700 transition-colors" title="Bullet List"><i class="ph-bold ph-list-bullets"></i></button>
+                
+                <div class="w-px h-5 bg-gray-300 mx-1"></div>
+
+                <button onclick="format('removeFormat')" class="p-2 hover:bg-red-50 hover:text-red-600 rounded-lg text-gray-700 transition-colors" title="Clear Formatting"><i class="ph-bold ph-eraser"></i></button>
+            </div>
+
+            <button onclick="saveDoc()" class="bg-cyan-600 hover:bg-cyan-700 text-white px-5 py-2 rounded-lg text-sm font-bold transition-colors shadow-sm shrink-0 flex items-center gap-2">
+                <i class="ph-bold ph-floppy-disk"></i> Save .wdr
+            </button>
+        </header>
+
+        <main class="flex-1 overflow-y-auto p-12 bg-gray-50 flex justify-center">
+            <div class="w-full max-w-4xl bg-white shadow-md border border-gray-200 p-12 rounded-sm min-h-full">
+                <input type="text" value="Untitled Document" class="w-full text-4xl font-bodoni font-bold text-gray-900 border-none focus:outline-none mb-6 pb-2 border-b border-gray-100">
+                <div id="editor-content" class="prose max-w-none text-gray-800 text-lg leading-relaxed" contenteditable="true" placeholder="Start typing here or paste your content..."></div>
+            </div>
+        </main>
+    </div>
+
+    <script>
+        // Upgraded format function to accept dynamic values (like fonts and colors)
+        function format(command, value = null) {
+            document.execCommand(command, false, value);
+            document.getElementById('editor-content').focus();
+        }
+
+        function saveDoc() {
+            const content = document.getElementById('editor-content').innerHTML;
+            const title = document.querySelector('input').value;
+            
+            const blob = new Blob([content], {type: "text/html;charset=utf-8"});
+            const a = document.createElement("a");
+            a.href = URL.createObjectURL(blob);
+            a.download = `${title.replace(/\s+/g, '_')}.wdr.html`;
+            a.click();
+            
+            // Simple alert fallback if you want to swap to a toast notification later
+            alert("Document Saved locally!");
+        }
+    </script>
+</body>
+</html>

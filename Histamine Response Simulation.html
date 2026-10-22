@@ -1,0 +1,447 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Histamine Response: Vasodilation Lab</title>
+    <style>
+        :root {
+            --bg-color: #f8fafc;
+            --panel-bg: #ffffff;
+            --text-main: #0f172a;
+            --text-muted: #64748b;
+            --accent: #ef4444; /* Blood/Inflammation Red */
+            --allergen: #10b981; /* Allergen Green */
+            --histamine: #f59e0b; /* Histamine Amber */
+            --border-color: #e2e8f0;
+            --vessel-wall: #fca5a5;
+        }
+
+        * { box-sizing: border-box; margin: 0; padding: 0; }
+
+        body {
+            background-color: #f1f5f9;
+            color: var(--text-main);
+            font-family: 'Inter', -apple-system, system-ui, sans-serif;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            padding: 20px;
+            overflow: hidden;
+        }
+
+        .app-container {
+            display: flex;
+            background: var(--panel-bg);
+            border-radius: 24px;
+            box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.15);
+            width: 100%;
+            max-width: 1200px;
+            height: 850px;
+            overflow: hidden;
+            border: 1px solid var(--border-color);
+        }
+
+        /* Sidebar */
+        .sidebar {
+            width: 380px;
+            padding: 40px;
+            border-right: 1px solid var(--border-color);
+            display: flex;
+            flex-direction: column;
+            gap: 25px;
+            background: #fff;
+            z-index: 10;
+        }
+
+        .sidebar h1 { font-size: 24px; font-weight: 800; color: #b91c1c; letter-spacing: -0.5px; }
+        .description { font-size: 14px; line-height: 1.6; color: var(--text-muted); }
+
+        .control-group { 
+            background: #f8fafc;
+            padding: 20px;
+            border-radius: 16px;
+            border: 1px solid var(--border-color);
+            display: flex; 
+            flex-direction: column; 
+            gap: 15px; 
+        }
+        
+        label { font-size: 12px; font-weight: 800; display: flex; justify-content: space-between; align-items: center; text-transform: uppercase; letter-spacing: 0.5px; color: #475569;}
+        
+        .main-btn {
+            width: 100%;
+            padding: 14px;
+            background: var(--allergen);
+            color: white;
+            border: none;
+            border-radius: 12px;
+            font-size: 14px;
+            font-weight: 700;
+            cursor: pointer;
+            transition: all 0.2s;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            box-shadow: 0 4px 12px rgba(16, 185, 129, 0.2);
+        }
+        .main-btn:hover { background: #059669; transform: translateY(-1px); }
+        .main-btn:active { transform: translateY(0); }
+
+        .status-card {
+            padding: 20px;
+            border-radius: 16px;
+            font-size: 13px;
+            line-height: 1.5;
+            transition: all 0.4s;
+            border-left: 4px solid #94a3b8;
+            background: #f8fafc;
+            margin-top: auto;
+        }
+
+        /* Simulation Area */
+        .sim-area {
+            flex: 1;
+            background: radial-gradient(circle at center, #ffffff, #f1f5f9);
+            position: relative;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            overflow: hidden;
+        }
+
+        #particleCanvas {
+            position: absolute;
+            top: 0; left: 0; width: 100%; height: 100%;
+            z-index: 2;
+            pointer-events: none;
+        }
+
+        .svg-canvas {
+            width: 100%;
+            height: 100%;
+            z-index: 1;
+        }
+
+        /* Vessel Styles */
+        .vessel-wall {
+            fill: var(--vessel-wall);
+            stroke: #ef4444;
+            stroke-width: 2;
+            transition: transform 0.8s cubic-bezier(0.34, 1.56, 0.64, 1);
+        }
+
+        .mast-cell {
+            fill: #d8b4fe;
+            stroke: #a855f7;
+            stroke-width: 2;
+            transition: all 0.3s;
+        }
+
+        .mast-cell.triggered {
+            fill: #f59e0b;
+            filter: drop-shadow(0 0 10px #f59e0b);
+        }
+
+        /* Readout Overlay */
+        .data-overlay {
+            position: absolute;
+            top: 30px;
+            right: 30px;
+            background: rgba(15, 23, 42, 0.9);
+            color: white;
+            padding: 20px;
+            border-radius: 16px;
+            backdrop-filter: blur(8px);
+            min-width: 240px;
+            border: 1px solid rgba(255,255,255,0.1);
+            z-index: 10;
+        }
+
+        .data-row { margin-bottom: 12px; }
+        .data-label { font-size: 10px; text-transform: uppercase; color: #94a3b8; letter-spacing: 1px; }
+        .data-value { font-size: 20px; font-weight: 800; font-family: monospace; }
+
+        @media (max-width: 900px) {
+            .app-container { flex-direction: column; height: auto; }
+            .sidebar { width: 100%; border-right: none; }
+            .sim-area { height: 500px; }
+        }
+    </style>
+</head>
+<body>
+
+    <div class="app-container">
+        <aside class="sidebar">
+            <h1>Histamine Lab</h1>
+            <p class="description">
+                When allergens enter the body, <strong>Mast Cells</strong> detect them and release <strong>Histamine</strong>. This chemical signal causes blood vessels to dilate (widen), allowing immune cells to reach the site faster, but also causing redness and swelling.
+            </p>
+
+            <div class="control-group">
+                <button class="main-btn" id="btnAllergen">Release Allergen (Pollen)</button>
+                <button class="main-btn" style="background: #64748b; margin-top: 5px;" id="btnReset">Reset System</button>
+            </div>
+
+            <div class="status-card" id="statusCard">
+                <strong id="statusTitle" style="color: #475569;">System: Baseline</strong><br>
+                <span id="statusText">Vessel tone is normal. Mast cells are in standby mode. No allergens detected.</span>
+            </div>
+
+            <div style="margin-top: 20px; font-size: 11px; color: var(--text-muted); line-height: 1.4;">
+                <strong>Physiology:</strong> Vasodilation increases the volume of blood in the area, but the <em>velocity</em> of individual cells actually slows down as the pipe widens, facilitating "leaking" into tissues (edema).
+            </div>
+        </aside>
+
+        <main class="sim-area">
+            <!-- Data Readouts -->
+            <div class="data-overlay">
+                <div class="data-row">
+                    <div class="data-label">Histamine Concentration</div>
+                    <div class="data-value" id="histamineLevel">0%</div>
+                </div>
+                <div class="data-row">
+                    <div class="data-label">Vessel Diameter</div>
+                    <div class="data-value" id="diameterDisplay">Normal</div>
+                </div>
+                <div class="data-row">
+                    <div class="data-label">Tissue Permeability</div>
+                    <div class="data-value" id="permeabilityDisplay" style="color: #10b981;">Low</div>
+                </div>
+            </div>
+
+            <canvas id="particleCanvas"></canvas>
+
+            <svg class="svg-canvas" viewBox="0 0 800 600" id="vesselSvg">
+                <defs>
+                    <pattern id="cellPattern" x="0" y="0" width="40" height="40" patternUnits="userSpaceOnUse">
+                        <path d="M 0 20 Q 20 0 40 20 Q 20 40 0 20" fill="none" stroke="rgba(255,255,255,0.4)" stroke-width="1"/>
+                    </pattern>
+                </defs>
+
+                <!-- Top Vessel Wall -->
+                <g id="wallTop" class="vessel-wall">
+                    <rect x="0" y="100" width="800" height="80" rx="10" />
+                    <rect x="0" y="100" width="800" height="80" fill="url(#cellPattern)" />
+                </g>
+
+                <!-- Bottom Vessel Wall -->
+                <g id="wallBottom" class="vessel-wall">
+                    <rect x="0" y="420" width="800" height="80" rx="10" />
+                    <rect x="0" y="420" width="800" height="80" fill="url(#cellPattern)" />
+                </g>
+
+                <!-- Mast Cells (Immune Guardians) -->
+                <g id="mast-cells">
+                    <circle class="mast-cell" cx="150" cy="180" r="25" />
+                    <circle class="mast-cell" cx="400" cy="420" r="25" />
+                    <circle class="mast-cell" cx="650" cy="180" r="25" />
+                </g>
+
+                <g font-size="10" font-weight="bold" fill="#94a3b8" text-anchor="middle">
+                    <text x="400" y="145">ENDOTHELIAL LINING</text>
+                    <text x="400" y="465">ENDOTHELIAL LINING</text>
+                    <text x="150" y="215" fill="#a855f7">MAST CELL</text>
+                </g>
+            </svg>
+        </main>
+    </div>
+
+    <script>
+        const btnAllergen = document.getElementById('btnAllergen');
+        const btnReset = document.getElementById('btnReset');
+        const wallTop = document.getElementById('wallTop');
+        const wallBottom = document.getElementById('wallBottom');
+        const mastCells = document.querySelectorAll('.mast-cell');
+        
+        const histamineLevel = document.getElementById('histamineLevel');
+        const diameterDisplay = document.getElementById('diameterDisplay');
+        const permeabilityDisplay = document.getElementById('permeabilityDisplay');
+        const statusTitle = document.getElementById('statusTitle');
+        const statusText = document.getElementById('statusText');
+        const statusCard = document.getElementById('statusCard');
+
+        const canvas = document.getElementById('particleCanvas');
+        const ctx = canvas.getContext('2d');
+
+        let particles = [];
+        let histamineCount = 0;
+        let isDilated = false;
+
+        function resize() {
+            canvas.width = canvas.offsetWidth;
+            canvas.height = canvas.offsetHeight;
+        }
+        window.addEventListener('resize', resize);
+        resize();
+
+        class Particle {
+            constructor(type) {
+                this.type = type; // 'rbc', 'allergen', 'histamine'
+                this.reset();
+                if (type === 'rbc') this.x = Math.random() * canvas.width;
+            }
+
+            reset() {
+                this.radius = this.type === 'rbc' ? 8 : (this.type === 'allergen' ? 5 : 3);
+                this.x = this.type === 'histamine' ? this.x : -20;
+                
+                // Vertical bounds depend on dilation state
+                const yMin = isDilated ? 100 : 180;
+                const yMax = isDilated ? 500 : 420;
+                
+                if (this.type !== 'histamine') {
+                    this.y = yMin + Math.random() * (yMax - yMin);
+                }
+
+                this.vx = (this.type === 'rbc') ? (1.5 + Math.random() * 2) : (3 + Math.random() * 2);
+                this.vy = (Math.random() - 0.5) * 0.5;
+                this.color = this.type === 'rbc' ? '#ef4444' : (this.type === 'allergen' ? '#10b981' : '#f59e0b');
+                this.opacity = 1;
+            }
+
+            update() {
+                this.x += this.vx;
+                this.y += this.vy;
+
+                // Allergen Collision with Mast Cells
+                if (this.type === 'allergen') {
+                    mastCells.forEach(cell => {
+                        const cx = parseInt(cell.getAttribute('cx'));
+                        const cy = parseInt(cell.getAttribute('cy'));
+                        const dist = Math.hypot(this.x - cx, this.y - cy);
+                        if (dist < 30) {
+                            triggerMastCell(cell);
+                            this.x = 2000; // Remove allergen
+                        }
+                    });
+                }
+
+                // Histamine decay
+                if (this.type === 'histamine') {
+                    this.opacity -= 0.01;
+                    if (this.opacity <= 0) this.x = 2000;
+                }
+
+                if (this.x > canvas.width + 20) {
+                    if (this.type === 'histamine') return; // Don't loop histamine
+                    this.reset();
+                }
+            }
+
+            draw() {
+                ctx.globalAlpha = this.opacity;
+                ctx.beginPath();
+                ctx.arc(this.x, this.y, this.radius, 0, Math.PI * 2);
+                ctx.fillStyle = this.color;
+                ctx.fill();
+                
+                if (this.type === 'rbc') {
+                    ctx.strokeStyle = '#b91c1c';
+                    ctx.stroke();
+                }
+                ctx.globalAlpha = 1;
+            }
+        }
+
+        function triggerMastCell(el) {
+            if (el.classList.contains('triggered')) return;
+            el.classList.add('triggered');
+            
+            histamineCount += 33.4;
+            histamineLevel.textContent = Math.min(100, Math.round(histamineCount)) + "%";
+
+            // Spawn histamine particles
+            const cx = parseInt(el.getAttribute('cx'));
+            const cy = parseInt(el.getAttribute('cy'));
+            for(let i=0; i<15; i++) {
+                const p = new Particle('histamine');
+                p.x = cx;
+                p.y = cy;
+                p.vx = (Math.random() - 0.5) * 4;
+                p.vy = (Math.random() - 0.5) * 4;
+                particles.push(p);
+            }
+
+            if (histamineCount >= 33) activateVasodilation();
+        }
+
+        function activateVasodilation() {
+            if (isDilated) return;
+            isDilated = true;
+            
+            // Visual SVG Expansion
+            wallTop.style.transform = "translateY(-80px)";
+            wallBottom.style.transform = "translateY(80px)";
+            
+            diameterDisplay.textContent = "DILATED";
+            diameterDisplay.style.color = "var(--accent)";
+            permeabilityDisplay.textContent = "High (Leaking)";
+            permeabilityDisplay.style.color = "var(--accent)";
+
+            statusTitle.textContent = "System: Allergic Reaction";
+            statusTitle.style.color = "var(--accent)";
+            statusText.textContent = "Histamine detected! The smooth muscle of the vessel wall has relaxed. Blood flow volume is increasing locally.";
+            statusCard.style.borderLeftColor = "var(--accent)";
+            statusCard.style.backgroundColor = "#fef2f2";
+        }
+
+        function init() {
+            particles = [];
+            for (let i = 0; i < 60; i++) particles.push(new Particle('rbc'));
+            update();
+        }
+
+        function update() {
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+            
+            // Filter out dead particles
+            particles = particles.filter(p => p.x < canvas.width + 100);
+
+            particles.forEach(p => {
+                p.update();
+                p.draw();
+            });
+
+            requestAnimationFrame(update);
+        }
+
+        btnAllergen.addEventListener('click', () => {
+            // Drop a batch of allergens
+            for (let i = 0; i < 5; i++) {
+                const p = new Particle('allergen');
+                p.y = Math.random() * canvas.height;
+                particles.push(p);
+            }
+            if (histamineCount === 0) {
+                statusText.textContent = "Allergens (Pollen) detected. Immune surveillance active...";
+            }
+        });
+
+        btnReset.addEventListener('click', () => {
+            isDilated = false;
+            histamineCount = 0;
+            histamineLevel.textContent = "0%";
+            diameterDisplay.textContent = "Normal";
+            diameterDisplay.style.color = "inherit";
+            permeabilityDisplay.textContent = "Low";
+            permeabilityDisplay.style.color = "var(--allergen)";
+            
+            wallTop.style.transform = "translateY(0)";
+            wallBottom.style.transform = "translateY(0)";
+            
+            mastCells.forEach(cell => cell.classList.remove('triggered'));
+            
+            statusTitle.textContent = "System: Baseline";
+            statusTitle.style.color = "#475569";
+            statusText.textContent = "Vessel tone is normal. Mast cells are in standby mode. No allergens detected.";
+            statusCard.style.borderLeftColor = "#94a3b8";
+            statusCard.style.backgroundColor = "#f8fafc";
+
+            particles = particles.filter(p => p.type === 'rbc');
+        });
+
+        init();
+    </script>
+</body>
+</html>

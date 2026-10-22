@@ -1,0 +1,373 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>IV Titration Engine</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        /* Custom slider styles */
+        input[type=range] {
+            -webkit-appearance: none;
+            width: 100%;
+            background: transparent;
+        }
+        input[type=range]::-webkit-slider-thumb {
+            -webkit-appearance: none;
+            height: 24px;
+            width: 24px;
+            border-radius: 50%;
+            cursor: pointer;
+            margin-top: -10px;
+            transition: transform 0.1s;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+        input[type=range]::-webkit-slider-thumb:active {
+            transform: scale(1.1);
+        }
+        input[type=range]::-webkit-slider-runnable-track {
+            width: 100%;
+            height: 6px;
+            cursor: pointer;
+            background: #e5e7eb;
+            border-radius: 3px;
+        }
+        #rate-input::-webkit-slider-thumb { background: #3b82f6; }
+        #volume-input::-webkit-slider-thumb { background: #0ea5e9; }
+        #drop-factor-input::-webkit-slider-thumb { background: #10b981; }
+
+        .svg-container {
+            position: relative;
+            width: 100%;
+            max-width: 350px;
+            margin: 0 auto;
+        }
+        
+        #droplet-canvas {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            pointer-events: none;
+            z-index: 10;
+        }
+    </style>
+</head>
+<body class="bg-gray-50 text-gray-900 min-h-screen font-sans flex flex-col selection:bg-sky-100 selection:text-sky-900">
+
+    <!-- Header -->
+    <header class="bg-white border-b border-gray-200 p-6 flex-none z-10">
+        <div class="max-w-6xl mx-auto flex items-center justify-between">
+            <div class="flex items-center gap-3">
+                <svg xmlns="http://www.w3.org/2000/svg" width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="#0ea5e9" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                    <path d="M12 2v20"/><path d="M8 2h8"/><path d="M12 12v.01"/><path d="M10 6h4"/><path d="M10 16h4"/>
+                </svg>
+                <h1 class="text-2xl font-bold tracking-tight text-gray-900">IV Titration <span class="text-sky-500">Visualizer</span></h1>
+            </div>
+            <div class="text-sm text-gray-500 hidden sm:block">SVG + Canvas Dynamics Engine</div>
+        </div>
+    </header>
+
+    <!-- Main Content -->
+    <main class="max-w-6xl mx-auto w-full flex-grow flex items-center justify-center p-6">
+        
+        <div class="flex flex-col lg:flex-row gap-12 items-center justify-center w-full h-full">
+            
+            <!-- 2D SVG + Canvas Visualization Container -->
+            <div class="flex-1 w-full max-w-lg bg-white rounded-[3rem] p-8 border border-gray-200 shadow-sm relative h-[650px] flex items-center justify-center overflow-hidden">
+                <span class="absolute top-8 left-10 text-sm font-bold text-gray-400 uppercase tracking-widest z-10">Clinical View</span>
+                
+                <!-- Live Droplet Metric Overlay -->
+                <div class="absolute bottom-8 right-8 z-20 bg-white/90 backdrop-blur-md px-6 py-4 rounded-2xl border border-gray-100 shadow-md flex items-center gap-4">
+                    <div class="p-3 bg-sky-100 rounded-full">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#0ea5e9" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2.69l5.66 5.66a8 8 0 1 1-11.31 0z"/></svg>
+                    </div>
+                    <div>
+                        <p class="text-xs text-gray-500 font-bold uppercase tracking-wider">Drip Rate</p>
+                        <p class="text-3xl font-bold text-gray-900"><span id="metric-gtt">0</span> <span class="text-sm text-gray-500 font-normal">gtt/min</span></p>
+                    </div>
+                </div>
+
+                <!-- The Visualizer (SVG Outline + Canvas Droplets) -->
+                <div class="svg-container h-[550px]">
+                    <!-- High Quality SVG Background -->
+                    <svg id="iv-svg" viewBox="0 0 200 500" class="w-full h-full drop-shadow-lg">
+                        <defs>
+                            <linearGradient id="fluidGrad" x1="0%" y1="0%" x2="100%" y2="0%">
+                                <stop offset="0%" stop-color="#38bdf8" stop-opacity="0.9" />
+                                <stop offset="50%" stop-color="#0ea5e9" stop-opacity="0.7" />
+                                <stop offset="100%" stop-color="#0284c7" stop-opacity="0.9" />
+                            </linearGradient>
+                            <linearGradient id="bagShine" x1="0%" y1="0%" x2="100%" y2="100%">
+                                <stop offset="0%" stop-color="#ffffff" stop-opacity="0.6" />
+                                <stop offset="50%" stop-color="#ffffff" stop-opacity="0.1" />
+                                <stop offset="100%" stop-color="#ffffff" stop-opacity="0.3" />
+                            </linearGradient>
+                        </defs>
+
+                        <!-- Top Hanger -->
+                        <path d="M90,10 C90,-5 110,-5 110,10 L110,30 L90,30 Z" fill="none" stroke="#cbd5e1" stroke-width="4" stroke-linejoin="round" />
+                        <circle cx="100" cy="15" r="5" fill="#f8fafc" stroke="#cbd5e1" stroke-width="2" />
+
+                        <!-- Fluid Level Masked Rectangle (Dynamically controlled via JS) -->
+                        <rect id="fluid-level" x="42" y="50" width="116" height="200" rx="15" fill="url(#fluidGrad)" />
+                        
+                        <!-- Fluid Level indicator lines -->
+                        <line x1="140" y1="80" x2="155" y2="80" stroke="#0f172a" stroke-width="1" opacity="0.3" />
+                        <text x="160" y="83" font-size="8" fill="#64748b" font-weight="bold">1000</text>
+
+                        <line x1="140" y1="130" x2="150" y2="130" stroke="#0f172a" stroke-width="1" opacity="0.3" />
+                        <text x="155" y="133" font-size="8" fill="#64748b">750</text>
+
+                        <line x1="140" y1="180" x2="155" y2="180" stroke="#0f172a" stroke-width="1" opacity="0.3" />
+                        <text x="160" y="183" font-size="8" fill="#64748b" font-weight="bold">500</text>
+
+                        <line x1="140" y1="230" x2="150" y2="230" stroke="#0f172a" stroke-width="1" opacity="0.3" />
+                        <text x="155" y="233" font-size="8" fill="#64748b">250</text>
+
+                        <!-- The IV Bag Outline -->
+                        <rect x="40" y="30" width="120" height="230" rx="20" fill="url(#bagShine)" stroke="#e2e8f0" stroke-width="3" />
+                        
+                        <!-- Bag Seams/Crinkles for realism -->
+                        <path d="M40,50 Q45,145 40,240" fill="none" stroke="#ffffff" stroke-width="2" opacity="0.8" />
+                        <path d="M160,50 Q155,145 160,240" fill="none" stroke="#ffffff" stroke-width="2" opacity="0.8" />
+
+                        <!-- Bottom Port -->
+                        <rect x="90" y="260" width="20" height="15" rx="2" fill="#f1f5f9" stroke="#cbd5e1" stroke-width="2" />
+                        
+                        <!-- Spike / Upper Drip Chamber Connection -->
+                        <polygon points="95,275 105,275 102,285 98,285" fill="#e2e8f0" stroke="#94a3b8" stroke-width="1" />
+
+                        <!-- Drip Chamber Outline (Empty, transparent) -->
+                        <rect id="drip-chamber-rect" x="92" y="285" width="16" height="50" rx="4" fill="rgba(255,255,255,0.8)" stroke="#cbd5e1" stroke-width="2" />
+                        
+                        <!-- Fluid settled at the bottom of the drip chamber -->
+                        <path d="M93,320 L107,320 Q107,333 100,333 Q93,333 93,320 Z" fill="url(#fluidGrad)" />
+
+                        <!-- IV Tubing Winding down -->
+                        <path d="M100,335 C100,380 40,360 50,420 C60,480 140,430 150,500" fill="none" stroke="#f1f5f9" stroke-width="6" stroke-linecap="round" />
+                        <path d="M100,335 C100,380 40,360 50,420 C60,480 140,430 150,500" fill="none" stroke="#e2e8f0" stroke-width="2" stroke-linecap="round" />
+                        
+                        <!-- Roller Clamp -->
+                        <rect x="42" y="405" width="16" height="30" rx="3" fill="#ffffff" stroke="#94a3b8" stroke-width="2" />
+                        <circle cx="50" cy="420" r="6" fill="#3b82f6" />
+                    </svg>
+                    
+                    <!-- HTML5 Canvas for Animated Circular Droplets -->
+                    <canvas id="droplet-canvas"></canvas>
+                </div>
+            </div>
+
+            <!-- Controls Sidebar -->
+            <div class="w-full lg:w-[450px] space-y-8 bg-white p-8 rounded-3xl border border-gray-200 shadow-sm">
+                
+                <h2 class="text-xl font-semibold mb-8 flex items-center gap-2 text-gray-900 border-b border-gray-100 pb-4">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="text-sky-500"><path d="M12 2v20"/><path d="m17 5-5-3-5 3"/><path d="m17 19-5 3-5-3"/><path d="M2 12h20"/><path d="m5 7 3 5-3 5"/><path d="m19 7-3 5 3 5"/></svg>
+                    Titration Parameters
+                </h2>
+
+                <!-- Drop Factor Selection -->
+                <div>
+                    <div class="flex justify-between items-end mb-4">
+                        <label class="text-base font-medium text-gray-700">Tubing Drop Factor</label>
+                        <span class="text-2xl font-bold text-emerald-600"><span id="factor-val">20</span> <span class="text-sm text-gray-500 font-normal">gtt/mL</span></span>
+                    </div>
+                    <input type="range" id="drop-factor-input" min="10" max="60" value="20" step="5">
+                    <div class="flex justify-between text-sm text-gray-400 mt-2">
+                        <span>Macro (10-20)</span>
+                        <span>Micro (60)</span>
+                    </div>
+                </div>
+
+                <div class="h-px w-full bg-gray-100 my-4"></div>
+
+                <!-- Flow Rate (Controls Droplet Speed) -->
+                <div>
+                    <div class="flex justify-between items-end mb-4">
+                        <label class="text-base font-medium text-gray-700">Prescribed Flow Rate</label>
+                        <span class="text-2xl font-bold text-blue-600"><span id="rate-val">100</span> <span class="text-sm text-gray-500 font-normal">mL/hr</span></span>
+                    </div>
+                    <input type="range" id="rate-input" min="0" max="500" value="100" step="5">
+                    <div class="flex justify-between text-sm text-gray-400 mt-2">
+                        <span>Off / KVO</span>
+                        <span>Fast Bolus</span>
+                    </div>
+                </div>
+
+                <div class="h-px w-full bg-gray-100 my-4"></div>
+
+                <!-- Remaining Volume (Controls SVG Bag Fill Level) -->
+                <div>
+                    <div class="flex justify-between items-end mb-4">
+                        <label class="text-base font-medium text-gray-700">Volume Remaining</label>
+                        <span class="text-2xl font-bold text-sky-500"><span id="volume-val">500</span> <span class="text-sm text-gray-500 font-normal">mL</span></span>
+                    </div>
+                    <input type="range" id="volume-input" min="0" max="1000" value="500" step="10">
+                    <div class="flex justify-between text-sm text-gray-400 mt-2">
+                        <span>Empty</span>
+                        <span>Full (1000 mL)</span>
+                    </div>
+                </div>
+
+                <!-- Formula Info Box -->
+                <div class="mt-8 p-4 bg-gray-50 border border-gray-200 rounded-xl text-xs text-gray-500 leading-relaxed font-mono">
+                    <span class="block font-bold text-gray-700 mb-1">Formula Used:</span>
+                    Drip Rate (gtt/min) = (Volume (mL) / Time (min)) × Drop Factor (gtt/mL)<br><br>
+                    <span class="text-sky-600 italic">The Canvas animation interval is calculated in real-time derived strictly from this mathematical formula.</span>
+                </div>
+
+            </div>
+        </div>
+    </main>
+
+    <script>
+        // --- 2D CANVAS PHYSICS & SVG ENGINE ---
+        
+        // DOM Elements
+        const canvas = document.getElementById('droplet-canvas');
+        const ctx = canvas.getContext('2d');
+        const svgElement = document.getElementById('iv-svg');
+        const fluidLevelRect = document.getElementById('fluid-level');
+        
+        // Inputs
+        const elRate = document.getElementById('rate-input');
+        const elVolume = document.getElementById('volume-input');
+        const elFactor = document.getElementById('drop-factor-input');
+        
+        // Output Displays
+        const valRate = document.getElementById('rate-val');
+        const valVolume = document.getElementById('volume-val');
+        const valFactor = document.getElementById('factor-val');
+        const metricGtt = document.getElementById('metric-gtt');
+
+        // Physics State
+        let drops = [];
+        let dropsPerMin = 0;
+        let dropIntervalMs = Infinity;
+        let lastDropTime = 0;
+
+        function resizeCanvas() {
+            // Match canvas exact pixel size to its container for crisp rendering
+            const rect = canvas.parentElement.getBoundingClientRect();
+            // Handle high DPI displays
+            const dpr = window.devicePixelRatio || 1;
+            canvas.width = rect.width * dpr;
+            canvas.height = rect.height * dpr;
+            ctx.scale(dpr, dpr);
+            canvas.style.width = `${rect.width}px`;
+            canvas.style.height = `${rect.height}px`;
+        }
+
+        function updateLogic() {
+            const flowRateMLperHr = parseFloat(elRate.value);
+            const volumeML = parseFloat(elVolume.value);
+            const dropFactor = parseFloat(elFactor.value);
+            
+            // Update Text UI
+            valRate.innerText = flowRateMLperHr;
+            valVolume.innerText = volumeML;
+            valFactor.innerText = dropFactor;
+
+            // Math: gtt/min = (mL/hr * drop_factor) / 60
+            dropsPerMin = Math.round((flowRateMLperHr * dropFactor) / 60);
+            metricGtt.innerText = dropsPerMin;
+            
+            dropIntervalMs = dropsPerMin > 0 ? 60000 / dropsPerMin : Infinity;
+
+            // Update SVG Fluid Level Visually
+            // Y-range: 50 (Full) to 250 (Empty) -> Height: 200 (Full) to 0 (Empty)
+            const maxVolume = 1000;
+            const percentage = Math.max(0, volumeML / maxVolume);
+            
+            const maxHeight = 200;
+            const currentHeight = maxHeight * percentage;
+            
+            const startY = 50;
+            const newY = startY + (maxHeight - currentHeight);
+
+            fluidLevelRect.setAttribute('y', newY);
+            fluidLevelRect.setAttribute('height', currentHeight);
+        }
+
+        function mapSVGToCanvas(svgX, svgY) {
+            // Converts internal SVG viewBox coordinates (200x500) to actual Canvas screen coordinates
+            const rect = canvas.getBoundingClientRect();
+            const scaleX = rect.width / 200;
+            const scaleY = rect.height / 500;
+            return {
+                x: svgX * scaleX,
+                y: svgY * scaleY
+            };
+        }
+
+        function animate(timestamp) {
+            requestAnimationFrame(animate);
+            
+            // Clear previous frame
+            const rect = canvas.getBoundingClientRect();
+            ctx.clearRect(0, 0, rect.width, rect.height);
+
+            // Determine drop spawn point (top of drip chamber in SVG coords)
+            // Chamber is at x:92-108, y:285. Center X is 100.
+            const spawnPoint = mapSVGToCanvas(100, 285);
+            const endPoint = mapSVGToCanvas(100, 320); // Bottom of chamber
+
+            // Spawn new drops based on calculated interval
+            if (dropsPerMin > 0 && timestamp - lastDropTime > dropIntervalMs) {
+                drops.push({
+                    x: spawnPoint.x,
+                    y: spawnPoint.y,
+                    velocity: 0,
+                    size: rect.width * 0.015 // Relative sizing
+                });
+                lastDropTime = timestamp;
+            }
+
+            // Animate and Draw existing drops
+            const gravity = rect.height * 0.0003; // Scale gravity to screen size
+            
+            for (let i = drops.length - 1; i >= 0; i--) {
+                let drop = drops[i];
+                
+                drop.velocity += gravity;
+                drop.y += drop.velocity;
+
+                // Draw circular droplet
+                ctx.beginPath();
+                ctx.arc(drop.x, drop.y, drop.size, 0, Math.PI * 2);
+                ctx.fillStyle = '#0ea5e9'; // Match Tailwind sky-500
+                ctx.fill();
+                
+                // Add tiny shine/highlight to the droplet
+                ctx.beginPath();
+                ctx.arc(drop.x - drop.size*0.3, drop.y - drop.size*0.3, drop.size*0.2, 0, Math.PI * 2);
+                ctx.fillStyle = 'rgba(255, 255, 255, 0.6)';
+                ctx.fill();
+
+                // Remove drop if it hits the bottom of the chamber
+                if (drop.y >= endPoint.y) {
+                    drops.splice(i, 1);
+                }
+            }
+        }
+
+        // Event Listeners
+        window.addEventListener('resize', () => {
+            resizeCanvas();
+            // Clear drops on resize to prevent weird stretching
+            drops = [];
+        });
+
+        [elRate, elVolume, elFactor].forEach(input => {
+            input.addEventListener('input', updateLogic);
+        });
+
+        // Init
+        resizeCanvas();
+        updateLogic();
+        requestAnimationFrame(animate);
+
+    </script>
+</body>
+</html>

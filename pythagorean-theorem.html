@@ -1,0 +1,670 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Math Lab - Geometry & Algebra</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Fira+Code:wght@400;500&display=swap" rel="stylesheet">
+    <style>
+        body, html {
+            margin: 0; padding: 0; width: 100%; height: 100%; overflow: hidden;
+            background-color: #020617; font-family: 'Inter', sans-serif;
+            touch-action: none; user-select: none;
+        }
+
+        .main-shell { display: flex; width: 100%; height: 100%; }
+        .workspace { flex-grow: 1; position: relative; overflow: hidden; }
+        
+        #sim-canvas {
+            display: block; width: 100%; height: 100%;
+        }
+
+        .glass-panel {
+            background: linear-gradient(145deg, rgba(15, 23, 42, 0.9) 0%, rgba(2, 6, 23, 0.98) 100%);
+            backdrop-filter: blur(40px); -webkit-backdrop-filter: blur(40px);
+            border-right: 1px solid rgba(255, 255, 255, 0.1);
+            box-shadow: 20px 0 50px rgba(0, 0, 0, 0.5);
+            display: flex; flex-direction: column; padding: 2rem; z-index: 100; width: 380px;
+        }
+
+        @media (max-width: 1024px) {
+            .glass-panel { width: 100%; height: 40%; border-right: none; border-bottom: 1px solid rgba(255,255,255,0.1); padding: 1rem; }
+            .main-shell { flex-direction: column; }
+        }
+
+        .tab-btn { transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1); }
+        .tab-btn.active { background-color: #ffffff; color: #020617; box-shadow: 0 4px 12px rgba(0,0,0,0.4); }
+
+        input[type=range] { -webkit-appearance: none; width: 100%; background: transparent; }
+        input[type=range]::-webkit-slider-thumb {
+            -webkit-appearance: none; height: 20px; width: 20px; border-radius: 50%;
+            background: #ffffff; cursor: pointer; margin-top: -8px;
+            box-shadow: 0 4px 10px rgba(0,0,0,0.5); border: 1px solid rgba(255,255,255,0.2);
+            transition: transform 0.2s cubic-bezier(0.2, 0.8, 0.2, 1);
+        }
+        input[type=range]::-webkit-slider-thumb:hover { transform: scale(1.15); }
+        input[type=range]::-webkit-slider-runnable-track {
+            width: 100%; height: 4px; cursor: pointer; background: rgba(255, 255, 255, 0.15); border-radius: 2px;
+        }
+
+        .formula-box { font-family: 'Fira Code', monospace; }
+        .scroll-area::-webkit-scrollbar { width: 4px; }
+        .scroll-area::-webkit-scrollbar-thumb { background: rgba(255, 255, 255, 0.2); border-radius: 4px; }
+
+        #loading-screen {
+            position: absolute; inset: 0; background: #020617; display: flex; flex-direction: column;
+            align-items: center; justify-content: center; color: white; z-index: 150; transition: opacity 0.6s ease;
+        }
+    </style>
+</head>
+<body>
+
+    <div id="loading-screen">
+        <div class="flex flex-col items-center gap-5">
+            <svg class="animate-spin h-10 w-10 text-emerald-500" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="3"></circle><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path></svg>
+            <span class="text-xs font-bold tracking-widest text-gray-400 uppercase italic">Calibrating Center Workspace & Assets...</span>
+        </div>
+    </div>
+
+    <div class="main-shell">
+        <!-- UI Panel -->
+        <div class="glass-panel shrink-0">
+            <div class="mb-6 border-b border-white/10 pb-6 shrink-0 flex items-center justify-between">
+                <div>
+                    <h1 class="text-2xl font-bold tracking-tight text-white mb-1">Math Lab</h1>
+                    <p class="text-[11px] font-medium text-emerald-400 uppercase tracking-widest">Geometry & Algebra</p>
+                </div>
+                <div class="w-10 h-10 rounded-full bg-emerald-500/20 flex items-center justify-center text-emerald-400 shadow-[0_0_15px_rgba(16,185,129,0.3)]">
+                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M14 10l-2 1m0 0l-2-1m2 1v2.5M20 7l-2 1m2-1l-2-1m2 1v2.5M14 4l-2-1-2 1M4 7l2-1M4 7l2 1M4 7v2.5M12 21l-2-1m2 1l2-1m-2 1v-2.5M6 18l-2-1v-2.5M18 18l2-1v-2.5"></path></svg>
+                </div>
+            </div>
+
+            <!-- Tab Navigation -->
+            <div class="grid grid-cols-2 p-1 bg-black/40 rounded-xl shadow-inner gap-1 mb-6 shrink-0 border border-white/5">
+                <button data-tab="pythagoras" class="tab-btn active py-2 text-[10px] font-bold uppercase tracking-wider rounded-lg text-gray-400">Pythagoras</button>
+                <button data-tab="transforms" class="tab-btn py-2 text-[10px] font-bold uppercase tracking-wider rounded-lg text-gray-400">Transforms</button>
+                <button data-tab="pi" class="tab-btn py-2 text-[10px] font-bold uppercase tracking-wider rounded-lg text-gray-400">Visual Pi</button>
+                <button data-tab="algebra" class="tab-btn py-2 text-[10px] font-bold uppercase tracking-wider rounded-lg text-gray-400">Algebra Scale</button>
+            </div>
+
+            <div class="scroll-area overflow-y-auto pr-2 pb-2 flex-1">
+                
+                <div class="bg-black/30 p-4 rounded-xl border border-white/5 shadow-inner mb-6">
+                    <h2 id="info-title" class="text-sm font-bold text-white mb-2 italic">The Pythagorean Theorem</h2>
+                    <div id="formula-display" class="formula-box bg-white/5 p-2 rounded text-[11px] text-emerald-300 mb-3 border border-white/10 text-center">
+                        a² + b² = c²
+                    </div>
+                    <p id="info-desc" class="text-xs text-gray-400 leading-relaxed">
+                        The area of the square on the hypotenuse ($c$) is equal to the sum of the areas of the squares on the two shorter sides ($a$ and $b$). Scrub the slider to pour the fluid!
+                    </p>
+                </div>
+
+                <!-- 1. PYTHAGORAS CONTROLS -->
+                <div id="controls-pythagoras" class="space-y-5">
+                    <div class="space-y-2">
+                        <div class="flex justify-between items-end">
+                            <label class="text-[11px] font-semibold text-blue-400 uppercase tracking-widest">Water Transfer</label>
+                            <span id="pyth-flow-disp" class="text-[11px] font-mono bg-blue-500/10 px-2 py-1 rounded text-blue-300">0%</span>
+                        </div>
+                        <input type="range" id="pyth-flow" min="0" max="100" value="0" style="accent-color: #3b82f6;">
+                    </div>
+                </div>
+
+                <!-- 2. TRANSFORMS CONTROLS -->
+                <div id="controls-transforms" class="space-y-6 hidden">
+                    <div class="space-y-4">
+                        <div class="space-y-2">
+                            <div class="flex justify-between items-end">
+                                <label class="text-[11px] font-semibold text-purple-400 uppercase tracking-widest">Translate (X, Y)</label>
+                                <span id="tf-trans-disp" class="text-[11px] font-mono bg-purple-500/10 px-2 py-1 rounded text-purple-300">0, 0</span>
+                            </div>
+                            <input type="range" id="tf-trans-x" min="-6" max="6" step="1" value="0" class="w-full mb-2" style="accent-color: #c084fc;">
+                            <input type="range" id="tf-trans-y" min="-4" max="4" step="1" value="0" class="w-full" style="accent-color: #c084fc;">
+                        </div>
+                        <div class="space-y-2 pt-2 border-t border-white/10">
+                            <div class="flex justify-between items-end">
+                                <label class="text-[11px] font-semibold text-cyan-400 uppercase tracking-widest">Rotate (θ)</label>
+                                <span id="tf-rot-disp" class="text-[11px] font-mono bg-cyan-500/10 px-2 py-1 rounded text-cyan-300">0°</span>
+                            </div>
+                            <input type="range" id="tf-rot" min="0" max="360" step="15" value="0" class="w-full" style="accent-color: #22d3ee;">
+                        </div>
+                        <div class="space-y-2 pt-2 border-t border-white/10">
+                            <div class="flex justify-between items-end">
+                                <label class="text-[11px] font-semibold text-emerald-400 uppercase tracking-widest">Dilate (Scale)</label>
+                                <span id="tf-scale-disp" class="text-[11px] font-mono bg-emerald-500/10 px-2 py-1 rounded text-emerald-300">1.0x</span>
+                            </div>
+                            <input type="range" id="tf-scale" min="0.5" max="3.0" step="0.25" value="1.0" class="w-full" style="accent-color: #10b981;">
+                        </div>
+                    </div>
+                </div>
+
+                <!-- 3. VISUAL PI CONTROLS -->
+                <div id="controls-pi" class="space-y-6 hidden">
+                    <div class="space-y-2">
+                        <div class="flex justify-between items-end">
+                            <label class="text-[11px] font-semibold text-orange-400 uppercase tracking-widest">Unroll Orbit</label>
+                            <span id="pi-roll-disp" class="text-[11px] font-mono bg-orange-500/10 px-2 py-1 rounded text-orange-300">0 Rotations</span>
+                        </div>
+                        <input type="range" id="pi-roll" min="0" max="1.1" step="0.01" value="0" style="accent-color: #f97316;">
+                    </div>
+                </div>
+
+                <!-- 4. ALGEBRA SCALE CONTROLS -->
+                <div id="controls-algebra" class="space-y-6 hidden">
+                    <div class="space-y-2">
+                        <div class="flex justify-between items-end">
+                            <label class="text-[11px] font-semibold text-emerald-400 uppercase tracking-widest">Solution Step</label>
+                            <span id="alg-step-disp" class="text-[11px] font-mono bg-emerald-500/10 px-2 py-1 rounded text-emerald-300">Step 0</span>
+                        </div>
+                        <input type="range" id="alg-step" min="0" max="2" step="1" value="0" style="accent-color: #10b981;">
+                    </div>
+                </div>
+
+            </div>
+            
+            <div class="pt-6 border-t border-white/5 text-[10px] text-gray-600 font-medium text-center shrink-0 mt-4 uppercase tracking-tighter">
+                True 1:1 Workspace Centering
+            </div>
+        </div>
+
+        <!-- Simulation Workspace -->
+        <div class="workspace" id="workspace">
+            <canvas id="sim-canvas"></canvas>
+            
+            <!-- Real-Time HUD -->
+            <div id="hud" class="absolute bottom-8 right-8 z-20 glass-panel !w-[280px] !p-5 !border !rounded-2xl pointer-events-none shadow-2xl">
+                <div class="text-[10px] font-bold uppercase tracking-widest text-gray-500 mb-3 border-b border-white/5 pb-1">Mathematical Result</div>
+                <div class="space-y-3">
+                    <div class="flex justify-between items-center">
+                        <span class="text-[12px] text-gray-400 font-medium" id="hud-label-1">Data 1</span>
+                        <span id="hud-val-1" class="text-base font-mono font-bold text-white">---</span>
+                    </div>
+                    <div class="flex justify-between items-center">
+                        <span class="text-[12px] text-gray-400 font-medium" id="hud-label-2">Data 2</span>
+                        <span id="hud-val-2" class="text-base font-mono font-bold text-white">---</span>
+                    </div>
+                    <div id="hud-status" class="pt-2 text-center text-[12px] font-bold tracking-widest text-emerald-400 hidden border-t border-white/5 font-mono">
+                        RESULT
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- MAIN ENGINE SCRIPT -->
+    <script>
+        const canvas = document.getElementById('sim-canvas');
+        const ctx = canvas.getContext('2d');
+        const workspace = document.getElementById('workspace');
+
+        // --- ASSET LOADING ---
+        const assets = {
+            car: new Image(),
+            earth: new Image(),
+            wood: new Image(),
+            anvil: new Image()
+        };
+        let loadedCount = 0;
+
+        function checkLoad() {
+            loadedCount++;
+            if (loadedCount >= 4) {
+                document.getElementById('loading-screen').style.opacity = '0';
+                setTimeout(() => document.getElementById('loading-screen').style.display = 'none', 600);
+            }
+        }
+        
+        // Failsafe timer
+        setTimeout(() => { if(loadedCount < 4) { loadedCount = 4; checkLoad(); } }, 3000);
+
+        assets.car.onload = checkLoad; assets.car.onerror = checkLoad;
+        assets.earth.onload = checkLoad; assets.earth.onerror = checkLoad;
+        assets.wood.onload = checkLoad; assets.wood.onerror = checkLoad;
+        assets.anvil.onload = checkLoad; assets.anvil.onerror = checkLoad;
+
+        assets.car.src = 'https://res.cloudinary.com/ds93qby5a/image/upload/v1775902319/photo-1502877338535-766e1452684a-Photoroom_wpphzt.png';
+        assets.earth.src = 'https://res.cloudinary.com/ds93qby5a/image/upload/q_auto/f_auto/v1775882647/d746cf80-3073-40f3-9c03-a79cba273e8a-Photoroom_ygqjvc.png';
+        assets.wood.src = 'https://res.cloudinary.com/ds93qby5a/image/upload/q_auto/f_auto/v1775831166/wooden_ball_kce8nj.png';
+        assets.anvil.src = 'https://res.cloudinary.com/ds93qby5a/image/upload/q_auto/f_auto/v1775831166/anvil_rbwxpt.png';
+
+        // --- GLOBAL STATE ---
+        let currentMode = 'pythagoras'; 
+        let cx, cy, wsWidth, wsHeight;
+
+        const M = {
+            pyth: { flow: 0 },
+            tf:   { tx: 0, ty: 0, rot: 0, scale: 1.0 },
+            pi:   { roll: 0 },
+            alg:  { step: 0 }
+        };
+
+        function resize() {
+            // CRITICAL FIX: Base canvas dimensions exactly on the workspace div
+            canvas.width = workspace.clientWidth;
+            canvas.height = workspace.clientHeight;
+            wsWidth = canvas.width;
+            wsHeight = canvas.height;
+            
+            // EXACT CENTER OF THE WORKSPACE CANVAS
+            cx = wsWidth / 2;
+            cy = wsHeight / 2;
+        }
+        window.addEventListener('resize', resize);
+        resize(); // Initial sizing
+
+        // --- UI BINDINGS ---
+        const bindSlider = (id, obj, key, displayId, suffix="", callback=null) => {
+            const el = document.getElementById(id);
+            if(!el) return;
+            el.addEventListener('input', (e) => {
+                obj[key] = parseFloat(e.target.value);
+                document.getElementById(displayId).innerText = obj[key] + suffix;
+                if(callback) callback();
+            });
+        };
+
+        bindSlider('pyth-flow', M.pyth, 'flow', 'pyth-flow-disp', '%');
+        
+        const updateTfLabel = () => document.getElementById('tf-trans-disp').innerText = `${M.tf.tx}, ${M.tf.ty}`;
+        bindSlider('tf-trans-x', M.tf, 'tx', 'tf-trans-disp', '', updateTfLabel);
+        bindSlider('tf-trans-y', M.tf, 'ty', 'tf-trans-disp', '', updateTfLabel);
+        bindSlider('tf-rot', M.tf, 'rot', 'tf-rot-disp', '°');
+        bindSlider('tf-scale', M.tf, 'scale', 'tf-scale-disp', 'x');
+
+        bindSlider('pi-roll', M.pi, 'roll', 'pi-roll-disp', ' Rotations');
+        bindSlider('alg-step', M.alg, 'step', 'alg-step-disp', '', () => {
+            document.getElementById('alg-step-disp').innerText = `Step ${M.alg.step}`;
+        });
+
+        // Aspect-ratio aware image drawing
+        function drawImageAspect(img, x, y, targetWidth, pivotX = 0.5, pivotY = 0.5, opacity = 1.0) {
+            if (!img.complete || !img.naturalWidth) return;
+            ctx.save();
+            ctx.globalAlpha = opacity;
+            const ratio = img.naturalHeight / img.naturalWidth;
+            const targetHeight = targetWidth * ratio;
+            ctx.drawImage(img, x - (targetWidth * pivotX), y - (targetHeight * pivotY), targetWidth, targetHeight);
+            ctx.restore();
+            return targetHeight;
+        }
+
+
+        // --- 2D RENDER FUNCTIONS ---
+
+        // 1. PYTHAGOREAN THEOREM
+        function drawPythagoras() {
+            ctx.clearRect(0, 0, wsWidth, wsHeight);
+            
+            const scale = 35; // Size multiplier
+            const a = 3 * scale;
+            const b = 4 * scale;
+            const c = 5 * scale;
+            
+            const flow = M.pyth.flow / 100; 
+            
+            ctx.save();
+            // Center the entire bounding box of the geometric shape
+            // The shape roughly spans from (-b, -a) to (a, b) relative to the right-angle vertex
+            const offsetX = (b - a)/2;
+            const offsetY = a/2;
+            ctx.translate(cx + offsetX, cy + offsetY);
+
+            // Triangle Vertices (Right angle at 0,0)
+            const p1 = {x: 0, y: 0};
+            const p2 = {x: 0, y: -a};
+            const p3 = {x: -b, y: 0};
+
+            // Draw Triangle Core
+            ctx.beginPath();
+            ctx.moveTo(p1.x, p1.y); ctx.lineTo(p2.x, p2.y); ctx.lineTo(p3.x, p3.y); ctx.closePath();
+            ctx.fillStyle = '#1e293b'; ctx.fill();
+            ctx.lineWidth = 3; ctx.strokeStyle = '#cbd5e1'; ctx.stroke();
+
+            // Draw Right Angle symbol
+            ctx.beginPath(); ctx.moveTo(-15, 0); ctx.lineTo(-15, -15); ctx.lineTo(0, -15); ctx.stroke();
+
+            // Water Drawing Helper
+            function drawSquare(x1, y1, x2, y2, extentX, extentY, color, fillPercent, label, areaText) {
+                const sq_p1 = {x: x1, y: y1};
+                const sq_p2 = {x: x2, y: y2};
+                const sq_p3 = {x: x2 + extentX, y: y2 + extentY};
+                const sq_p4 = {x: x1 + extentX, y: y1 + extentY};
+
+                // Glass Container
+                ctx.beginPath();
+                ctx.moveTo(sq_p1.x, sq_p1.y); ctx.lineTo(sq_p2.x, sq_p2.y);
+                ctx.lineTo(sq_p3.x, sq_p3.y); ctx.lineTo(sq_p4.x, sq_p4.y); ctx.closePath();
+                ctx.strokeStyle = 'rgba(255,255,255,0.3)'; ctx.lineWidth = 2; ctx.stroke();
+
+                // Fluid Fill
+                if (fillPercent > 0) {
+                    ctx.save();
+                    ctx.beginPath();
+                    ctx.moveTo(sq_p1.x, sq_p1.y); ctx.lineTo(sq_p2.x, sq_p2.y);
+                    ctx.lineTo(sq_p3.x, sq_p3.y); ctx.lineTo(sq_p4.x, sq_p4.y); ctx.closePath();
+                    ctx.clip();
+
+                    const midX1 = (sq_p1.x + sq_p2.x)/2; const midY1 = (sq_p1.y + sq_p2.y)/2;
+                    const midX2 = (sq_p3.x + sq_p4.x)/2; const midY2 = (sq_p3.y + sq_p4.y)/2;
+                    
+                    const grad = ctx.createLinearGradient(midX1, midY1, midX2, midY2);
+                    grad.addColorStop(0, color);
+                    grad.addColorStop(fillPercent, color);
+                    grad.addColorStop(fillPercent, 'transparent');
+                    grad.addColorStop(1, 'transparent');
+                    
+                    ctx.fillStyle = grad;
+                    // Fill massive area, relying on clip to constrain shape
+                    ctx.fillRect(-1000, -1000, 2000, 2000);
+                    ctx.restore();
+                }
+
+                // Text Label
+                ctx.fillStyle = '#ffffff'; ctx.font = 'bold 16px Inter'; ctx.textAlign = 'center';
+                const cX = (sq_p1.x + sq_p3.x)/2; const cY = (sq_p1.y + sq_p3.y)/2;
+                ctx.fillText(label, cX, cY - 8);
+                ctx.font = '13px Inter'; ctx.fillStyle = 'rgba(255,255,255,0.7)';
+                ctx.fillText(areaText, cX, cY + 14);
+            }
+
+            // A Square (Right side)
+            drawSquare(p1.x, p1.y, p2.x, p2.y, a, 0, 'rgba(56, 189, 248, 0.8)', 1 - flow, "a²", `Area: 9`);
+            
+            // B Square (Bottom side)
+            drawSquare(p3.x, p3.y, p1.x, p1.y, 0, b, 'rgba(56, 189, 248, 0.8)', 1 - flow, "b²", `Area: 16`);
+
+            // C Square (Hypotenuse)
+            const dx = p3.x - p2.x; const dy = p3.y - p2.y;
+            const len = Math.sqrt(dx*dx + dy*dy); 
+            const nx = dy / len; const ny = -dx / len;
+            drawSquare(p2.x, p2.y, p3.x, p3.y, nx * c, ny * c, 'rgba(16, 185, 129, 0.8)', flow, "c²", `Area: 25`);
+
+            ctx.restore();
+
+            // HUD
+            document.getElementById('hud-label-1').innerText = "Volume in a² + b²";
+            document.getElementById('hud-val-1').innerText = ((1-flow)*25).toFixed(1) + " L";
+            document.getElementById('hud-val-1').style.color = "#38bdf8";
+            document.getElementById('hud-label-2').innerText = "Volume in c²";
+            document.getElementById('hud-val-2').innerText = (flow*25).toFixed(1) + " L";
+            document.getElementById('hud-val-2').style.color = "#10b981";
+            
+            const st = document.getElementById('hud-status');
+            if(flow === 1) {
+                st.innerText = "a² + b² = c² (25 = 25)";
+                st.classList.remove('hidden');
+            } else {
+                st.classList.add('hidden');
+            }
+        }
+
+        // 2. TRANSFORMATIONS
+        function drawTransforms() {
+            ctx.clearRect(0, 0, wsWidth, wsHeight);
+            
+            const gridScale = 50;
+            
+            ctx.save();
+            ctx.translate(cx, cy);
+
+            // Cartesian Grid
+            ctx.strokeStyle = 'rgba(255,255,255,0.05)'; ctx.lineWidth = 1;
+            for(let i = -15; i <= 15; i++) {
+                ctx.beginPath(); ctx.moveTo(i*gridScale, -800); ctx.lineTo(i*gridScale, 800); ctx.stroke();
+                ctx.beginPath(); ctx.moveTo(-800, i*gridScale); ctx.lineTo(800, i*gridScale); ctx.stroke();
+            }
+
+            // Main Axes
+            ctx.strokeStyle = 'rgba(255,255,255,0.3)'; ctx.lineWidth = 2;
+            ctx.beginPath(); ctx.moveTo(-800, 0); ctx.lineTo(800, 0); ctx.stroke(); // X
+            ctx.beginPath(); ctx.moveTo(0, -800); ctx.lineTo(0, 800); ctx.stroke(); // Y
+
+            // 1. Ghost Car at Origin
+            drawImageAspect(assets.car, 0, 0, gridScale * 2, 0.5, 0.5, 0.2);
+
+            // 2. Transformed Car
+            ctx.save();
+            // Translate (Y is inverted for standard math layout where +Y is up)
+            ctx.translate(M.tf.tx * gridScale, -M.tf.ty * gridScale);
+            // Rotate
+            ctx.rotate(M.tf.rot * Math.PI / 180);
+            // Dilate (Scale)
+            ctx.scale(M.tf.scale, M.tf.scale);
+            
+            ctx.shadowColor = '#c084fc';
+            ctx.shadowBlur = 20;
+            // Draw Car centered at the new local origin
+            drawImageAspect(assets.car, 0, 0, gridScale * 2, 0.5, 0.5, 1.0);
+            ctx.restore();
+
+            ctx.restore();
+
+            document.getElementById('hud-label-1').innerText = "Transformation";
+            document.getElementById('hud-val-1').innerText = "T ∘ R ∘ D";
+            document.getElementById('hud-val-1').style.color = "#c084fc";
+            document.getElementById('hud-label-2').innerText = "Origin Shift";
+            document.getElementById('hud-val-2').innerText = `(${M.tf.tx}, ${M.tf.ty})`;
+            document.getElementById('hud-val-2').style.color = "#ffffff";
+            document.getElementById('hud-status').classList.add('hidden');
+        }
+
+        // 3. VISUAL PI
+        function drawPi() {
+            ctx.clearRect(0, 0, wsWidth, wsHeight);
+            
+            const D = 140; // Diameter
+            const R = D / 2;
+            const startX = cx - (Math.PI * D)/2; 
+            const groundY = cy + 120;
+
+            ctx.save();
+
+            // Number Line Ground
+            ctx.strokeStyle = '#475569'; ctx.lineWidth = 4;
+            ctx.beginPath(); ctx.moveTo(50, groundY); ctx.lineTo(wsWidth - 50, groundY); ctx.stroke();
+
+            ctx.fillStyle = '#94a3b8'; ctx.font = '14px Inter'; ctx.textAlign = 'center';
+            for (let i = 0; i <= 4; i++) {
+                const px = startX + i * D;
+                ctx.beginPath(); ctx.moveTo(px, groundY); ctx.lineTo(px, groundY + 15); ctx.stroke();
+                ctx.fillText(i + "d", px, groundY + 35);
+            }
+            
+            // Mark EXACT Pi
+            const piX = startX + Math.PI * D;
+            ctx.strokeStyle = '#f97316'; ctx.lineWidth = 2;
+            ctx.beginPath(); ctx.moveTo(piX, groundY); ctx.lineTo(piX, groundY + 25); ctx.stroke();
+            ctx.fillStyle = '#f97316'; ctx.font = 'bold 16px Inter';
+            ctx.fillText("π × d (~3.14d)", piX, groundY + 50);
+
+            // Rolling Logic
+            const rollAmt = M.pi.roll; 
+            const theta = rollAmt * Math.PI * 2; 
+            const currentX = startX + R * theta; 
+
+            // Red paint unrolling on the ground
+            if (currentX > startX) {
+                ctx.strokeStyle = '#f97316'; ctx.lineWidth = 6; ctx.lineCap = 'round';
+                ctx.beginPath(); ctx.moveTo(startX, groundY - 3); ctx.lineTo(currentX, groundY - 3); ctx.stroke();
+            }
+
+            // Draw Earth Asset
+            ctx.translate(currentX, groundY - R);
+            ctx.rotate(theta);
+
+            // Red paint tracking on the globe
+            ctx.strokeStyle = '#f97316'; ctx.lineWidth = 6;
+            ctx.beginPath();
+            if (rollAmt < 1) {
+                ctx.arc(0, 0, R, Math.PI/2 - theta, Math.PI/2 + (Math.PI*2 - theta), false);
+            }
+            ctx.stroke();
+
+            drawImageAspect(assets.earth, 0, 0, D);
+
+            ctx.restore();
+
+            document.getElementById('hud-label-1').innerText = "Circumference";
+            document.getElementById('hud-val-1').innerText = "C = π × d";
+            document.getElementById('hud-val-1').style.color = "#f97316";
+            document.getElementById('hud-label-2').innerText = "Distance Rolled";
+            document.getElementById('hud-val-2').innerText = (rollAmt * 3.14159).toFixed(2) + "d";
+            document.getElementById('hud-val-2').style.color = "#ffffff";
+            document.getElementById('hud-status').classList.add('hidden');
+        }
+
+        // 4. ALGEBRA BALANCE SCALE
+        function drawAlgebra() {
+            ctx.clearRect(0, 0, wsWidth, wsHeight);
+            const step = M.alg.step;
+            
+            // Equation: 2x + 4 = 10
+            let eqText = "2x + 4 = 10";
+            let leftXCount = 2, left1Count = 4, right1Count = 10;
+            let left1Ghost = 0, right1Ghost = 0, leftXGhost = 0, right1Ghost2 = 0;
+            let isTilted = false;
+
+            // Logic to isolate variables
+            if (step === 1) {
+                left1Count = 0; left1Ghost = 4;
+                right1Count = 6; right1Ghost = 4;
+                eqText = "2x = 6  (-4 from both sides)";
+            } else if (step === 2) {
+                leftXCount = 1; leftXGhost = 1;
+                left1Count = 0; left1Ghost = 0;
+                right1Count = 3; right1Ghost2 = 3; 
+                eqText = "x = 3  (Divide both sides by 2)";
+            }
+
+            // Layout
+            const scaleY = cy + 120;
+            const leftPanX = cx - 200;
+            const rightPanX = cx + 200;
+            const panBaseY = scaleY + 100;
+
+            ctx.save();
+            
+            // Draw Base
+            ctx.fillStyle = '#334155';
+            ctx.beginPath(); ctx.moveTo(cx, scaleY); ctx.lineTo(cx - 40, scaleY + 80); ctx.lineTo(cx + 40, scaleY + 80); ctx.fill();
+            
+            // Draw Beam
+            ctx.lineWidth = 12; ctx.strokeStyle = '#94a3b8'; ctx.lineCap = 'round';
+            ctx.beginPath(); ctx.moveTo(leftPanX - 50, scaleY); ctx.lineTo(rightPanX + 50, scaleY); ctx.stroke();
+
+            // Draw Pans
+            ctx.lineWidth = 4; ctx.strokeStyle = '#cbd5e1';
+            ctx.beginPath(); ctx.moveTo(leftPanX, scaleY); ctx.lineTo(leftPanX - 60, scaleY + 100); ctx.lineTo(leftPanX + 60, scaleY + 100); ctx.closePath(); ctx.stroke();
+            ctx.beginPath(); ctx.moveTo(rightPanX, scaleY); ctx.lineTo(rightPanX - 60, scaleY + 100); ctx.lineTo(rightPanX + 60, scaleY + 100); ctx.closePath(); ctx.stroke();
+
+            // Helper to draw physical items
+            function drawItem(x, y, type, opacity = 1.0) {
+                if (type === 'x') {
+                    // Anvil for 'x'
+                    ctx.shadowBlur = opacity === 1 ? 15 : 0; ctx.shadowColor = 'rgba(16,185,129,0.5)';
+                    const h = drawImageAspect(assets.anvil, x, y, 60, 0.5, 1.0, opacity);
+                    ctx.shadowBlur = 0;
+                    ctx.fillStyle = 'rgba(255,255,255,' + opacity + ')'; ctx.font = 'bold 22px Inter'; ctx.textAlign = 'center';
+                    ctx.fillText('x', x, y - h/2 + 5);
+                } else {
+                    // Wooden Ball for '1'
+                    ctx.shadowBlur = opacity === 1 ? 10 : 0; ctx.shadowColor = 'rgba(0,0,0,0.5)';
+                    const r = 18;
+                    drawImageAspect(assets.wood, x, y - r, r*2, 0.5, 0.5, opacity);
+                    ctx.shadowBlur = 0;
+                    ctx.fillStyle = 'rgba(0,0,0,' + opacity + ')'; ctx.font = 'bold 14px Inter'; ctx.textAlign = 'center';
+                    ctx.fillText('1', x, y - r + 5);
+                }
+            }
+
+            // --- Left Pan ---
+            // Render X Anvils
+            for(let i=0; i<leftXCount; i++) drawItem(leftPanX - 30 + i*60, panBaseY, 'x');
+            for(let i=0; i<leftXGhost; i++) drawItem(leftPanX - 30 + (leftXCount+i)*60, panBaseY - 120, 'x', 0.2); // Fading out
+            
+            // Render 1 Balls
+            for(let i=0; i<left1Count; i++) drawItem(leftPanX - 40 + (i%3)*40, panBaseY - 60 - Math.floor(i/3)*36, '1');
+            for(let i=0; i<left1Ghost; i++) drawItem(leftPanX - 40 + (i%3)*40, panBaseY - 150 - Math.floor(i/3)*36, '1', 0.2);
+
+            // --- Right Pan ---
+            // Render 1 Balls
+            for(let i=0; i<right1Count; i++) drawItem(rightPanX - 40 + (i%3)*40, panBaseY - Math.floor(i/3)*36, '1');
+            for(let i=0; i<right1Ghost; i++) drawItem(rightPanX - 40 + (i%3)*40, panBaseY - 120 - Math.floor(i/3)*36, '1', 0.2);
+            for(let i=0; i<right1Ghost2; i++) drawItem(rightPanX - 40 + ((i+right1Count)%3)*40, panBaseY - 120 - Math.floor((i+right1Count)/3)*36, '1', 0.2);
+
+            ctx.restore();
+
+            // Update Formula HUD
+            document.getElementById('formula-display').innerText = eqText;
+
+            document.getElementById('hud-label-1').innerText = "Current State";
+            document.getElementById('hud-val-1').innerText = eqText.split('  ')[0];
+            document.getElementById('hud-val-1').style.color = "#10b981";
+            document.getElementById('hud-label-2').innerText = "Scale Balance";
+            document.getElementById('hud-val-2').innerText = "Balanced";
+            document.getElementById('hud-val-2').style.color = "#ffffff";
+            
+            const st = document.getElementById('hud-status');
+            if(step === 2) {
+                st.innerText = "Solution: x = 3";
+                st.classList.remove('hidden');
+            } else {
+                st.classList.add('hidden');
+            }
+        }
+
+
+        // --- MASTER RENDER LOOP ---
+        function renderLoop() {
+            ctx.fillStyle = '#020617';
+            ctx.fillRect(0, 0, wsWidth, wsHeight);
+
+            // Tech Grid
+            ctx.strokeStyle = 'rgba(255,255,255,0.02)';
+            ctx.lineWidth = 1;
+            ctx.beginPath();
+            for(let i=0; i<canvas.width; i+=80) { ctx.moveTo(i,0); ctx.lineTo(i,canvas.height); }
+            for(let i=0; i<canvas.height; i+=80) { ctx.moveTo(0,i); ctx.lineTo(canvas.width,i); }
+            ctx.stroke();
+
+            if (currentMode === 'pythagoras') drawPythagoras();
+            else if (currentMode === 'transforms') drawTransforms();
+            else if (currentMode === 'pi') drawPi();
+            else if (currentMode === 'algebra') drawAlgebra();
+
+            requestAnimationFrame(renderLoop);
+        }
+
+        // --- TAB SWITCHING ---
+        const tabs = document.querySelectorAll('.tab-btn');
+        tabs.forEach(btn => {
+            btn.addEventListener('click', (e) => {
+                tabs.forEach(t => t.classList.remove('active', 'bg-white', 'text-gray-900'));
+                tabs.forEach(t => t.classList.add('text-gray-400'));
+                btn.classList.add('active', 'bg-white', 'text-gray-900');
+                
+                currentMode = btn.dataset.tab;
+
+                const info = {
+                    pythagoras: { title: "The Pythagorean Theorem", formula: "a² + b² = c²", desc: "The area of the square on the hypotenuse ($c$) is equal to the sum of the areas of the squares on the two shorter sides ($a$ and $b$). Scrub the slider to pour the fluid!" },
+                    transforms: { title: "Geometric Transformations", formula: "T(x,y) = (x', y')", desc: "Move the vehicle across the Cartesian plane. <b>Translate</b> to slide, <b>Rotate</b> to spin around the origin, and <b>Dilate</b> to resize." },
+                    pi: { title: "Visualizing Pi (π)", formula: "C = π × d", desc: "Watch the planet unroll its circumference into a straight line. It perfectly spans exactly 3.14 times the length of its diameter ($d$)." },
+                    algebra: { title: "Solving Linear Equations", formula: "2x + 4 = 10", desc: "An equation is a balanced scale. Whatever operation you apply to one side (subtracting balls, splitting groups), you MUST apply to the other side to keep it balanced and isolate $x$ (the anvil)." }
+                };
+                
+                document.getElementById('info-title').innerText = info[currentMode].title;
+                document.getElementById('info-desc').innerHTML = info[currentMode].desc;
+                document.getElementById('formula-display').innerText = info[currentMode].formula;
+                
+                ['pythagoras', 'transforms', 'pi', 'algebra'].forEach(id => document.getElementById(`controls-${id}`).classList.add('hidden'));
+                document.getElementById(`controls-${currentMode}`).classList.remove('hidden');
+                document.getElementById('hud-status').classList.add('hidden');
+            });
+        });
+
+        requestAnimationFrame(renderLoop);
+
+    </script>
+</body>
+</html>

@@ -1,0 +1,550 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>3D Master Chess</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/controls/OrbitControls.js"></script>
+    <!-- Powerful Chess Logic Engine -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/chess.js/0.10.3/chess.min.js"></script>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Cinzel:wght@400;700&family=Lato:wght@400;700&display=swap');
+
+        body { 
+            margin: 0; overflow: hidden; background-color: #1e293b; 
+            font-family: 'Lato', sans-serif; user-select: none;
+            color: white;
+        }
+        
+        #game-canvas { display: block; width: 100vw; height: 100vh; }
+
+        /* UI Overlays */
+        #ui-layer {
+            position: absolute; top: 0; left: 0; width: 100%; height: 100%;
+            pointer-events: none; display: flex; flex-direction: column;
+            justify-content: space-between; padding: 20px; z-index: 10;
+        }
+
+        .header {
+            text-align: center; pointer-events: auto;
+            background: rgba(15, 23, 42, 0.8); backdrop-filter: blur(8px);
+            padding: 15px 40px; border-radius: 12px; border: 1px solid #334155;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.5); margin: 0 auto;
+        }
+
+        h1 { font-family: 'Cinzel', serif; margin: 0; font-size: 32px; color: #f8fafc; letter-spacing: 2px;}
+        .status { font-size: 18px; color: #94a3b8; margin-top: 5px; font-weight: bold; }
+
+        .controls {
+            display: flex; justify-content: space-between; align-items: flex-end;
+            pointer-events: auto;
+        }
+
+        .btn-reset {
+            background: #3b82f6; color: white; border: none; padding: 12px 24px;
+            font-size: 16px; font-weight: bold; border-radius: 8px; cursor: pointer;
+            transition: all 0.2s; box-shadow: 0 4px 0 #2563eb; font-family: 'Lato';
+        }
+        .btn-reset:hover { background: #60a5fa; transform: translateY(-2px); box-shadow: 0 6px 0 #2563eb;}
+        .btn-reset:active { transform: translateY(4px); box-shadow: 0 0 0 #2563eb; }
+
+        .hint-box {
+            background: rgba(15, 23, 42, 0.8); padding: 10px 20px; border-radius: 8px;
+            border: 1px solid #334155; font-size: 14px; color: #cbd5e1;
+            text-align: right; pointer-events: none;
+        }
+
+        /* Game Over Modal */
+        #modal {
+            position: absolute; top: 0; left: 0; width: 100%; height: 100%;
+            background: rgba(0,0,0,0.8); display: none; align-items: center; justify-content: center;
+            z-index: 50; pointer-events: auto; backdrop-filter: blur(4px);
+        }
+        .modal-content {
+            background: #1e293b; padding: 40px; border-radius: 16px; border: 2px solid #475569;
+            text-align: center; box-shadow: 0 20px 50px rgba(0,0,0,0.8);
+        }
+        .modal-title { font-family: 'Cinzel', serif; font-size: 42px; margin-bottom: 10px; color: #f1f5f9; }
+        .modal-subtitle { font-size: 20px; color: #94a3b8; margin-bottom: 30px; }
+
+    </style>
+</head>
+<body>
+
+    <div id="modal">
+        <div class="modal-content">
+            <div class="modal-title" id="modal-title">CHECKMATE</div>
+            <div class="modal-subtitle" id="modal-subtitle">White Wins!</div>
+            <button class="btn-reset" onclick="resetGame()" style="font-size: 20px; padding: 15px 40px;">PLAY AGAIN</button>
+        </div>
+    </div>
+
+    <canvas id="game-canvas"></canvas>
+
+    <div id="ui-layer">
+        <div class="header">
+            <h1>MASTER CHESS</h1>
+            <div class="status" id="status-text">White to move</div>
+        </div>
+
+        <div class="controls">
+            <button class="btn-reset" onclick="resetGame()">Reset Board</button>
+            <div class="hint-box">
+                <b>Left Click:</b> Select / Move Piece<br>
+                <b>Drag Background:</b> Rotate Camera<br>
+                <b>Scroll:</b> Zoom In/Out
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // --- GAME STATE ---
+        const game = new Chess();
+        const SQUARE_SIZE = 2;
+        let selectedSquare = null;
+        let legalMoves = [];
+
+        // --- THREE.JS GLOBALS ---
+        let scene, camera, renderer, controls;
+        let clock = new THREE.Clock();
+        let boardGroup = new THREE.Group();
+        let piecesGroup = new THREE.Group();
+        let highlightsGroup = new THREE.Group();
+        let raycaster = new THREE.Raycaster();
+        let mouse = new THREE.Vector2();
+
+        // 3D Object Maps
+        const pieceMeshes = {}; // Maps square (e.g. 'e2') to THREE.Mesh
+        const squareMeshes = {}; // Maps square to the board tile mesh
+
+        // Visual Materials
+        const Materials = {
+            boardLight: new THREE.MeshStandardMaterial({ color: 0xead1a8, roughness: 0.8 }),
+            boardDark: new THREE.MeshStandardMaterial({ color: 0x825232, roughness: 0.8 }),
+            boardBorder: new THREE.MeshStandardMaterial({ color: 0x4a2e1b, roughness: 0.9 }),
+            pieceWhite: new THREE.MeshStandardMaterial({ color: 0xf8fafc, roughness: 0.2, metalness: 0.1 }),
+            pieceBlack: new THREE.MeshStandardMaterial({ color: 0x111827, roughness: 0.2, metalness: 0.2 }),
+            highlightSelect: new THREE.MeshBasicMaterial({ color: 0x3b82f6, transparent: true, opacity: 0.6 }),
+            highlightMove: new THREE.MeshBasicMaterial({ color: 0x22c55e, transparent: true, opacity: 0.6 }),
+            highlightCapture: new THREE.MeshBasicMaterial({ color: 0xef4444, transparent: true, opacity: 0.6 })
+        };
+
+        window.onload = init;
+
+        function init() {
+            // Setup Scene
+            scene = new THREE.Scene();
+            scene.background = new THREE.Color(0x0f172a);
+            scene.fog = new THREE.Fog(0x0f172a, 30, 100);
+
+            camera = new THREE.PerspectiveCamera(45, window.innerWidth / window.innerHeight, 0.1, 1000);
+            camera.position.set(0, 20, 25);
+
+            renderer = new THREE.WebGLRenderer({ canvas: document.getElementById('game-canvas'), antialias: true });
+            renderer.setSize(window.innerWidth, window.innerHeight);
+            renderer.shadowMap.enabled = true;
+            renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+
+            // Controls
+            controls = new THREE.OrbitControls(camera, renderer.domElement);
+            controls.enablePan = false;
+            controls.maxPolarAngle = Math.PI / 2.1; // Don't go below board
+            controls.minDistance = 10;
+            controls.maxDistance = 50;
+
+            // Lights
+            const ambient = new THREE.AmbientLight(0xffffff, 0.5);
+            scene.add(ambient);
+
+            const dirLight = new THREE.DirectionalLight(0xffffff, 0.8);
+            dirLight.position.set(10, 30, 15);
+            dirLight.castShadow = true;
+            dirLight.shadow.mapSize.width = 2048;
+            dirLight.shadow.mapSize.height = 2048;
+            dirLight.shadow.camera.left = -15; dirLight.shadow.camera.right = 15;
+            dirLight.shadow.camera.top = 15; dirLight.shadow.camera.bottom = -15;
+            scene.add(dirLight);
+
+            const backLight = new THREE.DirectionalLight(0xaabbff, 0.3);
+            backLight.position.set(-10, 20, -20);
+            scene.add(backLight);
+
+            // Build Groups
+            scene.add(boardGroup);
+            scene.add(piecesGroup);
+            scene.add(highlightsGroup);
+
+            build3DBoard();
+            syncBoard();
+
+            // Events
+            window.addEventListener('resize', onWindowResize);
+            renderer.domElement.addEventListener('pointerdown', onPointerDown);
+
+            animate();
+        }
+
+        // --- BOARD GENERATION ---
+
+        function build3DBoard() {
+            // Border/Table
+            const borderSize = SQUARE_SIZE * 8 + 1;
+            const border = new THREE.Mesh(new THREE.BoxGeometry(borderSize, 1, borderSize), Materials.boardBorder);
+            border.position.y = -0.5;
+            border.receiveShadow = true;
+            boardGroup.add(border);
+
+            // Tiles
+            const files = ['a', 'b', 'c', 'd', 'e', 'f', 'g', 'h'];
+            for (let rank = 0; rank < 8; rank++) {
+                for (let file = 0; file < 8; file++) {
+                    const isLight = (rank + file) % 2 !== 0;
+                    const tileMat = isLight ? Materials.boardLight : Materials.boardDark;
+                    
+                    const tile = new THREE.Mesh(new THREE.BoxGeometry(SQUARE_SIZE, 0.2, SQUARE_SIZE), tileMat);
+                    
+                    const x = (file - 3.5) * SQUARE_SIZE;
+                    const z = (3.5 - rank) * SQUARE_SIZE; // Rank 1 is at +z, Rank 8 is at -z
+                    
+                    tile.position.set(x, 0.1, z);
+                    tile.receiveShadow = true;
+                    
+                    const sqName = files[file] + (rank + 1);
+                    tile.userData = { square: sqName };
+                    
+                    boardGroup.add(tile);
+                    squareMeshes[sqName] = tile;
+                }
+            }
+        }
+
+        // --- PROCEDURAL 3D PIECES ---
+
+        function createPieceGeometry(type) {
+            const baseGeo = new THREE.CylinderGeometry(0.8, 0.8, 0.4, 32);
+            baseGeo.translate(0, 0.2, 0); // Sit on floor
+            
+            const group = new THREE.Group();
+            const base = new THREE.Mesh(baseGeo);
+            group.add(base);
+
+            // Procedurally build piece shapes using basic primitives
+            if (type === 'p') { // Pawn
+                const body = new THREE.Mesh(new THREE.CylinderGeometry(0.3, 0.6, 1.2, 16));
+                body.position.y = 1.0; group.add(body);
+                const head = new THREE.Mesh(new THREE.SphereGeometry(0.5, 16, 16));
+                head.position.y = 1.8; group.add(head);
+            } 
+            else if (type === 'r') { // Rook
+                const body = new THREE.Mesh(new THREE.CylinderGeometry(0.6, 0.7, 1.5, 16));
+                body.position.y = 1.15; group.add(body);
+                const top = new THREE.Mesh(new THREE.CylinderGeometry(0.7, 0.6, 0.4, 16));
+                top.position.y = 2.1; group.add(top);
+            }
+            else if (type === 'n') { // Knight
+                const body = new THREE.Mesh(new THREE.CylinderGeometry(0.4, 0.7, 1.2, 16));
+                body.position.y = 1.0; group.add(body);
+                // Angled block for horse head
+                const head = new THREE.Mesh(new THREE.BoxGeometry(0.6, 1.2, 1.2));
+                head.rotation.x = -Math.PI / 6;
+                head.position.set(0, 2.0, 0.2); group.add(head);
+                const snout = new THREE.Mesh(new THREE.BoxGeometry(0.5, 0.5, 0.8));
+                snout.position.set(0, 2.2, 0.8); group.add(snout);
+            }
+            else if (type === 'b') { // Bishop
+                const body = new THREE.Mesh(new THREE.CylinderGeometry(0.3, 0.7, 1.8, 16));
+                body.position.y = 1.3; group.add(body);
+                const collar = new THREE.Mesh(new THREE.TorusGeometry(0.4, 0.1, 8, 16));
+                collar.rotation.x = Math.PI/2; collar.position.y = 2.2; group.add(collar);
+                const head = new THREE.Mesh(new THREE.CylinderGeometry(0.01, 0.4, 0.8, 16));
+                head.position.y = 2.6; group.add(head);
+                const ball = new THREE.Mesh(new THREE.SphereGeometry(0.15, 8, 8));
+                ball.position.y = 3.1; group.add(ball);
+            }
+            else if (type === 'q') { // Queen
+                const body = new THREE.Mesh(new THREE.CylinderGeometry(0.4, 0.8, 2.5, 16));
+                body.position.y = 1.65; group.add(body);
+                const collar = new THREE.Mesh(new THREE.TorusGeometry(0.5, 0.1, 8, 16));
+                collar.rotation.x = Math.PI/2; collar.position.y = 2.9; group.add(collar);
+                const crown = new THREE.Mesh(new THREE.CylinderGeometry(0.6, 0.2, 0.5, 8));
+                crown.position.y = 3.15; group.add(crown);
+                const ball = new THREE.Mesh(new THREE.SphereGeometry(0.2, 8, 8));
+                ball.position.y = 3.5; group.add(ball);
+            }
+            else if (type === 'k') { // King
+                const body = new THREE.Mesh(new THREE.CylinderGeometry(0.5, 0.8, 2.8, 16));
+                body.position.y = 1.8; group.add(body);
+                const collar = new THREE.Mesh(new THREE.TorusGeometry(0.6, 0.15, 8, 16));
+                collar.rotation.x = Math.PI/2; collar.position.y = 3.2; group.add(collar);
+                const crown = new THREE.Mesh(new THREE.CylinderGeometry(0.4, 0.5, 0.4, 16));
+                crown.position.y = 3.5; group.add(crown);
+                
+                // Cross
+                const crossV = new THREE.Mesh(new THREE.BoxGeometry(0.1, 0.6, 0.1));
+                crossV.position.y = 4.0; group.add(crossV);
+                const crossH = new THREE.Mesh(new THREE.BoxGeometry(0.4, 0.1, 0.1));
+                crossH.position.y = 4.0; group.add(crossH);
+            }
+
+            // Merge everything into a single geometry for performance (simulated by returning the group)
+            return group;
+        }
+
+        // --- GAMEPLAY SYNC ---
+
+        function getSquarePos(sq) {
+            const file = sq.charCodeAt(0) - 'a'.charCodeAt(0);
+            const rank = parseInt(sq[1]) - 1;
+            const x = (file - 3.5) * SQUARE_SIZE;
+            const z = (3.5 - rank) * SQUARE_SIZE;
+            return new THREE.Vector3(x, 0.2, z);
+        }
+
+        function syncBoard() {
+            // Remove all existing pieces visually
+            while(piecesGroup.children.length > 0) {
+                piecesGroup.remove(piecesGroup.children[0]);
+            }
+            for (let key in pieceMeshes) delete pieceMeshes[key];
+
+            const board = game.board(); // 2D array [8][8] from top-left (a8) to bottom-right (h1)
+            const files = ['a', 'b', 'c', 'd', 'e', 'f', 'g', 'h'];
+
+            for (let r = 0; r < 8; r++) {
+                for (let f = 0; f < 8; f++) {
+                    const pieceData = board[r][f];
+                    if (pieceData) {
+                        const sq = files[f] + (8 - r);
+                        
+                        // Create Mesh
+                        const pieceGrp = createPieceGeometry(pieceData.type);
+                        
+                        // Apply Material
+                        const mat = pieceData.color === 'w' ? Materials.pieceWhite : Materials.pieceBlack;
+                        pieceGrp.traverse(child => {
+                            if (child.isMesh) {
+                                child.material = mat;
+                                child.castShadow = true;
+                                child.receiveShadow = true;
+                            }
+                        });
+
+                        // Position
+                        const pos = getSquarePos(sq);
+                        pieceGrp.position.copy(pos);
+                        
+                        // Knights face each other
+                        if (pieceData.type === 'n') {
+                            pieceGrp.rotation.y = pieceData.color === 'w' ? Math.PI : 0;
+                        }
+
+                        pieceGrp.userData = { square: sq, color: pieceData.color, type: pieceData.type };
+                        piecesGroup.add(pieceGrp);
+                        pieceMeshes[sq] = pieceGrp;
+                    }
+                }
+            }
+
+            updateStatus();
+        }
+
+        // --- INTERACTION ---
+
+        function clearHighlights() {
+            while(highlightsGroup.children.length > 0){
+                highlightsGroup.remove(highlightsGroup.children[0]);
+            }
+        }
+
+        function highlightSquare(sq, type) {
+            const pos = getSquarePos(sq);
+            let mat = Materials.highlightMove;
+            if (type === 'select') mat = Materials.highlightSelect;
+            if (type === 'capture') mat = Materials.highlightCapture;
+
+            const hl = new THREE.Mesh(new THREE.PlaneGeometry(SQUARE_SIZE-0.2, SQUARE_SIZE-0.2), mat);
+            hl.rotation.x = -Math.PI / 2;
+            hl.position.set(pos.x, 0.25, pos.z);
+            hl.userData = { square: sq };
+            highlightsGroup.add(hl);
+        }
+
+        function onPointerDown(event) {
+            if (game.game_over()) return;
+
+            mouse.x = (event.clientX / window.innerWidth) * 2 - 1;
+            mouse.y = -(event.clientY / window.innerHeight) * 2 + 1;
+
+            raycaster.setFromCamera(mouse, camera);
+
+            // Raycast against pieces and board squares
+            const intersects = raycaster.intersectObjects([...piecesGroup.children, ...boardGroup.children], true);
+
+            if (intersects.length > 0) {
+                // Find root object containing userData
+                let obj = intersects[0].object;
+                while (obj && !obj.userData.square && obj.parent) {
+                    obj = obj.parent;
+                }
+
+                if (obj && obj.userData && obj.userData.square) {
+                    handleSquareClick(obj.userData.square);
+                }
+            } else {
+                // Clicked outside
+                selectedSquare = null;
+                legalMoves = [];
+                clearHighlights();
+            }
+        }
+
+        function handleSquareClick(sq) {
+            const turnColor = game.turn();
+
+            // 1. If clicking a highlighted move square -> EXECUTE MOVE
+            const move = legalMoves.find(m => m.to === sq);
+            if (move) {
+                executeMove(move);
+                return;
+            }
+
+            // 2. If clicking a piece
+            const pieceObj = pieceMeshes[sq];
+            if (pieceObj && pieceObj.userData.color === turnColor) {
+                // Select piece
+                selectedSquare = sq;
+                legalMoves = game.moves({ square: sq, verbose: true });
+                
+                clearHighlights();
+                highlightSquare(sq, 'select');
+                
+                legalMoves.forEach(m => {
+                    const type = m.flags.includes('c') || m.flags.includes('e') ? 'capture' : 'move';
+                    highlightSquare(m.to, type);
+                });
+            } else {
+                // Clicked empty board or opponent piece without it being a valid move
+                selectedSquare = null;
+                legalMoves = [];
+                clearHighlights();
+            }
+        }
+
+        function executeMove(moveObj) {
+            clearHighlights();
+            selectedSquare = null;
+            legalMoves = [];
+
+            // If promotion, auto-promote to Queen for simplicity
+            if (moveObj.flags.includes('p')) {
+                moveObj.promotion = 'q';
+            }
+
+            // Apply to internal logic
+            game.move(moveObj);
+            
+            // Animate visually, then hard sync to handle captures/castling properly
+            const startSq = moveObj.from;
+            const endSq = moveObj.to;
+            const pieceMesh = pieceMeshes[startSq];
+            
+            if (pieceMesh) {
+                const endPos = getSquarePos(endSq);
+                // Simple animation
+                animatePiece(pieceMesh, endPos, () => {
+                    syncBoard(); // Hard sync after animation
+                });
+            } else {
+                syncBoard();
+            }
+        }
+
+        function animatePiece(mesh, targetPos, callback) {
+            const startPos = mesh.position.clone();
+            const duration = 0.3; // seconds
+            let timeElapsed = 0;
+
+            function updateAnim() {
+                timeElapsed += clock.getDelta();
+                const t = Math.min(timeElapsed / duration, 1.0);
+                
+                // Ease out quad
+                const easeT = t * (2 - t);
+                
+                mesh.position.lerpVectors(startPos, targetPos, easeT);
+                
+                // Add a little hop
+                mesh.position.y += Math.sin(t * Math.PI) * 1.5;
+
+                if (t < 1.0) {
+                    requestAnimationFrame(updateAnim);
+                } else {
+                    mesh.position.copy(targetPos);
+                    callback();
+                }
+            }
+            clock.getDelta(); // Reset clock delta
+            updateAnim();
+        }
+
+        // --- STATUS & UI ---
+
+        function updateStatus() {
+            const statusEl = document.getElementById('status-text');
+            const turnColor = game.turn() === 'w' ? 'White' : 'Black';
+
+            if (game.in_checkmate()) {
+                statusEl.innerText = `Game Over - ${game.turn() === 'w' ? 'Black' : 'White'} wins!`;
+                statusEl.style.color = '#ef4444';
+                showGameOver('CHECKMATE', `${game.turn() === 'w' ? 'Black' : 'White'} is victorious!`);
+            } else if (game.in_draw()) {
+                statusEl.innerText = 'Game Over - Draw';
+                statusEl.style.color = '#f59e0b';
+                showGameOver('DRAW', 'The game is a tie.');
+            } else {
+                statusEl.innerText = `${turnColor} to move`;
+                statusEl.style.color = '#94a3b8';
+                if (game.in_check()) {
+                    statusEl.innerText += ' (CHECK!)';
+                    statusEl.style.color = '#ef4444';
+                }
+            }
+        }
+
+        function showGameOver(title, subtitle) {
+            document.getElementById('modal-title').innerText = title;
+            document.getElementById('modal-subtitle').innerText = subtitle;
+            document.getElementById('modal').style.display = 'flex';
+        }
+
+        function resetGame() {
+            game.reset();
+            document.getElementById('modal').style.display = 'none';
+            selectedSquare = null;
+            legalMoves = [];
+            clearHighlights();
+            syncBoard();
+            
+            // Reset Camera
+            camera.position.set(0, 20, 25);
+            controls.target.set(0,0,0);
+            controls.update();
+        }
+
+        function onWindowResize() {
+            camera.aspect = window.innerWidth / window.innerHeight;
+            camera.updateProjectionMatrix();
+            renderer.setSize(window.innerWidth, window.innerHeight);
+        }
+
+        function animate() {
+            requestAnimationFrame(animate);
+            controls.update();
+            renderer.render(scene, camera);
+        }
+
+    </script>
+</body>
+</html>

@@ -1,0 +1,534 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Neurobiology: The Dopamine Reward Loop</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;700&family=Inter:wght@300;400;600;700&display=swap');
+
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: #020617;
+            color: #f8fafc;
+            overflow-x: hidden;
+            user-select: none;
+        }
+
+        .font-mono { font-family: 'JetBrains Mono', monospace; }
+
+        .glass-card {
+            background: rgba(15, 23, 42, 0.75);
+            backdrop-filter: blur(16px);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.5);
+        }
+
+        .digital-readout {
+            background: #061021;
+            color: #f59e0b; /* Amber */
+            text-shadow: 0 0 10px rgba(245, 158, 11, 0.4);
+            border: 1px solid #1e293b;
+            transition: all 0.3s ease;
+        }
+
+        .status-surge {
+            color: #fbbf24 !important;
+            text-shadow: 0 0 15px rgba(251, 191, 36, 0.8) !important;
+            background: rgba(251, 191, 36, 0.05) !important;
+        }
+
+        /* Brain SVG Styles */
+        .brain-structure { fill: #1e1b4b; stroke: #312e81; stroke-width: 2; }
+        
+        .pathway-mesolimbic {
+            fill: none;
+            stroke: #4ade80; /* Green pathway */
+            stroke-width: 4;
+            stroke-dasharray: 8 4;
+            opacity: 0.3;
+            transition: opacity 0.3s, stroke-width 0.3s;
+        }
+
+        .brain-node {
+            transition: all 0.3s ease;
+            filter: drop-shadow(0 0 2px transparent);
+        }
+        
+        .node-active {
+            fill: #fbbf24 !important;
+            filter: drop-shadow(0 0 15px #fbbf24) !important;
+        }
+
+        /* Slot Machine Styling */
+        .slot-window {
+            background: #0f172a;
+            border: 4px solid #334155;
+            border-radius: 12px;
+            overflow: hidden;
+            box-shadow: inset 0 4px 12px rgba(0,0,0,0.8);
+        }
+
+        .reel-canvas {
+            width: 100%;
+            height: 100px;
+        }
+
+        .btn-lever {
+            background: linear-gradient(135deg, #f59e0b, #d97706);
+            transition: all 0.1s ease;
+        }
+        .btn-lever:active { transform: translateY(4px) scale(0.98); }
+        .btn-lever:disabled { grayscale: 1; opacity: 0.5; cursor: not-allowed; }
+
+        /* Physics Grid */
+        .neuro-grid {
+            background-size: 50px 50px;
+            background-image: 
+                linear-gradient(to right, rgba(245, 158, 11, 0.03) 1px, transparent 1px),
+                linear-gradient(to bottom, rgba(245, 158, 11, 0.03) 1px, transparent 1px);
+        }
+
+        .scanline {
+            width: 100%;
+            height: 2px;
+            background: rgba(245, 158, 11, 0.05);
+            position: absolute;
+            z-index: 10;
+            animation: scan 10s linear infinite;
+        }
+        @keyframes scan { 0% { top: 0%; } 100% { top: 100%; } }
+
+        @keyframes win-glow {
+            0%, 100% { border-color: #fbbf24; box-shadow: 0 0 10px #fbbf24; }
+            50% { border-color: #f59e0b; box-shadow: 0 0 30px #f59e0b; }
+        }
+        .jackpot { animation: win-glow 0.5s infinite; }
+    </style>
+</head>
+<body class="min-h-screen p-4 md:p-8 flex items-center justify-center">
+
+    <div class="max-w-7xl w-full grid grid-cols-1 lg:grid-cols-12 gap-8 items-stretch">
+        
+        <!-- Simulation Viewport -->
+        <div class="lg:col-span-8 flex flex-col gap-6">
+            <div id="sim-viewport" class="glass-card rounded-3xl p-0 relative flex-grow min-h-[550px] flex flex-col overflow-hidden border border-slate-800 neuro-grid">
+                <div class="scanline"></div>
+                
+                <!-- HUD Header -->
+                <div class="absolute top-6 left-8 flex items-center gap-3 z-30">
+                    <div id="status-dot" class="w-2.5 h-2.5 rounded-full bg-amber-500 shadow-[0_0_10px_#f59e0b]"></div>
+                    <span id="status-text" class="text-[10px] font-bold text-slate-400 uppercase tracking-widest font-mono">Neural State: <span id="hud-mode" class="text-amber-500">Steady Tonic Firing</span></span>
+                </div>
+
+                <!-- Simulation Area -->
+                <div class="relative w-full flex-grow flex flex-col items-center justify-center p-8">
+                    
+                    <!-- Brain Anatomy SVG -->
+                    <div class="absolute inset-0 flex items-center justify-center opacity-40 pointer-events-none">
+                        <svg id="brain-svg" viewBox="0 0 600 500" class="w-full h-full max-w-[500px]">
+                            <!-- Outer Cortex -->
+                            <path d="M 100,250 C 100,100 250,50 400,100 C 550,150 550,350 450,450 C 350,500 150,450 100,250" class="brain-structure" />
+                            <!-- Limbic System Detail -->
+                            <ellipse cx="300" cy="280" rx="60" ry="40" fill="#1e293b" stroke="#334155" />
+                            
+                            <!-- Mesolimbic Pathway -->
+                            <path id="pathway" d="M 280,320 Q 320,320 380,260" class="pathway-mesolimbic" />
+                            
+                            <!-- VTA (Source) -->
+                            <circle id="node-vta" cx="280" cy="320" r="12" fill="#1e293b" stroke="#4ade80" stroke-width="2" class="brain-node" />
+                            <text x="240" y="345" fill="#4ade80" font-size="10" font-weight="bold" font-family="monospace">VTA</text>
+
+                            <!-- Nucleus Accumbens (Target) -->
+                            <circle id="node-nac" cx="380" cy="260" r="18" fill="#1e293b" stroke="#f59e0b" stroke-width="2" class="brain-node" />
+                            <text x="410" y="255" fill="#f59e0b" font-size="10" font-weight="bold" font-family="monospace">N. ACCUMBENS</text>
+                            
+                            <!-- Prefrontal Cortex -->
+                            <path d="M 450,150 C 480,180 500,250 480,350" fill="none" stroke="#6366f1" stroke-width="2" stroke-dasharray="4 4" />
+                            <text x="470" y="140" fill="#6366f1" font-size="10" font-weight="bold" font-family="monospace">PFC (Executive)</text>
+                        </svg>
+                    </div>
+
+                    <!-- Dopamine Canvas (Overlay) -->
+                    <canvas id="dopamine-canvas" class="absolute inset-0 w-full h-full z-10 pointer-events-none"></canvas>
+
+                    <!-- Slot Machine UI -->
+                    <div class="relative z-20 flex flex-col items-center gap-6 mt-12">
+                        <div id="slot-machine-body" class="p-6 bg-slate-900 border-4 border-slate-700 rounded-[2rem] shadow-2xl flex flex-col gap-4">
+                            <div class="flex gap-3">
+                                <div class="slot-window w-20 h-24 flex items-center justify-center">
+                                    <div id="reel-1" class="text-4xl">💎</div>
+                                </div>
+                                <div class="slot-window w-20 h-24 flex items-center justify-center">
+                                    <div id="reel-2" class="text-4xl">🍒</div>
+                                </div>
+                                <div class="slot-window w-20 h-24 flex items-center justify-center">
+                                    <div id="reel-3" class="text-4xl">🔔</div>
+                                </div>
+                            </div>
+                            
+                            <button id="btn-spin" class="btn-lever w-full py-4 text-slate-950 font-black rounded-xl text-lg uppercase tracking-tighter shadow-lg">
+                                Pull Lever
+                            </button>
+                        </div>
+                        <div class="text-[10px] font-mono text-slate-500 uppercase tracking-widest text-center">
+                            Reinforcement Schedule: Variable Ratio (1:6)
+                        </div>
+                    </div>
+
+                </div>
+
+                <!-- Tags -->
+                <div class="absolute bottom-6 left-8 flex flex-col gap-1 z-30">
+                    <span class="text-[9px] font-mono text-slate-500 uppercase">Neurotransmitter: Dopamine (DA)</span>
+                    <span class="text-[9px] font-mono text-slate-500 uppercase">Process: Phasic Firing Surge</span>
+                </div>
+            </div>
+
+            <!-- Dashboard Stats -->
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div class="glass-card p-6 rounded-2xl flex items-center justify-between">
+                    <div class="flex items-center gap-4">
+                        <div class="w-10 h-10 rounded-full bg-amber-500/10 border border-amber-500/20 flex items-center justify-center">
+                            <svg class="w-5 h-5 text-amber-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"></path></svg>
+                        </div>
+                        <div>
+                            <div class="text-[10px] font-bold text-slate-200 uppercase tracking-widest">Reward Probability</div>
+                            <div class="text-lg font-mono text-amber-500 font-bold">16.6% <span class="text-[10px] text-slate-500">(Unpredictable)</span></div>
+                        </div>
+                    </div>
+                </div>
+                <div class="glass-card p-4 rounded-2xl flex items-center justify-between">
+                    <div class="flex items-center gap-4">
+                        <div class="w-10 h-10 rounded-full bg-sky-500/10 border border-sky-500/20 flex items-center justify-center">
+                            <svg class="w-5 h-5 text-sky-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"></path></svg>
+                        </div>
+                        <div>
+                            <div class="text-[10px] font-bold text-slate-200 uppercase tracking-widest">Compulsion Index</div>
+                            <div id="data-compulsion" class="text-lg font-mono text-sky-400 font-bold">LOW</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Sidebar: Analytics & Data -->
+        <div class="lg:col-span-4 flex flex-col gap-6">
+            
+            <!-- Digital Readout -->
+            <div id="telemetry-panel" class="digital-readout rounded-3xl p-6 space-y-6">
+                <div class="flex justify-between items-center border-b border-current pb-3 opacity-60">
+                    <span class="text-[10px] font-bold tracking-tighter uppercase">Synaptic Telemetry</span>
+                    <span class="text-xs font-mono animate-pulse">MONITORING</span>
+                </div>
+
+                <div class="space-y-6">
+                    <!-- Dopamine Levels -->
+                    <div class="space-y-1">
+                        <label class="text-[10px] uppercase font-bold opacity-60">Nucleus Accumbens DA ($pg/mL$)</label>
+                        <div class="flex items-baseline gap-2">
+                            <div id="data-da" class="text-6xl font-bold font-mono">15</div>
+                            <span class="text-xl font-mono font-bold opacity-60">U</span>
+                        </div>
+                    </div>
+
+                    <div class="grid grid-cols-2 gap-4 pt-4 border-t border-current opacity-80">
+                        <div class="space-y-1">
+                            <label class="text-[9px] uppercase font-bold text-current">Firing Rate</label>
+                            <div id="data-firing" class="text-xl font-bold font-mono">5 Hz</div>
+                        </div>
+                        <div class="space-y-1 text-right">
+                            <label class="text-[9px] uppercase font-bold text-current">RPE Delta</label>
+                            <div id="data-rpe" class="text-xl font-bold font-mono">0.0</div>
+                        </div>
+                    </div>
+
+                    <!-- Receptor Saturation -->
+                    <div class="p-4 bg-black/30 rounded-xl border border-current space-y-2">
+                        <div class="flex justify-between items-center">
+                            <label class="text-[9px] uppercase font-bold text-current">D2 Receptor Binding</label>
+                            <span id="data-bind-pct" class="text-[10px] font-mono">10%</span>
+                        </div>
+                        <div class="h-1.5 w-full bg-slate-900 rounded-full overflow-hidden">
+                            <div id="bind-bar" class="h-full bg-amber-500 transition-all duration-300" style="width: 10%"></div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Pathophysiology Card -->
+            <div class="glass-card p-6 rounded-3xl space-y-4 flex-grow flex flex-col overflow-hidden">
+                <h3 class="text-xs font-bold text-slate-400 uppercase tracking-widest flex items-center gap-2">
+                    <svg class="w-4 h-4 text-amber-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19.428 15.428a2 2 0 00-1.022-.547l-2.387-.477a6 6 0 00-3.86.517l-.318.158a6 6 0 01-3.86.517L6.05 15.21a2 2 0 00-1.806.547M8 4h8l-1 1v5.172a2 2 0 00.586 1.414l5 5c1.26 1.26.367 3.414-1.415 3.414H4.828c-1.782 0-2.674-2.154-1.414-3.414l5-5A2 2 0 009 10.172V5L8 4z"></path></svg>
+                    Reward Prediction Error
+                </h3>
+                
+                <div class="space-y-4 text-[11px] text-slate-300 leading-relaxed overflow-y-auto">
+                    <p>Dopamine is not about pleasure; it's about <strong>Motivation</strong> and <strong>Learning</strong>.</p>
+                    
+                    <div class="p-3 bg-slate-900/50 rounded-xl border border-slate-800">
+                        <strong class="text-amber-400 block mb-1">The Anticipation Phase</strong>
+                        Dopamine spikes *before* the reward. This "Prediction" phase drives the behavior (pulling the lever).
+                    </div>
+
+                    <div class="p-3 bg-slate-900/50 rounded-xl border border-slate-800">
+                        <strong class="text-emerald-400 block mb-1">Positive RPE (The Win)</strong>
+                        If the outcome is better than expected, a massive burst occurs, strengthening the neural path.
+                    </div>
+
+                    <div class="p-3 bg-rose-900/20 rounded-xl border border-rose-900/50">
+                        <strong class="text-rose-400 block mb-1">Negative RPE (The Loss)</strong>
+                        If a reward is expected but fails, dopamine drops below baseline, causing a "dip" and frustration.
+                    </div>
+                </div>
+
+                <button id="btn-reset" class="mt-auto w-full py-3 bg-slate-800 hover:bg-slate-700 text-slate-500 rounded-xl text-[10px] font-bold uppercase tracking-widest border border-slate-700 transition-all">
+                    Reset Addiction Score
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', () => {
+            const btnSpin = document.getElementById('btn-spin');
+            const btnReset = document.getElementById('btn-reset');
+            const reels = [document.getElementById('reel-1'), document.getElementById('reel-2'), document.getElementById('reel-3')];
+            const slotMachineBody = document.getElementById('slot-machine-body');
+            
+            const nodeVta = document.getElementById('node-vta');
+            const nodeNac = document.getElementById('node-nac');
+            const pathway = document.getElementById('pathway');
+            
+            const dataDA = document.getElementById('data-da');
+            const dataFiring = document.getElementById('data-firing');
+            const dataRPE = document.getElementById('data-rpe');
+            const dataBindPct = document.getElementById('data-bind-pct');
+            const bindBar = document.getElementById('bind-bar');
+            const dataCompulsion = document.getElementById('data-compulsion');
+            
+            const hudMode = document.getElementById('hud-mode');
+            const statusDot = document.getElementById('status-dot');
+            const telePanel = document.getElementById('telemetry-panel');
+
+            const canvas = document.getElementById('dopamine-canvas');
+            const ctx = canvas.getContext('2d');
+
+            // --- State ---
+            let daLevel = 15; // Baseline
+            let targetDA = 15;
+            let firingRate = 5;
+            let spins = 0;
+            let wins = 0;
+            let isSpinning = false;
+            let particles = [];
+
+            const ICONS = ['🍒', '🍋', '🔔', '💎', '🍇', '⭐'];
+
+            function resize() {
+                canvas.width = canvas.parentElement.clientWidth;
+                canvas.height = canvas.parentElement.clientHeight;
+            }
+            window.addEventListener('resize', resize);
+            resize();
+
+            // --- Particle Engine ---
+            class Dopamine {
+                constructor() {
+                    this.reset();
+                }
+                reset() {
+                    // Start at VTA (approx coordinates on canvas)
+                    const rect = canvas.getBoundingClientRect();
+                    // SVG coords 280, 320 -> Canvas relative
+                    this.x = canvas.width * 0.46; 
+                    this.y = canvas.height * 0.64;
+                    this.targetX = canvas.width * 0.63; // NAc
+                    this.targetY = canvas.height * 0.52;
+                    this.progress = 0;
+                    this.speed = 0.01 + Math.random() * 0.02;
+                    this.size = 2 + Math.random() * 3;
+                    this.alpha = 0;
+                    this.offset = (Math.random() - 0.5) * 40;
+                }
+                update() {
+                    this.progress += this.speed * (daLevel / 15);
+                    if (this.progress > 1) this.reset();
+                    
+                    this.alpha = Math.sin(this.progress * Math.PI);
+                    
+                    // Bezier movement
+                    const t = this.progress;
+                    const cx = canvas.width * 0.53;
+                    const cy = canvas.height * 0.64;
+                    
+                    this.currX = Math.pow(1-t, 2)*this.x + 2*(1-t)*t*cx + Math.pow(t, 2)*this.targetX + this.offset * Math.sin(t*Math.PI);
+                    this.currY = Math.pow(1-t, 2)*this.y + 2*(1-t)*t*cy + Math.pow(t, 2)*this.targetY + this.offset * Math.cos(t*Math.PI);
+                }
+                draw() {
+                    ctx.beginPath();
+                    ctx.arc(this.currX, this.currY, this.size, 0, Math.PI*2);
+                    const hue = 45; // Amber
+                    ctx.fillStyle = `hsla(${hue}, 100%, 50%, ${this.alpha})`;
+                    ctx.shadowBlur = 10;
+                    ctx.shadowColor = `hsla(${hue}, 100%, 50%, 0.5)`;
+                    ctx.fill();
+                }
+            }
+
+            function initParticles() {
+                particles = [];
+                for(let i=0; i<100; i++) particles.push(new Dopamine());
+            }
+
+            // --- Game Logic ---
+            async function spinReels() {
+                if (isSpinning) return;
+                isSpinning = true;
+                spins++;
+                btnSpin.disabled = true;
+                slotMachineBody.classList.remove('jackpot');
+
+                // 1. Anticipation Surge
+                targetDA = 60;
+                firingRate = 15;
+                hudMode.textContent = "Anticipatory Phasic Firing";
+                hudMode.className = "text-sky-400";
+                statusDot.className = "w-2.5 h-2.5 rounded-full bg-sky-500 animate-pulse";
+                pathway.style.opacity = "0.8";
+                pathway.style.strokeWidth = "8";
+
+                // Reel animation
+                let timer = 0;
+                const spinDuration = 1500;
+                const interval = setInterval(() => {
+                    reels.forEach(r => {
+                        r.textContent = ICONS[Math.floor(Math.random() * ICONS.length)];
+                    });
+                    timer += 50;
+                    if (timer >= spinDuration) clearInterval(interval);
+                }, 50);
+
+                await new Promise(r => setTimeout(r, spinDuration));
+
+                // Final result
+                const results = reels.map(() => ICONS[Math.floor(Math.random() * ICONS.length)]);
+                
+                // Controlled probability for win (e.g. 1 in 6)
+                const forceWin = Math.random() < 0.16;
+                if (forceWin) {
+                    const winIcon = ICONS[Math.floor(Math.random() * ICONS.length)];
+                    results.fill(winIcon);
+                }
+                
+                results.forEach((res, i) => reels[i].textContent = res);
+                
+                const isWin = results[0] === results[1] && results[1] === results[2];
+                evaluateResult(isWin);
+            }
+
+            function evaluateResult(isWin) {
+                isSpinning = false;
+                btnSpin.disabled = false;
+
+                if (isWin) {
+                    wins++;
+                    slotMachineBody.classList.add('jackpot');
+                    targetDA = 250; // MASSIVE SURGE
+                    firingRate = 45;
+                    dataRPE.textContent = "+1.0";
+                    dataRPE.className = "text-xl font-bold font-mono text-emerald-400";
+                    
+                    hudMode.textContent = "DA Burst (Burst Firing)";
+                    hudMode.className = "text-emerald-400";
+                    statusDot.className = "w-2.5 h-2.5 rounded-full bg-emerald-500 shadow-[0_0_15px_#10b981] animate-ping";
+                    
+                    nodeVta.classList.add('node-active');
+                    nodeNac.classList.add('node-active');
+                    
+                    telePanel.classList.add('status-surge');
+                } else {
+                    targetDA = 8; // Drop below baseline (dip)
+                    firingRate = 2;
+                    dataRPE.textContent = "-0.5";
+                    dataRPE.className = "text-xl font-bold font-mono text-rose-500";
+                    
+                    hudMode.textContent = "DA Pause (Error Signal)";
+                    hudMode.className = "text-rose-500";
+                    statusDot.className = "w-2.5 h-2.5 rounded-full bg-rose-500 shadow-[0_0_10px_#f43f5e]";
+                    
+                    nodeVta.classList.remove('node-active');
+                    nodeNac.classList.remove('node-active');
+                    telePanel.classList.remove('status-surge');
+                }
+
+                updateAddictionMetrics();
+
+                // Return to baseline eventually
+                setTimeout(() => {
+                    if (!isSpinning) {
+                        targetDA = 15;
+                        firingRate = 5;
+                        pathway.style.opacity = "0.3";
+                        pathway.style.strokeWidth = "4";
+                        if (!isWin) {
+                            hudMode.textContent = "Steady Tonic Firing";
+                            hudMode.className = "text-amber-500";
+                            statusDot.className = "w-2.5 h-2.5 rounded-full bg-amber-500";
+                        }
+                    }
+                }, 2000);
+            }
+
+            function updateAddictionMetrics() {
+                const ratio = wins / (spins || 1);
+                if (spins > 10) {
+                    dataCompulsion.textContent = "CRITICAL";
+                    dataCompulsion.className = "text-lg font-mono text-rose-500 font-bold";
+                } else if (spins > 5) {
+                    dataCompulsion.textContent = "MODERATE";
+                    dataCompulsion.className = "text-lg font-mono text-amber-500 font-bold";
+                }
+            }
+
+            function loop() {
+                ctx.clearRect(0, 0, canvas.width, canvas.height);
+                
+                // Smoothly approach target DA level
+                daLevel += (targetDA - daLevel) * 0.1;
+                dataDA.textContent = Math.round(daLevel);
+                dataFiring.textContent = `${Math.round(firingRate)} Hz`;
+                
+                const binding = Math.min(100, Math.round((daLevel / 200) * 100));
+                dataBindPct.textContent = `${binding}%`;
+                bindBar.style.width = `${binding}%`;
+
+                // Update particles
+                const countToShow = Math.floor((daLevel / 250) * particles.length);
+                particles.forEach((p, i) => {
+                    if (i < countToShow || i < 10) { // Keep baseline
+                        p.update();
+                        p.draw();
+                    }
+                });
+
+                requestAnimationFrame(loop);
+            }
+
+            // --- Events ---
+            btnSpin.addEventListener('click', spinReels);
+            btnReset.addEventListener('click', () => {
+                spins = 0; wins = 0; daLevel = 15; targetDA = 15;
+                dataCompulsion.textContent = "LOW";
+                dataCompulsion.className = "text-lg font-mono text-sky-400 font-bold";
+                updateAddictionMetrics();
+            });
+
+            // Init
+            initParticles();
+            loop();
+        });
+    </script>
+</body>
+</html>

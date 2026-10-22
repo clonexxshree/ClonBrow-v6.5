@@ -1,0 +1,3151 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>ClonBrow Access</title>
+<style>
+:root{--bg:#f6f7f6;--paper:#fff;--ink:#18212a;--muted:#737e84;--line:#e4e9e9;--blue:#148bd0;--deep:#0e2e52;--mint:#e8f6f5;--shadow:0 18px 50px #102c3b12}*{box-sizing:border-box}body{margin:0;font:15px/1.5 Inter,Segoe UI,Arial,sans-serif;color:var(--ink);background:var(--bg)}button,input,textarea,select{font:inherit}button{cursor:pointer}.wrap{max-width:1180px;margin:auto;padding:25px 24px 60px}.top{height:52px;display:flex;align-items:center;justify-content:space-between;margin-bottom:45px}.brand{display:flex;align-items:center;gap:11px;font-weight:720;letter-spacing:-.3px}.logo{width:34px;height:34px;border-radius:11px;background:linear-gradient(155deg,#48c0fc,#1179c4);display:grid;place-items:center;color:#fff;box-shadow:0 3px 0 var(--deep)}.status{font-size:12px;color:var(--muted);border:1px solid var(--line);background:#fff;padding:6px 11px;border-radius:999px}.gate-wrap{min-height:calc(100vh - 130px);display:grid;place-items:center}.gate{width:min(100%,475px);background:white;border:1px solid var(--line);border-radius:22px;box-shadow:var(--shadow);padding:38px}.eyebrow{font-size:11px;letter-spacing:1.3px;color:var(--blue);font-weight:800;text-transform:uppercase}.gate h1{font-size:31px;line-height:1.1;letter-spacing:-1px;margin:10px 0}.gate p{color:var(--muted);margin:0 0 23px}.field{display:grid;gap:7px;margin:15px 0}.field label{font-size:12px;font-weight:700}.field input,.field textarea,.field select{border:1px solid var(--line);border-radius:10px;padding:11px 12px;outline:none;background:white}.field input:focus,.field textarea:focus,.field select:focus{border-color:#71b7e4;box-shadow:0 0 0 3px #e8f5fd}.btn{border:1px solid var(--line);background:#fff;border-radius:10px;padding:10px 14px;font-weight:700;font-size:12px}.btn.primary{background:var(--blue);border-color:var(--blue);color:#fff}.btn.dark{background:var(--ink);border-color:var(--ink);color:white}.btn:hover{filter:brightness(.97)}.wide{width:100%;margin-top:8px}.error{display:none;margin-top:12px;padding:10px 12px;border-radius:9px;background:#fff1f0;color:#a33229;font-size:12px}.local-note{font-size:11px;line-height:1.5;color:#8a9294;margin-top:16px}.local-note b{color:#58656a}.formula{font:11px ui-monospace,Consolas,monospace;background:#f7f8f8;border:1px solid var(--line);border-radius:8px;padding:9px 10px;color:#42515b;overflow-wrap:anywhere}.app{display:none}.app-head{display:flex;align-items:end;justify-content:space-between;gap:20px;margin-bottom:24px}.app-head h1{font-size:34px;letter-spacing:-1.2px;margin:6px 0}.app-head p{color:var(--muted);margin:0}.tabs{display:flex;gap:7px;flex-wrap:wrap;margin-bottom:15px}.tab{border:1px solid var(--line);border-radius:999px;background:white;color:var(--muted);padding:9px 14px;font-size:12px;font-weight:700}.tab.active{background:var(--ink);border-color:var(--ink);color:white}.view{display:none}.view.active{display:block}.grid{display:grid;grid-template-columns:repeat(3,1fr);gap:13px}.feature{border:1px solid var(--line);background:white;border-radius:15px;padding:18px;box-shadow:var(--shadow)}.feature small,.muted{color:var(--muted)}.feature h3{margin:6px 0;font-size:17px}.feature p{font-size:12px;color:var(--muted);margin:0 0 14px}.pill{display:inline-flex;background:var(--mint);color:#236c70;padding:4px 8px;border-radius:999px;font-size:10px;font-weight:750;margin-bottom:6px}.bar{display:flex;align-items:center;gap:10px;margin:12px 0;padding:15px;background:white;border:1px solid var(--line);border-radius:13px}.bar input{flex:1;min-width:100px;border:1px solid var(--line);border-radius:9px;padding:10px}.results{display:grid;grid-template-columns:repeat(2,1fr);gap:9px}.row{display:flex;align-items:center;justify-content:space-between;gap:12px;border:1px solid var(--line);background:white;border-radius:11px;padding:12px 14px}.row h4{font-size:13px;margin:0}.row code{font-size:10px;color:var(--muted)}.chips{display:flex;gap:4px;flex-wrap:wrap;margin-top:4px}.chip{border:1px solid var(--line);border-radius:999px;padding:2px 6px;font-size:9px;color:var(--muted)}.card-form{display:grid;grid-template-columns:1fr 1fr;gap:10px;padding:17px;border:1px solid var(--line);background:white;border-radius:14px;margin-bottom:13px}.card-form .full{grid-column:1/-1}.card-form textarea{min-height:80px}.cards{display:grid;grid-template-columns:repeat(2,1fr);gap:10px}.study-card{padding:15px;background:white;border:1px solid var(--line);border-radius:12px}.study-card h3{font-size:14px;margin:0 0 9px}.answer{font-size:13px;color:var(--muted);white-space:pre-wrap}.study-card footer{display:flex;justify-content:space-between;align-items:center;margin-top:12px}.api-box{padding:18px;background:#16212b;color:#d8e7ed;border-radius:14px;overflow:auto}.api-box code{white-space:pre-wrap;font:12px/1.6 ui-monospace,Consolas,monospace}.note{padding:12px;border-radius:10px;background:#fff8e8;color:#705922;font-size:12px;margin-top:15px}.count{font-size:12px;color:var(--muted)}.toast{position:fixed;bottom:22px;left:50%;transform:translateX(-50%);background:#18212a;color:white;border-radius:999px;padding:10px 16px;font-size:12px;opacity:0;transition:.2s;pointer-events:none}.toast.show{opacity:1}@media(max-width:780px){.grid{grid-template-columns:1fr}.results,.cards{grid-template-columns:1fr}.app-head{align-items:flex-start;flex-direction:column}.gate{padding:26px}.top{margin-bottom:20px}.card-form{grid-template-columns:1fr}.card-form .full{grid-column:auto}}
+</style></head><body><script id="cb-data" type="application/json">{
+  "name": "ClonBrow Static API",
+  "version": "1.0.0",
+  "mode": "static-read-only",
+  "count": 260,
+  "labs": 143,
+  "features": [
+    {
+      "id": "2d-vectors-html",
+      "title": "Math Lab - Calculus & Vectors",
+      "path": "2d-vectors.html",
+      "url": "2d-vectors.html",
+      "tags": [
+        "lab",
+        "math"
+      ],
+      "role": "embeddable-page",
+      "externalApiHosts": []
+    },
+    {
+      "id": "3d-bioprinting-lab-html",
+      "title": "Bio-Fabrication | 3D Organ Printer",
+      "path": "3D Bioprinting Lab.html",
+      "url": "3D%20Bioprinting%20Lab.html",
+      "tags": [
+        "lab",
+        "biology",
+        "visualization"
+      ],
+      "role": "embeddable-page",
+      "externalApiHosts": []
+    },
+    {
+      "id": "3d-surgery-simulator-html",
+      "title": "Advanced 3D Clinical Surgery Simulator",
+      "path": "3D Surgery Simulator.html",
+      "url": "3D%20Surgery%20Simulator.html",
+      "tags": [
+        "simulation",
+        "visualization",
+        "tool"
+      ],
+      "role": "embeddable-page",
+      "externalApiHosts": []
+    },
+    {
+      "id": "3d-nets-html",
+      "title": "Math Lab - Applied Geometry & Data",
+      "path": "3d-nets.html",
+      "url": "3d-nets.html",
+      "tags": [
+        "lab",
+        "math",
+        "visualization"
+      ],
+      "role": "embeddable-page",
+      "externalApiHosts": []
+    },
+    {
+      "id": "3d-planes-html",
+      "title": "Math Lab - Advanced Systems",
+      "path": "3d-planes.html",
+      "url": "3d-planes.html",
+      "tags": [
+        "lab",
+        "math",
+        "visualization"
+      ],
+      "role": "embeddable-page",
+      "externalApiHosts": []
+    },
+    {
+      "id": "active-transport-pump-diagram-html",
+      "title": "Active Transport Pump Animation",
+      "path": "Active Transport Pump Diagram.html",
+      "url": "Active%20Transport%20Pump%20Diagram.html",
+      "tags": [
+        "visualization"
+      ],
+      "role": "embeddable-page",
+      "externalApiHosts": []
+    },
+    {
+      "id": "advanced-pm2-5-deposition-lab-html",
+      "title": "Advanced PM2.5 Alveolar Deposition Lab",
+      "path": "Advanced PM2.5 Deposition Lab.html",
+      "url": "Advanced%20PM2.5%20Deposition%20Lab.html",
+      "tags": [
+        "lab"
+      ],
+      "role": "embeddable-page",
+      "externalApiHosts": []
+    },
+    {
+      "id": "algebra-scale-html",
+      "title": "Math Lab - Geometry & Algebra",
+      "path": "algebra-scale.html",
+      "url": "algebra-scale.html",
+      "tags": [
+        "lab",
+        "math"
+      ],
+      "role": "embeddable-page",
+      "externalApiHosts": []
+    },
+    {
+      "id": "angles-html",
+      "title": "Math Lab - Applied Geometry & Data",
+      "path": "angles.html",
+      "url": "angles.html",
+      "tags": [
+        "lab",
+        "math"
+      ],
+      "role": "embeddable-page",
+      "externalApiHosts": []
+    },
+    {
+      "id": "announcement-hub-html",
+      "title": "Announcement Hub | ClonBrow Schools",
+      "path": "announcement_hub.html",
+      "url": "announcement_hub.html",
+      "tags": [
+        "dashboard"
+      ],
+      "role": "interactive-page",
+      "externalApiHosts": []
+    },
+    {
+      "id": "antacid-neutralization-html",
+      "title": "Clinical Chemistry: Antacid Neutralization",
+      "path": "Antacid Neutralization.html",
+      "url": "Antacid%20Neutralization.html",
+      "tags": [
+        "chemistry"
+      ],
+      "role": "interactive-page",
+      "externalApiHosts": []
+    },
+    {
+      "id": "antibiotic-resistance-lab-html",
+      "title": "Antibiotic Resistance & Evolution Lab",
+      "path": "Antibiotic Resistance Lab.html",
+      "url": "Antibiotic%20Resistance%20Lab.html",
+      "tags": [
+        "lab",
+        "biology"
+      ],
+      "role": "embeddable-page",
+      "externalApiHosts": []
+    },
+    {
+      "id": "antigen-antibody-fit-lab-html",
+      "title": "Antigen-Antibody Specificity Lab",
+      "path": "Antigen-Antibody Fit Lab.html",
+      "url": "Antigen-Antibody%20Fit%20Lab.html",
+      "tags": [
+        "lab"
+      ],
+      "role": "embeddable-page",
+      "externalApiHosts": []
+    },
+    {
+      "id": "antioxidant-simulation-html",
+      "title": "Draggable Antioxidant Simulation",
+      "path": "Antioxidant Simulation.html",
+      "url": "Antioxidant%20Simulation.html",
+      "tags": [
+        "simulation"
+      ],
+      "role": "embeddable-page",
+      "externalApiHosts": []
+    },
+    {
+      "id": "antivenom-simulator-html",
+      "title": "Antivenom Neutralization Lab",
+      "path": "Antivenom Simulator.html",
+      "url": "Antivenom%20Simulator.html",
+      "tags": [
+        "lab",
+        "simulation",
+        "tool"
+      ],
+      "role": "embeddable-page",
+      "externalApiHosts": []
+    },
+    {
+      "id": "arcade-hub-html",
+      "title": "Arcade Hub - Brutalist Edition",
+      "path": "arcade hub.html",
+      "url": "arcade%20hub.html",
+      "tags": [
+        "game",
+        "dashboard"
+      ],
+      "role": "embeddable-page",
+      "externalApiHosts": []
+    },
+    {
+      "id": "arcade-html",
+      "title": "Arcade Hub - Brutalist Edition",
+      "path": "arcade.html",
+      "url": "arcade.html",
+      "tags": [
+        "game",
+        "dashboard"
+      ],
+      "role": "embeddable-page",
+      "externalApiHosts": []
+    },
+    {
+      "id": "area-and-perimeter-html",
+      "title": "Math Lab - Interactive Concepts",
+      "path": "area-and-perimeter.html",
+      "url": "area-and-perimeter.html",
+      "tags": [
+        "lab",
+        "math"
+      ],
+      "role": "embeddable-page",
+      "externalApiHosts": []
+    },
+    {
+      "id": "argand-plane-html",
+      "title": "Math Lab - Linear Algebra & Conics",
+      "path": "argand-plane.html",
+      "url": "argand-plane.html",
+      "tags": [
+        "lab",
+        "math"
+      ],
+      "role": "embeddable-page",
+      "externalApiHosts": []
+    },
+    {
+      "id": "arithmetic-progressions-html",
+      "title": "Math Lab - Sequences & Statistics",
+      "path": "arithmetic-progressions.html",
+      "url": "arithmetic-progressions.html",
+      "tags": [
+        "lab",
+        "math"
+      ],
+      "role": "embeddable-page",
+      "externalApiHosts": []
+    },
+    {
+      "id": "asthma-airflow-lab-html",
+      "title": "Asthma Airflow & Bernoulli's Principle",
+      "path": "Asthma Airflow Lab.html",
+      "url": "Asthma%20Airflow%20Lab.html",
+      "tags": [
+        "lab"
+      ],
+      "role": "embeddable-page",
+      "externalApiHosts": []
+    },
+    {
+      "id": "audiology-lab-html",
+      "title": "Audiology & Frequency Sweep Lab",
+      "path": "Audiology Lab.html",
+      "url": "Audiology%20Lab.html",
+      "tags": [
+        "lab"
+      ],
+      "role": "embeddable-page",
+      "externalApiHosts": []
+    },
+    {
+      "id": "bar-graphs-html",
+      "title": "Math Lab - Applied Geometry & Data",
+      "path": "bar-graphs.html",
+      "url": "bar-graphs.html",
+      "tags": [
+        "lab",
+        "math",
+        "chemistry",
+        "visualization"
+      ],
+      "role": "embeddable-page",
+      "externalApiHosts": []
+    },
+    {
+      "id": "basics-of-newtons-laws-html",
+      "title": "Physics Lab - Newton's Laws",
+      "path": "basics-of-newtons-laws.html",
+      "url": "basics-of-newtons-laws.html",
+      "tags": [
+        "lab",
+        "chemistry",
+        "physics"
+      ],
+      "role": "embeddable-page",
+      "externalApiHosts": []
+    },
+    {
+      "id": "bicep-torque-calculator-html",
+      "title": "Joint Torque & Biomechanics Lab",
+      "path": "Bicep Torque Calculator.html",
+      "url": "Bicep%20Torque%20Calculator.html",
+      "tags": [
+        "lab",
+        "biology",
+        "calculator"
+      ],
+      "role": "embeddable-page",
+      "externalApiHosts": []
+    },
+    {
+      "id": "biofeedback-loop-html",
+      "title": "Cardiac Resonance | Biofeedback Entrainment",
+      "path": "Biofeedback Loop.html",
+      "url": "Biofeedback%20Loop.html",
+      "tags": [
+        "biology"
+      ],
+      "role": "interactive-page",
+      "externalApiHosts": []
+    },
+    {
+      "id": "bionic-eye-lab-html",
+      "title": "Bionic Eye Resolution & Neural Prosthetics Lab",
+      "path": "Bionic Eye Lab.html",
+      "url": "Bionic%20Eye%20Lab.html",
+      "tags": [
+        "lab",
+        "biology"
+      ],
+      "role": "embeddable-page",
+      "externalApiHosts": []
+    },
+    {
+      "id": "blood-agglutination-simulation-html",
+      "title": "Clinical Immunology: Agglutination Test",
+      "path": "Blood Agglutination Simulation.html",
+      "url": "Blood%20Agglutination%20Simulation.html",
+      "tags": [
+        "simulation",
+        "quiz",
+        "biology"
+      ],
+      "role": "embeddable-page",
+      "externalApiHosts": []
+    },
+    {
+      "id": "blood-buffer-equilibrium-html",
+      "title": "Blood Buffer System: Acid-Base Equilibrium",
+      "path": "Blood Buffer Equilibrium.html",
+      "url": "Blood%20Buffer%20Equilibrium.html",
+      "tags": [
+        "biology",
+        "chemistry"
+      ],
+      "role": "interactive-page",
+      "externalApiHosts": []
+    },
+    {
+      "id": "blood-cancer-surgery-html",
+      "title": "Stem Cell Donation Procedures",
+      "path": "Blood cancer surgery.html",
+      "url": "Blood%20cancer%20surgery.html",
+      "tags": [
+        "biology"
+      ],
+      "role": "interactive-page",
+      "externalApiHosts": []
+    },
+    {
+      "id": "blood-system-reboot-recovery-html",
+      "title": "Post-Transplant Recovery Protocol",
+      "path": "blood system reboot recovery.html",
+      "url": "blood%20system%20reboot%20recovery.html",
+      "tags": [
+        "biology"
+      ],
+      "role": "interactive-page",
+      "externalApiHosts": []
+    },
+    {
+      "id": "blood-brain-barrier-diagram-html",
+      "title": "Blood-Brain Barrier (BBB) - Clinical Diagram",
+      "path": "Blood-Brain Barrier Diagram.html",
+      "url": "Blood-Brain%20Barrier%20Diagram.html",
+      "tags": [
+        "biology",
+        "visualization"
+      ],
+      "role": "embeddable-page",
+      "externalApiHosts": []
+    },
+    {
+      "id": "bohr-effect-hemoglobin-html",
+      "title": "Bohr Effect & Hemoglobin Dynamics",
+      "path": "Bohr Effect & Hemoglobin.html",
+      "url": "Bohr%20Effect%20%26%20Hemoglobin.html",
+      "tags": [
+        "prototype"
+      ],
+      "role": "interactive-page",
+      "externalApiHosts": []
+    },
+    {
+      "id": "bohr-model-html",
+      "title": "Physics Lab - Atomic & Nuclear",
+      "path": "bohr-model.html",
+      "url": "bohr-model.html",
+      "tags": [
+        "lab",
+        "chemistry",
+        "physics",
+        "visualization"
+      ],
+      "role": "embeddable-page",
+      "externalApiHosts": []
+    },
+    {
+      "id": "bone-density-lab-html",
+      "title": "Bone Density: Archimedes' Principle Lab",
+      "path": "Bone Density Lab.html",
+      "url": "Bone%20Density%20Lab.html",
+      "tags": [
+        "lab"
+      ],
+      "role": "embeddable-page",
+      "externalApiHosts": []
+    },
+    {
+      "id": "brain-html",
+      "title": "Brain Research Centre | Clonexx",
+      "path": "brain.html",
+      "url": "brain.html",
+      "tags": [
+        "biology"
+      ],
+      "role": "interactive-page",
+      "externalApiHosts": []
+    },
+    {
+      "id": "brainboard-html",
+      "title": "BrainBoard | ClonBrow OS",
+      "path": "brainboard.html",
+      "url": "brainboard.html",
+      "tags": [
+        "biology"
+      ],
+      "role": "interactive-page",
+      "externalApiHosts": []
+    },
+    {
+      "id": "breathalyzer-simulation-html",
+      "title": "Breathalyzer Analysis Simulation",
+      "path": "Breathalyzer Simulation.html",
+      "url": "Breathalyzer%20Simulation.html",
+      "tags": [
+        "simulation"
+      ],
+      "role": "embeddable-page",
+      "externalApiHosts": []
+    },
+    {
+      "id": "brutalist-html",
+      "title": "CLONBROW",
+      "path": "brutalist.html",
+      "url": "brutalist.html",
+      "tags": [
+        "external-api"
+      ],
+      "role": "interactive-page",
+      "externalApiHosts": [
+        "en.wikipedia.org"
+      ]
+    },
+    {
+      "id": "buoyancy-html",
+      "title": "Physics Lab - Buoyancy & Displacement",
+      "path": "buoyancy.html",
+      "url": "buoyancy.html",
+      "tags": [
+        "lab",
+        "chemistry",
+        "physics"
+      ],
+      "role": "embeddable-page",
+      "externalApiHosts": []
+    },
+    {
+      "id": "burn-degree-estimator-html",
+      "title": "Med-Logic | TBSA Burn Estimator",
+      "path": "Burn Degree Estimator.html",
+      "url": "Burn%20Degree%20Estimator.html",
+      "tags": [
+        "prototype"
+      ],
+      "role": "interactive-page",
+      "externalApiHosts": []
+    },
+    {
+      "id": "capillary-action-lab-html",
+      "title": "Capillary Action: Blood Draw Lab",
+      "path": "Capillary Action Lab.html",
+      "url": "Capillary%20Action%20Lab.html",
+      "tags": [
+        "lab",
+        "biology"
+      ],
+      "role": "embeddable-page",
+      "externalApiHosts": []
+    },
+    {
+      "id": "carbon-monoxide-binding-simulation-html",
+      "title": "Carbon Monoxide vs. Hemoglobin",
+      "path": "Carbon Monoxide Binding Simulation.html",
+      "url": "Carbon%20Monoxide%20Binding%20Simulation.html",
+      "tags": [
+        "simulation"
+      ],
+      "role": "embeddable-page",
+      "externalApiHosts": []
+    },
+    {
+      "id": "carrom-html",
+      "title": "Carrom Master",
+      "path": "carrom.html",
+      "url": "carrom.html",
+      "tags": [
+        "prototype"
+      ],
+      "role": "interactive-page",
+      "externalApiHosts": []
+    },
+    {
+      "id": "cataract-light-scattering-html",
+      "title": "Cataract Simulation: Light Scattering",
+      "path": "Cataract Light Scattering.html",
+      "url": "Cataract%20Light%20Scattering.html",
+      "tags": [
+        "simulation"
+      ],
+      "role": "embeddable-page",
+      "externalApiHosts": []
+    },
+    {
+      "id": "cell-membrane-simulation-html",
+      "title": "Phospholipid Bilayer Simulation",
+      "path": "Cell Membrane Simulation.html",
+      "url": "Cell%20Membrane%20Simulation.html",
+      "tags": [
+        "simulation",
+        "biology",
+        "chemistry"
+      ],
+      "role": "embeddable-page",
+      "externalApiHosts": []
+    },
+    {
+      "id": "centrifuge-separation-lab-html",
+      "title": "Centrifuge Separation & Kinematics Lab",
+      "path": "Centrifuge Separation Lab.html",
+      "url": "Centrifuge%20Separation%20Lab.html",
+      "tags": [
+        "lab"
+      ],
+      "role": "embeddable-page",
+      "externalApiHosts": []
+    },
+    {
+      "id": "cerebrospinal-fluid-pressure-lab-html",
+      "title": "Cerebrospinal Pressure: Pascal's Law Lab",
+      "path": "Cerebrospinal Fluid Pressure Lab.html",
+      "url": "Cerebrospinal%20Fluid%20Pressure%20Lab.html",
+      "tags": [
+        "lab"
+      ],
+      "role": "embeddable-page",
+      "externalApiHosts": []
+    },
+    {
+      "id": "chateret-html",
+      "title": "Chatert - ClonMedic Comms",
+      "path": "chateret.html",
+      "url": "chateret.html",
+      "tags": [
+        "prototype"
+      ],
+      "role": "interactive-page",
+      "externalApiHosts": []
+    },
+    {
+      "id": "chess-html",
+      "title": "3D Master Chess",
+      "path": "chess.html",
+      "url": "chess.html",
+      "tags": [
+        "visualization"
+      ],
+      "role": "embeddable-page",
+      "externalApiHosts": []
+    },
+    {
+      "id": "childish-html",
+      "title": "clonbrow // play",
+      "path": "childish.html",
+      "url": "childish.html",
+      "tags": [
+        "external-api"
+      ],
+      "role": "interactive-page",
+      "externalApiHosts": [
+        "en.wikipedia.org"
+      ]
+    },
+    {
+      "id": "chromatography-lab-html",
+      "title": "Advanced Chromatography Simulator",
+      "path": "Chromatography Lab.html",
+      "url": "Chromatography%20Lab.html",
+      "tags": [
+        "lab",
+        "simulation",
+        "math",
+        "chemistry",
+        "visualization",
+        "tool"
+      ],
+      "role": "embeddable-page",
+      "externalApiHosts": []
+    },
+    {
+      "id": "chrome-store-submission-privacy-policy-draft-html",
+      "title": "Clonbrow Privacy Policy",
+      "path": "chrome-store-submission/PRIVACY-POLICY-DRAFT.html",
+      "url": "chrome-store-submission/PRIVACY-POLICY-DRAFT.html",
+      "tags": [
+        "prototype"
+      ],
+      "role": "content-page",
+      "externalApiHosts": []
+    },
+    {
+      "id": "circle-tangents-html",
+      "title": "Math Lab - Algebra & Circle Geometry",
+      "path": "circle-tangents.html",
+      "url": "circle-tangents.html",
+      "tags": [
+        "lab",
+        "math"
+      ],
+      "role": "embeddable-page",
+      "externalApiHosts": []
+    },
+    {
+      "id": "circle-theorems-html",
+      "title": "Math Lab - Algebra & Circle Geometry",
+      "path": "circle-theorems.html",
+      "url": "circle-theorems.html",
+      "tags": [
+        "lab",
+        "math"
+      ],
+      "role": "embeddable-page",
+      "externalApiHosts": []
+    },
+    {
+      "id": "clinical-protocol-bariatric-resection-gastric-sleeve-html",
+      "title": "Clinical Protocol: Bariatric Resection (Gastric Sleeve)",
+      "path": "Clinical Protocol Bariatric Resection Gastric Sleeve.html",
+      "url": "Clinical%20Protocol%20Bariatric%20Resection%20Gastric%20Sleeve.html",
+      "tags": [
+        "prototype"
+      ],
+      "role": "interactive-page",
+      "externalApiHosts": []
+    },
+    {
+      "id": "clock-angles-html",
+      "title": "Math Lab - Fundamentals & Geometry",
+      "path": "clock-angles.html",
+      "url": "clock-angles.html",
+      "tags": [
+        "lab",
+        "math"
+      ],
+      "role": "embeddable-page",
+      "externalApiHosts": []
+    },
+    {
+      "id": "clonbrow-dashboard-9-html",
+      "title": "ClonBrow OS | Dashboard",
+      "path": "clonbrow_dashboard (9).html",
+      "url": "clonbrow_dashboard%20(9).html",
+      "tags": [
+        "dashboard"
+      ],
+      "role": "interactive-page",
+      "externalApiHosts": []
+    },
+    {
+      "id": "clonesh-html",
+      "title": "ClonMedic OS",
+      "path": "clonesh.html",
+      "url": "clonesh.html",
+      "tags": [
+        "external-api"
+      ],
+      "role": "interactive-page",
+      "externalApiHosts": [
+        "en.wikipedia.org"
+      ]
+    },
+    {
+      "id": "clonexx-chat-html",
+      "title": "Clonexx AI - Sovereign Chat",
+      "path": "clonexx-(chat).html",
+      "url": "clonexx-(chat).html",
+      "tags": [
+        "external-api"
+      ],
+      "role": "interactive-page",
+      "externalApiHosts": [
+        "shreeclonexx.pythonanywhere.com",
+        "localhost:8000"
+      ]
+    },
+    {
+      "id": "clonmage-html",
+      "title": "Clonexx AI - Clonmage v1",
+      "path": "clonmage.html",
+      "url": "clonmage.html",
+      "tags": [
+        "external-api"
+      ],
+      "role": "interactive-page",
+      "externalApiHosts": [
+        "shreeclonexx.pythonanywhere.com",
+        "localhost:8000"
+      ]
+    },
+    {
+      "id": "clonmed-dashboard-html",
+      "title": "ClonMed | Clinical Intelligence",
+      "path": "clonmed_dashboard.html",
+      "url": "clonmed_dashboard.html",
+      "tags": [
+        "dashboard"
+      ],
+      "role": "interactive-page",
+      "externalApiHosts": []
+    },
+    {
+      "id": "clotting-cascade-simulation-html",
+      "title": "Clotting Cascade: Hemostasis in Action",
+      "path": "Clotting Cascade Simulation.html",
+      "url": "Clotting%20Cascade%20Simulation.html",
+      "tags": [
+        "simulation"
+      ],
+      "role": "embeddable-page",
+      "externalApiHosts": []
+    },
+    {
+      "id": "color-blindness-lab-html",
+      "title": "Color Vision Deficiency Laboratory",
+      "path": "Color Blindness Lab.html",
+      "url": "Color%20Blindness%20Lab.html",
+      "tags": [
+        "lab"
+      ],
+      "role": "embeddable-page",
+      "externalApiHosts": []
+    },
+    {
+      "id": "concussion-momentum-lab-html",
+      "title": "Impulse & Momentum: Concussion Simulator",
+      "path": "Concussion Momentum Lab.html",
+      "url": "Concussion%20Momentum%20Lab.html",
+      "tags": [
+        "lab",
+        "simulation",
+        "tool"
+      ],
+      "role": "embeddable-page",
+      "externalApiHosts": []
+    },
+    {
+      "id": "congruency-vs-similarity-html",
+      "title": "Math Lab - Sequences & Statistics",
+      "path": "congruency-vs-similarity.html",
+      "url": "congruency-vs-similarity.html",
+      "tags": [
+        "lab",
+        "math"
+      ],
+      "role": "embeddable-page",
+      "externalApiHosts": []
+    },
+    {
+      "id": "conic-sections-html",
+      "title": "Math Lab - Linear Algebra & Conics",
+      "path": "conic-sections.html",
+      "url": "conic-sections.html",
+      "tags": [
+        "lab",
+        "math"
+      ],
+      "role": "embeddable-page",
+      "externalApiHosts": []
+    },
+    {
+      "id": "control-html",
+      "title": "ClonBrow OS | The Ultimate Student Browser",
+      "path": "control.html",
+      "url": "control.html",
+      "tags": [
+        "external-api"
+      ],
+      "role": "interactive-page",
+      "externalApiHosts": [
+        "en.wikipedia.org"
+      ]
+    },
+    {
+      "id": "coordinate-plane-html",
+      "title": "Math Lab - Fundamentals & Geometry",
+      "path": "coordinate-plane.html",
+      "url": "coordinate-plane.html",
+      "tags": [
+        "lab",
+        "math"
+      ],
+      "role": "embeddable-page",
+      "externalApiHosts": []
+    },
+    {
+      "id": "cortisol-stress-lab-html",
+      "title": "Cortisol Stress Lab: Physiological Response",
+      "path": "Cortisol Stress Lab.html",
+      "url": "Cortisol%20Stress%20Lab.html",
+      "tags": [
+        "lab",
+        "biology",
+        "chemistry"
+      ],
+      "role": "embeddable-page",
+      "externalApiHosts": []
+    },
+    {
+      "id": "coulombs-law-html",
+      "title": "Physics Lab - Waves & Electrostatics",
+      "path": "coulombs-law.html",
+      "url": "coulombs-law.html",
+      "tags": [
+        "lab",
+        "chemistry",
+        "physics"
+      ],
+      "role": "embeddable-page",
+      "externalApiHosts": []
+    },
+    {
+      "id": "cricket-html",
+      "title": "3D Cricket Master",
+      "path": "cricket.html",
+      "url": "cricket.html",
+      "tags": [
+        "visualization"
+      ],
+      "role": "embeddable-page",
+      "externalApiHosts": []
+    },
+    {
+      "id": "crispr-gene-splicer-html",
+      "title": "CRISPR-Cas9 Genomic Editor",
+      "path": "CRISPR Gene Splicer.html",
+      "url": "CRISPR%20Gene%20Splicer.html",
+      "tags": [
+        "biology",
+        "tool"
+      ],
+      "role": "interactive-page",
+      "externalApiHosts": []
+    },
+    {
+      "id": "cryopreservation-lab-html",
+      "title": "Cryobiology | Flash Freeze Simulator",
+      "path": "Cryopreservation Lab.html",
+      "url": "Cryopreservation%20Lab.html",
+      "tags": [
+        "lab",
+        "simulation",
+        "biology",
+        "tool"
+      ],
+      "role": "embeddable-page",
+      "externalApiHosts": []
+    },
+    {
+      "id": "cryosurgery-lab-html",
+      "title": "Cryosurgery & Phase Change Lab",
+      "path": "Cryosurgery Lab.html",
+      "url": "Cryosurgery%20Lab.html",
+      "tags": [
+        "lab",
+        "chemistry"
+      ],
+      "role": "embeddable-page",
+      "externalApiHosts": []
+    },
+    {
+      "id": "cyanide-blockade-simulation-html",
+      "title": "Cyanide Blockade: Mitochondrial Failure",
+      "path": "Cyanide Blockade Simulation.html",
+      "url": "Cyanide%20Blockade%20Simulation.html",
+      "tags": [
+        "simulation"
+      ],
+      "role": "embeddable-page",
+      "externalApiHosts": []
+    },
+    {
+      "id": "cybernetic-haptic-lab-html",
+      "title": "Cybernetic Haptic Feedback Lab",
+      "path": "Cybernetic Haptic Lab.html",
+      "url": "Cybernetic%20Haptic%20Lab.html",
+      "tags": [
+        "lab"
+      ],
+      "role": "embeddable-page",
+      "externalApiHosts": []
+    },
+    {
+      "id": "cytochrome-p450-lab-html",
+      "title": "CYP450 Metabolic Factory",
+      "path": "Cytochrome P450 Lab.html",
+      "url": "Cytochrome%20P450%20Lab.html",
+      "tags": [
+        "lab"
+      ],
+      "role": "embeddable-page",
+      "externalApiHosts": []
+    },
+    {
+      "id": "dab-html",
+      "title": "ClonBrow OS | Official Student Workspace",
+      "path": "dab.html",
+      "url": "dab.html",
+      "tags": [
+        "external-api"
+      ],
+      "role": "interactive-page",
+      "externalApiHosts": [
+        "en.wikipedia.org"
+      ]
+    },
+    {
+      "id": "dashboard-html",
+      "title": "ClonBrow OS | Dashboard",
+      "path": "dashboard.html",
+      "url": "dashboard.html",
+      "tags": [
+        "dashboard"
+      ],
+      "role": "interactive-page",
+      "externalApiHosts": []
+    },
+    {
+      "id": "defibrillator-lab-html",
+      "title": "Defibrillator Capacitor Lab",
+      "path": "Defibrillator Lab.html",
+      "url": "Defibrillator%20Lab.html",
+      "tags": [
+        "lab"
+      ],
+      "role": "embeddable-page",
+      "externalApiHosts": []
+    },
+    {
+      "id": "density-tower-lab-html",
+      "title": "Physics Lab - Density Towers",
+      "path": "density-tower-lab.html",
+      "url": "density-tower-lab.html",
+      "tags": [
+        "lab",
+        "chemistry",
+        "physics"
+      ],
+      "role": "embeddable-page",
+      "externalApiHosts": []
+    },
+    {
+      "id": "derivatives-html",
+      "title": "Math Lab - Calculus & Vectors",
+      "path": "derivatives.html",
+      "url": "derivatives.html",
+      "tags": [
+        "lab",
+        "math"
+      ],
+      "role": "embeddable-page",
+      "externalApiHosts": []
+    },
+    {
+      "id": "digital-hospital-html",
+      "title": "CLONMED | AI Diagnostic System",
+      "path": "Digital hospital.html",
+      "url": "Digital%20hospital.html",
+      "tags": [
+        "external-api"
+      ],
+      "role": "interactive-page",
+      "externalApiHosts": [
+        "ipapi.co"
+      ]
+    },
+    {
+      "id": "distance-vs-displacement-html",
+      "title": "Physics Lab - Distance vs Displacement",
+      "path": "distance-vs-displacement.html",
+      "url": "distance-vs-displacement.html",
+      "tags": [
+        "lab",
+        "chemistry",
+        "physics"
+      ],
+      "role": "embeddable-page",
+      "externalApiHosts": []
+    },
+    {
+      "id": "dopamine-reward-lab-html",
+      "title": "Neurobiology: The Dopamine Reward Loop",
+      "path": "Dopamine Reward Lab.html",
+      "url": "Dopamine%20Reward%20Lab.html",
+      "tags": [
+        "lab",
+        "biology"
+      ],
+      "role": "embeddable-page",
+      "externalApiHosts": []
+    },
+    {
+      "id": "dot-and-cross-products-html",
+      "title": "Math Lab - Linear Algebra & Conics",
+      "path": "dot-and-cross-products.html",
+      "url": "dot-and-cross-products.html",
+      "tags": [
+        "lab",
+        "math"
+      ],
+      "role": "embeddable-page",
+      "externalApiHosts": []
+    },
+    {
+      "id": "duo-html",
+      "title": "DUO - Card Game",
+      "path": "duo.html",
+      "url": "duo.html",
+      "tags": [
+        "game"
+      ],
+      "role": "embeddable-page",
+      "externalApiHosts": []
+    },
+    {
+      "id": "dynamics-html",
+      "title": "Physics Lab - Dynamics & Fluids",
+      "path": "dynamics.html",
+      "url": "dynamics.html",
+      "tags": [
+        "lab",
+        "chemistry",
+        "physics"
+      ],
+      "role": "embeddable-page",
+      "externalApiHosts": []
+    },
+    {
+      "id": "editor-html",
+      "title": "Clonbrow saver - The Forge",
+      "path": "editor.html",
+      "url": "editor.html",
+      "tags": [
+        "tool"
+      ],
+      "role": "interactive-page",
+      "externalApiHosts": []
+    },
+    {
+      "id": "educationist-html",
+      "title": "Educationist - Live Physics & Maths",
+      "path": "educationist.html",
+      "url": "educationist.html",
+      "tags": [
+        "math",
+        "chemistry",
+        "physics"
+      ],
+      "role": "interactive-page",
+      "externalApiHosts": []
+    },
+    {
+      "id": "eeg-wave-superposition-lab-html",
+      "title": "EEG Wave Analysis: Superposition",
+      "path": "EEG Wave Superposition Lab.html",
+      "url": "EEG%20Wave%20Superposition%20Lab.html",
+      "tags": [
+        "lab",
+        "physics"
+      ],
+      "role": "embeddable-page",
+      "externalApiHosts": []
+    },
+    {
+      "id": "electromagnetism-html",
+      "title": "Physics Lab - Electromagnetism",
+      "path": "electromagnetism.html",
+      "url": "electromagnetism.html",
+      "tags": [
+        "lab",
+        "chemistry",
+        "physics"
+      ],
+      "role": "embeddable-page",
+      "externalApiHosts": []
+    },
+    {
+      "id": "elisa-microplate-simulator-html",
+      "title": "ELISA Microplate Simulator",
+      "path": "ELISA Microplate Simulator.html",
+      "url": "ELISA%20Microplate%20Simulator.html",
+      "tags": [
+        "simulation",
+        "tool"
+      ],
+      "role": "embeddable-page",
+      "externalApiHosts": []
+    },
+    {
+      "id": "endoscopy-fiber-optics-lab-html",
+      "title": "Endoscopy & Total Internal Reflection Lab",
+      "path": "Endoscopy Fiber Optics Lab.html",
+      "url": "Endoscopy%20Fiber%20Optics%20Lab.html",
+      "tags": [
+        "lab",
+        "physics"
+      ],
+      "role": "embeddable-page",
+      "externalApiHosts": []
+    },
+    {
+      "id": "energy-html",
+      "title": "Physics Lab - Energy & Momentum",
+      "path": "energy.html",
+      "url": "energy.html",
+      "tags": [
+        "lab",
+        "chemistry",
+        "physics"
+      ],
+      "role": "embeddable-page",
+      "externalApiHosts": []
+    },
+    {
+      "id": "eulers-identity-html",
+      "title": "Math Lab - Advanced Systems",
+      "path": "eulers-identity.html",
+      "url": "eulers-identity.html",
+      "tags": [
+        "lab",
+        "math"
+      ],
+      "role": "embeddable-page",
+      "externalApiHosts": []
+    },
+    {
+      "id": "explore-html",
+      "title": "Clonbrow saver - 1st Person Explore",
+      "path": "explore.html",
+      "url": "explore.html",
+      "tags": [
+        "prototype"
+      ],
+      "role": "interactive-page",
+      "externalApiHosts": []
+    },
+    {
+      "id": "exponents-html",
+      "title": "Math Lab - Proportions, Exponents & Trigonometry",
+      "path": "exponents.html",
+      "url": "exponents.html",
+      "tags": [
+        "lab",
+        "math"
+      ],
+      "role": "embeddable-page",
+      "externalApiHosts": []
+    },
+    {
+      "id": "football-html",
+      "title": "Football Master",
+      "path": "football.html",
+      "url": "football.html",
+      "tags": [
+        "prototype"
+      ],
+      "role": "interactive-page",
+      "externalApiHosts": []
+    },
+    {
+      "id": "fps-html",
+      "title": "Lush FPS Survival Adventure",
+      "path": "fps.html",
+      "url": "fps.html",
+      "tags": [
+        "prototype"
+      ],
+      "role": "interactive-page",
+      "externalApiHosts": []
+    },
+    {
+      "id": "fractions-html",
+      "title": "Math Lab - Interactive Concepts",
+      "path": "fractions.html",
+      "url": "fractions.html",
+      "tags": [
+        "lab",
+        "math"
+      ],
+      "role": "embeddable-page",
+      "externalApiHosts": []
+    },
+    {
+      "id": "friction-html",
+      "title": "Physics Lab - Friction & Surfaces",
+      "path": "friction.html",
+      "url": "friction.html",
+      "tags": [
+        "lab",
+        "chemistry",
+        "physics"
+      ],
+      "role": "embeddable-page",
+      "externalApiHosts": []
+    },
+    {
+      "id": "gait-pendulum-lab-html",
+      "title": "Gait Analysis: Leg Pendulum Simulator",
+      "path": "Gait Pendulum Lab.html",
+      "url": "Gait%20Pendulum%20Lab.html",
+      "tags": [
+        "lab",
+        "simulation",
+        "tool"
+      ],
+      "role": "embeddable-page",
+      "externalApiHosts": []
+    },
+    {
+      "id": "galtons-board-html",
+      "title": "Math Lab - Advanced Systems",
+      "path": "galtons-board.html",
+      "url": "galtons-board.html",
+      "tags": [
+        "lab",
+        "math"
+      ],
+      "role": "embeddable-page",
+      "externalApiHosts": []
+    },
+    {
+      "id": "garden-html",
+      "title": "Mangrove Garden | Clonexx Campus",
+      "path": "garden.html",
+      "url": "garden.html",
+      "tags": [
+        "prototype"
+      ],
+      "role": "content-page",
+      "externalApiHosts": []
+    },
+    {
+      "id": "gastric-absorption-engine-html",
+      "title": "Gastric Absorption Engine",
+      "path": "Gastric Absorption Engine.html",
+      "url": "Gastric%20Absorption%20Engine.html",
+      "tags": [
+        "prototype"
+      ],
+      "role": "interactive-page",
+      "externalApiHosts": []
+    },
+    {
+      "id": "gene-drive-evolution-html",
+      "title": "Gene Drive Evolution | Advanced Simulator",
+      "path": "Gene Drive Evolution.html",
+      "url": "Gene%20Drive%20Evolution.html",
+      "tags": [
+        "simulation",
+        "biology",
+        "tool"
+      ],
+      "role": "embeddable-page",
+      "externalApiHosts": []
+    },
+    {
+      "id": "geometric-progressions-html",
+      "title": "Math Lab - Sequences & Statistics",
+      "path": "geometric-progressions.html",
+      "url": "geometric-progressions.html",
+      "tags": [
+        "lab",
+        "math"
+      ],
+      "role": "embeddable-page",
+      "externalApiHosts": []
+    },
+    {
+      "id": "gfn-html",
+      "title": "ClonMedic OS",
+      "path": "gfn.html",
+      "url": "gfn.html",
+      "tags": [
+        "external-api"
+      ],
+      "role": "interactive-page",
+      "externalApiHosts": [
+        "en.wikipedia.org"
+      ]
+    },
+    {
+      "id": "glomerular-sieve-lab-html",
+      "title": "Glomerular Sieve & Renal Filtration Lab",
+      "path": "Glomerular Sieve Lab.html",
+      "url": "Glomerular%20Sieve%20Lab.html",
+      "tags": [
+        "lab"
+      ],
+      "role": "embeddable-page",
+      "externalApiHosts": []
+    },
+    {
+      "id": "gravity-html",
+      "title": "Physics Lab - Gravity",
+      "path": "gravity.html",
+      "url": "gravity.html",
+      "tags": [
+        "lab",
+        "chemistry",
+        "physics"
+      ],
+      "role": "embeddable-page",
+      "externalApiHosts": []
+    },
+    {
+      "id": "half-life-visualizer-html",
+      "title": "Pharmacokinetics Engine",
+      "path": "Half-Life Visualizer.html",
+      "url": "Half-Life%20Visualizer.html",
+      "tags": [
+        "chemistry",
+        "visualization"
+      ],
+      "role": "embeddable-page",
+      "externalApiHosts": []
+    },
+    {
+      "id": "heat-basics-html",
+      "title": "Physics Lab - Heat Transfer",
+      "path": "heat-basics.html",
+      "url": "heat-basics.html",
+      "tags": [
+        "lab",
+        "chemistry",
+        "physics"
+      ],
+      "role": "embeddable-page",
+      "externalApiHosts": []
+    },
+    {
+      "id": "heatstroke-evaporation-lab-html",
+      "title": "Thermodynamics | Heatstroke Evaporation Lab",
+      "path": "Heatstroke Evaporation Lab.html",
+      "url": "Heatstroke%20Evaporation%20Lab.html",
+      "tags": [
+        "lab"
+      ],
+      "role": "embeddable-page",
+      "externalApiHosts": []
+    },
+    {
+      "id": "heavy-metal-chelation-html",
+      "title": "Molecular Dynamics: Heavy Metal Chelation",
+      "path": "Heavy Metal Chelation.html",
+      "url": "Heavy%20Metal%20Chelation.html",
+      "tags": [
+        "prototype"
+      ],
+      "role": "interactive-page",
+      "externalApiHosts": []
+    },
+    {
+      "id": "heril-html",
+      "title": "Flying Island | ClonBrow OS",
+      "path": "heril.html",
+      "url": "heril.html",
+      "tags": [
+        "prototype"
+      ],
+      "role": "interactive-page",
+      "externalApiHosts": []
+    },
+    {
+      "id": "hill-html",
+      "title": "ClonMedic OS",
+      "path": "hill.html",
+      "url": "hill.html",
+      "tags": [
+        "external-api"
+      ],
+      "role": "interactive-page",
+      "externalApiHosts": [
+        "en.wikipedia.org"
+      ]
+    },
+    {
+      "id": "histamine-response-simulation-html",
+      "title": "Histamine Response: Vasodilation Lab",
+      "path": "Histamine Response Simulation.html",
+      "url": "Histamine%20Response%20Simulation.html",
+      "tags": [
+        "lab",
+        "simulation"
+      ],
+      "role": "embeddable-page",
+      "externalApiHosts": []
+    },
+    {
+      "id": "hospital-html",
+      "title": "Hospital Lab | Clonexx Research Centre",
+      "path": "hospital.html",
+      "url": "hospital.html",
+      "tags": [
+        "lab"
+      ],
+      "role": "embeddable-page",
+      "externalApiHosts": []
+    },
+    {
+      "id": "human-eye-html",
+      "title": "Physics Lab - 2D Eye Optics",
+      "path": "human-eye.html",
+      "url": "human-eye.html",
+      "tags": [
+        "lab",
+        "chemistry",
+        "physics"
+      ],
+      "role": "embeddable-page",
+      "externalApiHosts": []
+    },
+    {
+      "id": "hyatt-html",
+      "title": "ClonMedic OS",
+      "path": "hyatt.html",
+      "url": "hyatt.html",
+      "tags": [
+        "external-api"
+      ],
+      "role": "interactive-page",
+      "externalApiHosts": [
+        "en.wikipedia.org"
+      ]
+    },
+    {
+      "id": "hypothermia-core-temp-lab-html",
+      "title": "Hypothermia & Thermal Hemodynamics Lab",
+      "path": "Hypothermia Core Temp Lab.html",
+      "url": "Hypothermia%20Core%20Temp%20Lab.html",
+      "tags": [
+        "lab"
+      ],
+      "role": "embeddable-page",
+      "externalApiHosts": []
+    },
+    {
+      "id": "iamnoob-html",
+      "title": "iamnoob",
+      "path": "iamnoob.html",
+      "url": "iamnoob.html",
+      "tags": [
+        "prototype"
+      ],
+      "role": "content-page",
+      "externalApiHosts": []
+    },
+    {
+      "id": "index-2-html",
+      "title": "ClonMedic OS",
+      "path": "index (2).html",
+      "url": "index%20(2).html",
+      "tags": [
+        "external-api"
+      ],
+      "role": "interactive-page",
+      "externalApiHosts": [
+        "en.wikipedia.org"
+      ]
+    },
+    {
+      "id": "integration-html",
+      "title": "Math Lab - Calculus & Vectors",
+      "path": "integration.html",
+      "url": "integration.html",
+      "tags": [
+        "lab",
+        "math"
+      ],
+      "role": "embeddable-page",
+      "externalApiHosts": []
+    },
+    {
+      "id": "iv-titration-engine-html",
+      "title": "IV Titration Engine",
+      "path": "IV Titration Engine.html",
+      "url": "IV%20Titration%20Engine.html",
+      "tags": [
+        "chemistry"
+      ],
+      "role": "interactive-page",
+      "externalApiHosts": []
+    },
+    {
+      "id": "kidney-filtration-html",
+      "title": "Renal Ultrafiltration Simulator",
+      "path": "Kidney Filtration.html",
+      "url": "Kidney%20Filtration.html",
+      "tags": [
+        "simulation",
+        "tool"
+      ],
+      "role": "embeddable-page",
+      "externalApiHosts": []
+    },
+    {
+      "id": "laber-html",
+      "title": "Island Lab | ClonBrow OS",
+      "path": "laber.html",
+      "url": "laber.html",
+      "tags": [
+        "lab"
+      ],
+      "role": "embeddable-page",
+      "externalApiHosts": []
+    },
+    {
+      "id": "laparoscopic-precision-lab-html",
+      "title": "Laparoscopic Precision Lab",
+      "path": "Laparoscopic Precision Lab.html",
+      "url": "Laparoscopic%20Precision%20Lab.html",
+      "tags": [
+        "lab"
+      ],
+      "role": "embeddable-page",
+      "externalApiHosts": []
+    },
+    {
+      "id": "lead-poisoning-lab-html",
+      "title": "Neuro-Toxicology | Lead Infiltration Lab",
+      "path": "Lead Poisoning Lab.html",
+      "url": "Lead%20Poisoning%20Lab.html",
+      "tags": [
+        "lab",
+        "biology"
+      ],
+      "role": "embeddable-page",
+      "externalApiHosts": []
+    },
+    {
+      "id": "len-html",
+      "title": "ClonMedic OS",
+      "path": "len.html",
+      "url": "len.html",
+      "tags": [
+        "external-api"
+      ],
+      "role": "interactive-page",
+      "externalApiHosts": [
+        "en.wikipedia.org"
+      ]
+    },
+    {
+      "id": "library-html",
+      "title": "Library | ClonBrow OS",
+      "path": "library.html",
+      "url": "library.html",
+      "tags": [
+        "external-api"
+      ],
+      "role": "interactive-page",
+      "externalApiHosts": [
+        "en.wikipedia.org"
+      ]
+    },
+    {
+      "id": "ligament-elasticity-lab-html",
+      "title": "Ligament Elasticity & Rupture Lab",
+      "path": "Ligament Elasticity Lab.html",
+      "url": "Ligament%20Elasticity%20Lab.html",
+      "tags": [
+        "lab"
+      ],
+      "role": "embeddable-page",
+      "externalApiHosts": []
+    },
+    {
+      "id": "light-aesthatics-html",
+      "title": "ClonBrow OS | Workspace",
+      "path": "light aesthatics.html",
+      "url": "light%20aesthatics.html",
+      "tags": [
+        "external-api"
+      ],
+      "role": "interactive-page",
+      "externalApiHosts": [
+        "en.wikipedia.org"
+      ]
+    },
+    {
+      "id": "light-dispersion-html",
+      "title": "Physics Lab - 2D Interactive Optics",
+      "path": "light-dispersion.html",
+      "url": "light-dispersion.html",
+      "tags": [
+        "lab",
+        "chemistry",
+        "physics"
+      ],
+      "role": "embeddable-page",
+      "externalApiHosts": []
+    },
+    {
+      "id": "limits-html",
+      "title": "Math Lab - Calculus & Vectors",
+      "path": "limits.html",
+      "url": "limits.html",
+      "tags": [
+        "lab",
+        "math"
+      ],
+      "role": "embeddable-page",
+      "externalApiHosts": []
+    },
+    {
+      "id": "linear-programming-html",
+      "title": "Math Lab - Advanced Systems",
+      "path": "linear-programming.html",
+      "url": "linear-programming.html",
+      "tags": [
+        "lab",
+        "math"
+      ],
+      "role": "embeddable-page",
+      "externalApiHosts": []
+    },
+    {
+      "id": "lock-key-visualizer-html",
+      "title": "Professional Molecular Docking Simulation",
+      "path": "Lock & Key Visualizer.html",
+      "url": "Lock%20%26%20Key%20Visualizer.html",
+      "tags": [
+        "simulation",
+        "visualization"
+      ],
+      "role": "embeddable-page",
+      "externalApiHosts": []
+    },
+    {
+      "id": "login-for-clonexx-html",
+      "title": "Clonexx AI - Login",
+      "path": "login-for-clonexx.html",
+      "url": "login-for-clonexx.html",
+      "tags": [
+        "external-api"
+      ],
+      "role": "interactive-page",
+      "externalApiHosts": [
+        "shreeclonexx.pythonanywhere.com"
+      ]
+    },
+    {
+      "id": "login-html",
+      "title": "ClonBrow OS | Login",
+      "path": "login.html",
+      "url": "login.html",
+      "tags": [
+        "prototype"
+      ],
+      "role": "interactive-page",
+      "externalApiHosts": []
+    },
+    {
+      "id": "ludo-html",
+      "title": "Ludo Master",
+      "path": "ludo.html",
+      "url": "ludo.html",
+      "tags": [
+        "prototype"
+      ],
+      "role": "interactive-page",
+      "externalApiHosts": []
+    },
+    {
+      "id": "lymph-node-filtration-lab-html",
+      "title": "Lymph Node Filter Simulation",
+      "path": "Lymph Node Filtration Lab.html",
+      "url": "Lymph%20Node%20Filtration%20Lab.html",
+      "tags": [
+        "lab",
+        "simulation",
+        "chemistry"
+      ],
+      "role": "embeddable-page",
+      "externalApiHosts": []
+    },
+    {
+      "id": "magnets-html",
+      "title": "Physics Lab - Light & Magnets",
+      "path": "magnets.html",
+      "url": "magnets.html",
+      "tags": [
+        "lab",
+        "chemistry",
+        "physics"
+      ],
+      "role": "embeddable-page",
+      "externalApiHosts": []
+    },
+    {
+      "id": "mailgo-html",
+      "title": "MailGo | Comprehensive Comms",
+      "path": "mailgo.html",
+      "url": "mailgo.html",
+      "tags": [
+        "prototype"
+      ],
+      "role": "interactive-page",
+      "externalApiHosts": []
+    },
+    {
+      "id": "main-html",
+      "title": "clonbrow",
+      "path": "main.html",
+      "url": "main.html",
+      "tags": [
+        "prototype"
+      ],
+      "role": "interactive-page",
+      "externalApiHosts": []
+    },
+    {
+      "id": "map-html",
+      "title": "Clonbrow saver - The Isometric Realm",
+      "path": "map.html",
+      "url": "map.html",
+      "tags": [
+        "prototype"
+      ],
+      "role": "interactive-page",
+      "externalApiHosts": []
+    },
+    {
+      "id": "math-lab-dashboard-html",
+      "title": "Math Lab | Brutalist UI",
+      "path": "Math Lab Dashboard.html",
+      "url": "Math%20Lab%20Dashboard.html",
+      "tags": [
+        "lab",
+        "math",
+        "dashboard"
+      ],
+      "role": "embeddable-page",
+      "externalApiHosts": []
+    },
+    {
+      "id": "matrices-2d-html",
+      "title": "Math Lab - Linear Algebra & Conics",
+      "path": "matrices-2d.html",
+      "url": "matrices-2d.html",
+      "tags": [
+        "lab",
+        "math"
+      ],
+      "role": "embeddable-page",
+      "externalApiHosts": []
+    },
+    {
+      "id": "medic-of-all-html",
+      "title": "ClonMed - AI Medical Dashboard",
+      "path": "medic of all.html",
+      "url": "medic%20of%20all.html",
+      "tags": [
+        "biology",
+        "dashboard"
+      ],
+      "role": "interactive-page",
+      "externalApiHosts": []
+    },
+    {
+      "id": "medicof-all-html",
+      "title": "ClonMed - AI Medical Dashboard",
+      "path": "medicof all.html",
+      "url": "medicof%20all.html",
+      "tags": [
+        "biology",
+        "dashboard"
+      ],
+      "role": "interactive-page",
+      "externalApiHosts": []
+    },
+    {
+      "id": "mega-city-builder-html",
+      "title": "Mega City Builder Ultimate",
+      "path": "Mega City Builder.html",
+      "url": "Mega%20City%20Builder.html",
+      "tags": [
+        "prototype"
+      ],
+      "role": "interactive-page",
+      "externalApiHosts": []
+    },
+    {
+      "id": "mehafg-html",
+      "title": "ClonMedic OS",
+      "path": "mehafg.html",
+      "url": "mehafg.html",
+      "tags": [
+        "external-api"
+      ],
+      "role": "interactive-page",
+      "externalApiHosts": [
+        "en.wikipedia.org"
+      ]
+    },
+    {
+      "id": "mekyakaru-html",
+      "title": "Laner Social | Brutalist UI",
+      "path": "mekyakaru.html",
+      "url": "mekyakaru.html",
+      "tags": [
+        "prototype"
+      ],
+      "role": "interactive-page",
+      "externalApiHosts": []
+    },
+    {
+      "id": "melanin-photoprotection-lab-html",
+      "title": "Melanin Photoprotection & UV Damage Lab",
+      "path": "Melanin Photoprotection Lab.html",
+      "url": "Melanin%20Photoprotection%20Lab.html",
+      "tags": [
+        "lab",
+        "chemistry"
+      ],
+      "role": "embeddable-page",
+      "externalApiHosts": []
+    },
+    {
+      "id": "metabs-html",
+      "title": "FORENSIC OS | Digital Crime Lab",
+      "path": "Metabs.html",
+      "url": "Metabs.html",
+      "tags": [
+        "lab"
+      ],
+      "role": "embeddable-page",
+      "externalApiHosts": []
+    },
+    {
+      "id": "minimal-html",
+      "title": "clonbrow",
+      "path": "minimal.html",
+      "url": "minimal.html",
+      "tags": [
+        "external-api"
+      ],
+      "role": "interactive-page",
+      "externalApiHosts": [
+        "en.wikipedia.org"
+      ]
+    },
+    {
+      "id": "mixofall-html",
+      "title": "ClonMed - AI Medical Dashboard",
+      "path": "mixofall.html",
+      "url": "mixofall.html",
+      "tags": [
+        "biology",
+        "dashboard"
+      ],
+      "role": "interactive-page",
+      "externalApiHosts": []
+    },
+    {
+      "id": "mobile-version-html",
+      "title": "clonbrow · mobile",
+      "path": "mobile-version.html",
+      "url": "mobile-version.html",
+      "tags": [
+        "prototype"
+      ],
+      "role": "interactive-page",
+      "externalApiHosts": []
+    },
+    {
+      "id": "momentum-html",
+      "title": "Physics Lab - Energy & Momentum",
+      "path": "momentum.html",
+      "url": "momentum.html",
+      "tags": [
+        "lab",
+        "chemistry",
+        "physics"
+      ],
+      "role": "embeddable-page",
+      "externalApiHosts": []
+    },
+    {
+      "id": "mri-proton-alignment-lab-html",
+      "title": "MRI Physics: Proton Alignment & Precession",
+      "path": "MRI Proton Alignment Lab.html",
+      "url": "MRI%20Proton%20Alignment%20Lab.html",
+      "tags": [
+        "lab",
+        "chemistry",
+        "physics"
+      ],
+      "role": "embeddable-page",
+      "externalApiHosts": []
+    },
+    {
+      "id": "multiplication-arrays-html",
+      "title": "Math Lab - Interactive Concepts",
+      "path": "multiplication-arrays.html",
+      "url": "multiplication-arrays.html",
+      "tags": [
+        "lab",
+        "math"
+      ],
+      "role": "embeddable-page",
+      "externalApiHosts": []
+    },
+    {
+      "id": "muscle-fatigue-lactic-acid-html",
+      "title": "Muscle Fiber Fatigue Dynamics",
+      "path": "Muscle Fatigue & Lactic Acid.html",
+      "url": "Muscle%20Fatigue%20%26%20Lactic%20Acid.html",
+      "tags": [
+        "chemistry"
+      ],
+      "role": "interactive-page",
+      "externalApiHosts": []
+    },
+    {
+      "id": "myelin-insulation-lab-html",
+      "title": "Neuro-Link | Myelin Insulation Lab",
+      "path": "Myelin Insulation Lab.html",
+      "url": "Myelin%20Insulation%20Lab.html",
+      "tags": [
+        "lab",
+        "biology"
+      ],
+      "role": "embeddable-page",
+      "externalApiHosts": []
+    },
+    {
+      "id": "na-k-action-potential-html",
+      "title": "Na+/K+ Action Potential Simulator",
+      "path": "Na K Action Potential.html",
+      "url": "Na%20K%20Action%20Potential.html",
+      "tags": [
+        "simulation",
+        "tool"
+      ],
+      "role": "embeddable-page",
+      "externalApiHosts": []
+    },
+    {
+      "id": "nanobot-targeted-delivery-html",
+      "title": "Nano-Oncology | Targeted Delivery",
+      "path": "Nanobot Targeted Delivery.html",
+      "url": "Nanobot%20Targeted%20Delivery.html",
+      "tags": [
+        "prototype"
+      ],
+      "role": "interactive-page",
+      "externalApiHosts": []
+    },
+    {
+      "id": "neural-resection-simulator-html",
+      "title": "Clinical Protocol: Neurological Resection & Neural Wiring",
+      "path": "Neural Resection Simulator.html",
+      "url": "Neural%20Resection%20Simulator.html",
+      "tags": [
+        "simulation",
+        "biology",
+        "tool"
+      ],
+      "role": "embeddable-page",
+      "externalApiHosts": []
+    },
+    {
+      "id": "neural-resistance-lab-html",
+      "title": "Neural Resistance: Ohm's Law in Biology",
+      "path": "Neural Resistance Lab.html",
+      "url": "Neural%20Resistance%20Lab.html",
+      "tags": [
+        "lab",
+        "biology"
+      ],
+      "role": "embeddable-page",
+      "externalApiHosts": []
+    },
+    {
+      "id": "neuroplasticity-lab-html",
+      "title": "Neuroplasticity & Hebbian Learning Lab",
+      "path": "Neuroplasticity Lab.html",
+      "url": "Neuroplasticity%20Lab.html",
+      "tags": [
+        "lab",
+        "biology"
+      ],
+      "role": "embeddable-page",
+      "externalApiHosts": []
+    },
+    {
+      "id": "normal-html",
+      "title": "ClonBrow OS | The Ultimate Student Browser",
+      "path": "normal.html",
+      "url": "normal.html",
+      "tags": [
+        "external-api"
+      ],
+      "role": "interactive-page",
+      "externalApiHosts": [
+        "en.wikipedia.org"
+      ]
+    },
+    {
+      "id": "npc-house-html",
+      "title": "Clonbrow saver - Data Node",
+      "path": "NPC-house.html",
+      "url": "NPC-house.html",
+      "tags": [
+        "prototype"
+      ],
+      "role": "interactive-page",
+      "externalApiHosts": []
+    },
+    {
+      "id": "number-line-html",
+      "title": "Math Lab - Fundamentals & Geometry",
+      "path": "number-line.html",
+      "url": "number-line.html",
+      "tags": [
+        "lab",
+        "math"
+      ],
+      "role": "embeddable-page",
+      "externalApiHosts": []
+    },
+    {
+      "id": "ohhy-html",
+      "title": "Clonmed — Interactive Labs",
+      "path": "ohhy.html",
+      "url": "ohhy.html",
+      "tags": [
+        "prototype"
+      ],
+      "role": "interactive-page",
+      "externalApiHosts": []
+    },
+    {
+      "id": "ohy-html",
+      "title": "ClonBrow — The browser built for school",
+      "path": "ohy.html",
+      "url": "ohy.html",
+      "tags": [
+        "prototype"
+      ],
+      "role": "interactive-page",
+      "externalApiHosts": []
+    },
+    {
+      "id": "organ-compatibility-lab-html",
+      "title": "Transplant Command Center",
+      "path": "Organ Compatibility Lab.html",
+      "url": "Organ%20Compatibility%20Lab.html",
+      "tags": [
+        "lab",
+        "biology"
+      ],
+      "role": "embeddable-page",
+      "externalApiHosts": []
+    },
+    {
+      "id": "parabola-trajectory-html",
+      "title": "Math Lab - Algebra & Circle Geometry",
+      "path": "parabola-trajectory.html",
+      "url": "parabola-trajectory.html",
+      "tags": [
+        "lab",
+        "math"
+      ],
+      "role": "embeddable-page",
+      "externalApiHosts": []
+    },
+    {
+      "id": "parametric-spirograph-html",
+      "title": "Math Lab - Advanced Systems",
+      "path": "parametric-spirograph.html",
+      "url": "parametric-spirograph.html",
+      "tags": [
+        "lab",
+        "math",
+        "chemistry",
+        "visualization"
+      ],
+      "role": "embeddable-page",
+      "externalApiHosts": []
+    },
+    {
+      "id": "pcr-thermal-cycling-html",
+      "title": "PCR Thermal Cycling Simulator",
+      "path": "PCR Thermal Cycling.html",
+      "url": "PCR%20Thermal%20Cycling.html",
+      "tags": [
+        "simulation",
+        "tool"
+      ],
+      "role": "embeddable-page",
+      "externalApiHosts": []
+    },
+    {
+      "id": "phagocytosis-lab-html",
+      "title": "Phagocytosis Simulation Lab",
+      "path": "Phagocytosis Lab.html",
+      "url": "Phagocytosis%20Lab.html",
+      "tags": [
+        "lab",
+        "simulation",
+        "chemistry"
+      ],
+      "role": "embeddable-page",
+      "externalApiHosts": []
+    },
+    {
+      "id": "physics-lab-dashboard-html",
+      "title": "Physics Lab | Brutalist UI",
+      "path": "Physics Lab Dashboard.html",
+      "url": "Physics%20Lab%20Dashboard.html",
+      "tags": [
+        "lab",
+        "chemistry",
+        "physics",
+        "dashboard"
+      ],
+      "role": "embeddable-page",
+      "externalApiHosts": []
+    },
+    {
+      "id": "physics-lab-html",
+      "title": "Physics Lab | Clonexx Research Centre",
+      "path": "physics-lab.html",
+      "url": "physics-lab.html",
+      "tags": [
+        "lab",
+        "chemistry",
+        "physics"
+      ],
+      "role": "embeddable-page",
+      "externalApiHosts": []
+    },
+    {
+      "id": "pizzaria-html",
+      "title": "3D Pizza Tycoon",
+      "path": "pizzaria.html",
+      "url": "pizzaria.html",
+      "tags": [
+        "visualization"
+      ],
+      "role": "embeddable-page",
+      "externalApiHosts": []
+    },
+    {
+      "id": "place-values-html",
+      "title": "Math Lab - Fundamentals & Geometry",
+      "path": "place-values.html",
+      "url": "place-values.html",
+      "tags": [
+        "lab",
+        "math"
+      ],
+      "role": "embeddable-page",
+      "externalApiHosts": []
+    },
+    {
+      "id": "poiseuille-s-law-lab-html",
+      "title": "Blood Viscosity Lab: Poiseuille's Law",
+      "path": "Poiseuille_s Law Lab.html",
+      "url": "Poiseuille_s%20Law%20Lab.html",
+      "tags": [
+        "lab",
+        "biology"
+      ],
+      "role": "embeddable-page",
+      "externalApiHosts": []
+    },
+    {
+      "id": "polarization-html",
+      "title": "Physics Lab - Quantum & Optics",
+      "path": "polarization.html",
+      "url": "polarization.html",
+      "tags": [
+        "lab",
+        "chemistry",
+        "physics"
+      ],
+      "role": "embeddable-page",
+      "externalApiHosts": []
+    },
+    {
+      "id": "pptier-html",
+      "title": "PPT Maker | ClonBrow OS",
+      "path": "pptier.html",
+      "url": "pptier.html",
+      "tags": [
+        "prototype"
+      ],
+      "role": "interactive-page",
+      "externalApiHosts": []
+    },
+    {
+      "id": "premium-html",
+      "title": "clonbrow // premium",
+      "path": "Premium.html",
+      "url": "Premium.html",
+      "tags": [
+        "external-api"
+      ],
+      "role": "interactive-page",
+      "externalApiHosts": [
+        "en.wikipedia.org"
+      ]
+    },
+    {
+      "id": "probability-html",
+      "title": "Math Lab - Statistics & Advanced Geometry",
+      "path": "probability.html",
+      "url": "probability.html",
+      "tags": [
+        "lab",
+        "math"
+      ],
+      "role": "embeddable-page",
+      "externalApiHosts": []
+    },
+    {
+      "id": "projectile-motion-html",
+      "title": "Physics Lab - Optics & Kinematics",
+      "path": "projectile-motion.html",
+      "url": "projectile-motion.html",
+      "tags": [
+        "lab",
+        "chemistry",
+        "physics"
+      ],
+      "role": "embeddable-page",
+      "externalApiHosts": []
+    },
+    {
+      "id": "property-tycoon-html",
+      "title": "Property Tycoon",
+      "path": "property-tycoon.html",
+      "url": "property-tycoon.html",
+      "tags": [
+        "prototype"
+      ],
+      "role": "interactive-page",
+      "externalApiHosts": []
+    },
+    {
+      "id": "prosthetic-force-multiplier-html",
+      "title": "Prosthetic Mechanical Advantage Lab",
+      "path": "Prosthetic Force Multiplier.html",
+      "url": "Prosthetic%20Force%20Multiplier.html",
+      "tags": [
+        "lab",
+        "physics"
+      ],
+      "role": "embeddable-page",
+      "externalApiHosts": []
+    },
+    {
+      "id": "protein-synthesis-factory-html",
+      "title": "Bio-Synth | Protein Factory",
+      "path": "Protein Synthesis Factory.html",
+      "url": "Protein%20Synthesis%20Factory.html",
+      "tags": [
+        "biology"
+      ],
+      "role": "interactive-page",
+      "externalApiHosts": []
+    },
+    {
+      "id": "pulse-oximetry-lab-html",
+      "title": "Pulse Oximetry & Spectrophotometry Lab",
+      "path": "Pulse Oximetry Lab.html",
+      "url": "Pulse%20Oximetry%20Lab.html",
+      "tags": [
+        "lab",
+        "chemistry"
+      ],
+      "role": "embeddable-page",
+      "externalApiHosts": []
+    },
+    {
+      "id": "punnett-square-sim-html",
+      "title": "Mendelian Genetics Lab: Punnett Square",
+      "path": "Punnett Square Sim.html",
+      "url": "Punnett%20Square%20Sim.html",
+      "tags": [
+        "lab",
+        "biology"
+      ],
+      "role": "embeddable-page",
+      "externalApiHosts": []
+    },
+    {
+      "id": "pythagorean-theorem-html",
+      "title": "Math Lab - Geometry & Algebra",
+      "path": "pythagorean-theorem.html",
+      "url": "pythagorean-theorem.html",
+      "tags": [
+        "lab",
+        "math"
+      ],
+      "role": "embeddable-page",
+      "externalApiHosts": []
+    },
+    {
+      "id": "quadratic-roots-html",
+      "title": "Math Lab - Algebra & Circle Geometry",
+      "path": "quadratic-roots.html",
+      "url": "quadratic-roots.html",
+      "tags": [
+        "lab",
+        "math"
+      ],
+      "role": "embeddable-page",
+      "externalApiHosts": []
+    },
+    {
+      "id": "radiation-physics-lab-html",
+      "title": "Radiation Physics: Inverse Square & Half-Life",
+      "path": "Radiation Physics Lab.html",
+      "url": "Radiation%20Physics%20Lab.html",
+      "tags": [
+        "lab",
+        "chemistry",
+        "physics"
+      ],
+      "role": "embeddable-page",
+      "externalApiHosts": []
+    },
+    {
+      "id": "radio-isotope-mapping-html",
+      "title": "Nuclear Medicine: Radio-isotope Mapping",
+      "path": "Radio-isotope Mapping.html",
+      "url": "Radio-isotope%20Mapping.html",
+      "tags": [
+        "prototype"
+      ],
+      "role": "interactive-page",
+      "externalApiHosts": []
+    },
+    {
+      "id": "radioactive-seed-implant-lab-html",
+      "title": "Brachytherapy Lab: Radioactive Decay",
+      "path": "Radioactive Seed Implant Lab.html",
+      "url": "Radioactive%20Seed%20Implant%20Lab.html",
+      "tags": [
+        "lab"
+      ],
+      "role": "embeddable-page",
+      "externalApiHosts": []
+    },
+    {
+      "id": "radioactive-decay-html",
+      "title": "Physics Lab - Atomic & Nuclear",
+      "path": "radioactive-decay.html",
+      "url": "radioactive-decay.html",
+      "tags": [
+        "lab",
+        "chemistry",
+        "physics"
+      ],
+      "role": "embeddable-page",
+      "externalApiHosts": []
+    },
+    {
+      "id": "ratios-html",
+      "title": "Math Lab - Proportions, Exponents & Trigonometry",
+      "path": "ratios.html",
+      "url": "ratios.html",
+      "tags": [
+        "lab",
+        "math"
+      ],
+      "role": "embeddable-page",
+      "externalApiHosts": []
+    },
+    {
+      "id": "reflex-arc-timer-lab-html",
+      "title": "Reflex Arc Kinematics Lab",
+      "path": "Reflex Arc Timer Lab.html",
+      "url": "Reflex%20Arc%20Timer%20Lab.html",
+      "tags": [
+        "lab"
+      ],
+      "role": "embeddable-page",
+      "externalApiHosts": []
+    },
+    {
+      "id": "refractive-optics-lab-html",
+      "title": "Refractive Error & Laser Surgery Lab",
+      "path": "Refractive Optics Lab.html",
+      "url": "Refractive%20Optics%20Lab.html",
+      "tags": [
+        "lab",
+        "physics"
+      ],
+      "role": "embeddable-page",
+      "externalApiHosts": []
+    },
+    {
+      "id": "reifver-html",
+      "title": "ClonBrow OS | The Ultimate Student Browser",
+      "path": "reifver.html",
+      "url": "reifver.html",
+      "tags": [
+        "external-api"
+      ],
+      "role": "interactive-page",
+      "externalApiHosts": [
+        "en.wikipedia.org"
+      ]
+    },
+    {
+      "id": "rememberme-html",
+      "title": "Clonbrow saver - Play & Learn",
+      "path": "rememberme.html",
+      "url": "rememberme.html",
+      "tags": [
+        "prototype"
+      ],
+      "role": "interactive-page",
+      "externalApiHosts": []
+    },
+    {
+      "id": "rocket-html",
+      "title": "Rocket Lab | CRC",
+      "path": "rocket.html",
+      "url": "rocket.html",
+      "tags": [
+        "lab"
+      ],
+      "role": "embeddable-page",
+      "externalApiHosts": []
+    },
+    {
+      "id": "rubix-cube-html",
+      "title": "3D Rubik's Cube",
+      "path": "rubix-cube.html",
+      "url": "rubix-cube.html",
+      "tags": [
+        "visualization"
+      ],
+      "role": "embeddable-page",
+      "externalApiHosts": []
+    },
+    {
+      "id": "sanskoder-html",
+      "title": "sansKoder",
+      "path": "SansKoder.html",
+      "url": "SansKoder.html",
+      "tags": [
+        "prototype"
+      ],
+      "role": "interactive-page",
+      "externalApiHosts": []
+    },
+    {
+      "id": "school-html",
+      "title": "School Management | Education Portal",
+      "path": "school.html",
+      "url": "school.html",
+      "tags": [
+        "prototype"
+      ],
+      "role": "interactive-page",
+      "externalApiHosts": []
+    },
+    {
+      "id": "schooler-html",
+      "title": "School Admin Master | ClonBrow Schools",
+      "path": "schooler.html",
+      "url": "schooler.html",
+      "tags": [
+        "prototype"
+      ],
+      "role": "interactive-page",
+      "externalApiHosts": []
+    },
+    {
+      "id": "serotonin-level-balancer-html",
+      "title": "Neuro-Dashboard | Serotonin Balancer",
+      "path": "Serotonin Level Balancer.html",
+      "url": "Serotonin%20Level%20Balancer.html",
+      "tags": [
+        "biology",
+        "dashboard"
+      ],
+      "role": "interactive-page",
+      "externalApiHosts": []
+    },
+    {
+      "id": "shadows-html",
+      "title": "Physics Lab - Light & Magnets",
+      "path": "shadows.html",
+      "url": "shadows.html",
+      "tags": [
+        "lab",
+        "chemistry",
+        "physics"
+      ],
+      "role": "embeddable-page",
+      "externalApiHosts": []
+    },
+    {
+      "id": "shean-html",
+      "title": "Laner Chat | SQL Compatible UI",
+      "path": "shean.html",
+      "url": "shean.html",
+      "tags": [
+        "prototype"
+      ],
+      "role": "interactive-page",
+      "externalApiHosts": []
+    },
+    {
+      "id": "shreet-html",
+      "title": "Mathematics Lab | Clonexx Research Centre",
+      "path": "shreet.html",
+      "url": "shreet.html",
+      "tags": [
+        "lab",
+        "math"
+      ],
+      "role": "embeddable-page",
+      "externalApiHosts": []
+    },
+    {
+      "id": "simple-circuits-html",
+      "title": "Physics Lab - Electric Circuits",
+      "path": "simple-circuits.html",
+      "url": "simple-circuits.html",
+      "tags": [
+        "lab",
+        "chemistry",
+        "physics"
+      ],
+      "role": "embeddable-page",
+      "externalApiHosts": []
+    },
+    {
+      "id": "simple-machines-levers-html",
+      "title": "Physics Lab - Lever & Fulcrum",
+      "path": "simple-machines-levers.html",
+      "url": "simple-machines-levers.html",
+      "tags": [
+        "lab",
+        "chemistry",
+        "physics"
+      ],
+      "role": "embeddable-page",
+      "externalApiHosts": []
+    },
+    {
+      "id": "simple-machines-pulleys-html",
+      "title": "Physics Lab - Pulleys & Mechanical Advantage",
+      "path": "simple-machines-pulleys.html",
+      "url": "simple-machines-pulleys.html",
+      "tags": [
+        "lab",
+        "chemistry",
+        "physics"
+      ],
+      "role": "embeddable-page",
+      "externalApiHosts": []
+    },
+    {
+      "id": "snakes-and-ladders-html",
+      "title": "Snakes and Ladders Master",
+      "path": "snakes and ladders.html",
+      "url": "snakes%20and%20ladders.html",
+      "tags": [
+        "prototype"
+      ],
+      "role": "interactive-page",
+      "externalApiHosts": []
+    },
+    {
+      "id": "solar-system-html",
+      "title": "Solar System Explorer",
+      "path": "solar-system.html",
+      "url": "solar-system.html",
+      "tags": [
+        "prototype"
+      ],
+      "role": "interactive-page",
+      "externalApiHosts": []
+    },
+    {
+      "id": "spectrophotometer-simulation-html",
+      "title": "Professional Spectrophotometer Simulation",
+      "path": "Spectrophotometer Simulation.html",
+      "url": "Spectrophotometer%20Simulation.html",
+      "tags": [
+        "simulation",
+        "chemistry"
+      ],
+      "role": "embeddable-page",
+      "externalApiHosts": []
+    },
+    {
+      "id": "spinal-compression-simulator-html",
+      "title": "Spinal Compression: Biomechanics Sim",
+      "path": "Spinal Compression Simulator.html",
+      "url": "Spinal%20Compression%20Simulator.html",
+      "tags": [
+        "simulation",
+        "biology",
+        "tool"
+      ],
+      "role": "embeddable-page",
+      "externalApiHosts": []
+    },
+    {
+      "id": "spirometry-boyle-s-law-lab-html",
+      "title": "Spirometry & Boyle's Law Lab",
+      "path": "Spirometry & Boyle_s Law Lab.html",
+      "url": "Spirometry%20%26%20Boyle_s%20Law%20Lab.html",
+      "tags": [
+        "lab"
+      ],
+      "role": "embeddable-page",
+      "externalApiHosts": []
+    },
+    {
+      "id": "stability-cog-lab-html",
+      "title": "Stability Lab: Center of Gravity",
+      "path": "Stability & COG Lab.html",
+      "url": "Stability%20%26%20COG%20Lab.html",
+      "tags": [
+        "lab"
+      ],
+      "role": "embeddable-page",
+      "externalApiHosts": []
+    },
+    {
+      "id": "states-of-matter-html",
+      "title": "States of Matter - Minimalist Physics",
+      "path": "states-of-matter.html",
+      "url": "states-of-matter.html",
+      "tags": [
+        "chemistry",
+        "physics"
+      ],
+      "role": "interactive-page",
+      "externalApiHosts": []
+    },
+    {
+      "id": "statistics-html",
+      "title": "Math Lab - Sequences & Statistics",
+      "path": "statistics.html",
+      "url": "statistics.html",
+      "tags": [
+        "lab",
+        "math"
+      ],
+      "role": "embeddable-page",
+      "externalApiHosts": []
+    },
+    {
+      "id": "student-html",
+      "title": "Student Portal | ClonBrow Schools",
+      "path": "student.html",
+      "url": "student.html",
+      "tags": [
+        "prototype"
+      ],
+      "role": "interactive-page",
+      "externalApiHosts": []
+    },
+    {
+      "id": "surface-tension-alveoli-lab-html",
+      "title": "Alveolar Surface Tension & Laplace's Law Lab",
+      "path": "Surface Tension & Alveoli Lab.html",
+      "url": "Surface%20Tension%20%26%20Alveoli%20Lab.html",
+      "tags": [
+        "lab"
+      ],
+      "role": "embeddable-page",
+      "externalApiHosts": []
+    },
+    {
+      "id": "surface-area-html",
+      "title": "Math Lab - Statistics & Advanced Geometry",
+      "path": "surface-area.html",
+      "url": "surface-area.html",
+      "tags": [
+        "lab",
+        "math"
+      ],
+      "role": "embeddable-page",
+      "externalApiHosts": []
+    },
+    {
+      "id": "sustained-release-tablet-html",
+      "title": "Sustained-Release Tablet Architecture",
+      "path": "Sustained-Release Tablet.html",
+      "url": "Sustained-Release%20Tablet.html",
+      "tags": [
+        "prototype"
+      ],
+      "role": "interactive-page",
+      "externalApiHosts": []
+    },
+    {
+      "id": "suture-tension-lab-html",
+      "title": "Suture Tension & Tissue Integrity Lab",
+      "path": "Suture Tension Lab.html",
+      "url": "Suture%20Tension%20Lab.html",
+      "tags": [
+        "lab"
+      ],
+      "role": "embeddable-page",
+      "externalApiHosts": []
+    },
+    {
+      "id": "symmetry-html",
+      "title": "Math Lab - Interactive Concepts",
+      "path": "symmetry.html",
+      "url": "symmetry.html",
+      "tags": [
+        "lab",
+        "math"
+      ],
+      "role": "embeddable-page",
+      "externalApiHosts": []
+    },
+    {
+      "id": "synapse-html",
+      "title": "Synapse | Cognitive Architecture",
+      "path": "Synapse.html",
+      "url": "Synapse.html",
+      "tags": [
+        "prototype"
+      ],
+      "role": "interactive-page",
+      "externalApiHosts": []
+    },
+    {
+      "id": "synaptic-delay-lab-html",
+      "title": "Synaptic Delay Timer Lab",
+      "path": "Synaptic Delay Lab.html",
+      "url": "Synaptic%20Delay%20Lab.html",
+      "tags": [
+        "lab"
+      ],
+      "role": "embeddable-page",
+      "externalApiHosts": []
+    },
+    {
+      "id": "teacher-html",
+      "title": "Teacher Portal | ClonBrow Schools",
+      "path": "teacher.html",
+      "url": "teacher.html",
+      "tags": [
+        "prototype"
+      ],
+      "role": "interactive-page",
+      "externalApiHosts": []
+    },
+    {
+      "id": "telemedicine-latency-lab-html",
+      "title": "Telesurgery & Network Latency Lab",
+      "path": "Telemedicine Latency Lab.html",
+      "url": "Telemedicine%20Latency%20Lab.html",
+      "tags": [
+        "lab"
+      ],
+      "role": "embeddable-page",
+      "externalApiHosts": []
+    },
+    {
+      "id": "telomere-aging-lab-html",
+      "title": "Telomere Aging Clock & Hayflick Limit",
+      "path": "Telomere Aging Lab.html",
+      "url": "Telomere%20Aging%20Lab.html",
+      "tags": [
+        "lab"
+      ],
+      "role": "embeddable-page",
+      "externalApiHosts": []
+    },
+    {
+      "id": "tessellations-html",
+      "title": "Math Lab - Applied Geometry & Data",
+      "path": "tessellations.html",
+      "url": "tessellations.html",
+      "tags": [
+        "lab",
+        "math"
+      ],
+      "role": "embeddable-page",
+      "externalApiHosts": []
+    },
+    {
+      "id": "thermal-fever-mapping-lab-html",
+      "title": "Thermal Fever Mapping & Heat Transfer Lab",
+      "path": "Thermal Fever Mapping Lab.html",
+      "url": "Thermal%20Fever%20Mapping%20Lab.html",
+      "tags": [
+        "lab"
+      ],
+      "role": "embeddable-page",
+      "externalApiHosts": []
+    },
+    {
+      "id": "tictactoe-html",
+      "title": "Neon Tic Tac Toe",
+      "path": "tictactoe.html",
+      "url": "tictactoe.html",
+      "tags": [
+        "game"
+      ],
+      "role": "embeddable-page",
+      "externalApiHosts": []
+    },
+    {
+      "id": "total-internal-reflection-html",
+      "title": "Physics Lab - Optics & Kinematics",
+      "path": "total-internal-reflection.html",
+      "url": "total-internal-reflection.html",
+      "tags": [
+        "lab",
+        "chemistry",
+        "physics"
+      ],
+      "role": "embeddable-page",
+      "externalApiHosts": []
+    },
+    {
+      "id": "tourniquet-pressure-lab-html",
+      "title": "Tourniquet Pressure & Hemodynamics Lab",
+      "path": "Tourniquet Pressure Lab.html",
+      "url": "Tourniquet%20Pressure%20Lab.html",
+      "tags": [
+        "lab"
+      ],
+      "role": "embeddable-page",
+      "externalApiHosts": []
+    },
+    {
+      "id": "transformations-html",
+      "title": "Math Lab - Geometry & Algebra",
+      "path": "transformations.html",
+      "url": "transformations.html",
+      "tags": [
+        "lab",
+        "math"
+      ],
+      "role": "embeddable-page",
+      "externalApiHosts": []
+    },
+    {
+      "id": "trecore-html",
+      "title": "Trecore Hub | ClonBrow OS",
+      "path": "trecore.html",
+      "url": "trecore.html",
+      "tags": [
+        "dashboard"
+      ],
+      "role": "interactive-page",
+      "externalApiHosts": []
+    },
+    {
+      "id": "tresure-hunt-html",
+      "title": "Treasure Hunt Adventure",
+      "path": "tresure-hunt.html",
+      "url": "tresure-hunt.html",
+      "tags": [
+        "game"
+      ],
+      "role": "embeddable-page",
+      "externalApiHosts": []
+    },
+    {
+      "id": "trigonometry-html",
+      "title": "Math Lab - Proportions, Exponents & Trigonometry",
+      "path": "trigonometry.html",
+      "url": "trigonometry.html",
+      "tags": [
+        "lab",
+        "math"
+      ],
+      "role": "embeddable-page",
+      "externalApiHosts": []
+    },
+    {
+      "id": "ultrasound-echo-lab-html",
+      "title": "Ultrasound Echo Lab: Time of Flight",
+      "path": "Ultrasound Echo Lab.html",
+      "url": "Ultrasound%20Echo%20Lab.html",
+      "tags": [
+        "lab"
+      ],
+      "role": "embeddable-page",
+      "externalApiHosts": []
+    },
+    {
+      "id": "unit-circle-html",
+      "title": "Math Lab - Proportions, Exponents & Trigonometry",
+      "path": "unit-circle.html",
+      "url": "unit-circle.html",
+      "tags": [
+        "lab",
+        "math"
+      ],
+      "role": "embeddable-page",
+      "externalApiHosts": []
+    },
+    {
+      "id": "urinalysis-dipstick-simulation-html",
+      "title": "Clinical Urinalysis Simulation",
+      "path": "Urinalysis Dipstick Simulation.html",
+      "url": "Urinalysis%20Dipstick%20Simulation.html",
+      "tags": [
+        "simulation"
+      ],
+      "role": "embeddable-page",
+      "externalApiHosts": []
+    },
+    {
+      "id": "uv-mutation-lab-html",
+      "title": "UV Mutation Lab: DNA Damage Sim",
+      "path": "UV Mutation Lab.html",
+      "url": "UV%20Mutation%20Lab.html",
+      "tags": [
+        "lab",
+        "biology"
+      ],
+      "role": "embeddable-page",
+      "externalApiHosts": []
+    },
+    {
+      "id": "vaccine-memory-lab-html",
+      "title": "Immunological Memory Simulator",
+      "path": "Vaccine Memory Lab.html",
+      "url": "Vaccine%20Memory%20Lab.html",
+      "tags": [
+        "lab",
+        "simulation",
+        "tool"
+      ],
+      "role": "embeddable-page",
+      "externalApiHosts": []
+    },
+    {
+      "id": "vascular-embolization-simulator-html",
+      "title": "IR Protocol: Vascular Embolization",
+      "path": "Vascular Embolization Simulator.html",
+      "url": "Vascular%20Embolization%20Simulator.html",
+      "tags": [
+        "simulation",
+        "tool"
+      ],
+      "role": "embeddable-page",
+      "externalApiHosts": []
+    },
+    {
+      "id": "velocity-vs-time-graph-html",
+      "title": "Physics Lab - Velocity vs Time Graphs",
+      "path": "velocity-vs-time-graph.html",
+      "url": "velocity-vs-time-graph.html",
+      "tags": [
+        "lab",
+        "math",
+        "chemistry",
+        "physics",
+        "visualization"
+      ],
+      "role": "embeddable-page",
+      "externalApiHosts": []
+    },
+    {
+      "id": "venn-diagrams-html",
+      "title": "Math Lab - Statistics & Advanced Geometry",
+      "path": "venn-diagrams.html",
+      "url": "venn-diagrams.html",
+      "tags": [
+        "lab",
+        "math",
+        "visualization"
+      ],
+      "role": "embeddable-page",
+      "externalApiHosts": []
+    },
+    {
+      "id": "viewer-html",
+      "title": "CLONMED Lab Viewer - 5 Tab Display",
+      "path": "viewer.html",
+      "url": "viewer.html",
+      "tags": [
+        "lab"
+      ],
+      "role": "embeddable-page",
+      "externalApiHosts": []
+    },
+    {
+      "id": "viral-hijack-lab-html",
+      "title": "Viral RNA Injection: Cell Hijack Sim",
+      "path": "Viral Hijack Lab.html",
+      "url": "Viral%20Hijack%20Lab.html",
+      "tags": [
+        "lab",
+        "biology"
+      ],
+      "role": "embeddable-page",
+      "externalApiHosts": []
+    },
+    {
+      "id": "visualized-pi-html",
+      "title": "Math Lab - Geometry & Algebra",
+      "path": "visualized-pi.html",
+      "url": "visualized-pi.html",
+      "tags": [
+        "lab",
+        "math",
+        "visualization"
+      ],
+      "role": "embeddable-page",
+      "externalApiHosts": []
+    },
+    {
+      "id": "volume-of-cylinders-html",
+      "title": "Math Lab - Statistics & Advanced Geometry",
+      "path": "volume-of-cylinders.html",
+      "url": "volume-of-cylinders.html",
+      "tags": [
+        "lab",
+        "math"
+      ],
+      "role": "embeddable-page",
+      "externalApiHosts": []
+    },
+    {
+      "id": "waves-lab-html",
+      "title": "Physics Lab - Wave Mechanics",
+      "path": "waves-lab.html",
+      "url": "waves-lab.html",
+      "tags": [
+        "lab",
+        "chemistry",
+        "physics"
+      ],
+      "role": "embeddable-page",
+      "externalApiHosts": []
+    },
+    {
+      "id": "worder-html",
+      "title": "Clonexx AI - Worder",
+      "path": "worder.html",
+      "url": "worder.html",
+      "tags": [
+        "prototype"
+      ],
+      "role": "interactive-page",
+      "externalApiHosts": []
+    },
+    {
+      "id": "x-ray-density-map-lab-html",
+      "title": "X-Ray Density Map Lab",
+      "path": "X-Ray Density Map Lab.html",
+      "url": "X-Ray%20Density%20Map%20Lab.html",
+      "tags": [
+        "lab"
+      ],
+      "role": "embeddable-page",
+      "externalApiHosts": []
+    }
+  ]
+}</script>
+<div class="wrap"><header class="top"><div class="brand"><div class="logo">C</div>ClonBrow</div><span class="status">Static access portal</span></header>
+<main id="gateWrap" class="gate-wrap"><section class="gate"><div class="eyebrow">ClonBrow access</div><h1>Welcome back.</h1><p>Enter your allocated ClonBrow OTP to open labs, tools, and flashcards.</p><div class="field"><label for="otp">OTP</label><input id="otp" autocomplete="off" placeholder="usernameclonbrow@ideator.123!2giml.com"></div><div class="formula">OTP format: {username}clonbrow@ideator.123!2giml.com</div><button id="enter" class="btn primary wide">Continue</button><div id="error" class="error"></div><div class="local-note"><b>Static site limitation:</b> this check runs in the browser. It can remember one username on this browser profile, but it cannot reserve names across different people/devices. The OTP is predictable and visible in this page's source, so this is a convenience gate, not secure authentication.</div></section></main>
+<main id="app" class="app"><div class="app-head"><div><div class="eyebrow">Your learning workspace</div><h1 id="welcome">ClonBrow</h1><p>Labs and tools from the published ClonBrow prototype collection.</p></div><button id="logout" class="btn">Lock this browser</button></div><div class="tabs"><button class="tab active" data-tab="home">Home</button><button class="tab" data-tab="labs">Labs & prototypes</button><button class="tab" data-tab="cards">Flashcards</button><button class="tab" data-tab="api">Static API</button></div>
+<section id="view-home" class="view active"><div class="grid"><article class="feature"><span class="pill">143 lab pages</span><h3>ClonBrow Labs</h3><p>Open simulations and interactive prototypes in the published collection.</p><button class="btn dark" onclick="showTab('labs')">Browse labs</button></article><article class="feature"><span class="pill">Local browser storage</span><h3>Flashcards</h3><p>Create decks and review cards. They stay in this browser on this site.</p><button class="btn dark" onclick="showTab('cards')">Open flashcards</button></article><article class="feature"><span class="pill">Main application</span><h3>ClonBrow tools</h3><p>Open the main ClonBrow page with its writing and study tools.</p><a class="btn dark" href="./main.html" target="_blank" rel="noopener">Open main.html</a></article></div><div class="note">Publish this portal together with the prototype HTML files and assets. The portal file by itself contains the catalog, but the actual labs are separate files.</div></section>
+<section id="view-labs" class="view"><div class="bar"><input id="labSearch" placeholder="Search labs, subjects, or prototypes"><span class="count" id="labCount"></span><button class="btn" id="allToggle">Show all 260</button></div><div class="results" id="featureList"></div></section>
+<section id="view-cards" class="view"><div class="card-form"><div class="field"><label>Deck</label><input id="deck" placeholder="e.g. Biology" value="My deck"></div><div class="field"><label>Question</label><input id="question" placeholder="Enter a question"></div><div class="field full"><label>Answer</label><textarea id="answer" placeholder="Enter the answer"></textarea></div><div class="full"><button class="btn primary" id="addCard">Add flashcard</button><span class="count" id="cardCount" style="margin-left:9px"></span></div></div><div class="cards" id="cardList"></div><div class="note">Cards are saved in this browser's localStorage under the allocated username. They do not sync to other devices or users.</div></section>
+<section id="view-api" class="view"><article class="feature"><span class="pill">Read-only static API</span><h3>Catalog API</h3><p>Publish <code>clonbrow-public-api.json</code> beside this page. Other projects on the same site can fetch it and filter features by tags.</p><div class="api-box"><code>const catalog = await fetch('./clonbrow-public-api.json').then(r =&gt; r.json());
+const labs = catalog.features.filter(item =&gt; item.tags.includes('lab'));
+console.log(labs.map(item =&gt; ({ title: item.title, url: item.url }))); </code></div><div class="actions" style="display:flex;gap:8px;margin-top:12px"><a class="btn" href="./clonbrow-public-api.json" target="_blank" rel="noopener">Open catalog JSON</a><button class="btn" id="copyJs">Copy in-page API example</button></div><div class="note">Static hosting can publish the catalog and feature pages, but cannot accept flashcard writes, enforce one global username per person, or keep shared user data. This portal keeps flashcards in each browser only.</div></article></section>
+</main></div><div id="toast" class="toast"></div>
+<script>
+const DATA=JSON.parse(document.getElementById('cb-data').textContent);
+const SUFFIX='clonbrow@ideator.123!2giml.com';
+let currentUser='';
+const $=id=>document.getElementById(id);
+function err(message){$('error').textContent=message;$('error').style.display='block'}
+function hideErr(){$('error').style.display='none'}
+function toast(message){const t=$('toast');t.textContent=message;t.classList.add('show');setTimeout(()=>t.classList.remove('show'),1800)}
+function auth(){hideErr();const code=$('otp').value.trim().toLowerCase();if(!code.endsWith(SUFFIX)){err('OTP should end with '+SUFFIX);return}const user=code.slice(0,-SUFFIX.length);if(!/^[a-z0-9._-]{2,32}$/.test(user)){err('The username part must be 2–32 letters, numbers, dots, underscores, or hyphens.');return}const bound=localStorage.getItem('clonbrow.static.boundUser');if(bound&&bound!==user){err('This browser profile is already assigned to '+bound+'. Static HTML cannot check assignments across different devices.');return}if(!bound)localStorage.setItem('clonbrow.static.boundUser',user);currentUser=user;$('gateWrap').style.display='none';$('app').style.display='block';$('welcome').textContent='Hello, '+user+'.';renderFeatures();renderCards()}
+function showTab(name){document.querySelectorAll('.tabs .tab').forEach(b=>b.classList.toggle('active',b.dataset.tab===name));document.querySelectorAll('.view').forEach(v=>v.classList.toggle('active',v.id==='view-'+name));if(name==='cards')renderCards()}
+document.querySelectorAll('.tabs .tab').forEach(b=>b.addEventListener('click',()=>showTab(b.dataset.tab)));
+$('enter').onclick=auth;$('otp').addEventListener('keydown',e=>{if(e.key==='Enter')auth()});$('logout').onclick=()=>{$('app').style.display='none';$('gateWrap').style.display='grid';$('otp').value='';currentUser=''};
+let showAll=false;
+function pageHref(path){return './'+path.split('/').map(encodeURIComponent).join('/')}
+function renderFeatures(){const q=$('labSearch').value.toLowerCase();let rows=DATA.features.filter(x=>x.role!=='package-support'&&(showAll||x.tags.includes('lab'))&&(!q||(x.title+' '+x.path+' '+x.tags.join(' ')).toLowerCase().includes(q)));$('labCount').textContent=rows.length+' items';$('featureList').innerHTML=rows.map(x=>'<article class="row"><div><h4>'+esc(x.title)+'</h4><code>'+esc(x.path)+'</code><div class="chips">'+x.tags.slice(0,5).map(t=>'<span class="chip">'+esc(t)+'</span>').join('')+'</div></div><a class="btn" href="'+pageHref(x.path)+'" target="_blank" rel="noopener">Open</a></article>').join('')||'<div class="feature">No matching pages.</div>'}
+function esc(x){return String(x).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]))}
+$('labSearch').addEventListener('input',renderFeatures);$('allToggle').onclick=()=>{showAll=!showAll;$('allToggle').textContent=showAll?'Show labs only':'Show all 260';renderFeatures()};
+function cards(){try{return JSON.parse(localStorage.getItem('clonbrow.static.cards.'+currentUser)||'[]')}catch(_){return []}}
+function saveCards(list){localStorage.setItem('clonbrow.static.cards.'+currentUser,JSON.stringify(list))}
+function renderCards(){if(!currentUser)return;const list=cards();$('cardCount').textContent=list.length+' cards';$('cardList').innerHTML=list.map(c=>'<article class="study-card"><h3>'+esc(c.question)+'</h3><div class="answer" id="answer-'+c.id+'" style="display:none">'+esc(c.answer)+'</div><footer><span class="count">'+esc(c.deck)+' · '+c.reviews+' reviews</span><div><button class="btn" data-reveal="'+c.id+'">Show</button> <button class="btn" data-review="'+c.id+'">Review</button> <button class="btn" data-delete="'+c.id+'">Delete</button></div></footer></article>').join('')||'<div class="feature muted">No cards yet. Add your first one above.</div>';document.querySelectorAll('[data-reveal]').forEach(b=>b.onclick=()=>{const a=$('answer-'+b.dataset.reveal);a.style.display=a.style.display==='none'?'block':'none';b.textContent=a.style.display==='none'?'Show':'Hide'});document.querySelectorAll('[data-review]').forEach(b=>b.onclick=()=>{const a=cards(),c=a.find(x=>x.id===b.dataset.review);if(c){c.reviews++;c.lastReviewed=new Date().toISOString();saveCards(a);renderCards();toast('Review saved on this device')}});document.querySelectorAll('[data-delete]').forEach(b=>b.onclick=()=>{saveCards(cards().filter(x=>x.id!==b.dataset.delete));renderCards()})}
+$('addCard').onclick=()=>{const question=$('question').value.trim(),answer=$('answer').value.trim(),deck=$('deck').value.trim()||'My deck';if(!question||!answer){toast('Add both a question and an answer');return}const list=cards();list.unshift({id:Date.now().toString(36)+Math.random().toString(36).slice(2,7),deck,question,answer,reviews:0,createdAt:new Date().toISOString()});saveCards(list);$('question').value='';$('answer').value='';renderCards();toast('Flashcard saved in this browser')};
+const apiExample="const catalog = await fetch('./clonbrow-public-api.json').then(r => r.json());
+const labs = catalog.features.filter(item => item.tags.includes('lab'));";
+$('copyJs').onclick=async()=>{try{await navigator.clipboard.writeText(apiExample);toast('Example copied')}catch(_){toast('Clipboard permission unavailable')}};
+</script></body></html>

@@ -1,0 +1,40 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="description" content="Browse ClonBrow's interactive learning labs, games, visualizations, and tools.">
+  <title>ClonBrow — Interactive prototypes</title>
+  <style>
+    :root{color-scheme:dark;--bg:#0c1118;--panel:#131c27;--line:#283646;--text:#edf4fa;--muted:#9aabba;--blue:#67b7ff;--green:#b6edc8}
+    *{box-sizing:border-box}body{margin:0;background:radial-gradient(ellipse at 15% -20%,#17304a 0,transparent 48%),var(--bg);color:var(--text);font:16px/1.5 system-ui,-apple-system,"Segoe UI",sans-serif}
+    a{color:inherit}.wrap{width:min(1120px,calc(100% - 36px));margin:0 auto}.top{padding:54px 0 28px}.brand{color:var(--blue);font-size:13px;font-weight:750;letter-spacing:.16em;text-transform:uppercase}.top h1{margin:12px 0 8px;font-size:clamp(36px,7vw,64px);letter-spacing:-.05em;line-height:1.02}.top p{max-width:650px;margin:0;color:var(--muted);font-size:18px}.links{display:flex;gap:10px;flex-wrap:wrap;margin-top:22px}.links a,.chip,.search{border:1px solid var(--line);border-radius:10px;background:#111a24}.links a{padding:9px 13px;text-decoration:none}.links a:hover,.card:hover{border-color:#4b769b}.toolbar{display:flex;align-items:center;gap:12px;margin:22px 0 14px}.search{width:100%;padding:13px 14px;color:var(--text);font:inherit;outline:none}.search:focus{border-color:var(--blue)}.count{white-space:nowrap;color:var(--muted);font-size:14px}.filters{display:flex;gap:8px;overflow:auto;padding:0 0 15px}.chip{padding:7px 11px;color:var(--muted);cursor:pointer;white-space:nowrap}.chip[aria-pressed=true]{border-color:#3974a3;background:#17314a;color:#d9efff}.grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(230px,1fr));gap:12px;padding-bottom:50px}.card{display:block;min-height:126px;padding:15px;border:1px solid var(--line);border-radius:12px;background:var(--panel);text-decoration:none;transition:border-color .15s}.card h2{margin:8px 0 13px;font-size:16px;line-height:1.35}.tag{display:inline-block;color:var(--green);font-size:11px;letter-spacing:.08em;text-transform:uppercase}.empty{grid-column:1/-1;padding:25px;color:var(--muted);text-align:center}.footer{padding:0 0 30px;color:var(--muted);font-size:13px}
+    @media(max-width:560px){.top{padding-top:36px}.toolbar{align-items:flex-start;flex-direction:column}.count{white-space:normal}}
+  </style>
+</head>
+<body>
+  <main class="wrap">
+    <header class="top">
+      <div class="brand">ClonBrow collection</div>
+      <h1>Explore, learn, experiment.</h1>
+      <p>Interactive labs, visualizations, games, and tools. Search the collection or choose a subject to get started.</p>
+      <nav class="links" aria-label="Project links"><a href="main.html">Main tools</a><a href="clonbrow-api.html">Learning portal</a><a href="clonbrow-api-generator.html">API generator</a></nav>
+    </header>
+    <section aria-label="Prototype collection">
+      <div class="toolbar"><input class="search" id="search" type="search" placeholder="Search prototypes…" aria-label="Search prototypes"><div class="count" id="count" aria-live="polite">Loading catalog…</div></div>
+      <div class="filters" id="filters" aria-label="Filter by subject"></div>
+      <div class="grid" id="grid" aria-live="polite"></div>
+    </section>
+    <footer class="footer">Standalone pages and catalog are published from this repository. Some prototypes may use external services.</footer>
+  </main>
+  <script>
+    const grid=document.querySelector('#grid'),search=document.querySelector('#search'),filters=document.querySelector('#filters'),count=document.querySelector('#count');
+    let features=[],active='All';
+    const esc=s=>String(s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+    function render(){const q=search.value.trim().toLowerCase();const found=features.filter(x=>(active==='All'||x.tags.includes(active.toLowerCase()))&&(`${x.title} ${x.tags.join(' ')}`.toLowerCase().includes(q)));count.textContent=`${found.length} of ${features.length} prototypes`;grid.innerHTML=found.length?found.map(x=>`<a class="card" href="${esc(x.url)}"><span class="tag">${esc(x.tags[0]||'prototype')}</span><h2>${esc(x.title)}</h2></a>`).join(''):'<div class="empty">No prototypes match that search.</div>'}
+    function makeFilters(){const tags=[...new Set(features.flatMap(x=>x.tags))].sort();filters.innerHTML=['All',...tags].map(t=>`<button class="chip" type="button" aria-pressed="${active===t}" data-tag="${esc(t)}">${esc(t)}</button>`).join('');filters.onclick=e=>{const b=e.target.closest('[data-tag]');if(!b)return;active=b.dataset.tag;makeFilters();render()}}
+    search.addEventListener('input',render);
+    fetch('./clonbrow-public-api.json').then(r=>{if(!r.ok)throw Error('Catalog unavailable');return r.json()}).then(data=>{features=data.features||[];makeFilters();render()}).catch(()=>{count.textContent='Catalog could not load';grid.innerHTML='<div class="empty">Serve this folder over HTTP or use GitHub Pages to load the catalog.</div>'});
+  </script>
+</body>
+</html>

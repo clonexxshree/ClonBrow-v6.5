@@ -1,0 +1,2013 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ClonBrow OS | Workspace</title>
+
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+    <!-- Sharp, professional, minimalist font -->
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
+    <!-- Professional Charting Library -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    fontFamily: { 
+                        sans: ['Inter', '-apple-system', 'BlinkMacSystemFont', 'Segoe UI', 'sans-serif'],
+                        mono: ['ui-monospace', 'SFMono-Regular', 'Menlo', 'Monaco', 'Consolas', "Liberation Mono", "Courier New", 'monospace'],
+                    },
+                    colors: {
+                        clonbrow: {
+                            bg: '#FAFAFA',
+                            card: '#FFFFFF',
+                            text: '#111827',
+                            muted: '#6B7280',
+                            border: '#E5E7EB',
+                            primary: '#059669',
+                            dark: '#064E3B'
+                        }
+                    }
+                }
+            }
+        }
+    </script>
+
+    <style>
+        body { 
+            font-family: 'Inter', sans-serif; 
+            color: #111827; 
+            overscroll-behavior-y: none; 
+            background: #FAFAFA; 
+        }
+
+        /* ---------------------------------------------------
+           LOGIN SCREEN: ULTRA MINIMAL, SHARP
+        ----------------------------------------------------- */
+        .login-card {
+            background: #FFFFFF;
+            border: 1px solid #E5E7EB;
+            border-radius: 0px; /* STRICTLY SHARP */
+            box-shadow: none; /* NO SHADOWS */
+        }
+
+        /* ---------------------------------------------------
+           MAIN APP: SHARP, FLAT, PROFESSIONAL
+        ----------------------------------------------------- */
+        .app-bg {
+            background: #FAFAFA;
+        }
+
+        .clonbrow-topbar {
+            background: #FFFFFF;
+            border-bottom: 1px solid #E5E7EB;
+        }
+
+        /* Standard Cards - Pure white, NO SHADOWS, sharp borders */
+        .clonbrow-card {
+            background: #FFFFFF;
+            border: 1px solid #E5E7EB;
+            border-radius: 0px; /* STRICTLY SHARP */
+            box-shadow: none;
+            transition: border-color 0.2s ease;
+        }
+        
+        .clonbrow-card-hover:hover {
+            border-color: #D1D5DB;
+        }
+
+        /* Inputs & Buttons - Sharp */
+        .clonbrow-input {
+            background: #F9FAFB;
+            border: 1px solid #E5E7EB;
+            border-radius: 0px; /* STRICTLY SHARP */
+            color: #111827;
+            transition: all 0.2s ease;
+            font-weight: 500;
+        }
+        .clonbrow-input:focus { 
+            background: #FFFFFF;
+            border-color: #059669; 
+            outline: none; 
+        }
+
+        .clonbrow-btn {
+            background: #FFFFFF;
+            border: 1px solid #E5E7EB;
+            border-radius: 0px; /* STRICTLY SHARP */
+            font-weight: 600;
+            color: #111827;
+            cursor: pointer;
+            transition: all 0.15s ease;
+            box-shadow: none;
+        }
+        .clonbrow-btn:hover { background: #F3F4F6; }
+
+        /* Custom Aesthetic Gradient Button using provided URL + Green Tint */
+        .btn-aesthetic {
+            background-image: 
+                linear-gradient(135deg, rgba(16, 185, 129, 0.85), rgba(6, 78, 59, 0.9)), 
+                url('https://res.cloudinary.com/f4gzfq5n/image/upload/v1788597223/photo-1705314914898-130fa5fa2e70.avif');
+            background-size: cover;
+            background-position: center;
+            color: #FFFFFF;
+            border: none;
+            border-radius: 0px; /* STRICTLY SHARP */
+            font-weight: 600;
+            box-shadow: none;
+            transition: opacity 0.2s ease;
+        }
+        .btn-aesthetic:hover {
+            opacity: 0.9;
+        }
+
+        /* Top Nav Dropdowns */
+        .nav-category {
+            height: 100%;
+            display: flex;
+            align-items: center;
+            font-weight: 600;
+            padding: 0 16px;
+            color: #4B5563;
+            cursor: pointer;
+            border-bottom: 2px solid transparent;
+            transition: all 0.2s;
+        }
+        .nav-category:hover { color: #111827; }
+        
+        .dropdown-menu {
+            display: none;
+            position: absolute;
+            top: 100%;
+            left: 0;
+            background: #FFFFFF;
+            border: 1px solid #E5E7EB;
+            border-top: none;
+            min-width: 220px;
+            z-index: 50;
+            box-shadow: none;
+        }
+        .nav-group:hover .dropdown-menu { display: block; }
+        
+        .dropdown-item {
+            padding: 12px 16px;
+            font-size: 13px;
+            font-weight: 500;
+            color: #374151;
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            border-bottom: 1px solid #F3F4F6;
+            cursor: pointer;
+        }
+        .dropdown-item:last-child { border-bottom: none; }
+        .dropdown-item:hover { background: #F9FAFB; color: #111827; }
+
+        /* Vertical Tabs */
+        .vertical-tab {
+            width: 100%;
+            height: 48px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            color: #9CA3AF;
+            border-right: 2px solid transparent;
+            transition: all 0.2s;
+            position: relative;
+        }
+        .vertical-tab:hover { color: #4B5563; background: #F9FAFB; }
+        .vertical-tab.active { color: #059669; border-right-color: #059669; background: #ECFDF5; }
+        
+        .vertical-tab .tooltip {
+            visibility: hidden;
+            opacity: 0;
+            position: absolute;
+            left: 100%;
+            top: 50%;
+            transform: translateY(-50%);
+            margin-left: 8px;
+            background: #111827;
+            color: #FFFFFF;
+            font-size: 11px;
+            font-weight: 600;
+            padding: 6px 10px;
+            white-space: nowrap;
+            z-index: 100;
+            transition: opacity 0.2s;
+            pointer-events: none;
+        }
+        .vertical-tab:hover .tooltip { visibility: visible; opacity: 1; }
+
+        /* Aesthetic Visualizations */
+        .insights-gradient {
+            background-image: 
+                linear-gradient(135deg, rgba(17, 24, 39, 0.95), rgba(5, 150, 105, 0.9)), 
+                url('https://res.cloudinary.com/f4gzfq5n/image/upload/v1788597223/photo-1705314914898-130fa5fa2e70.avif');
+            background-size: cover;
+            background-position: center;
+            color: white;
+            border-radius: 0px;
+        }
+
+        .dot-matrix { display: grid; grid-template-columns: repeat(7, 1fr); gap: 4px; justify-items: center; align-items: end; height: 40px; }
+        .dot { width: 6px; height: 6px; border-radius: 0px; background: #E5E7EB; }
+        .dot.active-primary { background: #059669; }
+        .dot.active-dark { background: #111827; }
+
+        /* Scrollbars */
+        ::-webkit-scrollbar { width: 4px; height: 4px; }
+        ::-webkit-scrollbar-track { background: transparent; }
+        ::-webkit-scrollbar-thumb { background: #D1D5DB; border-radius: 0px; }
+        ::-webkit-scrollbar-thumb:hover { background: #9CA3AF; }
+        .no-scrollbar::-webkit-scrollbar { display: none; }
+        .no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
+
+        @keyframes load-bar { 0% { width: 0%; opacity: 1; } 50% { width: 70%; opacity: 1; } 100% { width: 100%; opacity: 0; } }
+        .loading-active { animation: load-bar 1.5s ease-out forwards; }
+
+        .perspective-1000 { perspective: 1000px; }
+        .transform-style-3d { transform-style: preserve-3d; }
+        .backface-hidden { -webkit-backface-visibility: hidden; backface-visibility: hidden; }
+        .rotate-y-180 { transform: rotateY(180deg); }
+
+        /* Iframe */
+        .iframe-wrapper { padding: 0 0 0 0; box-sizing: border-box; display: flex; flex-direction: column; width: 100%; height: 100%; }
+        #iframe-container iframe { background: #ffffff; border-radius: 0px; border: none; flex-grow: 1; width: 100%; height: 100%; box-shadow: none; }
+
+    </style>
+<link rel="stylesheet" href="theme-mobile.css"></head>
+<body class="h-[100dvh] w-screen overflow-hidden relative selection:bg-green-100 selection:text-green-900 flex flex-col bg-transparent">
+
+    <!-- Minimal Boot Screen -->
+    <div id="os-boot-screen" class="absolute inset-0 z-[100] flex flex-col items-center justify-center p-4 transition-opacity duration-500 bg-[#FAFAFA]">
+        <div class="login-card max-w-[400px] w-full relative px-10 py-12 flex flex-col border border-slate-200">
+            
+            <div class="flex items-center gap-3 mb-10">
+                <div class="w-8 h-8 bg-slate-900 text-white flex items-center justify-center rounded-none">
+                    <i class="fas fa-terminal text-sm"></i>
+                </div>
+                <span class="font-bold text-[20px] tracking-tight text-slate-900">CLONBROW</span>
+            </div>
+
+            <div class="mb-8">
+                <h1 class="text-[24px] font-bold text-[#111827] mb-1 tracking-tight">System Login</h1>
+                <p class="font-medium text-slate-500 text-[13px]">Authenticate to access your workspace.</p>
+            </div>
+
+            <div class="space-y-4 w-full">
+                <div>
+                    <label class="block text-[10px] font-bold text-slate-500 uppercase tracking-normal mb-1.5">Identifier</label>
+                    <input type="text" id="boot-username" placeholder="user@clonbrow.sys" class="w-full clonbrow-input p-3.5 text-[14px]">
+                </div>
+                <div>
+                    <div class="flex justify-between items-center mb-1.5">
+                        <label class="block text-[10px] font-bold text-slate-500 uppercase tracking-normal">Access Key</label>
+                        <a href="#" class="text-[11px] font-semibold text-slate-400 hover:text-slate-900 transition-colors">Reset</a>
+                    </div>
+                    <input type="password" id="boot-password" placeholder="••••••••" class="w-full clonbrow-input p-3.5 text-[14px]">
+                </div>
+                <button onclick="handleOSLogin()" id="login-btn" class="w-full btn-aesthetic py-3.5 mt-4 text-[14px] flex items-center justify-center gap-2">
+                    INITIALIZE
+                </button>
+
+                <div id="db-status" class="text-center text-xs font-semibold text-red-600 hidden bg-red-50 p-3 mt-4 border border-red-200">Database Offline. Local mode active.</div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Main OS Layout -->
+    <div id="main-os" class="w-full h-full flex flex-col overflow-hidden transition-opacity duration-500 opacity-0 hidden relative z-10 app-bg">
+        
+        <div id="loading-bar" class="absolute top-0 left-0 h-[2px] bg-green-600 w-0 z-50 transition-all duration-300"></div>
+
+        <!-- Sharp Top Navigation -->
+        <header class="h-[60px] clonbrow-topbar px-6 flex items-center justify-between shrink-0 z-30 relative w-full">
+            
+            <!-- Logo & Brand (Now acts as Home button) -->
+            <div class="flex items-center gap-3 w-48 shrink-0 cursor-pointer" onclick="window.goHome()">
+                <div class="w-6 h-6 bg-slate-900 text-white flex items-center justify-center rounded-none">
+                    <i class="fas fa-terminal text-[10px]"></i>
+                </div>
+                <span class="font-bold text-[16px] text-slate-900 tracking-tight uppercase">CLONBROW</span>
+            </div>
+
+            <!-- Grouped Categories Dropdowns -->
+            <nav class="hidden md:flex items-center h-full">
+                
+                <div class="nav-group relative h-full">
+                    <div class="nav-category">
+                        <i class="fas fa-bolt mr-2 opacity-50 text-[12px]"></i> Focus
+                    </div>
+                    <div class="dropdown-menu">
+                        <div class="dropdown-item" onclick="createNewTab('clonmedic://tasks')"><i class="fas fa-check-square text-slate-400 w-4"></i> Tasks</div>
+                        <div class="dropdown-item" onclick="createNewTab('clonmedic://timetable')"><i class="fas fa-calendar-alt text-slate-400 w-4"></i> Schedule</div>
+                        <div class="dropdown-item" onclick="createNewTab('clonmedic://gpa')"><i class="fas fa-chart-line text-slate-400 w-4"></i> Analytics</div>
+                        <div class="dropdown-item" onclick="createNewTab('clonmedic://timer')"><i class="fas fa-hourglass-half text-slate-400 w-4"></i> Timers</div>
+                        <div class="dropdown-item" onclick="createNewTab('../Presentations/brainboard.html')"><i class="fas fa-chalkboard text-slate-400 w-4"></i> BrainBoard</div>
+                    </div>
+                </div>
+
+                <div class="nav-group relative h-full">
+                    <div class="nav-category">
+                        <i class="fas fa-graduation-cap mr-2 opacity-50 text-[12px]"></i> Learn
+                    </div>
+                    <div class="dropdown-menu">
+                        <div class="dropdown-item" onclick="createNewTab('clonmedic://flashcards')"><i class="fas fa-layer-group text-slate-400 w-4"></i> Flashcards</div>
+                        <div class="dropdown-item" onclick="createNewTab('clonmedic://mcq')"><i class="fas fa-check-double text-slate-400 w-4"></i> Quizzes</div>
+                        <div class="dropdown-item" onclick="createNewTab('clonmedic://quicklearn')"><i class="fas fa-lightbulb text-slate-400 w-4"></i> Quick Bites</div>
+                        <div class="dropdown-item" onclick="createNewTab('periodic.html')"><i class="fas fa-atom text-slate-400 w-4"></i> Periodic Table</div>
+                        <div class="dropdown-item" onclick="createNewTab('clonmedic://english')"><i class="fas fa-feather-alt text-slate-400 w-4"></i> English Lit</div>
+                        <div class="dropdown-item" onclick="createNewTab('medicof all.html')"><i class="fas fa-microscope text-slate-400 w-4"></i> Simulations</div>
+                    </div>
+                </div>
+
+                <div class="nav-group relative h-full">
+                    <div class="nav-category">
+                        <i class="fas fa-tools mr-2 opacity-50 text-[12px]"></i> Tools
+                    </div>
+                    <div class="dropdown-menu">
+                        <div class="dropdown-item" onclick="createNewTab('clonmedic://word')"><i class="fas fa-file-alt text-slate-400 w-4"></i> Notes</div>
+                        <div class="dropdown-item" onclick="createNewTab('clonmedic://calc')"><i class="fas fa-calculator text-slate-400 w-4"></i> Calculator</div>
+                        <div class="dropdown-item" onclick="createNewTab('clonmedic://converter')"><i class="fas fa-right-left text-slate-400 w-4"></i> Converter</div>
+                        <div class="dropdown-item" onclick="createNewTab('clonmedic://formulas')"><i class="fas fa-square-root-variable text-slate-400 w-4"></i> Formulas</div>
+                        <div class="dropdown-item" onclick="createNewTab('clonmedic://citations')"><i class="fas fa-quote-right text-slate-400 w-4"></i> Citations</div>
+                        <div class="dropdown-item" onclick="createNewTab('clonmedic://receipt')"><i class="fas fa-file-invoice-dollar text-slate-400 w-4"></i> Invoice</div>
+                        <div class="dropdown-item" onclick="createNewTab('SansKoder.html')"><i class="fas fa-code text-slate-400 w-4"></i> SansKoder</div>
+                        <div class="dropdown-item" onclick="createNewTab('trecore.html')"><i class="fas fa-cubes text-slate-400 w-4"></i> Trecore</div>
+                        <div class="dropdown-item" onclick="createNewTab('arcade.html')"><i class="fas fa-gamepad text-slate-400 w-4"></i> Arcade</div>
+                        <div class="dropdown-item" onclick="createNewTab('rememberme.html')"><i class="fas fa-save text-slate-400 w-4"></i> Save Game</div>
+                    </div>
+                </div>
+
+            </nav>
+
+            <!-- Search & Right Controls -->
+            <div class="flex items-center justify-end w-auto md:w-96 gap-4">
+                <div class="hidden md:flex items-center relative w-full max-w-[240px]">
+                    <i class="fas fa-search absolute left-3 text-slate-400 text-[12px]"></i>
+                    <input type="text" id="global-search" class="w-full bg-[#F3F4F6] border border-transparent focus:bg-white focus:border-[#059669] outline-none pl-8 pr-3 py-1.5 text-[12px] font-medium text-slate-900 transition-all rounded-none placeholder-slate-400" placeholder="Search system or web..." onkeypress="if(event.key === 'Enter') window.processInput(this.value)">
+                </div>
+
+                <button class="w-8 h-8 bg-transparent border border-transparent text-slate-500 hover:text-slate-900 flex items-center justify-center transition-colors relative shrink-0">
+                    <i class="far fa-bell"></i>
+                    <span class="absolute top-1.5 right-1.5 w-1.5 h-1.5 bg-red-500 rounded-none"></span>
+                </button>
+                <div class="w-8 h-8 cursor-pointer border border-slate-300 overflow-hidden rounded-none shrink-0" onclick="document.getElementById('local-pfp-upload').click()">
+                    <img id="toolbar-pfp" src="https://api.dicebear.com/7.x/initials/svg?seed=Admin&backgroundColor=F8FAFC&textColor=111827" class="w-full h-full object-cover">
+                </div>
+                <input type="file" id="local-pfp-upload" class="hidden" accept="image/*" onchange="updateLocalProfilePic(event)">
+            </div>
+        </header>
+
+        <div class="flex flex-1 overflow-hidden">
+            
+            <!-- Vertical Tabs Sidebar -->
+            <aside class="w-[60px] bg-white border-r border-slate-200 flex flex-col items-center py-2 z-20 shrink-0 relative">
+                <div id="vertical-tabs-container" class="w-full flex flex-col gap-1 overflow-y-auto no-scrollbar flex-1">
+                    <!-- Tabs rendered via JS -->
+                </div>
+                
+                <div class="w-full border-t border-slate-100 pt-2 mt-2 flex flex-col gap-1">
+                    <button onclick="window.goHome()" class="vertical-tab" title="Dashboard">
+                        <i class="fas fa-th-large text-[14px]"></i>
+                        <span class="tooltip">Dashboard</span>
+                    </button>
+                </div>
+            </aside>
+
+            <!-- Main Content Area -->
+            <main class="flex-1 relative overflow-y-auto overflow-x-hidden bg-transparent">
+
+                <!-- HOME SCREEN: Dashboard with Professional Charts -->
+                <div id="home-screen" class="absolute inset-0 z-20 flex flex-col p-6 sm:p-8 overflow-y-auto">
+                    <div class="max-w-[1400px] mx-auto w-full">
+                        
+                        <!-- Header -->
+                        <div class="flex flex-col lg:flex-row justify-between items-start lg:items-center mb-6 gap-4 border-b border-slate-200 pb-4">
+                            <div class="flex items-center gap-3">
+                                <h1 class="text-[28px] font-bold text-slate-900 tracking-tight">Overview</h1>
+                                <button class="w-6 h-6 bg-slate-100 flex items-center justify-center text-slate-400 hover:text-slate-900 rounded-none"><i class="fas fa-link text-[10px]"></i></button>
+                            </div>
+                            <div class="flex flex-wrap items-center gap-2">
+                                <div class="bg-white border border-slate-200 px-3 py-1.5 text-xs font-semibold text-slate-600 flex items-center gap-2 cursor-pointer rounded-none">
+                                    <i class="far fa-calendar-alt text-slate-400"></i> Fall Semester
+                                </div>
+                                <span class="text-[10px] font-bold text-slate-400 uppercase tracking-normal px-1">vs</span>
+                                <div class="bg-white border border-slate-200 px-3 py-1.5 text-xs font-semibold text-slate-600 flex items-center gap-2 cursor-pointer rounded-none">
+                                    <i class="far fa-calendar-alt text-slate-400"></i> Spring Semester
+                                </div>
+                                <div class="bg-white border border-slate-200 px-3 py-1.5 text-xs font-semibold text-slate-600 cursor-pointer ml-2 flex items-center gap-1 rounded-none">
+                                    Weekly <i class="fas fa-chevron-down text-[10px] text-slate-400"></i>
+                                </div>
+                                <button class="btn-aesthetic px-4 py-1.5 text-xs ml-2 flex items-center gap-1.5">
+                                    <i class="fas fa-filter text-[10px]"></i> Filter
+                                </button>
+                            </div>
+                        </div>
+
+                        <!-- Grid Layout -->
+                        <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+
+                            <!-- NEW: Clonexx Research Centre Hero Card (Spans all columns) -->
+                            <div class="clonbrow-card insights-gradient p-8 lg:col-span-3 flex flex-col md:flex-row justify-between items-start md:items-center relative overflow-hidden cursor-pointer" onclick="createNewTab('heril.html')">
+                                <div class="z-10">
+                                    <div class="flex items-center gap-2 bg-black/30 border border-white/20 w-max px-3 py-1.5 mb-4">
+                                        <i class="fas fa-flask text-white text-[12px]"></i>
+                                        <span class="text-[11px] font-bold uppercase text-white tracking-normal">Clonexx Hub</span>
+                                    </div>
+                                    <h2 class="text-[32px] md:text-[42px] font-bold leading-tight mb-2 tracking-tight text-white">Clonexx Research Centre</h2>
+                                    <p class="text-[14px] font-medium text-white/90 max-w-2xl">Access the 3D Island Hub, run advanced biological simulations, and collaborate on real-time academic research projects.</p>
+                                </div>
+                                <button class="mt-6 md:mt-0 z-10 bg-white text-slate-900 font-bold px-6 py-3 border-none hover:bg-slate-100 transition-colors rounded-none">
+                                    ENTER FACILITY <i class="fas fa-arrow-right ml-2"></i>
+                                </button>
+                            </div>
+                            
+                            <!-- Productivity Chart (Chart.js) -->
+                            <div class="clonbrow-card p-8 lg:col-span-2 flex flex-col min-h-[360px]">
+                                <div class="flex justify-between items-center mb-6">
+                                    <h3 class="text-[16px] font-bold text-slate-900">Productivity Flow</h3>
+                                    <button class="w-6 h-6 text-slate-400 hover:text-slate-900"><i class="fas fa-ellipsis-h"></i></button>
+                                </div>
+                                
+                                <!-- Stats Headers -->
+                                <div class="flex flex-wrap gap-8 mb-6 border-b border-slate-100 pb-6">
+                                    <div>
+                                        <p class="text-[10px] uppercase tracking-normal font-bold text-slate-500 mb-1">Total Focus</p>
+                                        <p class="text-2xl font-bold text-slate-400">15.5h</p>
+                                    </div>
+                                    <div class="bg-slate-50 -mt-2 -mx-4 p-2 px-4 border-l-2 border-[#059669]">
+                                        <p class="text-[10px] uppercase tracking-normal font-bold text-slate-900 mb-1">Deep Work</p>
+                                        <p class="text-2xl font-bold text-slate-900">9.2h</p>
+                                    </div>
+                                    <div>
+                                        <p class="text-[10px] uppercase tracking-normal font-bold text-slate-500 mb-1">Tasks Done</p>
+                                        <p class="text-2xl font-bold text-slate-400">42</p>
+                                    </div>
+                                    <div>
+                                        <p class="text-[10px] uppercase tracking-normal font-bold text-slate-500 mb-1">Commits</p>
+                                        <p class="text-2xl font-bold text-slate-400">12</p>
+                                    </div>
+                                </div>
+
+                                <!-- Actual Chart.js Canvas -->
+                                <div class="flex-1 relative min-h-[200px]">
+                                    <canvas id="productivityChart"></canvas>
+                                </div>
+                                
+                                <!-- Command Input Bar -->
+                                <div class="mt-6 bg-[#F9FAFB] border border-[#E5E7EB] p-3 flex flex-col gap-2 relative">
+                                    <div class="flex items-center gap-2 text-[10px] uppercase tracking-normal font-bold text-slate-500 px-1">
+                                        <i class="fas fa-terminal text-slate-400"></i> Query Analysis
+                                    </div>
+                                    <div class="bg-white p-2.5 border border-slate-200 text-[13px] font-mono text-slate-700 flex items-center rounded-none">
+                                        > analyze drop in focus duration on <span class="bg-yellow-100 text-yellow-800 px-1 ml-1 rounded-none">/thursday</span> <span class="animate-pulse ml-1">_</span>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- Task Completion Card -->
+                            <div class="clonbrow-card p-8 flex flex-col">
+                                <div class="flex justify-between items-center mb-6">
+                                    <h3 class="text-[16px] font-bold text-slate-900">Task Completion</h3>
+                                    <button class="w-6 h-6 text-slate-400 hover:text-slate-900"><i class="fas fa-ellipsis-h"></i></button>
+                                </div>
+                                <div class="flex items-center gap-4 mb-8 border-b border-slate-100 pb-6">
+                                    <h2 class="text-[48px] font-bold tracking-tight text-slate-900">42</h2>
+                                    <span class="bg-slate-100 border border-slate-200 text-slate-700 text-[11px] font-bold px-2 py-1 flex items-center gap-1 rounded-none"><i class="fas fa-arrow-up text-green-600"></i> +8%</span>
+                                </div>
+
+                                <div class="space-y-6 flex-1">
+                                    <div>
+                                        <div class="flex justify-between text-[12px] font-bold mb-2">
+                                            <span class="text-slate-500 uppercase tracking-normal">Assignments</span>
+                                            <span class="text-slate-900">24</span>
+                                        </div>
+                                        <div class="w-full bg-slate-100 h-1.5 overflow-hidden rounded-none">
+                                            <div class="bg-green-600 h-full rounded-none" style="width: 65%;"></div>
+                                        </div>
+                                    </div>
+                                    <div>
+                                        <div class="flex justify-between text-[12px] font-bold mb-2">
+                                            <span class="text-slate-500 uppercase tracking-normal">Coding Projects</span>
+                                            <span class="text-slate-900">12</span>
+                                        </div>
+                                        <div class="w-full bg-slate-100 h-1.5 overflow-hidden rounded-none">
+                                            <div class="bg-blue-600 h-full rounded-none" style="width: 45%;"></div>
+                                        </div>
+                                    </div>
+                                    <div>
+                                        <div class="flex justify-between text-[12px] font-bold mb-2">
+                                            <span class="text-slate-500 uppercase tracking-normal">Reviews</span>
+                                            <span class="text-slate-900">6</span>
+                                        </div>
+                                        <div class="w-full bg-slate-100 h-1.5 overflow-hidden rounded-none">
+                                            <div class="bg-slate-800 h-full rounded-none" style="width: 20%;"></div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- Learning Curve Line Chart (Chart.js) -->
+                            <div class="clonbrow-card p-8 flex flex-col relative overflow-hidden">
+                                <div class="flex justify-between items-center mb-6">
+                                    <h3 class="text-[16px] font-bold text-slate-900">Learning Curve</h3>
+                                    <button class="w-6 h-6 text-slate-400 hover:text-slate-900"><i class="fas fa-ellipsis-h"></i></button>
+                                </div>
+                                <div class="flex-1 w-full relative min-h-[150px]">
+                                    <canvas id="learningCurveChart"></canvas>
+                                </div>
+                            </div>
+
+                            <!-- Flashcards / Quizzes Matrix -->
+                            <div class="flex flex-col gap-6">
+                                <!-- Flashcards -->
+                                <div class="clonbrow-card p-6 flex items-center justify-between">
+                                    <div>
+                                        <h3 class="text-[12px] font-bold text-slate-500 uppercase tracking-normal mb-1">Cards Mastered</h3>
+                                        <div class="text-[28px] font-bold text-slate-900 mb-1">320</div>
+                                    </div>
+                                    <div class="flex flex-col items-center relative">
+                                        <div class="absolute -top-6 bg-white border border-slate-200 text-[9px] font-bold px-1.5 py-0.5 uppercase rounded-none">Peak: Wed</div>
+                                        <div class="dot-matrix mt-4">
+                                            <div class="flex flex-col gap-1 justify-end"><div class="dot active-primary"></div></div>
+                                            <div class="flex flex-col gap-1 justify-end"><div class="dot active-primary"></div><div class="dot active-primary"></div></div>
+                                            <div class="flex flex-col gap-1 justify-end"><div class="dot active-primary"></div><div class="dot active-primary"></div><div class="dot active-primary"></div></div>
+                                            <div class="flex flex-col gap-1 justify-end"><div class="dot active-primary"></div><div class="dot active-primary"></div><div class="dot active-primary"></div><div class="dot active-primary"></div></div>
+                                            <div class="flex flex-col gap-1 justify-end"><div class="dot active-primary"></div><div class="dot active-primary"></div><div class="dot active-primary"></div></div>
+                                            <div class="flex flex-col gap-1 justify-end"><div class="dot active-primary"></div><div class="dot active-primary"></div></div>
+                                            <div class="flex flex-col gap-1 justify-end"><div class="dot active-primary"></div></div>
+                                        </div>
+                                    </div>
+                                    <div class="text-right">
+                                        <div class="text-[10px] font-bold text-slate-400 uppercase">Trend</div>
+                                        <div class="text-[13px] font-bold text-slate-900">+42</div>
+                                    </div>
+                                </div>
+                                
+                                <!-- Quizzes -->
+                                <div class="clonbrow-card p-6 flex items-center justify-between">
+                                    <div>
+                                        <h3 class="text-[12px] font-bold text-slate-500 uppercase tracking-normal mb-1">Avg Score</h3>
+                                        <div class="text-[28px] font-bold text-slate-900 mb-1">88%</div>
+                                    </div>
+                                    <div class="flex flex-col items-center relative">
+                                        <div class="dot-matrix mt-4">
+                                            <div class="flex flex-col gap-1 justify-end"><div class="dot active-dark"></div></div>
+                                            <div class="flex flex-col gap-1 justify-end"><div class="dot active-dark"></div><div class="dot active-dark"></div></div>
+                                            <div class="flex flex-col gap-1 justify-end"><div class="dot active-dark"></div></div>
+                                            <div class="flex flex-col gap-1 justify-end"><div class="dot active-dark"></div><div class="dot active-dark"></div><div class="dot active-dark"></div><div class="dot active-dark"></div></div>
+                                            <div class="flex flex-col gap-1 justify-end"><div class="dot active-dark"></div><div class="dot active-dark"></div></div>
+                                            <div class="flex flex-col gap-1 justify-end"><div class="dot active-dark"></div></div>
+                                            <div class="flex flex-col gap-1 justify-end"><div class="dot active-dark"></div><div class="dot active-dark"></div></div>
+                                        </div>
+                                    </div>
+                                    <div class="text-right">
+                                        <div class="text-[10px] font-bold text-slate-400 uppercase">Trend</div>
+                                        <div class="text-[13px] font-bold text-slate-900">+4%</div>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- Did you know Fact Card -->
+                            <div class="clonbrow-card p-8 flex flex-col justify-between">
+                                <div>
+                                    <div class="flex items-center justify-between mb-6">
+                                        <h3 class="text-[16px] font-bold text-slate-900">Did you know?</h3>
+                                        <i class="fas fa-brain text-slate-400"></i>
+                                    </div>
+                                    <p class="text-[14px] leading-relaxed text-slate-600 font-medium">The "Spacing Effect" indicates that learning is highly effective when study sessions are spaced out. Reviewing flashcards over several days yields significantly higher retention rates than cramming in a single session.</p>
+                                </div>
+                                <button onclick="createNewTab('clonmedic://flashcards')" class="mt-6 w-full btn-aesthetic py-3 text-[12px] uppercase tracking-normal">REVIEW CARDS</button>
+                            </div>
+
+                        </div>
+                    </div>
+                </div>
+
+                <!-- ALL APP SCREENS STYLED TO THE NEW AESTHETIC -->
+
+                <!-- Search Results Screen -->
+                <div id="search-screen" class="absolute inset-0 z-20 hidden flex-col p-6 sm:p-12 overflow-y-auto">
+                    <div class="max-w-3xl mx-auto w-full">
+                        <div class="mb-6 border-b border-slate-200 pb-4">
+                            <h2 class="text-xl font-bold text-slate-900 mb-1" id="search-query-display">Results</h2>
+                            <p class="text-xs font-semibold text-slate-500 uppercase tracking-normal" id="search-status">Powered by Safe Index</p>
+                        </div>
+                        <div id="safe-search-blocked" class="hidden clonbrow-card p-4 border-l-4 border-l-red-500 bg-red-50 mb-4 flex items-center gap-3">
+                            <i class="fas fa-shield-alt text-red-600 text-lg"></i>
+                            <div>
+                                <h3 class="text-sm font-bold text-slate-900">Safe Search Blocked</h3>
+                                <p class="text-xs font-medium text-slate-600">This term violates system policy.</p>
+                            </div>
+                        </div>
+                        <div id="search-results-container" class="space-y-4"></div>
+                    </div>
+                </div>
+
+                <!-- Tasks Screen -->
+                <div id="tasks-screen" class="absolute inset-0 z-20 hidden flex-col p-6 sm:p-12 overflow-y-auto">
+                    <div class="max-w-2xl mx-auto w-full">
+                        <div class="mb-6 border-b border-slate-200 pb-4 flex items-center gap-4">
+                            <div class="w-8 h-8 bg-slate-900 flex items-center justify-center text-white"><i class="fas fa-check text-sm"></i></div>
+                            <div>
+                                <h2 class="text-lg font-bold text-slate-900 tracking-tight">Task Manager</h2>
+                                <p class="text-[12px] font-medium text-slate-500">System processes and action items.</p>
+                            </div>
+                        </div>
+                        <div>
+                            <div class="flex gap-2 mb-6">
+                                <input type="text" id="new-task-input" class="clonbrow-input flex-1 p-3 text-sm" placeholder="Input process definition..." onkeypress="if(event.key === 'Enter') addTaskDB()">
+                                <button onclick="addTaskDB()" class="btn-aesthetic px-6 text-sm">EXECUTE</button>
+                            </div>
+                            <div id="tasks-list" class="flex flex-col gap-0 border border-slate-200 border-b-0 max-h-[60vh] overflow-y-auto no-scrollbar bg-white">
+                                <div class="text-[13px] font-medium text-slate-500 py-4 text-center border-b border-slate-200">Loading registry...</div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Timetable Screen -->
+                <div id="timetable-screen" class="absolute inset-0 z-20 hidden flex-col p-6 sm:p-12 overflow-y-auto">
+                    <div class="max-w-5xl mx-auto w-full pt-4">
+                        <div class="mb-5 flex justify-between items-end border-b border-slate-200 pb-4 no-print">
+                            <div class="flex items-center gap-4">
+                                <div class="w-8 h-8 bg-slate-900 flex items-center justify-center text-white"><i class="far fa-calendar-alt text-sm"></i></div>
+                                <div>
+                                    <h2 class="text-lg font-bold text-slate-900 tracking-tight">System Chronology</h2>
+                                </div>
+                            </div>
+                            <button onclick="window.addTimetableRow()" class="clonbrow-btn px-4 py-2 text-[11px] uppercase tracking-normal"><i class="fas fa-plus mr-1"></i> Add Block</button>
+                        </div>
+                        <div id="timetable-content" class="w-full clonbrow-card p-0 bg-white">
+                            <input type="text" value="Weekly Protocol" class="font-bold text-lg text-slate-900 p-6 border-b border-slate-200 outline-none w-full bg-transparent rounded-none">
+                            <div class="w-full overflow-x-auto no-scrollbar bg-white">
+                                <table class="w-full border-collapse text-[13px] font-medium table-fixed min-w-[700px]">
+                                    <thead>
+                                        <tr class="bg-slate-50">
+                                            <th class="p-3 text-left w-24 uppercase tracking-normal text-[10px] text-slate-500 border-b border-r border-slate-200">Time</th>
+                                            <th class="p-3 text-left font-bold text-slate-700 border-b border-r border-slate-200">Mon</th>
+                                            <th class="p-3 text-left font-bold text-slate-700 border-b border-r border-slate-200">Tue</th>
+                                            <th class="p-3 text-left font-bold text-slate-700 border-b border-r border-slate-200">Wed</th>
+                                            <th class="p-3 text-left font-bold text-slate-700 border-b border-r border-slate-200">Thu</th>
+                                            <th class="p-3 text-left font-bold text-slate-700 border-b border-slate-200">Fri</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody id="timetable-body" class="text-slate-800"></tbody>
+                                </table>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- GPA Screen -->
+                <div id="gpa-screen" class="absolute inset-0 z-20 hidden flex-col p-6 sm:p-12 overflow-y-auto">
+                    <div class="max-w-2xl mx-auto w-full pt-4">
+                        <div class="mb-6 border-b border-slate-200 pb-4 flex items-center gap-4">
+                            <div class="w-8 h-8 bg-slate-900 flex items-center justify-center text-white"><i class="fas fa-chart-line text-sm"></i></div>
+                            <div>
+                                <h2 class="text-lg font-bold text-slate-900 tracking-tight">Performance Matrix</h2>
+                            </div>
+                        </div>
+                        <div class="clonbrow-card p-6 sm:p-8 bg-white">
+                            <div class="grid grid-cols-1 sm:grid-cols-[1fr_80px_60px_auto] gap-2 mb-6 items-end" id="gpa-form-row">
+                                <div>
+                                    <label class="block text-[10px] font-bold text-slate-500 uppercase tracking-normal mb-1.5">Identifier</label>
+                                    <input type="text" id="gpa-course-name" placeholder="Name" class="clonbrow-input w-full p-3 text-[13px] bg-white">
+                                </div>
+                                <div>
+                                    <label class="block text-[10px] font-bold text-slate-500 uppercase tracking-normal mb-1.5">Val</label>
+                                    <select id="gpa-course-grade" class="clonbrow-input w-full p-3 text-[13px] bg-white cursor-pointer">
+                                        <option value="4">4.0</option><option value="3.7">3.7</option><option value="3.3">3.3</option>
+                                        <option value="3">3.0</option><option value="2.7">2.7</option><option value="2.3">2.3</option>
+                                        <option value="2">2.0</option><option value="1">1.0</option><option value="0">0.0</option>
+                                    </select>
+                                </div>
+                                <div>
+                                    <label class="block text-[10px] font-bold text-slate-500 uppercase tracking-normal mb-1.5">Wt</label>
+                                    <input type="number" id="gpa-course-credits" value="1" min="1" class="clonbrow-input w-full p-3 text-[13px] bg-white">
+                                </div>
+                                <button onclick="addGpaCourse()" class="btn-aesthetic w-[42px] h-[42px] flex items-center justify-center"><i class="fas fa-plus text-white"></i></button>
+                            </div>
+                            <div id="gpa-course-list" class="space-y-0 border border-slate-200 border-b-0 mb-6 bg-white"></div>
+                            <div class="border border-slate-200 bg-slate-50 p-6 flex justify-between items-center">
+                                <span class="text-[11px] font-bold text-slate-500 uppercase tracking-normal">Weighted Output</span>
+                                <span class="font-bold text-slate-900 text-3xl font-mono" id="gpa-result">0.00</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Word Screen -->
+                <div id="word-screen" class="absolute inset-0 z-20 hidden flex-col p-6 sm:p-12 overflow-hidden">
+                    <div class="max-w-4xl mx-auto w-full flex-1 flex flex-col h-full gap-4 pt-2">
+                        <div class="flex flex-wrap gap-2 items-center shrink-0 border-b border-slate-200 pb-4">
+                            <div class="w-8 h-8 bg-slate-900 flex items-center justify-center text-white mr-2"><i class="fas fa-file-alt text-sm"></i></div>
+                            <div class="font-bold text-slate-900 text-lg mr-4 tracking-tight">Text Editor</div>
+                            <div class="flex border border-slate-200 bg-white">
+                                <button onclick="document.execCommand('bold',false,null)" class="w-10 h-10 bg-transparent hover:bg-slate-50 text-slate-700 border-r border-slate-200"><i class="fas fa-bold"></i></button>
+                                <button onclick="document.execCommand('italic',false,null)" class="w-10 h-10 bg-transparent hover:bg-slate-50 text-slate-700 border-r border-slate-200"><i class="fas fa-italic"></i></button>
+                                <button onclick="document.execCommand('insertOrderedList',false,null)" class="w-10 h-10 bg-transparent hover:bg-slate-50 text-slate-700"><i class="fas fa-list-ol"></i></button>
+                            </div>
+                        </div>
+                        <div id="word-editor" contenteditable="true" placeholder="Commence input..." class="flex-1 focus:outline-none overflow-y-auto text-[15px] text-slate-800 font-medium leading-relaxed clonbrow-card p-8 sm:p-12 bg-white rounded-none"></div>
+                    </div>
+                </div>
+
+                <!-- Flashcard Screen -->
+                <div id="flashcard-screen" class="absolute inset-0 z-20 hidden flex-col p-6 sm:p-12 overflow-y-auto">
+                    <div class="max-w-xl mx-auto w-full pt-4">
+                        <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-6 border-b border-slate-200 pb-4">
+                            <div class="flex items-center gap-4">
+                                <div class="w-8 h-8 bg-slate-900 flex items-center justify-center text-white"><i class="fas fa-layer-group text-sm"></i></div>
+                                <div>
+                                    <h2 class="text-lg font-bold text-slate-900 tracking-tight">Data Cards</h2>
+                                </div>
+                            </div>
+                            <div class="flex border border-slate-200">
+                                <button onclick="toggleFlashcardMode('play')" id="btn-fc-play" class="px-4 py-1.5 text-[11px] font-bold bg-slate-100 text-slate-900 border-r border-slate-200 uppercase tracking-normal">Execute</button>
+                                <button onclick="toggleFlashcardMode('create')" id="btn-fc-create" class="px-4 py-1.5 text-[11px] font-bold bg-white text-slate-500 hover:text-slate-900 uppercase tracking-normal">Append</button>
+                            </div>
+                        </div>
+
+                        <div id="fc-play-view" class="flex flex-col items-center">
+                            <div class="perspective-1000 w-full max-w-md h-[280px] relative cursor-pointer group mb-6" onclick="flipCard()">
+                                <div id="flashcard-inner" class="w-full h-full relative transition-transform duration-500 transform-style-3d clonbrow-card">
+                                    <div class="absolute inset-0 backface-hidden flex flex-col items-center justify-center p-8 text-center bg-white border border-slate-200">
+                                        <p class="text-[10px] font-bold text-slate-400 uppercase tracking-normal mb-4">Prompt</p>
+                                        <h3 class="text-[18px] font-bold text-slate-900 leading-relaxed" id="fc-question">No blocks allocated.</h3>
+                                    </div>
+                                    <div class="absolute inset-0 backface-hidden rotate-y-180 flex flex-col items-center justify-center p-8 text-center bg-slate-50 border border-slate-200">
+                                        <p class="text-[10px] font-bold text-[#059669] uppercase tracking-normal mb-4">Output</p>
+                                        <h3 class="text-[18px] font-bold text-slate-900 leading-relaxed" id="fc-answer">Awaiting data.</h3>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="flex items-center border border-slate-200 bg-white">
+                                <button onclick="prevCard()" class="w-12 h-10 bg-transparent hover:bg-slate-50 text-slate-700 border-r border-slate-200"><i class="fas fa-arrow-left text-xs"></i></button>
+                                <span class="text-[12px] font-bold text-slate-600 w-16 text-center" id="fc-counter">0/0</span>
+                                <button onclick="nextCard()" class="w-12 h-10 bg-transparent hover:bg-slate-50 text-slate-700 border-l border-slate-200"><i class="fas fa-arrow-right text-xs"></i></button>
+                            </div>
+                        </div>
+
+                        <div id="fc-create-view" class="hidden flex-col gap-6 w-full">
+                            <div class="clonbrow-card p-6">
+                                <h3 class="font-bold text-sm text-slate-900 mb-4 tracking-tight">New Allocation</h3>
+                                <div class="flex flex-col gap-3">
+                                    <input type="text" id="new-fc-q" placeholder="Prompt String" class="clonbrow-input w-full p-3 text-[13px] bg-white">
+                                    <input type="text" id="new-fc-a" placeholder="Return Value" class="clonbrow-input w-full p-3 text-[13px] bg-white" onkeypress="if(event.key === 'Enter') addFlashcardDB()">
+                                    <button onclick="addFlashcardDB()" class="btn-aesthetic w-full py-3 text-[13px] mt-2">WRITE</button>
+                                </div>
+                            </div>
+                            <div class="flex flex-col gap-2">
+                                <h3 class="text-[10px] font-bold text-slate-500 uppercase tracking-normal mb-1 pl-1">Registry</h3>
+                                <div id="fc-list" class="space-y-0 border border-slate-200 border-b-0 max-h-[40vh] overflow-y-auto no-scrollbar bg-white"></div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Quizzes Screen (MCQ) -->
+                <div id="mcq-screen" class="absolute inset-0 z-20 hidden flex-col p-6 sm:p-12 overflow-y-auto">
+                    <div class="max-w-2xl mx-auto w-full pt-4">
+                        <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-6 border-b border-slate-200 pb-4">
+                            <div class="flex items-center gap-4">
+                                <div class="w-8 h-8 bg-slate-900 flex items-center justify-center text-white"><i class="fas fa-check-double text-sm"></i></div>
+                                <div><h2 class="text-lg font-bold text-slate-900 tracking-tight">Evaluation Array</h2></div>
+                            </div>
+                            <div class="flex border border-slate-200">
+                                <button onclick="toggleMcqMode('play')" id="btn-mcq-play" class="px-4 py-1.5 text-[11px] font-bold bg-slate-100 text-slate-900 border-r border-slate-200 uppercase tracking-normal">Execute</button>
+                                <button onclick="toggleMcqMode('create')" id="btn-mcq-create" class="px-4 py-1.5 text-[11px] font-bold bg-white text-slate-500 hover:text-slate-900 uppercase tracking-normal">Append</button>
+                            </div>
+                        </div>
+
+                        <div id="mcq-play-view" class="w-full">
+                            <div class="clonbrow-card mb-4 p-8">
+                                <h3 class="font-bold text-[16px] text-slate-900 mb-6 leading-relaxed" id="mcq-question">No evaluations configured.</h3>
+                                <div class="flex flex-col gap-2" id="mcq-options"></div>
+                            </div>
+                            <div class="flex justify-between items-center px-4 py-3 border border-slate-200 bg-slate-50">
+                                <span class="text-xs font-bold text-slate-500" id="mcq-counter">0/0</span>
+                                <div id="mcq-feedback" class="text-[13px] font-bold h-6 flex items-center uppercase tracking-normal"></div>
+                                <button onclick="nextMcqQuestion()" class="clonbrow-btn py-1.5 px-5 text-[11px] hidden uppercase tracking-normal" id="mcq-next-btn">NEXT</button>
+                            </div>
+                        </div>
+
+                        <div id="mcq-create-view" class="hidden flex-col gap-4 w-full">
+                            <div class="clonbrow-card p-6">
+                                <h3 class="font-bold text-sm text-slate-900 mb-4 tracking-tight">Configure Evaluation</h3>
+                                <input type="text" id="new-mcq-q" placeholder="Parameter..." class="clonbrow-input w-full p-3 text-[13px] mb-4 bg-white">
+                                <div class="grid grid-cols-1 sm:grid-cols-2 gap-3 mb-4">
+                                    <input type="text" id="new-mcq-opt0" placeholder="Variant A" class="clonbrow-input p-3 text-[13px] bg-white">
+                                    <input type="text" id="new-mcq-opt1" placeholder="Variant B" class="clonbrow-input p-3 text-[13px] bg-white">
+                                    <input type="text" id="new-mcq-opt2" placeholder="Variant C" class="clonbrow-input p-3 text-[13px] bg-white">
+                                    <input type="text" id="new-mcq-opt3" placeholder="Variant D" class="clonbrow-input p-3 text-[13px] bg-white">
+                                </div>
+                                <select id="new-mcq-ans" class="clonbrow-input w-full p-3 text-[13px] mb-4 bg-white cursor-pointer">
+                                    <option value="0">Valid: Variant A</option><option value="1">Valid: Variant B</option>
+                                    <option value="2">Valid: Variant C</option><option value="3">Valid: Variant D</option>
+                                </select>
+                                <button onclick="addQuizDB()" class="btn-aesthetic w-full py-3 text-[13px]">WRITE</button>
+                            </div>
+                            <div id="mcq-list-admin" class="space-y-0 border border-slate-200 border-b-0 pb-8 bg-white"></div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Quick Bites Screen -->
+                <div id="quicklearn-screen" class="absolute inset-0 z-20 hidden flex-col p-6 sm:p-12 overflow-y-auto">
+                    <div class="max-w-2xl mx-auto w-full pt-4">
+                        <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-6 border-b border-slate-200 pb-4">
+                            <div class="flex items-center gap-4">
+                                <div class="w-8 h-8 bg-slate-900 flex items-center justify-center text-white"><i class="fas fa-lightbulb text-sm"></i></div>
+                                <div><h2 class="text-lg font-bold text-slate-900 tracking-tight">Micro Data</h2></div>
+                            </div>
+                            <div class="flex border border-slate-200">
+                                <button onclick="toggleQuickLearnMode('learn')" id="btn-ql-learn" class="px-4 py-1.5 text-[11px] font-bold bg-slate-100 text-slate-900 border-r border-slate-200 uppercase tracking-normal">Execute</button>
+                                <button onclick="toggleQuickLearnMode('create')" id="btn-ql-create" class="px-4 py-1.5 text-[11px] font-bold bg-white text-slate-500 hover:text-slate-900 uppercase tracking-normal">Append</button>
+                            </div>
+                        </div>
+
+                        <div id="ql-learn-view" class="flex flex-col w-full">
+                            <select id="ql-topic-select" onchange="loadSelectedQuickBite()" class="clonbrow-input w-full p-3 text-sm mb-4 cursor-pointer bg-white"></select>
+                            <div class="clonbrow-card p-6 min-h-[150px]">
+                                <h3 class="font-bold text-lg text-slate-900 mb-4" id="ql-title">Select block</h3>
+                                <ul class="list-disc pl-5 text-[14px] font-medium text-slate-700 space-y-2 leading-relaxed" id="ql-points">
+                                    <li class="text-slate-500 list-none -ml-5">Awaiting query...</li>
+                                </ul>
+                            </div>
+                        </div>
+
+                        <div id="ql-create-view" class="hidden flex-col gap-4 w-full">
+                            <div class="clonbrow-card p-6">
+                                <h3 class="font-bold text-sm text-slate-900 mb-4 tracking-tight">New Block</h3>
+                                <input type="text" id="new-ql-title" placeholder="Block Title" class="clonbrow-input w-full p-3 text-[13px] mb-3 bg-white">
+                                <textarea id="new-ql-points" placeholder="Point 1&#10;Point 2..." class="clonbrow-input w-full p-3 h-28 resize-none mb-4 text-[13px] bg-white"></textarea>
+                                <button onclick="addQuickBiteDB()" class="btn-aesthetic w-full py-3 text-[13px]">WRITE</button>
+                            </div>
+                            <div id="ql-list-admin" class="space-y-0 border border-slate-200 border-b-0 bg-white"></div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Calculator Screen -->
+                <div id="calc-screen" class="absolute inset-0 z-20 hidden flex-col items-center justify-center p-6">
+                    <div class="clonbrow-card p-6 max-w-[320px] w-full bg-white border border-slate-200">
+                        <div class="flex items-center gap-3 mb-6 border-b border-slate-100 pb-4">
+                            <i class="fas fa-calculator text-slate-900 text-lg"></i>
+                            <h2 class="text-[14px] font-bold text-slate-900 uppercase tracking-normal">Compute</h2>
+                        </div>
+                        <div class="border border-slate-200 bg-[#F9FAFB] p-4 mb-6 text-right">
+                            <div id="calc-history" class="text-slate-400 text-[10px] font-mono h-3 mb-1"></div>
+                            <div id="calc-display" class="text-3xl font-bold text-slate-900 font-mono truncate">0</div>
+                        </div>
+                        <div class="grid grid-cols-4 gap-2">
+                            <button onclick="calcClear()" class="clonbrow-btn py-3 text-[13px] text-red-600 bg-white border border-slate-200">AC</button>
+                            <button onclick="calcAppend('(')" class="clonbrow-btn py-3 text-[13px] bg-white border border-slate-200">(</button>
+                            <button onclick="calcAppend(')')" class="clonbrow-btn py-3 text-[13px] bg-white border border-slate-200">)</button>
+                            <button onclick="calcAppend('/')" class="clonbrow-btn py-3 text-[13px] text-slate-900 bg-white border border-slate-200">÷</button>
+                            <button onclick="calcAppend('7')" class="clonbrow-btn py-3 text-slate-800 bg-slate-50 border border-slate-200">7</button>
+                            <button onclick="calcAppend('8')" class="clonbrow-btn py-3 text-slate-800 bg-slate-50 border border-slate-200">8</button>
+                            <button onclick="calcAppend('9')" class="clonbrow-btn py-3 text-slate-800 bg-slate-50 border border-slate-200">9</button>
+                            <button onclick="calcAppend('*')" class="clonbrow-btn py-3 text-[13px] text-slate-900 bg-white border border-slate-200">×</button>
+                            <button onclick="calcAppend('4')" class="clonbrow-btn py-3 text-slate-800 bg-slate-50 border border-slate-200">4</button>
+                            <button onclick="calcAppend('5')" class="clonbrow-btn py-3 text-slate-800 bg-slate-50 border border-slate-200">5</button>
+                            <button onclick="calcAppend('6')" class="clonbrow-btn py-3 text-slate-800 bg-slate-50 border border-slate-200">6</button>
+                            <button onclick="calcAppend('-')" class="clonbrow-btn py-3 text-[13px] text-slate-900 bg-white border border-slate-200">−</button>
+                            <button onclick="calcAppend('1')" class="clonbrow-btn py-3 text-slate-800 bg-slate-50 border border-slate-200">1</button>
+                            <button onclick="calcAppend('2')" class="clonbrow-btn py-3 text-slate-800 bg-slate-50 border border-slate-200">2</button>
+                            <button onclick="calcAppend('3')" class="clonbrow-btn py-3 text-slate-800 bg-slate-50 border border-slate-200">3</button>
+                            <button onclick="calcAppend('+')" class="clonbrow-btn py-3 text-[13px] text-slate-900 bg-white border border-slate-200">+</button>
+                            <button onclick="calcAppend('0')" class="clonbrow-btn py-3 col-span-2 text-slate-800 bg-slate-50 border border-slate-200">0</button>
+                            <button onclick="calcAppend('.')" class="clonbrow-btn py-3 text-slate-800 bg-slate-50 border border-slate-200">.</button>
+                            <button onclick="calcEquals()" class="btn-aesthetic py-3 text-[13px]">=</button>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Converter Screen -->
+                <div id="converter-screen" class="absolute inset-0 z-20 hidden flex-col p-6 sm:p-12 overflow-y-auto">
+                    <div class="max-w-2xl mx-auto w-full pt-4 pb-10">
+                        <div class="mb-6 border-b border-slate-200 pb-4 flex items-center gap-4">
+                            <div class="w-8 h-8 bg-slate-900 flex items-center justify-center text-white"><i class="fas fa-right-left text-sm"></i></div>
+                            <div>
+                                <h2 class="text-lg font-bold text-slate-900 tracking-tight">Translation Engine</h2>
+                            </div>
+                        </div>
+
+                        <div class="clonbrow-card p-6 sm:p-8 bg-white border border-slate-200">
+                            <div class="flex border border-slate-200 mb-8 w-full">
+                                <button onclick="setConverterCategory('length')" id="btn-conv-length" class="flex-1 px-2 py-2 text-[11px] font-bold bg-slate-100 text-slate-900 border-r border-slate-200 uppercase tracking-normal">Length</button>
+                                <button onclick="setConverterCategory('mass')" id="btn-conv-mass" class="flex-1 px-2 py-2 text-[11px] font-bold bg-white text-slate-500 hover:text-slate-900 border-r border-slate-200 uppercase tracking-normal">Mass</button>
+                                <button onclick="setConverterCategory('temp')" id="btn-conv-temp" class="flex-1 px-2 py-2 text-[11px] font-bold bg-white text-slate-500 hover:text-slate-900 uppercase tracking-normal">Temp</button>
+                            </div>
+
+                            <div class="grid grid-cols-1 sm:grid-cols-[1fr_auto_1fr] gap-4 items-center">
+                                <div>
+                                    <input type="number" id="conv-input" value="1" oninput="runConversion()" class="clonbrow-input w-full p-3 text-[14px] mb-2 font-mono bg-white border border-slate-200">
+                                    <select id="conv-from-unit" onchange="runConversion()" class="clonbrow-input w-full p-2 text-[12px] bg-white cursor-pointer text-slate-700 font-semibold border border-slate-200"></select>
+                                </div>
+                                <div class="flex justify-center text-slate-400 text-[15px] py-1">
+                                    <i class="fas fa-arrow-right hidden sm:block"></i>
+                                    <i class="fas fa-arrow-down sm:hidden"></i>
+                                </div>
+                                <div>
+                                    <div id="conv-output" class="clonbrow-input w-full p-3 text-[14px] mb-2 bg-slate-50 overflow-hidden text-ellipsis font-mono font-bold text-slate-900 border border-slate-200">0</div>
+                                    <select id="conv-to-unit" onchange="runConversion()" class="clonbrow-input w-full p-2 text-[12px] bg-white cursor-pointer text-slate-700 font-semibold border border-slate-200"></select>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Formulas Screen -->
+                <div id="formulas-screen" class="absolute inset-0 z-20 hidden flex-col p-6 sm:p-12 overflow-y-auto">
+                    <div class="max-w-2xl mx-auto w-full pt-4 pb-10">
+                        <div class="mb-6 border-b border-slate-200 pb-4 flex items-center gap-4">
+                            <div class="w-8 h-8 bg-slate-900 flex items-center justify-center text-white"><i class="fas fa-square-root-variable text-sm"></i></div>
+                            <div>
+                                <h2 class="text-lg font-bold text-slate-900 tracking-tight">Expressions</h2>
+                            </div>
+                        </div>
+
+                        <div class="mb-6 clonbrow-card p-6 bg-white border border-slate-200">
+                            <div class="flex flex-col sm:flex-row gap-2">
+                                <input type="text" id="new-formula-name" placeholder="Identifier" class="clonbrow-input flex-1 p-3 text-[13px] bg-white border border-slate-200">
+                                <input type="text" id="new-formula-expr" placeholder="Function (e.g. y=mx+b)" class="clonbrow-input flex-1 p-3 text-[13px] font-mono bg-white border border-slate-200" onkeypress="if(event.key==='Enter') addFormula()">
+                                <button onclick="addFormula()" class="btn-aesthetic px-6 py-3 text-[13px]">WRITE</button>
+                            </div>
+                        </div>
+
+                        <div id="formula-list" class="space-y-0 border border-slate-200 border-b-0 bg-white"></div>
+                    </div>
+                </div>
+
+                <!-- Citations Screen -->
+                <div id="citations-screen" class="absolute inset-0 z-20 hidden flex-col p-6 sm:p-12 overflow-y-auto">
+                    <div class="max-w-2xl mx-auto w-full pt-4 pb-10">
+                        <div class="mb-6 border-b border-slate-200 pb-4 flex items-center gap-4">
+                            <div class="w-8 h-8 bg-slate-900 flex items-center justify-center text-white"><i class="fas fa-quote-right text-sm"></i></div>
+                            <div>
+                                <h2 class="text-lg font-bold text-slate-900 tracking-tight">Reference Compiler</h2>
+                            </div>
+                        </div>
+
+                        <div class="clonbrow-card p-6 sm:p-8 mb-6 bg-white border border-slate-200">
+                            <div class="flex border border-slate-200 mb-6 w-full">
+                                <button onclick="setCitationFormat('apa')" id="btn-cite-apa" class="flex-1 px-2 py-2 text-[11px] font-bold bg-slate-100 text-slate-900 border-r border-slate-200 uppercase tracking-normal">APA 7</button>
+                                <button onclick="setCitationFormat('mla')" id="btn-cite-mla" class="flex-1 px-2 py-2 text-[11px] font-bold bg-white text-slate-500 hover:text-slate-900 border-r border-slate-200 uppercase tracking-normal">MLA 9</button>
+                                <button onclick="setCitationFormat('chicago')" id="btn-cite-chicago" class="flex-1 px-2 py-2 text-[11px] font-bold bg-white text-slate-500 hover:text-slate-900 uppercase tracking-normal">Chicago</button>
+                            </div>
+
+                            <div class="flex flex-col gap-3 mb-6">
+                                <input type="text" id="cite-author" placeholder="Author (Last, First)" class="clonbrow-input w-full p-3 text-[13px] bg-white border border-slate-200">
+                                <input type="text" id="cite-title" placeholder="Source Title" class="clonbrow-input w-full p-3 text-[13px] bg-white border border-slate-200">
+                                <input type="text" id="cite-publisher" placeholder="Publisher / Journal" class="clonbrow-input w-full p-3 text-[13px] bg-white border border-slate-200">
+                                <div class="grid grid-cols-2 gap-3">
+                                    <input type="text" id="cite-year" placeholder="Year" class="clonbrow-input w-full p-3 text-[13px] bg-white border border-slate-200">
+                                    <input type="text" id="cite-url" placeholder="URL / DOI" class="clonbrow-input w-full p-3 text-[13px] bg-white border border-slate-200">
+                                </div>
+                            </div>
+                            <button onclick="generateCitation()" class="btn-aesthetic w-full py-3 text-[13px] mb-6">COMPILE</button>
+
+                            <div class="bg-[#F9FAFB] border border-slate-200 p-5 relative">
+                                <div id="cite-output" class="text-[13px] font-medium text-slate-800 font-serif leading-relaxed italic min-h-[1.5rem]">Awaiting parameters...</div>
+                                <button onclick="copyCitation()" class="absolute top-2 right-2 w-6 h-6 clonbrow-btn border-transparent bg-transparent shadow-none hover:bg-slate-200" title="Copy">
+                                    <i class="fas fa-copy text-[10px] text-slate-500"></i>
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- English Lit Screen -->
+                <div id="english-screen" class="absolute inset-0 z-20 hidden flex-col p-6 sm:p-12 overflow-y-auto">
+                    <div class="max-w-3xl mx-auto w-full pt-4 pb-10">
+                        <div class="mb-6 border-b border-slate-200 pb-4 flex items-center gap-4">
+                            <div class="w-8 h-8 bg-slate-900 flex items-center justify-center text-white"><i class="fas fa-feather-alt text-sm"></i></div>
+                            <div>
+                                <h2 class="text-lg font-bold text-slate-900 tracking-tight">Lexical Analysis</h2>
+                            </div>
+                        </div>
+
+                        <div class="clonbrow-card p-6 sm:p-8 bg-white border border-slate-200">
+                            <h3 class="text-[12px] font-bold text-slate-500 uppercase tracking-normal mb-4">Input String</h3>
+                            <textarea id="poetry-input" class="w-full clonbrow-input p-4 text-[14px] mb-4 resize-none h-24 bg-white border border-slate-200" placeholder="Awaiting text sequence..."></textarea>
+
+                            <div class="flex flex-col sm:flex-row gap-2 mb-6">
+                                <button onclick="window.highlightPoetry('vowels')" class="flex-1 clonbrow-btn py-2.5 text-[11px] font-bold uppercase tracking-normal bg-slate-50">Assonance</button>
+                                <button onclick="window.highlightPoetry('consonants')" class="flex-1 clonbrow-btn py-2.5 text-[11px] font-bold uppercase tracking-normal bg-slate-50">Consonance</button>
+                                <button onclick="window.highlightPoetry('alliteration')" class="flex-1 clonbrow-btn py-2.5 text-[11px] font-bold uppercase tracking-normal bg-slate-50">Alliteration</button>
+                            </div>
+
+                            <div class="bg-[#F9FAFB] border border-slate-200 p-5 min-h-[80px]">
+                                <p id="poetry-display" class="text-[14px] font-medium text-slate-800 font-serif leading-relaxed italic">
+                                    Resulting matrix will render here.
+                                </p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Timers / Pomodoro Screen -->
+                <div id="timer-screen" class="absolute inset-0 z-20 hidden flex-col items-center justify-center p-6">
+                    <div class="flex border border-slate-200 bg-white mb-6">
+                        <button onclick="setTimerView('pomo')" id="btn-view-pomo" class="px-6 py-2 text-[11px] font-bold bg-slate-900 text-white border-r border-slate-200 uppercase tracking-normal transition-colors">Session</button>
+                        <button onclick="setTimerView('stop')" id="btn-view-stop" class="px-6 py-2 text-[11px] font-bold bg-white text-slate-500 hover:text-slate-900 uppercase tracking-normal transition-colors">Custom</button>
+                    </div>
+
+                    <!-- Pomo View -->
+                    <div id="pomo-view" class="text-center max-w-sm w-full clonbrow-card p-12 border border-slate-200 bg-white">
+                        <h2 class="text-[11px] font-bold text-[#059669] mb-4 uppercase tracking-normal relative z-10" id="pomo-mode">Focus Mode</h2>
+                        <div class="text-[64px] font-black text-slate-900 tracking-tight mb-8 font-mono relative z-10" id="pomo-display">25:00</div>
+
+                        <div class="flex gap-2 justify-center mb-8 relative z-10">
+                            <button onclick="startPomodoro()" class="btn-aesthetic px-8 py-3 text-[13px]">START</button>
+                            <button onclick="pausePomodoro()" class="clonbrow-btn px-4 py-3 text-[13px] bg-slate-50"><i class="fas fa-pause"></i></button>
+                            <button onclick="resetPomodoro()" class="clonbrow-btn px-4 py-3 text-[13px] bg-slate-50"><i class="fas fa-undo"></i></button>
+                        </div>
+                        <div class="flex gap-4 justify-center text-[10px] font-bold uppercase tracking-normal text-slate-400 relative z-10">
+                            <button onclick="setPomodoroMode('focus')" class="hover:text-slate-900 transition-colors">25m</button>
+                            <span>|</span>
+                            <button onclick="setPomodoroMode('break')" class="hover:text-slate-900 transition-colors">5m</button>
+                        </div>
+                    </div>
+
+                    <!-- Custom Timer View -->
+                    <div id="custom-timer-view" class="hidden text-center max-w-sm w-full clonbrow-card p-12 border border-slate-200 bg-white">
+                        <h2 class="text-[11px] font-bold text-slate-500 mb-4 uppercase tracking-normal relative z-10">Countdown</h2>
+                        <div class="text-[52px] font-black text-slate-900 tracking-tight mb-8 font-mono relative z-10" id="timer-display">00:00:00</div>
+
+                        <div class="flex justify-center gap-2 mb-8 relative z-10">
+                            <div class="flex flex-col items-center w-[60px]">
+                                <input type="number" id="timer-h" value="0" min="0" class="clonbrow-input w-full p-2 text-center text-[14px] bg-slate-50 font-bold border border-slate-200">
+                                <span class="text-[9px] font-bold text-slate-400 mt-2 uppercase tracking-normal">Hr</span>
+                            </div>
+                            <span class="text-xl font-bold text-slate-400 pt-1">:</span>
+                            <div class="flex flex-col items-center w-[60px]">
+                                <input type="number" id="timer-m" value="25" min="0" max="59" class="clonbrow-input w-full p-2 text-center text-[14px] bg-slate-50 font-bold border border-slate-200">
+                                <span class="text-[9px] font-bold text-slate-400 mt-2 uppercase tracking-normal">Min</span>
+                            </div>
+                            <span class="text-xl font-bold text-slate-400 pt-1">:</span>
+                            <div class="flex flex-col items-center w-[60px]">
+                                <input type="number" id="timer-s" value="0" min="0" max="59" class="clonbrow-input w-full p-2 text-center text-[14px] bg-slate-50 font-bold border border-slate-200">
+                                <span class="text-[9px] font-bold text-slate-400 mt-2 uppercase tracking-normal">Sec</span>
+                            </div>
+                        </div>
+
+                        <div class="flex gap-2 justify-center relative z-10">
+                            <button onclick="startStudyTimer()" id="timer-start-btn" class="btn-aesthetic px-8 py-3 text-[13px]">START</button>
+                            <button onclick="pauseStudyTimer()" class="clonbrow-btn px-4 py-3 text-[13px] bg-slate-50"><i class="fas fa-pause"></i></button>
+                            <button onclick="resetStudyTimer()" class="clonbrow-btn px-4 py-3 text-[13px] bg-slate-50"><i class="fas fa-undo"></i></button>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Invoice Screen -->
+                <div id="receipt-screen" class="absolute inset-0 z-20 hidden flex-col p-6 sm:p-12 overflow-y-auto">
+                    <div class="max-w-4xl mx-auto w-full pt-4">
+                        <div class="mb-5 flex justify-between items-end border-b border-slate-200 pb-4 no-print">
+                            <div class="flex items-center gap-4">
+                                <div class="w-8 h-8 bg-slate-900 flex items-center justify-center text-white"><i class="fas fa-file-invoice-dollar text-sm"></i></div>
+                                <div><h2 class="text-lg font-bold text-slate-900 tracking-tight">Invoice Generator</h2></div>
+                            </div>
+                            <button onclick="window.addReceiptItem()" class="clonbrow-btn px-4 py-2 text-[11px] uppercase tracking-normal"><i class="fas fa-plus mr-1"></i> Add Entry</button>
+                        </div>
+                        <div id="receipt-content" class="w-full clonbrow-card p-6 sm:p-10 bg-white border border-slate-200">
+                            <div class="w-full overflow-x-auto mb-6 no-scrollbar bg-white border border-slate-200">
+                                <table class="w-full border-collapse min-w-[500px] text-left text-[13px]">
+                                    <thead>
+                                        <tr class="bg-slate-50">
+                                            <th class="p-3 w-1/2 text-slate-500 font-bold uppercase tracking-normal text-[10px] border-b border-r border-slate-200">Description</th>
+                                            <th class="p-3 text-center w-20 text-slate-500 font-bold uppercase tracking-normal text-[10px] border-b border-r border-slate-200">Qty</th>
+                                            <th class="p-3 text-right w-32 text-slate-500 font-bold uppercase tracking-normal text-[10px] border-b border-r border-slate-200">Price</th>
+                                            <th class="p-3 text-right w-32 text-slate-500 font-bold uppercase tracking-normal text-[10px] border-b border-slate-200">Amount</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody id="receipt-items-body" class="text-slate-800 font-medium"></tbody>
+                                </table>
+                            </div>
+                            <div class="text-right font-medium text-[13px] text-slate-500 uppercase tracking-normal">Total <span id="receipt-grand-total" class="font-bold ml-4 text-2xl text-slate-900 font-mono tracking-tight">$0.00</span></div>
+                        </div>
+                    </div>
+                </div>
+
+                <div id="iframe-container" class="absolute inset-0 z-10 hidden iframe-wrapper pt-6"></div>
+
+            </main>
+        </div>
+    </div>
+
+    <script>
+        // Core functionality fully preserved, visual logic adapted to strict minimalism
+        const PYTHON_API = 'https://clonexxshree.pythonanywhere.com/api';
+        // Compatibility adapter for the deployed PythonAnywhere key/value API.
+        const nativeFetch = window.fetch.bind(window);
+        const dataKeys = {tasks:'clonbrow_tasks',flashcards:'clonbrow_cards',quizzes:'clonbrow_quiz',bites:'clonbrow_bites',formulas:'clonbrow_customF'};
+        async function readRemoteList(kind,user){const r=await nativeFetch(`${PYTHON_API}/data/${encodeURIComponent(dataKeys[kind])}?username=${encodeURIComponent(user)}`);if(!r.ok)throw Error(`HTTP ${r.status}`);const j=await r.json();return Array.isArray(j.value)?j.value:[]}
+        async function writeRemoteList(kind,user,value){const r=await nativeFetch(`${PYTHON_API}/data/${encodeURIComponent(dataKeys[kind])}`,{method:'PUT',headers:{'Content-Type':'application/json'},body:JSON.stringify({username:user,value})});if(!r.ok)throw Error(`HTTP ${r.status}`);return r}
+        window.fetch = async function(input,init={}) {
+            const url=typeof input==='string'?input:input.url;
+            if(!url.startsWith(PYTHON_API+'/'))return nativeFetch(input,init);
+            const u=new URL(url),route=u.pathname.replace(/^\/api\//,'').split('/')[0],method=(init.method||'GET').toUpperCase();
+            if(route==='login'&&method==='POST'){return nativeFetch(PYTHON_API+'/session',init)}
+            if(!dataKeys[route])return nativeFetch(input,init);
+            const user=u.searchParams.get('user')||currentUser||'Guest';
+            try {let list=await readRemoteList(route,user);if(method==='GET')return new Response(JSON.stringify(list),{status:200,headers:{'Content-Type':'application/json'}});
+                if(method==='POST'){const item=JSON.parse(init.body||'{}');item.id=item.id??Date.now();list.push(item);await writeRemoteList(route,user,list)}
+                else if(method==='PUT'){const item=JSON.parse(init.body||'{}');const found=list.find(x=>String(x.id)===String(item.id));if(found&&route==='tasks')found.done=item.done;await writeRemoteList(route,user,list)}
+                else if(method==='DELETE'){const id=u.searchParams.get('id');list=list.filter(x=>String(x.id)!==String(id));await writeRemoteList(route,user,list)}
+                return new Response(JSON.stringify({ok:true}),{status:200,headers:{'Content-Type':'application/json'}});
+            }catch(e){return new Response(JSON.stringify({error:String(e.message||e)}),{status:502,headers:{'Content-Type':'application/json'}})}
+        };
+        
+        let currentUser = 'Guest';
+        let isServerOnline = false;
+
+        let dbTasks = [];
+        let gpaCourses = [];
+        let dbFlashcards = [];
+        let dbQuizzes = [];
+        let dbBites = [];
+        let dbFormulas = [];
+        let currentCard = 0;
+        let isFlipped = false;
+        let currentMcqIndex = 0;
+
+        let tabs = []; 
+        let activeTabId = null;
+        const HOME_URL = 'clonmedic://home';
+
+        const screens = {
+            'home': document.getElementById('home-screen'),
+            'search': document.getElementById('search-screen'),
+            'tasks': document.getElementById('tasks-screen'),
+            'timetable': document.getElementById('timetable-screen'),
+            'gpa': document.getElementById('gpa-screen'),
+            'word': document.getElementById('word-screen'),
+            'flashcards': document.getElementById('flashcard-screen'),
+            'quicklearn': document.getElementById('quicklearn-screen'),
+            'mcq': document.getElementById('mcq-screen'),
+            'calc': document.getElementById('calc-screen'),
+            'converter': document.getElementById('converter-screen'),
+            'formulas': document.getElementById('formulas-screen'),
+            'citations': document.getElementById('citations-screen'),
+            'english': document.getElementById('english-screen'),
+            'timer': document.getElementById('timer-screen'),
+            'receipt': document.getElementById('receipt-screen')
+        };
+
+        // Custom robust copy text to clipboard function
+        window.copyTextToClipboard = function(text) {
+            const textArea = document.createElement("textarea");
+            textArea.value = text;
+            // Move it off-screen.
+            textArea.style.position = "absolute";
+            textArea.style.left = "-999999px";
+            document.body.appendChild(textArea);
+            textArea.select();
+            try {
+                document.execCommand('copy');
+                console.log('Successfully copied formula!');
+            } catch (err) {
+                console.error('Failed to copy text', err);
+            }
+            document.body.removeChild(textArea);
+        };
+
+        // App Meta mapping for icons
+        function getAppMeta(url) {
+            if (url === HOME_URL) return { title: 'Dashboard', icon: 'fa-th-large' };
+            if (url.startsWith('clonmedic://search')) return { title: 'Search', icon: 'fa-search' }; 
+            if (url.startsWith('clonmedic://article')) return { title: 'Reader', icon: 'fa-file-alt' };
+            if (url === 'clonmedic://tasks') return { title: 'Tasks', icon: 'fa-check-square' };
+            if (url === 'clonmedic://timetable') return { title: 'Schedule', icon: 'fa-calendar-alt' };
+            if (url === 'clonmedic://gpa') return { title: 'Analytics', icon: 'fa-chart-line' };
+            if (url === 'clonmedic://word') return { title: 'Notes', icon: 'fa-file-alt' };
+            if (url === 'clonmedic://flashcards') return { title: 'Flashcards', icon: 'fa-layer-group' };
+            if (url === 'clonmedic://quicklearn') return { title: 'Quick Bites', icon: 'fa-lightbulb' };
+            if (url === 'clonmedic://mcq') return { title: 'Quizzes', icon: 'fa-check-double' };
+            if (url === 'clonmedic://calc') return { title: 'Calculator', icon: 'fa-calculator' };
+            if (url === 'clonmedic://converter') return { title: 'Converter', icon: 'fa-right-left' };
+            if (url === 'clonmedic://formulas') return { title: 'Formulas', icon: 'fa-square-root-variable' };
+            if (url === 'periodic.html') return { title: 'Periodic Table', icon: 'fa-atom' };
+            if (url === 'clonmedic://citations') return { title: 'Citations', icon: 'fa-quote-right' };
+            if (url === 'clonmedic://english') return { title: 'English Lit', icon: 'fa-feather-alt' };
+            if (url === 'clonmedic://timer' || url === 'clonmedic://pomodoro') return { title: 'Timers', icon: 'fa-hourglass-half' };
+            if (url === 'clonmedic://receipt') return { title: 'Invoice', icon: 'fa-file-invoice-dollar' };
+            
+            try { 
+                return { title: new URL(url).hostname.replace('www.', ''), icon: 'fa-globe' }; 
+            } catch (e) { 
+                return { title: url.substring(0,10)+'...', icon: 'fa-link' }; 
+            }
+        }
+
+        // --- CHART.JS INITIALIZATION ---
+        let chartsRendered = false;
+        function renderCharts() {
+            if(chartsRendered) return;
+            const prodCtx = document.getElementById('productivityChart');
+            const learnCtx = document.getElementById('learningCurveChart');
+            if(!prodCtx || !learnCtx) return;
+
+            Chart.defaults.font.family = "'Inter', sans-serif";
+            Chart.defaults.color = '#6B7280';
+
+            new Chart(prodCtx, {
+                type: 'bar',
+                data: {
+                    labels: ['Mon', 'Tue', 'Wed', 'Thu', 'Fri'],
+                    datasets: [{
+                        label: 'Focus Hours',
+                        data: [2.5, 3.0, 4.5, 2.0, 3.5],
+                        backgroundColor: function(context) {
+                            const index = context.dataIndex;
+                            return index === 2 ? '#059669' : '#A7F3D0';
+                        },
+                        borderWidth: 1,
+                        borderColor: function(context) {
+                            return context.dataIndex === 2 ? '#047857' : '#A7F3D0';
+                        },
+                        borderRadius: 0,
+                        barPercentage: 0.6
+                    }]
+                },
+                options: {
+                    responsive: true, maintainAspectRatio: false,
+                    plugins: { legend: { display: false }, tooltip: { cornerRadius: 0, titleFont: { size: 10 }, bodyFont: { size: 12, weight: 'bold' } } },
+                    scales: {
+                        y: { beginAtZero: true, max: 6.0, grid: { color: '#F3F4F6', drawBorder: false }, border: { dash: [4, 4] } },
+                        x: { grid: { display: false, drawBorder: false } }
+                    }
+                }
+            });
+
+            new Chart(learnCtx, {
+                type: 'line',
+                data: {
+                    labels: ['W1', 'W2', 'W3', 'W4', 'W5', 'W6'],
+                    datasets: [{
+                        label: 'Performance',
+                        data: [2.5, 2.8, 3.2, 3.1, 3.6, 3.8],
+                        borderColor: '#111827',
+                        borderWidth: 2,
+                        tension: 0, // SHARP LINES
+                        pointBackgroundColor: '#FFFFFF',
+                        pointBorderColor: '#111827',
+                        pointBorderWidth: 2,
+                        pointRadius: 4,
+                        pointHoverRadius: 6
+                    }]
+                },
+                options: {
+                    responsive: true, maintainAspectRatio: false,
+                    plugins: { legend: { display: false }, tooltip: { cornerRadius: 0 } },
+                    scales: {
+                        y: { beginAtZero: false, min: 2.0, max: 4.0, grid: { color: '#F3F4F6' }, border: { dash: [4, 4] } },
+                        x: { grid: { color: '#F3F4F6' } }
+                    }
+                }
+            });
+            chartsRendered = true;
+        }
+
+        async function handleOSLogin() {
+            const username = document.getElementById('boot-username').value.trim();
+            if (!username) return;
+            currentUser = username;
+            
+            const pfp = document.getElementById('toolbar-pfp');
+            if (pfp) pfp.src = `https://api.dicebear.com/7.x/initials/svg?seed=${username}&backgroundColor=F8FAFC&textColor=111827`;
+
+            const btn = document.getElementById('login-btn');
+            if(btn) btn.innerHTML = 'CONNECTING...';
+
+            try {
+                const res = await fetch(`${PYTHON_API}/login`, {
+                    method: 'POST', headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ username: currentUser })
+                });
+                if(res.ok) { isServerOnline = true; await fetchAllData(); } 
+                else { throw new Error("Offline"); }
+            } catch(e) {
+                console.warn("DB Offline. Local mode active.");
+                document.getElementById('db-status').classList.remove('hidden');
+                isServerOnline = false;
+                
+                // Fallback local data
+                dbTasks = [{id: 1, task: "Review system architecture", done: false}, {id: 2, task: "Deploy environment", done: true}];
+                dbFlashcards = [{id: 1, q: "What is the powerhouse of the cell?", a: "Mitochondria"}];
+                dbQuizzes = [{id: 'mcq-demo1', q: "Default query block?", opts: ["Variant A", "Variant B", "Variant C", "Variant D"], ans: 0}];
+                dbBites = [{id: 'ql-demo1', topic: "Initialization", points: ["System ready.", "Waiting for input."]}];
+                dbFormulas = [{id: 'formula-demo1', name: 'Pythagorean', expr: 'a² + b² = c²'}];
+                
+                renderTasks(dbTasks);
+                updateFlashcardUI(); renderFlashcardList();
+                renderQuickLearnDropdown(); renderQuickLearnAdminList();
+                renderMcqList(); renderFormulaList();
+            }
+
+            const bootScreen = document.getElementById('os-boot-screen');
+            const mainOS = document.getElementById('main-os');
+            
+            if (bootScreen) {
+                bootScreen.style.opacity = '0';
+                bootScreen.style.pointerEvents = 'none';
+            }
+            
+            setTimeout(() => {
+                if(bootScreen) bootScreen.classList.add('hidden');
+                if(mainOS) {
+                    mainOS.classList.remove('hidden');
+                    requestAnimationFrame(() => { 
+                        mainOS.style.opacity = '1'; 
+                        renderCharts(); // Initialize charts
+                    });
+                }
+            }, 500);
+
+            window.createNewTab();
+        }
+
+        async function fetchAllData() {
+            if(!isServerOnline) return;
+            try {
+                const [tRes, fRes, qRes, bRes, foRes] = await Promise.all([
+                    fetch(`${PYTHON_API}/tasks?user=${currentUser}`),
+                    fetch(`${PYTHON_API}/flashcards?user=${currentUser}`),
+                    fetch(`${PYTHON_API}/quizzes?user=${currentUser}`),
+                    fetch(`${PYTHON_API}/bites?user=${currentUser}`),
+                    fetch(`${PYTHON_API}/formulas?user=${currentUser}`)
+                ]);
+                dbTasks = await tRes.json(); dbFlashcards = await fRes.json();
+                dbQuizzes = await qRes.json(); dbBites = await bRes.json(); dbFormulas = await foRes.json();
+                
+                renderTasks(dbTasks);
+                updateFlashcardUI(); renderFlashcardList();
+                renderQuickLearnDropdown(); renderQuickLearnAdminList();
+                renderMcqList(); renderFormulaList();
+            } catch (e) { console.error(e); }
+        }
+
+        // --- TASKS ---
+        async function addTaskDB() {
+            const input = document.getElementById('new-task-input');
+            const task = input.value.trim();
+            if(!task) return;
+            input.value = '';
+            if(isServerOnline) {
+                await fetch(`${PYTHON_API}/tasks`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ username: currentUser, task: task }) });
+                const tRes = await fetch(`${PYTHON_API}/tasks?user=${currentUser}`); 
+                dbTasks = await tRes.json();
+            } else {
+                dbTasks.push({id: Date.now(), task: task, done: false});
+            }
+            renderTasks(dbTasks);
+        }
+        async function toggleTaskDB(id, isDone) {
+            if(isServerOnline) {
+                await fetch(`${PYTHON_API}/tasks`, { method: 'PUT', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ id: id, done: isDone ? 1 : 0 }) });
+                const tRes = await fetch(`${PYTHON_API}/tasks?user=${currentUser}`); 
+                dbTasks = await tRes.json();
+            } else {
+                const t = dbTasks.find(x => x.id === id); if(t) t.done = isDone;
+            }
+            renderTasks(dbTasks);
+        }
+        async function deleteTaskDB(id) {
+            if(isServerOnline) {
+                await fetch(`${PYTHON_API}/tasks?id=${id}`, { method: 'DELETE' });
+                const tRes = await fetch(`${PYTHON_API}/tasks?user=${currentUser}`); 
+                dbTasks = await tRes.json();
+            } else {
+                dbTasks = dbTasks.filter(x => x.id !== id);
+            }
+            renderTasks(dbTasks);
+        }
+        function renderTasks(tasks) {
+            const list = document.getElementById('tasks-list'); 
+            if(!list) return;
+            list.innerHTML = '';
+
+            if(tasks.length === 0) { list.innerHTML = `<div class="text-[13px] font-medium text-slate-400 py-6 text-center border-b border-slate-200 bg-white">Registry clear.</div>`; return; }
+            tasks.forEach(t => {
+                const el = document.createElement('div');
+                el.className = `flex justify-between items-center py-3.5 px-4 bg-white border-b border-slate-200 group transition-colors ${t.done ? 'opacity-60 bg-slate-50' : 'hover:bg-slate-50'}`;
+                el.innerHTML = `
+                    <div class="flex items-center gap-4">
+                        <input type="checkbox" ${t.done ? 'checked' : ''} onchange="toggleTaskDB(${t.id}, this.checked)" class="w-4 h-4 cursor-pointer accent-slate-900 rounded-none border-slate-300">
+                        <span class="text-[14px] font-semibold text-slate-900 ${t.done ? 'line-through text-slate-500' : ''}">${t.task}</span>
+                    </div>
+                    <button onclick="deleteTaskDB(${t.id})" class="text-slate-400 hover:text-red-500 opacity-0 group-hover:opacity-100 transition-opacity"><i class="fas fa-trash text-[12px]"></i></button>
+                `;
+                list.appendChild(el);
+            });
+        }
+
+        // --- FLASHCARDS ---
+        window.toggleFlashcardMode = function(mode) {
+            const btnPlay = document.getElementById('btn-fc-play'); const btnCreate = document.getElementById('btn-fc-create');
+            const viewPlay = document.getElementById('fc-play-view'); const viewCreate = document.getElementById('fc-create-view');
+            const activeClass = 'bg-slate-100 text-slate-900'.split(' '); 
+            const inactiveClass = 'bg-white text-slate-500 hover:text-slate-900'.split(' ');
+            
+            if(mode === 'play') {
+                btnPlay.classList.add(...activeClass); btnPlay.classList.remove(...inactiveClass); btnCreate.classList.remove(...activeClass); btnCreate.classList.add(...inactiveClass);
+                viewPlay.classList.remove('hidden'); viewPlay.classList.add('flex'); viewCreate.classList.remove('flex'); viewCreate.classList.add('hidden');
+                updateFlashcardUI();
+            } else {
+                btnCreate.classList.add(...activeClass); btnCreate.classList.remove(...inactiveClass); btnPlay.classList.remove(...activeClass); btnPlay.classList.add(...inactiveClass);
+                viewCreate.classList.remove('hidden'); viewCreate.classList.add('flex'); viewPlay.classList.remove('flex'); viewPlay.classList.add('hidden');
+                renderFlashcardList();
+            }
+        };
+        window.updateFlashcardUI = function() {
+            const qEl = document.getElementById('fc-question'); const aEl = document.getElementById('fc-answer'); const counter = document.getElementById('fc-counter');
+            isFlipped = false; document.getElementById('flashcard-inner').classList.remove('rotate-y-180');
+            
+            if(dbFlashcards.length === 0) { qEl.innerText = "No blocks allocated."; aEl.innerText = "Awaiting data."; counter.innerText = "0/0"; return; }
+            if(currentCard >= dbFlashcards.length) currentCard = 0;
+            qEl.innerText = dbFlashcards[currentCard].q; aEl.innerText = dbFlashcards[currentCard].a; counter.innerText = `${currentCard + 1}/${dbFlashcards.length}`;
+        };
+        window.flipCard = function() {
+            if(dbFlashcards.length===0) return; const inner = document.getElementById('flashcard-inner'); isFlipped = !isFlipped;
+            if (isFlipped) inner.classList.add('rotate-y-180'); else inner.classList.remove('rotate-y-180');
+        };
+        window.nextCard = function() { if(dbFlashcards.length===0) return; currentCard = (currentCard + 1) % dbFlashcards.length; document.getElementById('flashcard-inner').classList.remove('rotate-y-180'); setTimeout(window.updateFlashcardUI, 250); };
+        window.prevCard = function() { if(dbFlashcards.length===0) return; currentCard = (currentCard - 1 + dbFlashcards.length) % dbFlashcards.length; document.getElementById('flashcard-inner').classList.remove('rotate-y-180'); setTimeout(window.updateFlashcardUI, 250); };
+        window.addFlashcardDB = async function() {
+            const q = document.getElementById('new-fc-q').value.trim(); const a = document.getElementById('new-fc-a').value.trim(); if(!q || !a) return;
+            if(isServerOnline) { await fetch(`${PYTHON_API}/flashcards`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ username: currentUser, q: q, a: a }) }); const res = await fetch(`${PYTHON_API}/flashcards?user=${currentUser}`); dbFlashcards = await res.json(); }
+            else { dbFlashcards.push({ id: 'fc-' + Date.now(), q, a }); }
+            document.getElementById('new-fc-q').value = ''; document.getElementById('new-fc-a').value = ''; renderFlashcardList(); updateFlashcardUI();
+        };
+        window.deleteFlashcardDB = async function(id) {
+            if(isServerOnline) { await fetch(`${PYTHON_API}/flashcards?id=${id}`, { method: 'DELETE' }); const res = await fetch(`${PYTHON_API}/flashcards?user=${currentUser}`); dbFlashcards = await res.json(); }
+            else { dbFlashcards = dbFlashcards.filter(f => f.id !== id); }
+            if(currentCard >= dbFlashcards.length) currentCard = Math.max(0, dbFlashcards.length-1); renderFlashcardList(); updateFlashcardUI();
+        };
+        window.renderFlashcardList = function() {
+            const list = document.getElementById('fc-list'); list.innerHTML = '';
+            if(dbFlashcards.length === 0) { list.innerHTML = `<div class="text-[13px] font-medium text-slate-400 py-4 text-center border-b border-slate-200 bg-white">Registry clear.</div>`; return; }
+            dbFlashcards.forEach((fc) => {
+                const el = document.createElement('div'); el.className = "p-3.5 flex justify-between items-center gap-4 bg-white border-b border-slate-200";
+                el.innerHTML = `<div class="flex-1 overflow-hidden"><div class="font-semibold text-slate-900 text-[13px] truncate">Q: ${fc.q}</div><div class="text-[11px] font-medium text-slate-500 truncate mt-0.5">A: ${fc.a}</div></div><button onclick="deleteFlashcardDB('${fc.id}')" class="text-slate-400 hover:text-red-500 shrink-0"><i class="fas fa-times text-xs"></i></button>`;
+                list.appendChild(el);
+            });
+        };
+
+        // --- QUIZZES (MCQ) ---
+        window.toggleMcqMode = function(mode) {
+            const btnPlay = document.getElementById('btn-mcq-play'); const btnCreate = document.getElementById('btn-mcq-create');
+            const viewPlay = document.getElementById('mcq-play-view'); const viewCreate = document.getElementById('mcq-create-view');
+            const activeClass = 'bg-slate-100 text-slate-900'.split(' '); 
+            const inactiveClass = 'bg-white text-slate-500 hover:text-slate-900'.split(' ');
+            
+            if(mode === 'play') {
+                btnPlay.classList.add(...activeClass); btnPlay.classList.remove(...inactiveClass); btnCreate.classList.remove(...activeClass); btnCreate.classList.add(...inactiveClass);
+                viewPlay.classList.remove('hidden'); viewPlay.classList.add('block'); viewCreate.classList.remove('flex'); viewCreate.classList.add('hidden');
+                currentMcqIndex = 0; loadMcqQuestion();
+            } else {
+                btnCreate.classList.add(...activeClass); btnCreate.classList.remove(...inactiveClass); btnPlay.classList.remove(...activeClass); btnPlay.classList.add(...inactiveClass);
+                viewCreate.classList.remove('hidden'); viewCreate.classList.add('flex'); viewPlay.classList.remove('block'); viewPlay.classList.add('hidden');
+                renderMcqList();
+            }
+        };
+        window.loadMcqQuestion = function() {
+            const btnNext = document.getElementById('mcq-next-btn'); const feedback = document.getElementById('mcq-feedback');
+            const optsContainer = document.getElementById('mcq-options'); const qEl = document.getElementById('mcq-question'); const counter = document.getElementById('mcq-counter');
+            feedback.innerText = ''; btnNext.classList.add('hidden');
+            if(dbQuizzes.length === 0) { qEl.innerText = "No evaluations configured."; optsContainer.innerHTML = ''; counter.innerText = '0/0'; return; }
+            if(currentMcqIndex >= dbQuizzes.length) currentMcqIndex = 0;
+            const qData = dbQuizzes[currentMcqIndex]; qEl.innerText = qData.q; counter.innerText = `${currentMcqIndex + 1}/${dbQuizzes.length}`; optsContainer.innerHTML = '';
+
+            const labels = ['A', 'B', 'C', 'D'];
+            qData.opts.forEach((opt, index) => {
+                const btn = document.createElement('button'); 
+                btn.className = "clonbrow-btn p-3.5 text-[13px] w-full text-left justify-start gap-3 bg-white border-slate-200 hover:bg-slate-50 flex items-center";
+                btn.innerHTML = `<span class="text-slate-500 text-[10px] border border-slate-200 w-5 h-5 flex items-center justify-center shrink-0 bg-slate-50 font-bold">${labels[index] || '-'}</span> <span class="flex-1">${opt}</span>`;
+                btn.onclick = () => window.checkMcqAnswer(index, btn); 
+                optsContainer.appendChild(btn);
+            });
+        };
+        window.checkMcqAnswer = function(selectedIndex, btnElement) {
+            const qData = dbQuizzes[currentMcqIndex]; const feedback = document.getElementById('mcq-feedback'); const btnNext = document.getElementById('mcq-next-btn');
+            const buttons = document.getElementById('mcq-options').querySelectorAll('button'); 
+
+            buttons.forEach(b => { b.onclick = null; b.style.pointerEvents = 'none'; });
+
+            if(selectedIndex === qData.ans) { 
+                btnElement.classList.add('bg-[#ECFDF5]', 'border-[#059669]', 'text-[#059669]'); btnElement.classList.remove('bg-white', 'border-slate-200');
+                feedback.innerHTML = '<span class="text-[#059669]">VALID</span>'; 
+            } else { 
+                btnElement.classList.add('bg-red-50', 'border-red-300', 'text-red-700'); btnElement.classList.remove('bg-white', 'border-slate-200');
+                const correctBtn = buttons[qData.ans];
+                correctBtn.classList.add('bg-[#ECFDF5]', 'border-[#059669]', 'text-[#059669]'); correctBtn.classList.remove('bg-white', 'border-slate-200');
+                feedback.innerHTML = '<span class="text-red-600">INVALID</span>'; 
+            }
+            btnNext.classList.remove('hidden');
+        };
+        window.nextMcqQuestion = function() {
+            currentMcqIndex++;
+            if(currentMcqIndex >= dbQuizzes.length) { document.getElementById('mcq-question').innerText = "Evaluation Complete."; document.getElementById('mcq-options').innerHTML = ''; document.getElementById('mcq-feedback').innerText = ''; document.getElementById('mcq-next-btn').classList.add('hidden'); setTimeout(() => { currentMcqIndex = 0; loadMcqQuestion(); }, 1500); }
+            else { loadMcqQuestion(); }
+        };
+        window.addQuizDB = async function() {
+            const q = document.getElementById('new-mcq-q').value.trim();
+            const opts = [ document.getElementById('new-mcq-opt0').value.trim(), document.getElementById('new-mcq-opt1').value.trim(), document.getElementById('new-mcq-opt2').value.trim(), document.getElementById('new-mcq-opt3').value.trim() ];
+            const ans = parseInt(document.getElementById('new-mcq-ans').value);
+            if(!q || opts.some(o => o === '')) return;
+            if(isServerOnline) { await fetch(`${PYTHON_API}/quizzes`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ username: currentUser, q: q, opts: opts, ans: ans }) }); const qRes = await fetch(`${PYTHON_API}/quizzes?user=${currentUser}`); dbQuizzes = await qRes.json(); }
+            else { dbQuizzes.push({ id: 'mcq-' + Date.now(), q, opts, ans }); }
+            document.getElementById('new-mcq-q').value = ''; document.getElementById('new-mcq-opt0').value = ''; document.getElementById('new-mcq-opt1').value = ''; document.getElementById('new-mcq-opt2').value = ''; document.getElementById('new-mcq-opt3').value = ''; document.getElementById('new-mcq-ans').value = '0';
+            renderMcqList();
+        };
+        window.deleteMcqQuestionDB = async function(id) {
+            if(isServerOnline) { await fetch(`${PYTHON_API}/quizzes?id=${id}`, { method: 'DELETE' }); const qRes = await fetch(`${PYTHON_API}/quizzes?user=${currentUser}`); dbQuizzes = await qRes.json(); }
+            else { dbQuizzes = dbQuizzes.filter(m => m.id !== id); }
+            renderMcqList();
+        };
+        window.renderMcqList = function() {
+            const list = document.getElementById('mcq-list-admin'); list.innerHTML = '';
+            if(dbQuizzes.length === 0) { list.innerHTML = '<div class="text-[13px] font-medium text-slate-400 py-4 text-center border-b border-slate-200">No evaluations found.</div>'; return; }
+            dbQuizzes.forEach(item => {
+                const el = document.createElement('div'); el.className = "p-3.5 flex justify-between items-center gap-4 bg-white border-b border-slate-200";
+                el.innerHTML = `<div class="flex-1 overflow-hidden"><div class="font-semibold text-slate-900 text-[13px] truncate">${item.q}</div><div class="text-[11px] font-medium text-slate-500 truncate mt-0.5">Valid: ${item.opts[item.ans]}</div></div><button onclick="deleteMcqQuestionDB('${item.id}')" class="text-slate-400 hover:text-red-500 shrink-0"><i class="fas fa-times text-xs"></i></button>`;
+                list.appendChild(el);
+            });
+        };
+
+        // --- QUICK BITES ---
+        window.toggleQuickLearnMode = function(mode) {
+            const btnLearn = document.getElementById('btn-ql-learn'); const btnCreate = document.getElementById('btn-ql-create');
+            const viewLearn = document.getElementById('ql-learn-view'); const viewCreate = document.getElementById('ql-create-view');
+            const activeClass = 'bg-slate-100 text-slate-900'.split(' '); 
+            const inactiveClass = 'bg-white text-slate-500 hover:text-slate-900'.split(' ');
+            
+            if(mode === 'learn') {
+                btnLearn.classList.add(...activeClass); btnLearn.classList.remove(...inactiveClass); btnCreate.classList.remove(...activeClass); btnCreate.classList.add(...inactiveClass);
+                viewLearn.classList.remove('hidden'); viewLearn.classList.add('flex'); viewCreate.classList.remove('flex'); viewCreate.classList.add('hidden');
+                renderQuickLearnDropdown();
+            } else {
+                btnCreate.classList.add(...activeClass); btnCreate.classList.remove(...inactiveClass); btnLearn.classList.remove(...activeClass); btnLearn.classList.add(...inactiveClass);
+                viewCreate.classList.remove('hidden'); viewCreate.classList.add('flex'); viewLearn.classList.remove('flex'); viewLearn.classList.add('hidden');
+                renderQuickLearnAdminList();
+            }
+        };
+        window.renderQuickLearnDropdown = function() {
+            const select = document.getElementById('ql-topic-select'); select.innerHTML = '<option value="">Select block...</option>';
+            dbBites.forEach((item, idx) => { const opt = document.createElement('option'); opt.value = idx; opt.innerText = item.topic; select.appendChild(opt); });
+            document.getElementById('ql-title').innerText = "Select block"; document.getElementById('ql-points').innerHTML = "<li class='text-slate-500 list-none -ml-5'>Awaiting query...</li>";
+        };
+        window.loadSelectedQuickBite = function() {
+            const idx = document.getElementById('ql-topic-select').value; if(idx === '') return;
+            const data = dbBites[idx]; if(!data) return;
+            document.getElementById('ql-title').innerText = data.topic; const ul = document.getElementById('ql-points'); ul.innerHTML = '';
+            data.points.forEach(point => { if(point.trim() !== '') { const li = document.createElement('li'); li.innerText = point.trim(); ul.appendChild(li); } });
+        };
+        window.addQuickBiteDB = async function() {
+            const topic = document.getElementById('new-ql-title').value.trim(); const pointsRaw = document.getElementById('new-ql-points').value;
+            if(!topic || !pointsRaw) return; const points = pointsRaw.split('\n').filter(p => p.trim() !== '');
+            if(isServerOnline) { await fetch(`${PYTHON_API}/bites`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ username: currentUser, topic: topic, points: points }) }); const bRes = await fetch(`${PYTHON_API}/bites?user=${currentUser}`); dbBites = await bRes.json(); } 
+            else { dbBites.push({ id: 'ql-' + Date.now(), topic, points }); }
+            document.getElementById('new-ql-title').value = ''; document.getElementById('new-ql-points').value = ''; renderQuickLearnAdminList();
+        };
+        window.deleteQuickBiteDB = async function(id) {
+            if(isServerOnline) { await fetch(`${PYTHON_API}/bites?id=${id}`, { method: 'DELETE' }); const bRes = await fetch(`${PYTHON_API}/bites?user=${currentUser}`); dbBites = await bRes.json(); } 
+            else { dbBites = dbBites.filter(q => q.id !== id); } renderQuickLearnAdminList();
+        };
+        window.renderQuickLearnAdminList = function() {
+            const list = document.getElementById('ql-list-admin'); list.innerHTML = '';
+            if(dbBites.length === 0) { list.innerHTML = '<div class="text-[13px] font-medium text-slate-400 py-4 text-center border-b border-slate-200">No data blocks.</div>'; return; }
+            dbBites.forEach(item => {
+                const el = document.createElement('div'); el.className = "p-3.5 flex justify-between items-center gap-4 bg-white border-b border-slate-200";
+                el.innerHTML = `<div class="flex-1 overflow-hidden"><div class="font-semibold text-slate-900 text-[13px] truncate">${item.topic}</div><div class="text-[11px] font-medium text-slate-500 truncate mt-0.5">${item.points.length} nodes</div></div><button onclick="deleteQuickBiteDB('${item.id}')" class="text-slate-400 hover:text-red-500 shrink-0"><i class="fas fa-times text-xs"></i></button>`;
+                list.appendChild(el);
+            });
+        };
+
+        // --- CALCULATOR ---
+        let calcExpression = '';
+        window.calcAppend = function(val) { calcExpression += val; document.getElementById('calc-display').innerText = calcExpression || '0'; };
+        window.calcClear = function() { calcExpression = ''; document.getElementById('calc-display').innerText = '0'; document.getElementById('calc-history').innerText = ''; };
+        window.calcEquals = function() {
+            try { const result = eval(calcExpression); document.getElementById('calc-history').innerText = calcExpression + ' ='; calcExpression = String(result); document.getElementById('calc-display').innerText = calcExpression; } 
+            catch { document.getElementById('calc-display').innerText = 'ERROR'; calcExpression = ''; }
+        };
+
+        // --- CONVERTER ---
+        let currentConvCat = 'length';
+        const converterData = {
+            length: { units: { m: 'Meters', km: 'Kilometers', cm: 'Centimeters', mi: 'Miles', ft: 'Feet', in: 'Inches' }, rates: { m: 1, km: 1000, cm: 0.01, mi: 1609.34, ft: 0.3048, in: 0.0254 } },
+            mass: { units: { kg: 'Kilograms', g: 'Grams', mg: 'Milligrams', lb: 'Pounds', oz: 'Ounces' }, rates: { kg: 1, g: 0.001, mg: 0.000001, lb: 0.453592, oz: 0.0283495 } },
+            temp: { units: { c: 'Celsius', f: 'Fahrenheit', k: 'Kelvin' } }
+        };
+        window.initConverterUnits = function() { window.setConverterCategory(currentConvCat); };
+        window.setConverterCategory = function(cat) {
+            currentConvCat = cat;
+            ['length', 'mass', 'temp'].forEach(c => {
+                const btn = document.getElementById('btn-conv-' + c);
+                if (btn) {
+                    if(c === cat) { btn.classList.add('bg-slate-100', 'text-slate-900'); btn.classList.remove('text-slate-500', 'bg-white'); } 
+                    else { btn.classList.remove('bg-slate-100', 'text-slate-900'); btn.classList.add('text-slate-500', 'bg-white'); }
+                }
+            });
+            const fromSelect = document.getElementById('conv-from-unit'); const toSelect = document.getElementById('conv-to-unit');
+            if (!fromSelect || !toSelect) return;
+            fromSelect.innerHTML = ''; toSelect.innerHTML = '';
+            Object.entries(converterData[cat].units).forEach(([val, label]) => { fromSelect.innerHTML += `<option value="${val}">${label}</option>`; toSelect.innerHTML += `<option value="${val}">${label}</option>`; });
+            if(cat === 'temp') { fromSelect.value = 'c'; toSelect.value = 'f'; } 
+            else if(cat === 'length') { fromSelect.value = 'm'; toSelect.value = 'ft'; } 
+            else { fromSelect.value = 'kg'; toSelect.value = 'lb'; }
+            window.runConversion();
+        };
+        window.runConversion = function() {
+            const val = parseFloat(document.getElementById('conv-input').value) || 0;
+            const fromUnit = document.getElementById('conv-from-unit').value; const toUnit = document.getElementById('conv-to-unit').value;
+            const outEl = document.getElementById('conv-output');
+            if (!fromUnit || !toUnit) return;
+            if (currentConvCat === 'temp') {
+                let celsius = 0;
+                if (fromUnit === 'c') celsius = val; else if (fromUnit === 'f') celsius = (val - 32) * 5/9; else if (fromUnit === 'k') celsius = val - 273.15;
+                let result = 0;
+                if (toUnit === 'c') result = celsius; else if (toUnit === 'f') result = (celsius * 9/5) + 32; else if (toUnit === 'k') result = celsius + 273.15;
+                outEl.innerText = result.toFixed(2);
+            } else {
+                const rates = converterData[currentConvCat].rates;
+                const baseValue = val * rates[fromUnit];
+                const result = baseValue / rates[toUnit];
+                outEl.innerText = parseFloat(result.toPrecision(10)).toString();
+            }
+        };
+
+        // --- FORMULAS ---
+        window.addFormula = async function() {
+            const name = document.getElementById('new-formula-name').value.trim(); const expr = document.getElementById('new-formula-expr').value.trim();
+            if(!name || !expr) return;
+            if(isServerOnline) { await fetch(`${PYTHON_API}/formulas`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ username: currentUser, name, expr }) }); const res = await fetch(`${PYTHON_API}/formulas?user=${currentUser}`); dbFormulas = await res.json(); } 
+            else { dbFormulas.push({ id: 'formula-' + Date.now(), name, expr }); }
+            document.getElementById('new-formula-name').value = ''; document.getElementById('new-formula-expr').value = ''; renderFormulaList();
+        };
+        window.deleteFormula = async function(id) {
+            if(isServerOnline) { await fetch(`${PYTHON_API}/formulas?id=${id}`, { method: 'DELETE' }); const res = await fetch(`${PYTHON_API}/formulas?user=${currentUser}`); dbFormulas = await res.json(); } 
+            else { dbFormulas = dbFormulas.filter(f => f.id !== id); } renderFormulaList();
+        };
+        window.renderFormulaList = function() {
+            const list = document.getElementById('formula-list'); list.innerHTML = '';
+            if(dbFormulas.length === 0) { list.innerHTML = `<div class="text-[13px] font-medium text-slate-400 py-4 text-center border-b border-slate-200">No expressions compiled.</div>`; return; }
+            dbFormulas.forEach((formula) => {
+                const el = document.createElement('div'); el.className = "p-4 bg-white border-b border-slate-200 flex justify-between items-center gap-3";
+                el.innerHTML = `<div class="flex-1 min-w-0"><div class="font-bold text-slate-900 text-[14px] truncate">${formula.name}</div><div class="font-mono font-medium text-slate-500 text-[12px] truncate mt-0.5">${formula.expr}</div></div><div class="flex gap-2 items-center"><button onclick="window.copyTextToClipboard('${formula.expr.replace(/'/g, "\\'")}')" class="text-slate-400 hover:text-slate-900 px-2"><i class="fas fa-copy text-[12px]"></i></button><button onclick="deleteFormula('${formula.id}')" class="text-slate-400 hover:text-red-500 px-2"><i class="fas fa-times text-[12px]"></i></button></div>`;
+                list.appendChild(el);
+            });
+        };
+
+        // --- CITATIONS ---
+        window.setCitationFormat = function(format) {
+            currentCiteFormat = format;
+            ['apa', 'mla', 'chicago'].forEach(f => {
+                const btn = document.getElementById('btn-cite-' + f);
+                if (btn) {
+                    if(f === format) { btn.classList.add('bg-slate-100', 'text-slate-900'); btn.classList.remove('text-slate-500', 'bg-white'); } 
+                    else { btn.classList.remove('bg-slate-100', 'text-slate-900'); btn.classList.add('text-slate-500', 'bg-white'); }
+                }
+            });
+        };
+        window.generateCitation = function() {
+            const author = document.getElementById('cite-author').value.trim(); const title = document.getElementById('cite-title').value.trim();
+            const publisher = document.getElementById('cite-publisher').value.trim(); const year = document.getElementById('cite-year').value.trim();
+            const url = document.getElementById('cite-url').value.trim();
+            let result = "";
+            if (!author || !title || !year) { result = "Requires Author, Title, and Year."; } 
+            else {
+                if (currentCiteFormat === 'apa') result = `${author} (${year}). <i>${title}</i>. ${publisher}. ${url}`;
+                else if (currentCiteFormat === 'mla' || currentCiteFormat === 'chicago') result = `${author}. <i>${title}</i>. ${publisher}, ${year}. ${url}`;
+            }
+            document.getElementById('cite-output').innerHTML = result;
+        };
+        window.copyCitation = function() {
+            const text = document.getElementById('cite-output').innerText;
+            if(text && !text.startsWith("Requires") && !text.startsWith("Awaiting")) { navigator.clipboard.writeText(text); }
+        };
+
+        // --- ENGLISH LIT ---
+        window.highlightPoetry = function(type) {
+            const input = document.getElementById('poetry-input').value.trim(); const display = document.getElementById('poetry-display');
+            if (!input) { display.innerHTML = "Awaiting text sequence."; return; }
+            let result = ''; const lowerInput = input.toLowerCase();
+            if (type === 'vowels') {
+                const vowels = lowerInput.match(/[aeiou]/g);
+                if (vowels) {
+                    const counts = {}; let maxChar = '', maxCount = 0;
+                    for (const v of vowels) { counts[v] = (counts[v] || 0) + 1; if (counts[v] > maxCount) { maxCount = counts[v]; maxChar = v; } }
+                    if (maxCount > 1) { result = input.replace(new RegExp(maxChar, 'gi'), '<span class="bg-[#ECFDF5] text-[#059669] px-1 font-bold border border-[#A7F3D0] rounded-none">$&</span>'); } 
+                    else { result = input + '<br><span class="text-[11px] font-mono text-slate-400 mt-2 block uppercase">No significant pattern.</span>'; }
+                }
+            } else if (type === 'consonants') {
+                const consonants = lowerInput.match(/[bcdfghjklmnpqrstvwxyz]/g);
+                if (consonants) {
+                    const counts = {}; let maxChar = '', maxCount = 0;
+                    for (const c of consonants) { counts[c] = (counts[c] || 0) + 1; if (counts[c] > maxCount) { maxCount = counts[c]; maxChar = c; } }
+                    if (maxCount > 1) { result = input.replace(new RegExp(maxChar, 'gi'), '<span class="bg-[#EFF6FF] text-[#2563EB] px-1 font-bold border border-[#BFDBFE] rounded-none">$&</span>'); } 
+                    else { result = input + '<br><span class="text-[11px] font-mono text-slate-400 mt-2 block uppercase">No significant pattern.</span>'; }
+                }
+            } else if (type === 'alliteration') {
+                const words = input.split(/\s+/); const startChars = {};
+                words.forEach(w => { const cleanW = w.replace(/[^a-zA-Z]/g, ''); if (cleanW.length > 0) { const first = cleanW[0].toLowerCase(); startChars[first] = (startChars[first] || 0) + 1; } });
+                const alliterativeChars = Object.keys(startChars).filter(k => startChars[k] > 1);
+                if (alliterativeChars.length > 0) { result = input.replace(/\b([a-zA-Z])/g, (match, p1) => { if (alliterativeChars.includes(p1.toLowerCase())) { return `<span class="bg-slate-800 text-white px-1 font-bold rounded-none">${p1}</span>`; } return p1; }); } 
+                else { result = input + '<br><span class="text-[11px] font-mono text-slate-400 mt-2 block uppercase">No significant pattern.</span>'; }
+            }
+            display.innerHTML = result;
+        };
+
+        // --- TIMERS (POMO & STUDY) ---
+        let pomoInterval = null; let pomoSeconds = 25 * 60; let pomoRunning = false; let pomoMode = 'focus'; 
+        let studyTimerInterval = null; let studyTimerSeconds = 0; let studyTimerRunning = false;
+
+        window.setTimerView = function(view) {
+            if(view === 'pomo') {
+                document.getElementById('btn-view-pomo').classList.add('bg-slate-900', 'text-white'); document.getElementById('btn-view-pomo').classList.remove('bg-white', 'text-slate-500');
+                document.getElementById('btn-view-stop').classList.add('bg-white', 'text-slate-500'); document.getElementById('btn-view-stop').classList.remove('bg-slate-900', 'text-white');
+                document.getElementById('pomo-view').classList.remove('hidden'); document.getElementById('custom-timer-view').classList.add('hidden');
+            } else {
+                document.getElementById('btn-view-stop').classList.add('bg-slate-900', 'text-white'); document.getElementById('btn-view-stop').classList.remove('bg-white', 'text-slate-500');
+                document.getElementById('btn-view-pomo').classList.add('bg-white', 'text-slate-500'); document.getElementById('btn-view-pomo').classList.remove('bg-slate-900', 'text-white');
+                document.getElementById('custom-timer-view').classList.remove('hidden'); document.getElementById('pomo-view').classList.add('hidden');
+            }
+        };
+
+        window.updatePomoDisplay = function() {
+            const m = Math.floor(pomoSeconds / 60).toString().padStart(2, '0'); const s = (pomoSeconds % 60).toString().padStart(2, '0');
+            document.getElementById('pomo-display').innerText = `${m}:${s}`;
+        };
+        window.startPomodoro = function() {
+            if(pomoRunning || pomoSeconds <= 0) return; pomoRunning = true;
+            pomoInterval = setInterval(() => {
+                pomoSeconds--; window.updatePomoDisplay();
+                if(pomoSeconds <= 0) { clearInterval(pomoInterval); pomoRunning = false; window.setPomodoroMode(pomoMode === 'focus' ? 'break' : 'focus'); }
+            }, 1000);
+        };
+        window.pausePomodoro = function() { clearInterval(pomoInterval); pomoRunning = false; };
+        window.resetPomodoro = function() { clearInterval(pomoInterval); pomoRunning = false; pomoSeconds = pomoMode === 'focus' ? 25 * 60 : 5 * 60; window.updatePomoDisplay(); };
+        window.setPomodoroMode = function(mode) {
+            clearInterval(pomoInterval); pomoRunning = false; pomoMode = mode;
+            if (mode === 'focus') { pomoSeconds = 25 * 60; document.getElementById('pomo-mode').innerText = "Focus Mode"; } 
+            else { pomoSeconds = 5 * 60; document.getElementById('pomo-mode').innerText = "Break Mode"; }
+            window.updatePomoDisplay();
+        };
+
+        window.startStudyTimer = function() {
+            if(studyTimerRunning) return;
+            if(studyTimerSeconds === 0) {
+                const h = parseInt(document.getElementById('timer-h').value) || 0; const m = parseInt(document.getElementById('timer-m').value) || 0; const s = parseInt(document.getElementById('timer-s').value) || 0;
+                studyTimerSeconds = h * 3600 + m * 60 + s;
+            }
+            if(studyTimerSeconds <= 0) return; studyTimerRunning = true; document.getElementById('timer-start-btn').classList.add('opacity-50');
+            studyTimerInterval = setInterval(() => {
+                studyTimerSeconds--; window.updateTimerDisplay();
+                if(studyTimerSeconds <= 0) { clearInterval(studyTimerInterval); studyTimerRunning = false; document.getElementById('timer-start-btn').classList.remove('opacity-50'); }
+            }, 1000);
+        };
+        window.pauseStudyTimer = function() { clearInterval(studyTimerInterval); studyTimerRunning = false; document.getElementById('timer-start-btn').classList.remove('opacity-50'); };
+        window.resetStudyTimer = function() { clearInterval(studyTimerInterval); studyTimerRunning = false; studyTimerSeconds = 0; document.getElementById('timer-start-btn').classList.remove('opacity-50'); window.updateTimerDisplay(); };
+        window.updateTimerDisplay = function() {
+            const h = Math.floor(studyTimerSeconds / 3600).toString().padStart(2,'0'); const m = Math.floor((studyTimerSeconds % 3600) / 60).toString().padStart(2,'0'); const s = (studyTimerSeconds % 60).toString().padStart(2,'0');
+            document.getElementById('timer-display').innerText = `${h}:${m}:${s}`;
+        };
+
+        // --- TIMETABLE LOGIC ---
+        window.addTimetableRow = function() {
+            const tbody = document.getElementById('timetable-body');
+            const tr = document.createElement('tr');
+            tr.className = "border-b border-slate-200 bg-white hover:bg-slate-50 transition-colors";
+            tr.innerHTML = `
+                <td class="p-0 border-r border-slate-200 bg-slate-50/50"><input type="text" placeholder="00:00" class="w-full p-3.5 bg-transparent border-none outline-none text-left font-bold text-slate-500 text-[11px] uppercase"></td>
+                <td class="p-0 border-r border-slate-200"><input type="text" placeholder="" class="w-full p-3.5 bg-transparent border-none outline-none text-left font-medium text-[13px] text-slate-800"></td>
+                <td class="p-0 border-r border-slate-200"><input type="text" placeholder="" class="w-full p-3.5 bg-transparent border-none outline-none text-left font-medium text-[13px] text-slate-800"></td>
+                <td class="p-0 border-r border-slate-200"><input type="text" placeholder="" class="w-full p-3.5 bg-transparent border-none outline-none text-left font-medium text-[13px] text-slate-800"></td>
+                <td class="p-0 border-r border-slate-200"><input type="text" placeholder="" class="w-full p-3.5 bg-transparent border-none outline-none text-left font-medium text-[13px] text-slate-800"></td>
+                <td class="p-0"><input type="text" placeholder="" class="w-full p-3.5 bg-transparent border-none outline-none text-left font-medium text-[13px] text-slate-800"></td>
+            `;
+            tbody.appendChild(tr);
+        };
+        setTimeout(() => { window.addTimetableRow(); window.addTimetableRow(); window.addTimetableRow(); }, 1000);
+
+        // --- GPA LOGIC ---
+        window.addGpaCourse = function() {
+            const name = document.getElementById('gpa-course-name').value.trim() || 'Metric ' + (gpaCourses.length + 1);
+            const grade = parseFloat(document.getElementById('gpa-course-grade').value);
+            const credits = parseFloat(document.getElementById('gpa-course-credits').value) || 1;
+            gpaCourses.push({ id: Date.now(), name, grade, credits });
+            document.getElementById('gpa-course-name').value = ''; window.renderGpaList();
+        };
+        window.removeGpaCourse = function(id) { gpaCourses = gpaCourses.filter(c => c.id !== id); window.renderGpaList(); };
+        window.renderGpaList = function() {
+            const list = document.getElementById('gpa-course-list'); list.innerHTML = '';
+            let totalPoints = 0; let totalCredits = 0;
+            gpaCourses.forEach(c => {
+                totalPoints += (c.grade * c.credits); totalCredits += c.credits;
+                const el = document.createElement('div'); el.className = 'flex justify-between items-center p-4 bg-white border-b border-slate-200 group';
+                el.innerHTML = `
+                    <div class="font-semibold text-slate-900 text-[13px]">${c.name}</div>
+                    <div class="flex items-center gap-4 w-32 justify-end">
+                        <div class="text-[12px] font-bold text-slate-500 text-right">${c.grade.toFixed(1)} <span class="font-normal opacity-60">x ${c.credits}</span></div>
+                        <button onclick="window.removeGpaCourse(${c.id})" class="text-slate-400 hover:text-red-500 opacity-0 group-hover:opacity-100 transition-opacity"><i class="fas fa-times text-xs"></i></button>
+                    </div>
+                `;
+                list.appendChild(el);
+            });
+            const gpa = totalCredits > 0 ? (totalPoints / totalCredits).toFixed(2) : "0.00";
+            document.getElementById('gpa-result').innerText = gpa;
+        };
+
+        // --- INVOICE / RECEIPT LOGIC ---
+        window.addReceiptItem = function() {
+            const tbody = document.getElementById('receipt-items-body');
+            const tr = document.createElement('tr');
+            tr.className = "border-b border-slate-200 bg-white hover:bg-slate-50 transition-colors";
+            tr.innerHTML = `
+                <td class="p-0 border-r border-slate-200"><input type="text" placeholder="Item spec..." class="w-full p-3 bg-transparent border-none outline-none text-[13px] font-medium text-slate-900"></td>
+                <td class="p-0 border-r border-slate-200"><input type="number" value="1" min="1" oninput="window.calcReceiptTotal(this)" class="w-full p-3 bg-transparent border-none outline-none text-center font-medium text-[13px] text-slate-900 qty-input"></td>
+                <td class="p-0 border-r border-slate-200"><input type="number" value="0.00" step="0.01" min="0" oninput="window.calcReceiptTotal(this)" class="w-full p-3 bg-transparent border-none outline-none text-right font-medium text-[13px] text-slate-900 price-input"></td>
+                <td class="p-3 text-right text-[13px] font-bold text-slate-500 row-total">$0.00</td>
+            `;
+            tbody.appendChild(tr);
+        };
+        window.calcReceiptTotal = function(element) {
+            const row = element.closest('tr');
+            const qty = parseFloat(row.querySelector('.qty-input').value) || 0; const price = parseFloat(row.querySelector('.price-input').value) || 0;
+            row.querySelector('.row-total').innerText = '$' + (qty * price).toFixed(2);
+            let grandTotal = 0;
+            document.querySelectorAll('.row-total').forEach(el => { grandTotal += parseFloat(el.innerText.replace('$', '')) || 0; });
+            document.getElementById('receipt-grand-total').innerText = '$' + grandTotal.toFixed(2);
+        };
+        setTimeout(() => { if(document.getElementById('receipt-items-body')) window.addReceiptItem(); }, 1000);
+
+
+        // --- ROUTING & TABS (VERTICAL SIDEBAR UPDATE) ---
+        function triggerLoadAnimation() { 
+            const loadingBar = document.getElementById('loading-bar');
+            loadingBar.classList.remove('loading-active'); 
+            void loadingBar.offsetWidth; 
+            loadingBar.classList.add('loading-active'); 
+        }
+        
+        function generateId() { return 'tab-' + Math.random().toString(36).substr(2, 9); }
+        
+        window.createNewTab = function(url = HOME_URL) {
+            const tab = { id: generateId(), url: url, history: [url], historyIndex: 0, iframe: null };
+            tabs.push(tab); window.switchTab(tab.id);
+        };
+
+        // Rendering tabs into the vertical sidebar
+        window.renderTabs = function() {
+            const container = document.getElementById('vertical-tabs-container'); 
+            if(!container) return;
+            container.innerHTML = '';
+            
+            tabs.forEach(tab => {
+                const isActive = tab.id === activeTabId; 
+                const meta = getAppMeta(tab.url);
+                
+                const tabEl = document.createElement('div');
+                tabEl.className = `vertical-tab ${isActive ? 'active' : ''}`;
+                tabEl.onclick = () => window.switchTab(tab.id);
+
+                tabEl.innerHTML = `
+                    <i class="fas ${meta.icon} text-[16px]"></i>
+                    <span class="tooltip">${meta.title}</span>
+                `;
+
+                const closeBtn = document.createElement('div');
+                closeBtn.className = `absolute top-1 right-1 w-3 h-3 bg-red-500 rounded-full flex items-center justify-center opacity-0 hover:opacity-100 transition-opacity cursor-pointer ${tabs.length === 1 ? 'hidden' : ''}`;
+                closeBtn.onclick = (e) => { e.stopPropagation(); window.closeTab(e, tab.id); };
+                closeBtn.innerHTML = `<i class="fas fa-times text-[6px] text-white"></i>`;
+                
+                tabEl.appendChild(closeBtn);
+                tabEl.addEventListener('mouseenter', () => closeBtn.classList.remove('opacity-0'));
+                tabEl.addEventListener('mouseleave', () => closeBtn.classList.add('opacity-0'));
+
+                container.appendChild(tabEl);
+            });
+        };
+
+        window.switchTab = function(id) {
+            activeTabId = id;
+            const tab = tabs.find(t => t.id === id);
+            if (!tab) return;
+
+            window.renderTabs();
+            Object.values(screens).forEach(s => { if(s) s.style.display = 'none'; });
+            const iframeContainer = document.getElementById('iframe-container');
+            if (iframeContainer) {
+                Array.from(iframeContainer.children).forEach(f => f.style.display = 'none');
+            }
+
+            const globalSearch = document.getElementById('global-search');
+            if(globalSearch) globalSearch.value = (tab.url === HOME_URL || tab.url.startsWith('clonmedic://search') || tab.url.startsWith('clonmedic://article')) ? '' : tab.url;
+
+            if (tab.url === HOME_URL) { screens.home.style.display = 'flex'; } 
+            else if (tab.url.startsWith('clonmedic://search')) { screens.search.style.display = 'flex'; window.executeSafeSearch(new URLSearchParams(tab.url.split('?')[1]).get('q')); } 
+            else if (tab.url.startsWith('clonmedic://') && !tab.url.startsWith('clonmedic://article')) {
+                const appName = tab.url.split('://')[1];
+                if(screens[appName]) { 
+                    screens[appName].style.display = 'flex'; 
+                    // Init logic
+                    if(appName === 'flashcards') updateFlashcardUI();
+                    if(appName === 'quicklearn') renderQuickLearnDropdown();
+                    if(appName === 'mcq') renderMcqList();
+                    if(appName === 'converter') initConverterUnits();
+                    if(appName === 'gpa') renderGpaList();
+                    if(appName === 'formulas') renderFormulaList();
+                    if(appName === 'timer') updateTimerDisplay();
+                }
+            } else {
+                if (iframeContainer) {
+                    if (!tab.iframe) {
+                        const iframe = document.createElement('iframe'); 
+                        if (tab.url.startsWith('clonmedic://article')) { iframe.srcdoc = tab.srcdocContent || "<h1>Loading...</h1>"; } else { iframe.src = tab.url; }
+                        iframeContainer.appendChild(iframe); tab.iframe = iframe;
+                    }
+                    tab.iframe.style.display = 'block';
+                    iframeContainer.style.display = 'flex';
+                }
+            }
+            
+            if(iframeContainer) {
+                if((!tab.url.startsWith('clonmedic://') && tab.url !== HOME_URL) || tab.url.startsWith('clonmedic://article')) {
+                    iframeContainer.style.display = 'flex';
+                    iframeContainer.classList.remove('hidden');
+                } else {
+                    iframeContainer.style.display = 'none';
+                    iframeContainer.classList.add('hidden');
+                }
+            }
+        };
+
+        window.closeTab = function(e, id) {
+            e.stopPropagation(); 
+            if (tabs.length === 1) { if (tabs[0].iframe) tabs[0].iframe.remove(); tabs = []; window.createNewTab(); return; }
+            const tabIndex = tabs.findIndex(t => t.id === id);
+            if (tabs[tabIndex].iframe) tabs[tabIndex].iframe.remove();
+            tabs.splice(tabIndex, 1);
+            if (activeTabId === id) window.switchTab(tabs[Math.max(0, tabIndex - 1)].id); else window.renderTabs();
+        };
+
+        window.processInput = function(input) {
+            if(!input.trim()) return; triggerLoadAnimation(); const urlPattern = /^(https?:\/\/)?([\w.-]+)\.([a-z]{2,6}\.?)(\/[\w.-]*)*\/?$/i;
+            if (input.startsWith('clonmedic://') || input.endsWith('.html')) { window.loadWebPage(input); } 
+            else if (urlPattern.test(input) && !input.includes(' ')) { window.loadWebPage(input.startsWith('http') ? input : 'https://' + input); } 
+            else { window.loadWebPage(`clonmedic://search?q=${encodeURIComponent(input)}`); }
+        }
+
+        window.loadWebPage = function(url, srcdocContent = null) {
+            const tab = tabs.find(t => t.id === activeTabId); if (!tab) return;
+            tab.url = url; 
+            if (srcdocContent) tab.srcdocContent = srcdocContent;
+            if (tab.history[tab.historyIndex] !== url) { tab.history = tab.history.slice(0, tab.historyIndex + 1); tab.history.push(url); tab.historyIndex++; }
+            if (tab.iframe && !url.startsWith('clonmedic://')) { tab.iframe.srcdoc = ''; tab.iframe.src = url; } 
+            else if (tab.iframe && url.startsWith('clonmedic://article')) { tab.iframe.src = 'about:blank'; tab.iframe.srcdoc = srcdocContent; }
+            window.switchTab(activeTabId);
+        };
+
+        const BAD_WORDS = ['sex', 'porn', 'adult', 'nsfw', 'xxx', 'nude', 'fuck'];
+        window.executeSafeSearch = async function(query) {
+            document.getElementById('search-query-display').innerText = `Query: "${query}"`; 
+            const container = document.getElementById('search-results-container'); const blockedUI = document.getElementById('safe-search-blocked');
+            container.innerHTML = '';
+            if (BAD_WORDS.some(bw => query.toLowerCase().includes(bw))) { blockedUI.classList.remove('hidden'); container.classList.add('hidden'); return; }
+            blockedUI.classList.add('hidden'); container.classList.remove('hidden');
+            try {
+                const res = await fetch(`https://en.wikipedia.org/w/api.php?action=query&list=search&srsearch=${encodeURIComponent(query)}&utf8=&format=json&origin=*`);
+                const data = await res.json();
+                if(data.query.search.length === 0) { container.innerHTML = `<div class="p-6 border border-slate-200 bg-white text-sm font-semibold text-slate-500">No safe results found.</div>`; return; }
+                data.query.search.forEach(item => {
+                    const el = document.createElement('div'); el.className = 'p-6 cursor-pointer bg-white border border-slate-200 hover:border-slate-300 transition-colors';
+                    el.onclick = () => window.openNativeArticle(item.title);
+                    el.innerHTML = `<div class="flex items-center gap-2 mb-2"><i class="fas fa-file-alt text-slate-900 text-xs"></i><span class="text-[9px] font-bold text-slate-500 uppercase tracking-widest">Document</span></div><h3 class="text-[16px] font-bold text-slate-900 mb-1.5">${item.title}</h3><p class="text-[13px] font-medium text-slate-600 leading-relaxed">${item.snippet}...</p>`;
+                    container.appendChild(el);
+                });
+            } catch(e) { container.innerHTML = `<div class="p-6 text-sm font-bold text-red-600 bg-red-50 border border-red-200">System offline.</div>`; }
+        }
+
+        window.openNativeArticle = async function(title) {
+            triggerLoadAnimation();
+            try {
+                const res = await fetch(`https://en.wikipedia.org/w/api.php?action=query&prop=extracts&titles=${encodeURIComponent(title)}&format=json&origin=*`);
+                const data = await res.json(); const pages = data.query.pages; const pageId = Object.keys(pages)[0]; const extract = pages[pageId].extract;
+                const styledHtml = `<!DOCTYPE html><html><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><style>body { font-family: 'Inter', sans-serif; line-height: 1.8; color: #111827; padding: 20px; max-width: 800px; margin: 0 auto; background: #ffffff; } h1 { font-size: 2.2em; border-bottom: 1px solid #E5E7EB; padding-bottom: 12px; margin-bottom: 32px; font-weight: 800; letter-spacing: -0.02em;} h2 { margin-top: 40px; font-weight: 700; font-size: 1.4em; border-bottom: 1px solid #E5E7EB; padding-bottom: 8px;} p { font-size: 1.05em; margin-bottom: 20px; font-weight: 400; color: #374151;} .badge { display: inline-block; color: #6B7280; font-weight: 700; margin-bottom: 16px; text-transform: uppercase; font-size: 10px; letter-spacing: 0.1em; background: #F3F4F6; padding: 4px 10px; border: 1px solid #E5E7EB; border-radius: 0px;}</style><link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet"><link rel="stylesheet" href="theme-mobile.css"></head><body><span class="badge">System Document</span><h1>${title}</h1>${extract}</body></html>`;
+                window.loadWebPage(`clonmedic://article?title=${encodeURIComponent(title)}`, styledHtml);
+            } catch(e) {}
+        };
+
+        window.goHome = () => { window.createNewTab(HOME_URL); };
+
+    </script>
+</body> 
+</html>

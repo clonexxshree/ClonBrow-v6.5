@@ -1,0 +1,967 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Clinical Protocol: Neurological Resection & Neural Wiring</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
+    <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;700&family=Inter:wght@400;500;600;700&family=Caveat:wght@700&display=swap" rel="stylesheet">
+    <style>
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: #f1f5f9; 
+            color: #0f172a;
+            overflow: hidden;
+            margin: 0;
+            padding: 0;
+            user-select: none;
+        }
+
+        .tech-font { font-family: 'JetBrains Mono', monospace; }
+        .signature-font { font-family: 'Caveat', cursive; }
+
+        ::-webkit-scrollbar { width: 6px; }
+        ::-webkit-scrollbar-track { background: transparent; }
+        ::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 4px; }
+
+        /* Clinical Sliders */
+        input[type=range] {
+            -webkit-appearance: none; background: transparent; width: 100%; height: 24px; outline: none;
+        }
+        input[type=range]::-webkit-slider-runnable-track {
+            width: 100%; height: 6px; background: #e2e8f0; border-radius: 3px; border: 1px solid #cbd5e1;
+        }
+        input[type=range]::-webkit-slider-thumb {
+            -webkit-appearance: none; height: 18px; width: 10px; border-radius: 3px;
+            background: #2563eb; cursor: pointer; margin-top: -7px;
+            box-shadow: 0 2px 5px rgba(37, 99, 235, 0.4); border: 1px solid #fff;
+        }
+
+        .clinical-shadow { box-shadow: 0 10px 30px -5px rgba(0, 0, 0, 0.05), 0 4px 6px -2px rgba(0, 0, 0, 0.02); }
+        .hud-glass { background: rgba(255, 255, 255, 0.95); backdrop-filter: blur(8px); border: 1px solid rgba(226, 232, 240, 0.8); }
+        
+        .pulse-ring { animation: pulseRing 2s cubic-bezier(0.4, 0, 0.6, 1) infinite; }
+        @keyframes pulseRing {
+            0% { box-shadow: 0 0 0 0 rgba(37, 99, 235, 0.6); }
+            70% { box-shadow: 0 0 0 15px rgba(37, 99, 235, 0); }
+            100% { box-shadow: 0 0 0 0 rgba(37, 99, 235, 0); }
+        }
+
+        @media print {
+            body * { visibility: hidden; }
+            #report-overlay, #report-overlay * { visibility: visible; }
+            #report-overlay { position: absolute; left: 0; top: 0; width: 100%; height: 100%; transform: none !important; padding: 0 !important; background: white !important; }
+            .no-print { display: none !important; }
+            @page { margin: 0.5cm; }
+        }
+    </style>
+</head>
+<body class="h-screen w-screen flex p-4 gap-4 box-border">
+
+    <!-- LEFT: Clinical Canvas Area -->
+    <div class="flex-grow h-full bg-white rounded-xl border border-slate-200 clinical-shadow relative overflow-hidden flex flex-col no-print">
+        
+        <!-- Top Telemetry Bar -->
+        <div class="h-12 border-b border-slate-100 flex items-center px-6 justify-between bg-slate-50 text-xs font-semibold text-slate-500 z-20">
+            <div class="flex gap-6">
+                <div>PATIENT ID: <span class="text-slate-900 tech-font">TRN-992</span></div>
+                <div>PROCEDURE: <span class="text-blue-600 tech-font">NEURAL_RESECTION & WIRING</span></div>
+            </div>
+            <div class="flex gap-6 tech-font">
+                <div>HR: <span id="tel-hr" class="text-emerald-600">68 BPM</span></div>
+                <div>ICP: <span id="tel-icp" class="text-slate-800">12 mmHg</span></div>
+                <div>SPO2: <span id="tel-o2" class="text-blue-600">99%</span></div>
+            </div>
+        </div>
+
+        <!-- Interactive Area -->
+        <div class="flex-grow relative cursor-crosshair" id="canvas-container">
+            <canvas id="medCanvas" class="w-full h-full"></canvas>
+            
+            <div id="tool-overlay" class="absolute bottom-8 left-1/2 transform -translate-x-1/2 w-96 hud-glass rounded-xl p-5 hidden transition-opacity z-20 clinical-shadow">
+                <!-- Injected Tool UI -->
+            </div>
+            
+            <div id="canvas-feedback" class="absolute top-4 right-4 z-20 tech-font text-[10px] text-blue-600 bg-blue-50 border border-blue-200 px-3 py-1.5 rounded-md font-bold shadow-sm transition-colors">
+                AWAITING DIAGNOSTIC INPUT...
+            </div>
+        </div>
+    </div>
+
+    <!-- RIGHT: Clinical Protocol Navigator -->
+    <div class="w-[420px] h-full bg-white rounded-xl border border-slate-200 clinical-shadow flex flex-col flex-shrink-0 z-10 no-print">
+        
+        <div class="p-6 border-b border-slate-100 bg-slate-50 rounded-t-xl relative overflow-hidden">
+            <div class="relative z-10">
+                <div class="flex items-center gap-2 mb-2">
+                    <div class="w-2 h-2 rounded-full bg-blue-600 pulse-ring"></div>
+                    <span class="text-[10px] font-bold text-blue-600 tech-font tracking-widest uppercase">Protocol Active</span>
+                </div>
+                <h1 class="text-xl font-bold text-slate-900 leading-tight" id="ui-phase-name">Phase 1: Cranial Access</h1>
+                <p class="text-xs text-slate-500 mt-1 font-medium" id="ui-phase-desc">Establishing surgical pathway.</p>
+            </div>
+        </div>
+
+        <div class="flex-grow overflow-y-auto p-4 space-y-3" id="ui-steps-container"></div>
+
+        <div class="p-5 border-t border-slate-100 bg-slate-50 rounded-b-xl flex flex-col gap-3">
+            <div class="flex justify-between items-center text-xs font-bold text-slate-500 tech-font">
+                <span>PROCEDURE PROGRESS</span>
+                <span id="ui-progress-text" class="text-blue-600">0/20</span>
+            </div>
+            <div class="w-full h-2 bg-slate-200 rounded-full overflow-hidden border border-slate-300">
+                <div id="ui-progress-bar" class="h-full bg-blue-600 transition-all duration-500" style="width: 0%"></div>
+            </div>
+            <button id="btn-next" disabled class="w-full py-3.5 mt-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg text-sm font-bold tech-font transition-all disabled:opacity-50 disabled:cursor-not-allowed disabled:bg-slate-300 disabled:text-slate-500 shadow-md disabled:shadow-none">
+                AWAITING STEP COMPLETION
+            </button>
+        </div>
+
+        <!-- REPORT OVERLAY -->
+        <div id="report-overlay" class="absolute inset-0 bg-slate-200/80 backdrop-blur-sm z-50 flex flex-col p-6 transform translate-y-full transition-transform duration-700 text-slate-900 overflow-y-auto">
+            <div id="pdf-content" class="bg-white shadow-2xl rounded-xl p-10 relative border border-slate-200 flex-shrink-0" style="min-height: 800px;">
+                <div class="border-b-2 border-slate-800 pb-3 mb-6 flex justify-between items-end">
+                    <div>
+                        <h2 class="text-3xl font-black tech-font tracking-tighter text-slate-900">SURGICAL & NEURAL LOG</h2>
+                        <p class="text-xs font-bold text-slate-500 uppercase tracking-widest">Post-Operative Transcript</p>
+                    </div>
+                    <div class="tech-font text-xs text-right text-slate-500">
+                        <div>DATE: <span id="rep-date"></span></div>
+                        <div>ID: TRN-992</div>
+                    </div>
+                </div>
+
+                <div class="grid grid-cols-2 gap-6 text-sm mb-6 border-b border-slate-100 pb-6">
+                    <div class="bg-slate-50 p-4 rounded-lg border border-slate-200">
+                        <h4 class="font-bold text-slate-800 border-b border-slate-200 pb-1 mb-2">SURGICAL HARDWARE</h4>
+                        <ul class="space-y-1.5 tech-font text-[10px] text-slate-600">
+                            <li class="flex justify-between"><span>CRANIAL_VAULT:</span> <span class="font-bold text-emerald-600">SECURED</span></li>
+                            <li class="flex justify-between"><span>NEOPLASM:</span> <span class="font-bold text-emerald-600">RESECTED</span></li>
+                            <li class="flex justify-between"><span>INCISION_SEAL:</span> <span class="font-bold text-emerald-600">100% INTACT</span></li>
+                            <li class="flex justify-between"><span>HEMOSTASIS:</span> <span class="font-bold text-emerald-600">ACHIEVED</span></li>
+                        </ul>
+                    </div>
+                    <div class="bg-blue-50 p-4 rounded-lg border border-blue-200">
+                        <h4 class="font-bold text-blue-900 border-b border-blue-200 pb-1 mb-2">NEURAL INTEGRATION</h4>
+                        <ul class="space-y-1.5 tech-font text-[10px] text-blue-800">
+                            <li class="flex justify-between"><span>NERVE_TRUNKS:</span> <span class="font-bold">ISOLATED & CUT</span></li>
+                            <li class="flex justify-between"><span>SYNAPSE_SPLICE:</span> <span class="font-bold text-emerald-600">100% CONNECTED</span></li>
+                            <li class="flex justify-between"><span>CORTEX_LOBES:</span> <span class="font-bold text-emerald-600">ALL ONLINE</span></li>
+                            <li class="flex justify-between"><span>BRAINSTEM_FLUID:</span> <span class="font-bold">SYNTHESIZED & INFUSED</span></li>
+                        </ul>
+                    </div>
+                </div>
+
+                <div class="bg-slate-50 border-l-4 border-slate-500 p-5 rounded text-sm italic text-slate-700 font-medium">
+                    "Patient underwent full neurological resection followed by advanced Phase 5 Neural Interface Wiring. Corrupted nerve trunks were successfully severed, and synthetic synapses were spliced into the cortex. All cerebral lobes were manually edited and verified online. A custom neuro-chemical compound was synthesized and injected into the brainstem to stabilize the network. Cleared for discharge."
+                </div>
+
+                <div class="mt-12 flex justify-between items-end border-t border-slate-100 pt-8">
+                    <div class="w-24 h-24 border-4 border-emerald-500 rounded-full flex items-center justify-center text-emerald-500 font-black rotate-[15deg] text-xl tracking-widest opacity-90 flex-shrink-0">
+                        CLEARED
+                    </div>
+                    <div class="text-center">
+                        <div class="text-5xl text-slate-800 signature-font mb-2 leading-none" style="transform: rotate(-3deg);">Dr. Attending</div>
+                        <div class="border-t border-slate-300 pt-2 text-[10px] font-bold text-slate-400 tracking-widest uppercase">Lead Neurosurgeon / BCI Integrator</div>
+                    </div>
+                </div>
+            </div>
+            
+            <button onclick="downloadPDF()" id="pdf-btn" class="mt-6 w-full py-4 bg-slate-800 hover:bg-slate-900 text-white rounded-xl font-bold tech-font flex items-center justify-center gap-2 no-print shadow-lg transition-transform active:scale-95 flex-shrink-0">
+                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"></path></svg>
+                DOWNLOAD SECURE PDF LOG
+            </button>
+        </div>
+    </div>
+
+    <script>
+        // --- LOAD REALISTIC ASSETS ---
+        const imgScalpel = new Image(); imgScalpel.src = 'https://res.cloudinary.com/ds93qby5a/image/upload/v1777189306/918dcfb7-0c57-4ae4-950f-3104205d5dc0_tcketo.png';
+        const imgSyringe = new Image(); imgSyringe.src = 'https://res.cloudinary.com/ds93qby5a/image/upload/v1777189309/ChatGPT_Image_Apr_26_2026_12_22_33_PM_vtwoab.png';
+        const imgBrain = new Image(); imgBrain.src = 'https://res.cloudinary.com/ds93qby5a/image/upload/v1777208117/e21978f4-facc-4e05-af60-2038d9ec59db-Photoroom_v8spgp.png';
+
+        // --- MEDICAL PROTOCOL DATA (20 Steps total) ---
+        const protocol = [
+            // PHASE 1: Cranial Access
+            { phase: "PHASE 1: CRANIAL ACCESS", desc: "Establishing safe surgical pathway.", name: "1. Neuro-Anesthesia", inst: "Inject Propofol. Maintain Intracranial Pressure (ICP) in the green zone.", type: "slider_hold" },
+            { phase: "PHASE 1: CRANIAL ACCESS", desc: "Establishing safe surgical pathway.", name: "2. Scalpel Incision", inst: "Use scalpel to trace the dashed surgical marking and open the scalp.", type: "canvas_trace" },
+            { phase: "PHASE 1: CRANIAL ACCESS", desc: "Establishing safe surgical pathway.", name: "3. Burr Hole Drilling", inst: "Hold click to drill the bone. Release in the green zone before hitting the dura.", type: "canvas_drill" },
+            { phase: "PHASE 1: CRANIAL ACCESS", desc: "Establishing safe surgical pathway.", name: "4. Bone Flap Extraction", inst: "Drag the isolated cranial flap to the designated sterile tray.", type: "canvas_drag" },
+            
+            // PHASE 2: Tumor Localization
+            { phase: "PHASE 2: TUMOR LOCALIZATION", desc: "Mapping eloquence and isolating margins.", name: "5. Dural Snipping", inst: "Carefully open the dura mater by clicking the target nodes in sequential order.", type: "canvas_sequence" },
+            { phase: "PHASE 2: TUMOR LOCALIZATION", desc: "Mapping eloquence and isolating margins.", name: "6. Fluorescein Injection", inst: "Tune the optical filter slider to exactly 560nm to illuminate the mass.", type: "slider_target", target: 560 },
+            { phase: "PHASE 2: TUMOR LOCALIZATION", desc: "Mapping eloquence and isolating margins.", name: "7. Motor Node Mapping", inst: "Click the glowing cortex nodes to map safely around motor functions.", type: "canvas_nodes" },
+            
+            // PHASE 3: Resection
+            { phase: "PHASE 3: RESECTION", desc: "Excision of the primary mass.", name: "8. Ultrasonic Aspiration", inst: "Tune the CUSA frequency slider to match the tumor's wave and shatter it.", type: "slider_wave" },
+            { phase: "PHASE 3: RESECTION", desc: "Excision of the primary mass.", name: "9. Micro-Debulking", inst: "Hover cursor over the shattered fluorescent fragments to vacuum them.", type: "canvas_sweep" },
+            { phase: "PHASE 3: RESECTION", desc: "Excision of the primary mass.", name: "10. Laser Hemostasis", inst: "Micro-bleeds detected. Click precisely on the red points to cauterize.", type: "canvas_whack" },
+            { phase: "PHASE 3: RESECTION", desc: "Excision of the primary mass.", name: "11. Surgical Margin Scan", inst: "Drag to pan the cavity. Find and click the hidden microscopic residual cell.", type: "canvas_pan" },
+            
+            // PHASE 4: Closure
+            { phase: "PHASE 4: CLOSURE", desc: "Restoring cranial integrity.", name: "12. Dural Suturing", inst: "Create a water-tight seal. Click when the needle swings into the center zone.", type: "canvas_rhythm" },
+            { phase: "PHASE 4: CLOSURE", desc: "Restoring cranial integrity.", name: "13. Titanium Plate Fixation", inst: "Hold click on screws to tighten. Release in the green torque zone.", type: "canvas_torque" },
+            { phase: "PHASE 4: CLOSURE", desc: "Restoring cranial integrity.", name: "14. Dermal Staples", inst: "Click evenly along the incision line to place 5 surgical staples.", type: "canvas_staple" },
+            { phase: "PHASE 4: CLOSURE", desc: "Restoring cranial integrity.", name: "15. Preparation for Wiring", inst: "Rapidly tap 'STIMULATE' to stabilize system for Phase 5 integration.", type: "button_mash" },
+
+            // PHASE 5: Neural Interface Wiring (Realistic Interaction)
+            { phase: "PHASE 5: NEURAL WIRING", desc: "Editing the brain interface.", name: "16. Nerve Trunk Isolation", inst: "Use the scalpel to precisely sever the corrupted red nerves on the right panel.", type: "canvas_cut_wires" },
+            { phase: "PHASE 5: NEURAL WIRING", desc: "Editing the brain interface.", name: "17. Synapse Splicing", inst: "Drag glowing connections from the hardware terminals to the pulsing brain nodes.", type: "canvas_connect_wires" },
+            { phase: "PHASE 5: NEURAL WIRING", desc: "Editing the brain interface.", name: "18. Cortical Lobe Editing", inst: "Click the 4 targeted brain lobes layer-by-layer to reboot them online.", type: "canvas_edit_brain" },
+            { phase: "PHASE 5: NEURAL WIRING", desc: "Editing the brain interface.", name: "19. Chemical Synthesis & Injection", inst: "Click the cyan and yellow compounds to synthesize the neuro-fluid, then inject into the brainstem.", type: "canvas_mix_inject" },
+            { phase: "PHASE 5: NEURAL WIRING", desc: "Editing the brain interface.", name: "20. System Finalization", inst: "Neural interface complete. Click button to finalize the operation.", type: "button_finalize" }
+        ];
+
+        let currStep = 0;
+        let stepCompleted = false;
+
+        // --- CANVAS & STATE SETUP ---
+        const canvas = document.getElementById('medCanvas');
+        const ctx = canvas.getContext('2d', { alpha: false });
+        let cw, ch;
+        let time = 0;
+
+        // Mouse Tracking
+        let mx = -100, my = -100;
+        let isDown = false;
+        let dragStart = null;
+
+        // Mini-Game States
+        let gs = {};
+        let particles = [];
+
+        function resize() {
+            const rect = canvas.parentElement.getBoundingClientRect();
+            cw = rect.width; ch = rect.height;
+            canvas.width = cw; canvas.height = ch;
+            initGameState();
+        }
+        window.addEventListener('resize', resize);
+
+        function createParticles(x, y, color, count=5, type='spark') {
+            for(let i=0; i<count; i++) {
+                particles.push({
+                    x: x, y: y,
+                    vx: type === 'fluid' ? (Math.random()-0.5)*3 : (Math.random()-0.5)*6, 
+                    vy: type === 'fluid' ? -Math.random()*4 - 2 : (Math.random()-0.5)*6,
+                    targetX: type === 'fluid' ? cw*0.3 + Math.random()*cw*0.2 : null,
+                    targetY: type === 'fluid' ? ch*0.2 + Math.random()*ch*0.3 : null,
+                    life: type === 'fluid' ? 1.5 : 1.0, 
+                    color: color,
+                    type: type
+                });
+            }
+        }
+
+        function updateParticles() {
+            for(let i=particles.length-1; i>=0; i--) {
+                let p = particles[i];
+                p.x += p.vx; p.y += p.vy;
+                
+                if (p.type === 'fluid') {
+                    let dx = p.targetX - p.x; let dy = p.targetY - p.y;
+                    p.vx += dx * 0.002; p.vy += dy * 0.002; // Steering
+                    p.life -= 0.02;
+                } else {
+                    p.life -= 0.05;
+                }
+
+                ctx.fillStyle = p.color; ctx.globalAlpha = Math.max(0, p.life);
+                ctx.shadowColor = p.color; ctx.shadowBlur = 10;
+                ctx.beginPath(); ctx.arc(p.x, p.y, p.type === 'fluid' ? 3 : 2, 0, Math.PI*2); ctx.fill();
+                ctx.shadowBlur = 0; ctx.globalAlpha = 1.0;
+                
+                if(p.life <= 0) particles.splice(i, 1);
+            }
+        }
+
+        function initGameState() {
+            stepCompleted = false;
+            let s = protocol[currStep].type;
+            gs = { progress: 0 };
+            particles = [];
+            
+            if(s === 'canvas_trace') { gs.path = []; gs.started = false; } 
+            else if (s === 'slider_hold') { gs.pressure = 0; gs.holdTime = 0; } 
+            else if (s === 'canvas_drill') { gs.depth = 0; gs.failed = false; } 
+            else if (s === 'canvas_drag') { gs.bx = cw/2; gs.by = ch/2; gs.locked = false; } 
+            else if (s === 'canvas_sequence') {
+                gs.targets = [];
+                for(let i=0; i<5; i++) gs.targets.push({x: cw/2 + Math.cos(i*1.2)*120, y: ch/2 + Math.sin(i*1.2)*120, id: i+1, clicked: false});
+                gs.nextId = 1;
+            } 
+            else if (s === 'slider_target') { gs.val = 400; } 
+            else if (s === 'canvas_nodes') {
+                gs.nodes = [{x: cw*0.4, y: ch*0.4, state: 0}, {x: cw*0.6, y: ch*0.3, state: 0}, {x: cw*0.5, y: ch*0.6, state: 0}];
+            } 
+            else if (s === 'slider_wave') { gs.targetFreq = 5; gs.playerFreq = 1; } 
+            else if (s === 'canvas_sweep') {
+                gs.fragments = [];
+                for(let i=0; i<25; i++) gs.fragments.push({x: cw/2 + (Math.random()-0.5)*200, y: ch/2 + (Math.random()-0.5)*200, active: true});
+            } 
+            else if (s === 'canvas_whack') { gs.bleeds = []; gs.cleared = 0; gs.spawnTimer = 0; } 
+            else if (s === 'canvas_pan') { gs.panX = 0; gs.panY = 0; gs.targetX = (Math.random()-0.5)*300; gs.targetY = (Math.random()-0.5)*300; } 
+            else if (s === 'canvas_rhythm') { gs.stitches = 0; gs.pendulum = 0; } 
+            else if (s === 'canvas_torque') {
+                gs.screws = [
+                    {x: cw/2-60, y: ch/2-60, t: 0, locked: false}, {x: cw/2+60, y: ch/2-60, t: 0, locked: false},
+                    {x: cw/2-60, y: ch/2+60, t: 0, locked: false}, {x: cw/2+60, y: ch/2+60, t: 0, locked: false}
+                ];
+                gs.activeScrew = -1;
+            } 
+            else if (s === 'canvas_staple') { gs.staples = []; } 
+            else if (s === 'button_mash') { gs.charge = 0; }
+            
+            // Phase 5 State Initialization (Neural Wiring)
+            else if (s === 'canvas_cut_wires') {
+                gs.wires = [
+                    {y: ch*0.25, type: 'good', cut: false, ctrlY: ch*0.25}, 
+                    {y: ch*0.45, type: 'bad', cut: false, ctrlY: ch*0.45},
+                    {y: ch*0.65, type: 'good', cut: false, ctrlY: ch*0.65}, 
+                    {y: ch*0.85, type: 'bad', cut: false, ctrlY: ch*0.85}
+                ];
+            }
+            else if (s === 'canvas_connect_wires') {
+                gs.terminals = [{x: cw*0.8, y: ch*0.35, id: 0}, {x: cw*0.8, y: ch*0.65, id: 1}];
+                gs.brainNodes = [{x: cw*0.4, y: ch*0.35, id: 0, connected: false}, {x: cw*0.35, y: ch*0.6, id: 1, connected: false}];
+                gs.connections = [];
+            }
+            else if (s === 'canvas_edit_brain') {
+                // Interactive Lobes positioned over the brain image
+                let drawX = cw * 0.1, drawY = ch * 0.1, drawH = ch * 0.8;
+                let drawW = drawH * (imgBrain.width / imgBrain.height || 1);
+                gs.lobes = [
+                    {x: drawX + drawW*0.65, y: drawY + drawH*0.25, state: 0, name: "FRONTAL"}, 
+                    {x: drawX + drawW*0.35, y: drawY + drawH*0.2, state: 0, name: "PARIETAL"},
+                    {x: drawX + drawW*0.45, y: drawY + drawH*0.6, state: 0, name: "TEMPORAL"}, 
+                    {x: drawX + drawW*0.15, y: drawY + drawH*0.5, state: 0, name: "OCCIPITAL"}
+                ];
+            }
+            else if (s === 'canvas_mix_inject') {
+                gs.mixA = 0; gs.mixB = 0; gs.mixed = false; gs.injectLevel = 0;
+                gs.stemTarget = {x: cw*0.45, y: ch*0.8, r: 40}; 
+            }
+            
+            setupHTMLTools();
+        }
+
+        // --- CUSTOM TOOL RENDERING ---
+        function drawCustomTool(type) {
+            if(mx < 0 || stepCompleted) return;
+            
+            if(type === 'scalpel' && imgScalpel.complete) {
+                ctx.drawImage(imgScalpel, mx - 10, my - 10, 50, 50); 
+            } 
+            else if (type === 'syringe' && imgSyringe.complete) {
+                // If it's the mixing step, we can dynamically color the fluid inside the syringe
+                if (protocol[currStep].type === 'canvas_mix_inject' && gs.mixed) {
+                    ctx.fillStyle = '#10b981'; // Emerald fluid
+                    // Approx bounding box inside the syringe image
+                    ctx.fillRect(mx-4, my-65, 8, 30);
+                }
+                ctx.drawImage(imgSyringe, mx - 8, my - 85, 30, 90); 
+            }
+            else if (type === 'vacuum') {
+                ctx.strokeStyle = '#2563eb'; ctx.lineWidth=2; 
+                ctx.beginPath(); ctx.arc(mx, my, 60, 0, Math.PI*2); ctx.stroke();
+                ctx.fillStyle = 'rgba(37,99,235,0.1)'; ctx.fill();
+            }
+            else if (type === 'laser') {
+                ctx.strokeStyle = '#ef4444'; ctx.lineWidth=1; 
+                ctx.beginPath(); ctx.moveTo(mx, 0); ctx.lineTo(mx, ch); ctx.stroke();
+                ctx.beginPath(); ctx.moveTo(0, my); ctx.lineTo(cw, my); ctx.stroke();
+                ctx.fillStyle = '#fff'; ctx.beginPath(); ctx.arc(mx, my, 3, 0, Math.PI*2); ctx.fill();
+            }
+        }
+
+        // --- MAIN RENDER LOOP ---
+        function animate() {
+            ctx.fillStyle = '#ffffff'; ctx.fillRect(0, 0, cw, ch); 
+            
+            // Grid background
+            ctx.strokeStyle = '#f1f5f9'; ctx.lineWidth = 1;
+            for(let i=0; i<cw; i+=40) { ctx.beginPath(); ctx.moveTo(i,0); ctx.lineTo(i,ch); ctx.stroke(); }
+            for(let i=0; i<ch; i+=40) { ctx.beginPath(); ctx.moveTo(0,i); ctx.lineTo(cw,i); ctx.stroke(); }
+
+            time += 0.02;
+
+            if (currStep < 15) {
+                // Phases 1 to 4 (Abstract)
+                if(!stepCompleted) renderCurrentGame();
+            } else {
+                // Phase 5 (Realistic Brain Wiring)
+                drawPhase5Background();
+                if(!stepCompleted) renderPhase5Game();
+            }
+
+            updateParticles();
+
+            if(stepCompleted) {
+                ctx.fillStyle = '#10b981'; ctx.font = 'bold 30px JetBrains Mono'; ctx.textAlign = 'center';
+                ctx.fillText("[STEP VERIFIED]", cw/2, ch/2);
+            }
+
+            requestAnimationFrame(animate);
+        }
+
+        function drawPhase5Background() {
+            // Draw Brain Image on the left
+            if(imgBrain.complete) {
+                let drawH = ch * 0.8;
+                let drawW = drawH * (imgBrain.width / imgBrain.height);
+                let drawX = cw * 0.1; 
+                let drawY = ch * 0.1;
+                
+                ctx.drawImage(imgBrain, drawX, drawY, drawW, drawH);
+            }
+
+            // Draw Hardware Panel on the right
+            ctx.fillStyle = '#0f172a'; ctx.fillRect(cw*0.7, 0, cw*0.3, ch);
+            ctx.fillStyle = '#1e293b'; ctx.fillRect(cw*0.72, 20, cw*0.25, ch-40);
+            
+            // Server lights
+            for(let i=0; i<10; i++) {
+                ctx.fillStyle = Math.random()>0.2 ? '#10b981' : '#334155';
+                ctx.fillRect(cw*0.9, 40 + i*20, 10, 4);
+            }
+        }
+
+        // --- MINI-GAME LOGIC (Phases 1-4) ---
+        function renderCurrentGame() {
+            const type = protocol[currStep].type;
+            let fb = "AWAITING INPUT..."; 
+            let fbColor = "text-blue-600";
+            let toolToDraw = null;
+
+            // ... (Phases 1 to 4 mechanics remain identical to the previous fully functional version, preserving all 15 mini-games)
+            // For brevity and to focus on the requested enhancements for Phase 5, the abstract games are abstracted here, 
+            // but fully implemented in the code to ensure it's a complete working file.
+            
+            if (type === 'slider_hold') {
+                ctx.fillStyle = '#f1f5f9'; ctx.fillRect(cw/2 - 20, ch/2 - 150, 40, 300); 
+                ctx.fillStyle = '#d1fae5'; ctx.fillRect(cw/2 - 20, ch/2 - 80, 40, 160); 
+                if(gs.pressure > 0) gs.pressure -= 0.3; 
+                let py = ch/2 + 150 - ((gs.pressure || 0) * 3);
+                ctx.fillStyle = '#2563eb'; ctx.beginPath(); ctx.arc(cw/2, py, 12, 0, Math.PI*2); ctx.fill();
+                if(gs.pressure > 23 && gs.pressure < 76) { gs.holdTime += 0.02; fb = "ICP OPTIMAL. STABILIZING..."; fbColor = "text-emerald-600"; if(gs.holdTime > 2) completeStep(); } 
+                else { gs.holdTime = 0; fb = "ADJUST SLIDER TO MAINTAIN GREEN ZONE"; }
+            }
+            else if (type === 'canvas_trace') {
+                ctx.strokeStyle = '#e2e8f0'; ctx.lineWidth = 16; ctx.lineCap = 'round';
+                ctx.beginPath(); ctx.moveTo(cw/2 - 150, ch/2); ctx.quadraticCurveTo(cw/2, ch/2 - 100, cw/2 + 150, ch/2); ctx.stroke(); 
+                ctx.strokeStyle = '#94a3b8'; ctx.lineWidth = 2; ctx.setLineDash([6, 6]);
+                ctx.beginPath(); ctx.moveTo(cw/2 - 150, ch/2); ctx.quadraticCurveTo(cw/2, ch/2 - 100, cw/2 + 150, ch/2); ctx.stroke(); ctx.setLineDash([]);
+
+                if(isDown && !gs.started && Math.hypot(mx - (cw/2 - 150), my - ch/2) < 40) gs.started = true;
+                if(gs.started) {
+                    gs.path.push({x: mx, y: my}); createParticles(mx, my, '#94a3b8', 1);
+                    let expectedY = ch/2 - Math.sin(((mx - (cw/2 - 150)) / 300) * Math.PI) * 50;
+                    if(Math.abs(my - expectedY) > 50 || !isDown) { gs.started = false; gs.path = []; }
+                    if(mx > cw/2 + 140) completeStep();
+                    fb = "TRACING INCISION..."; fbColor = "text-blue-600";
+                } else { fb = "START AT LEFT EDGE & TRACE TO RIGHT"; }
+
+                ctx.strokeStyle = '#2563eb'; ctx.lineWidth = 4; ctx.beginPath();
+                for(let i=0; i<gs.path.length; i++) { if(i===0) ctx.moveTo(gs.path[i].x, gs.path[i].y); else ctx.lineTo(gs.path[i].x, gs.path[i].y); } ctx.stroke();
+                toolToDraw = 'scalpel';
+            }
+            else if (type === 'canvas_drill') {
+                ctx.fillStyle = '#e2e8f0'; ctx.fillRect(cw/2 - 100, ch/2, 200, 100); 
+                ctx.fillStyle = '#d1fae5'; ctx.fillRect(cw/2 - 100, ch/2 + 70, 200, 30); 
+                ctx.fillStyle = '#ef4444'; ctx.fillRect(cw/2 - 100, ch/2 + 100, 200, 4); 
+                if(isDown && !gs.failed) { gs.depth += 0.8; createParticles(cw/2, ch/2 + gs.depth, '#94a3b8', 2); }
+                else if(!isDown && gs.depth > 0) { if(gs.depth > 70 && gs.depth < 100) completeStep(); else { gs.failed = true; setTimeout(()=>gs.depth=0, 800); } }
+                ctx.fillStyle = '#64748b'; ctx.fillRect(cw/2 - 10, ch/2 - 150 + gs.depth, 20, 150);
+                ctx.beginPath(); ctx.moveTo(cw/2 - 10, ch/2 + gs.depth); ctx.lineTo(cw/2 + 10, ch/2 + gs.depth); ctx.lineTo(cw/2, ch/2 + gs.depth + 15); ctx.fill();
+                if(gs.depth >= 100) gs.failed = true; 
+                if(gs.failed) { ctx.fillStyle = 'rgba(239, 68, 68, 0.1)'; ctx.fillRect(0,0,cw,ch); fb="DURA BREACHED. RETRY."; fbColor="text-red-600"; }
+                else if(isDown) fb="DRILLING... RELEASE IN GREEN ZONE"; else fb="HOLD CLICK TO DRILL";
+            }
+            else if (type === 'canvas_drag') {
+                ctx.strokeStyle = '#3b82f6'; ctx.setLineDash([5,5]); ctx.strokeRect(cw*0.8 - 70, ch/2 - 70, 140, 140); ctx.setLineDash([]);
+                if(isDown && Math.hypot(mx - gs.bx, my - gs.by) < 60 && !gs.locked) { gs.bx = mx; gs.by = my; fb="DRAGGING FLAP..."; } else fb="DRAG BONE FLAP TO TRAY";
+                if(Math.hypot(gs.bx - cw*0.8, gs.by - ch/2) < 50) { gs.bx = cw*0.8; gs.by = ch/2; gs.locked = true; completeStep(); }
+                ctx.fillStyle = '#e2e8f0'; ctx.strokeStyle = '#94a3b8'; ctx.lineWidth=2;
+                ctx.beginPath(); ctx.moveTo(gs.bx-40, gs.by-40); ctx.lineTo(gs.bx+40, gs.by-40); ctx.lineTo(gs.bx, gs.by+50); ctx.closePath(); ctx.fill(); ctx.stroke();
+            }
+            else if (type === 'canvas_sequence') {
+                gs.targets.forEach(t => {
+                    ctx.beginPath(); ctx.arc(t.x, t.y, 25, 0, Math.PI*2);
+                    ctx.fillStyle = t.clicked ? '#d1fae5' : '#e2e8f0'; ctx.fill();
+                    ctx.strokeStyle = t.clicked ? '#10b981' : '#cbd5e1'; ctx.lineWidth=2; ctx.stroke();
+                    if(!t.clicked) { ctx.fillStyle = '#64748b'; ctx.font='16px JetBrains Mono'; ctx.textAlign='center'; ctx.textBaseline='middle'; ctx.fillText(t.id, t.x, t.y); }
+                });
+                fb = `CLICK TARGET NODE [${gs.nextId}]`; toolToDraw = 'scalpel';
+            }
+            else if (type === 'slider_target') {
+                let diff = Math.abs(gs.val - 560); let alpha = Math.max(0, 1 - (diff/60)); 
+                ctx.fillStyle = `rgba(16, 185, 129, ${alpha})`; ctx.shadowColor='#10b981'; ctx.shadowBlur=20*alpha;
+                ctx.beginPath(); ctx.arc(cw/2 + 30, ch/2 - 20, 50, 0, Math.PI*2); ctx.fill(); ctx.shadowBlur=0;
+                if(alpha > 0.8) { gs.progress += 0.03; fb = "MASS ISOLATED. HOLDING..."; fbColor = "text-emerald-600"; if(gs.progress > 2) completeStep(); } 
+                else { gs.progress = 0; fb = "TUNE FREQUENCY TO 560nm"; }
+            }
+            else if (type === 'canvas_nodes') {
+                let allDone = true;
+                gs.nodes.forEach(n => {
+                    ctx.beginPath(); ctx.arc(n.x, n.y, 30, 0, Math.PI*2); 
+                    ctx.fillStyle = n.state===0 ? '#f1f5f9' : '#10b981'; ctx.fill(); ctx.lineWidth=2; ctx.strokeStyle= n.state===0?'#cbd5e1':'#10b981'; ctx.stroke();
+                    if(n.state === 0) allDone = false;
+                });
+                if(allDone) completeStep(); fb = "CLICK ALL NODES TO MAP TRACTS";
+            }
+            else if (type === 'slider_wave') {
+                ctx.strokeStyle = '#ef4444'; ctx.lineWidth=4; ctx.beginPath();
+                for(let i=0; i<cw; i+=10) ctx.lineTo(i, ch/2 + Math.sin(i*0.01*gs.targetFreq + time)*60); ctx.stroke();
+                ctx.strokeStyle = '#2563eb'; ctx.lineWidth=3; ctx.beginPath();
+                for(let i=0; i<cw; i+=10) ctx.lineTo(i, ch/2 + Math.sin(i*0.01*gs.playerFreq + time)*60); ctx.stroke();
+                if(Math.abs(gs.playerFreq - gs.targetFreq) < 0.5) { 
+                    gs.progress += 0.03; ctx.fillStyle = `rgba(255,255,255,${gs.progress * 0.5})`; ctx.fillRect(0,0,cw,ch); 
+                    fb = "RESONANCE MATCHED. SHATTERING..."; fbColor = "text-emerald-600"; if(gs.progress > 2) completeStep();
+                } else { gs.progress = 0; fb = "MATCH WAVE FREQUENCY TO SHATTER MASS"; }
+            }
+            else if (type === 'canvas_sweep') {
+                let activeCount = 0;
+                gs.fragments.forEach(p => {
+                    if(p.active) {
+                        activeCount++; ctx.fillStyle = '#10b981';
+                        ctx.beginPath(); ctx.moveTo(p.x, p.y-8); ctx.lineTo(p.x+8, p.y+8); ctx.lineTo(p.x-8, p.y+8); ctx.fill();
+                        if(Math.hypot(mx - p.x, my - p.y) < 60) p.active = false; 
+                    }
+                });
+                toolToDraw = 'vacuum'; fb = `DEBULKING: ${25 - activeCount}/25 REMOVED`; if(activeCount === 0) completeStep();
+            }
+            else if (type === 'canvas_whack') {
+                gs.spawnTimer++;
+                if(gs.spawnTimer > 60 && gs.bleeds.length < 4 && gs.cleared < 8) { gs.bleeds.push({x: cw/2 + (Math.random()-0.5)*240, y: ch/2 + (Math.random()-0.5)*240, r: 5}); gs.spawnTimer = 0; }
+                gs.bleeds.forEach((b) => { b.r += 0.05; ctx.fillStyle = '#ef4444'; ctx.beginPath(); ctx.arc(b.x, b.y, b.r, 0, Math.PI*2); ctx.fill(); if(b.r > 40) b.r = 5; });
+                toolToDraw = 'laser'; fb = `CAUTERIZED: ${gs.cleared}/8`; if(gs.cleared >= 8) completeStep();
+            }
+            else if (type === 'canvas_pan') {
+                ctx.save(); ctx.translate(cw/2, ch/2);
+                if(isDown && mx > 0) { gs.panX += (mx - cw/2) * 0.08; gs.panY += (my - ch/2) * 0.08; }
+                let tx = gs.targetX - gs.panX; let ty = gs.targetY - gs.panY;
+                ctx.fillStyle = '#10b981'; ctx.beginPath(); ctx.arc(tx, ty, 15, 0, Math.PI*2); ctx.fill(); 
+                ctx.restore();
+                ctx.strokeStyle = 'rgba(37, 99, 235, 0.3)'; ctx.lineWidth=2; ctx.strokeRect(cw/2 - 80, ch/2 - 80, 160, 160);
+                fb = "DRAG TO PAN. FIND & CLICK THE GREEN CELL.";
+            }
+            else if (type === 'canvas_rhythm') {
+                ctx.strokeStyle = '#2563eb'; ctx.lineWidth=3;
+                for(let i=0; i<gs.stitches; i++) { let y = ch/2 - 80 + (i*40); ctx.beginPath(); ctx.moveTo(cw/2 - 30, y); ctx.lineTo(cw/2 + 30, y); ctx.stroke(); }
+                gs.pendulum = Math.sin(time * 2) * 180; let px = cw/2 + gs.pendulum;
+                ctx.fillStyle = '#d1fae5'; ctx.fillRect(cw/2 - 30, ch/2 - 100, 60, 200); 
+                ctx.fillStyle = '#10b981'; ctx.beginPath(); ctx.moveTo(px, ch/2 - 15); ctx.lineTo(px+15, ch/2+15); ctx.lineTo(px-15, ch/2+15); ctx.fill();
+                fb = `SUTURES PLACED: ${gs.stitches}/5. CLICK WHEN NEEDLE IS IN GREEN.`; if(gs.stitches >= 5) completeStep();
+            }
+            else if (type === 'canvas_torque') {
+                let allDone = true;
+                gs.screws.forEach((s, i) => {
+                    ctx.beginPath(); ctx.arc(s.x, s.y, 25, 0, Math.PI*2); ctx.fillStyle = '#e2e8f0'; ctx.fill(); ctx.strokeStyle='#cbd5e1'; ctx.lineWidth=2; ctx.stroke();
+                    ctx.beginPath(); ctx.arc(s.x, s.y, 20, -Math.PI/2, -Math.PI/2 + s.t); ctx.strokeStyle = s.locked ? '#10b981' : '#2563eb'; ctx.lineWidth=6; ctx.stroke();
+                    ctx.beginPath(); ctx.arc(s.x, s.y, 12, -Math.PI/2 + Math.PI*1.2, -Math.PI/2 + Math.PI*2); ctx.strokeStyle = '#10b981'; ctx.lineWidth=4; ctx.stroke();
+                    if(gs.activeScrew === i && !s.locked) { s.t += 0.04; if(s.t > Math.PI*2) s.t = 0; }
+                    if(!s.locked) allDone = false;
+                });
+                fb = "HOLD TO TIGHTEN. RELEASE IN INNER GREEN ZONE."; if(allDone) completeStep();
+            }
+            else if (type === 'canvas_staple') {
+                ctx.strokeStyle = '#ef4444'; ctx.lineWidth=4; ctx.beginPath(); ctx.moveTo(cw*0.2, ch/2); ctx.lineTo(cw*0.8, ch/2); ctx.stroke(); 
+                gs.staples.forEach(s => { ctx.fillStyle = '#94a3b8'; ctx.fillRect(s.x - 5, ch/2 - 20, 10, 40); });
+                fb = `CLICK INCISION TO PLACE STAPLES: ${gs.staples.length}/5`; if(gs.staples.length >= 5) completeStep();
+            }
+            else if (type === 'button_mash') {
+                let baseHR = 20 + (gs.charge * 50); 
+                ctx.strokeStyle = '#2563eb'; ctx.lineWidth=3; ctx.beginPath();
+                for(let i=0; i<cw; i+=5) { let amp = (gs.charge * 50); ctx.lineTo(i, ch/2 + Math.sin(i*0.02*baseHR + time)*amp); } ctx.stroke(); 
+                if(gs.charge > 0) gs.charge -= 0.002; if(gs.charge >= 1) completeStep();
+                ctx.fillStyle = '#e2e8f0'; ctx.fillRect(cw/2 - 150, ch - 60, 300, 20);
+                ctx.fillStyle = '#10b981'; ctx.fillRect(cw/2 - 150, ch - 60, 300 * gs.charge, 20);
+                fb = "RAPIDLY TAP 'STIMULATE' TO RESTORE EEG";
+            }
+
+            drawCustomTool(toolToDraw);
+            let fbEl = document.getElementById('canvas-feedback');
+            fbEl.innerText = fb;
+            fbEl.className = `absolute top-4 right-4 z-20 tech-font text-[10px] bg-white border px-3 py-1.5 rounded-md font-bold shadow-sm transition-colors ${fbColor}`; 
+        }
+
+        // --- PHASE 5 LOGIC (Realistic Brain & Wires) ---
+        function renderPhase5Game() {
+            const type = protocol[currStep].type;
+            let fb = "AWAITING INPUT..."; 
+            let fbColor = "text-blue-600";
+            let toolToDraw = null;
+
+            if (type === 'canvas_cut_wires') {
+                // Animated Wires
+                gs.wires.forEach(w => {
+                    if(!w.cut) {
+                        w.ctrlY = w.y + Math.sin(time*2 + w.y)*15; // Wiggle
+                        ctx.beginPath(); ctx.moveTo(cw*0.75, w.y); 
+                        ctx.quadraticCurveTo(cw*0.85, w.ctrlY, cw, w.y);
+                        
+                        // Glow on bad wires
+                        if(w.type === 'bad') {
+                            ctx.shadowColor = '#ef4444'; ctx.shadowBlur = 15;
+                            ctx.strokeStyle = '#ef4444'; ctx.lineWidth = 6;
+                        } else {
+                            ctx.strokeStyle = '#64748b'; ctx.lineWidth = 6;
+                        }
+                        ctx.stroke(); ctx.shadowBlur = 0;
+                    } else {
+                        // Snap back effect
+                        ctx.strokeStyle = w.type === 'bad' ? '#7f1d1d' : '#475569'; ctx.lineWidth = 6;
+                        ctx.beginPath(); ctx.moveTo(cw*0.75, w.y); ctx.lineTo(cw*0.8, w.y-20); ctx.stroke();
+                        ctx.beginPath(); ctx.moveTo(cw*0.95, w.y+20); ctx.lineTo(cw, w.y); ctx.stroke();
+                    }
+                });
+                toolToDraw = 'scalpel';
+                let badLeft = gs.wires.filter(w => w.type==='bad' && !w.cut).length;
+                fb = `SEVER CORRUPTED NERVES: ${badLeft} REMAINING`;
+                if(badLeft === 0) completeStep();
+            }
+            
+            else if (type === 'canvas_connect_wires') {
+                // Draw Terminals
+                gs.terminals.forEach(t => {
+                    ctx.fillStyle = '#10b981'; ctx.shadowColor = '#10b981'; ctx.shadowBlur = 10;
+                    ctx.fillRect(t.x-10, t.y-10, 20, 20); ctx.shadowBlur = 0;
+                });
+                
+                // Draw Target Brain Nodes
+                gs.brainNodes.forEach(b => {
+                    ctx.beginPath(); ctx.arc(b.x, b.y, 15, 0, Math.PI*2);
+                    if(b.connected) {
+                        ctx.fillStyle = '#10b981'; ctx.shadowColor = '#10b981'; ctx.shadowBlur = 15;
+                    } else {
+                        ctx.fillStyle = 'rgba(234, 179, 8, 0.8)'; // Pulsing amber
+                        ctx.shadowColor = '#eab308'; ctx.shadowBlur = 10 + Math.sin(time*5)*5;
+                    }
+                    ctx.fill(); ctx.shadowBlur = 0;
+                });
+
+                // Draw Established Connections with Gradient & Animated Pulses
+                gs.connections.forEach(c => {
+                    let grad = ctx.createLinearGradient(c.x1, c.y1, c.x2, c.y2);
+                    grad.addColorStop(0, '#10b981'); grad.addColorStop(1, '#0ea5e9');
+                    ctx.strokeStyle = grad; ctx.lineWidth = 4;
+                    ctx.beginPath(); ctx.moveTo(c.x1, c.y1); ctx.bezierCurveTo(c.x1-100, c.y1, c.x2+100, c.y2, c.x2, c.y2); ctx.stroke();
+                    
+                    // Simple pulse simulation
+                    let p = (time * 0.5) % 1;
+                    let px = Math.pow(1-p, 3)*c.x1 + 3*Math.pow(1-p, 2)*p*(c.x1-100) + 3*(1-p)*Math.pow(p, 2)*(c.x2+100) + Math.pow(p, 3)*c.x2;
+                    let py = Math.pow(1-p, 3)*c.y1 + 3*Math.pow(1-p, 2)*p*c.y1 + 3*(1-p)*Math.pow(p, 2)*c.y2 + Math.pow(p, 3)*c.y2;
+                    ctx.fillStyle = '#fff'; ctx.shadowColor = '#fff'; ctx.shadowBlur = 10;
+                    ctx.beginPath(); ctx.arc(px, py, 4, 0, Math.PI*2); ctx.fill(); ctx.shadowBlur = 0;
+                });
+
+                // Draw Dragging Wire
+                if(isDown && dragStart) {
+                    ctx.strokeStyle = '#38bdf8'; ctx.lineWidth = 4;
+                    ctx.beginPath(); ctx.moveTo(dragStart.x, dragStart.y);
+                    ctx.bezierCurveTo(dragStart.x-100, dragStart.y, mx+100, my, mx, my); ctx.stroke();
+                }
+                
+                let unconn = gs.brainNodes.filter(b => !b.connected).length;
+                fb = `DRAG SYNTHETIC NERVES TO BRAIN NODES: ${unconn} LEFT`;
+                if(unconn === 0) completeStep();
+            }
+            
+            else if (type === 'canvas_edit_brain') {
+                let allGreen = true;
+                gs.lobes.forEach(l => {
+                    ctx.beginPath(); ctx.arc(l.x, l.y, 50, 0, Math.PI*2);
+                    
+                    if(l.state === 0) { ctx.fillStyle = 'rgba(15, 23, 42, 0.7)'; allGreen=false; } // Dark / Off
+                    else if(l.state === 1) { 
+                        ctx.fillStyle = 'rgba(14, 165, 233, 0.4)'; // Booting blue
+                        allGreen=false; 
+                        createParticles(l.x, l.y, '#38bdf8', 1);
+                    }
+                    else if(l.state === 2) { 
+                        ctx.fillStyle = 'rgba(16, 185, 129, 0.4)'; // Online Green
+                        ctx.shadowColor = '#10b981'; ctx.shadowBlur = 20;
+                    }
+                    ctx.fill(); ctx.shadowBlur = 0;
+                    
+                    ctx.fillStyle = '#fff'; ctx.font='bold 10px JetBrains Mono'; ctx.textAlign='center'; 
+                    ctx.fillText(l.name, l.x, l.y);
+                });
+                fb = "CLICK LOBES LAYER-BY-LAYER TO BOOT SYSTEMS ONLINE";
+                if(allGreen) completeStep();
+            }
+
+            else if (type === 'canvas_mix_inject') {
+                // Draw Beakers for synthesis
+                if(!gs.mixed) {
+                    // Beaker A (Cyan)
+                    ctx.fillStyle = 'rgba(15, 23, 42, 0.8)'; ctx.fillRect(cw*0.75, ch*0.3, 40, 80);
+                    ctx.fillStyle = '#0ea5e9'; ctx.fillRect(cw*0.75, ch*0.3 + 80 - (gs.mixA*0.8), 40, gs.mixA*0.8);
+                    ctx.fillStyle = '#fff'; ctx.font='10px Inter'; ctx.fillText("COMP A", cw*0.75 + 20, ch*0.3 - 10);
+
+                    // Beaker B (Yellow)
+                    ctx.fillStyle = 'rgba(15, 23, 42, 0.8)'; ctx.fillRect(cw*0.88, ch*0.3, 40, 80);
+                    ctx.fillStyle = '#eab308'; ctx.fillRect(cw*0.88, ch*0.3 + 80 - (gs.mixB*0.8), 40, gs.mixB*0.8);
+                    ctx.fillStyle = '#fff'; ctx.font='10px Inter'; ctx.fillText("COMP B", cw*0.88 + 20, ch*0.3 - 10);
+
+                    // Central Syringe mix preview
+                    ctx.strokeStyle = '#94a3b8'; ctx.lineWidth = 2; ctx.strokeRect(cw*0.81, ch*0.6, 40, 100);
+                    let mixTotal = (gs.mixA + gs.mixB) / 2;
+                    if(mixTotal > 0) {
+                        ctx.fillStyle = mixTotal >= 100 ? '#10b981' : '#38bdf8'; 
+                        ctx.fillRect(cw*0.81, ch*0.6 + 100 - mixTotal, 40, mixTotal);
+                    }
+
+                    // Click logic
+                    if(isDown) {
+                        if(Math.hypot(mx - (cw*0.75+20), my - (ch*0.3+40)) < 40 && gs.mixA < 100) gs.mixA += 2;
+                        if(Math.hypot(mx - (cw*0.88+20), my - (ch*0.3+40)) < 40 && gs.mixB < 100) gs.mixB += 2;
+                        
+                        // Draw flow streams if clicking
+                        if(gs.mixA < 100 && mx > cw*0.7 && mx < cw*0.8) {
+                            ctx.beginPath(); ctx.moveTo(cw*0.75+20, ch*0.3+80); ctx.lineTo(cw*0.81+20, ch*0.6); ctx.strokeStyle='#0ea5e9'; ctx.stroke();
+                        }
+                        if(gs.mixB < 100 && mx > cw*0.85) {
+                            ctx.beginPath(); ctx.moveTo(cw*0.88+20, ch*0.3+80); ctx.lineTo(cw*0.81+20, ch*0.6); ctx.strokeStyle='#eab308'; ctx.stroke();
+                        }
+                    }
+
+                    if(gs.mixA >= 100 && gs.mixB >= 100) gs.mixed = true;
+                    fb = "HOLD OVER BEAKERS TO SYNTHESIZE NEURO-FLUID";
+                } 
+                else {
+                    // Phase 2: Inject
+                    ctx.strokeStyle = '#10b981'; ctx.lineWidth = 2; ctx.setLineDash([4,4]);
+                    ctx.beginPath(); ctx.arc(gs.stemTarget.x, gs.stemTarget.y, gs.stemTarget.r, 0, Math.PI*2); ctx.stroke(); ctx.setLineDash([]);
+                    
+                    if(isDown && Math.hypot(mx - gs.stemTarget.x, my - gs.stemTarget.y) < gs.stemTarget.r) {
+                        gs.injectLevel += 0.5;
+                        createParticles(mx, my, '#10b981', 3, 'fluid'); // Fluid physics particles
+                    }
+
+                    // Progress bar bottom left
+                    ctx.fillStyle = '#1e293b'; ctx.fillRect(20, ch-40, cw/2, 10);
+                    ctx.fillStyle = '#10b981'; ctx.fillRect(20, ch-40, (cw/2)*(gs.injectLevel/100), 10);
+                    
+                    toolToDraw = 'syringe';
+                    fb = `INJECTING NEURO-FLUID: ${Math.floor(gs.injectLevel)}%`;
+                    if(gs.injectLevel >= 100) completeStep();
+                }
+            }
+
+            drawCustomTool(toolToDraw);
+
+            let fbEl = document.getElementById('canvas-feedback');
+            fbEl.innerText = fb;
+            fbEl.className = `absolute top-4 right-4 z-20 tech-font text-[10px] bg-white border px-3 py-1.5 rounded-md font-bold shadow-sm transition-colors ${fbColor}`; 
+        }
+
+        // --- INTERACTION ROUTING ---
+        canvas.addEventListener('mousedown', (e) => {
+            isDown = true;
+            let rect = canvas.getBoundingClientRect();
+            mx = e.clientX - rect.left; my = e.clientY - rect.top;
+
+            let s = protocol[currStep]?.type;
+            if(!s) return;
+            
+            if (currStep < 15) {
+                if (s === 'canvas_sequence') {
+                    let target = gs.targets.find(t => t.id === gs.nextId);
+                    if(target && Math.hypot(mx - target.x, my - target.y) < 40) { target.clicked = true; gs.nextId++; createParticles(mx, my, '#10b981'); if(gs.nextId > 5) completeStep(); }
+                }
+                else if (s === 'canvas_nodes') {
+                    let clickedNode = gs.nodes.find(n => Math.hypot(mx - n.x, my - n.y) < 40); 
+                    if(clickedNode) { clickedNode.state = 1; createParticles(mx, my, '#10b981'); }
+                }
+                else if (s === 'canvas_whack') {
+                    for(let i=gs.bleeds.length-1; i>=0; i--) {
+                        if(Math.hypot(mx - gs.bleeds[i].x, my - gs.bleeds[i].y) < gs.bleeds[i].r + 30) { createParticles(mx, my, '#ef4444'); gs.bleeds.splice(i, 1); gs.cleared++; break; }
+                    }
+                }
+                else if (s === 'canvas_pan') {
+                    let tx = cw/2 + gs.targetX - gs.panX; let ty = ch/2 + gs.targetY - gs.panY;
+                    if(Math.hypot(mx - tx, my - ty) < 40) { createParticles(mx, my, '#10b981'); completeStep(); }
+                }
+                else if (s === 'canvas_rhythm') {
+                    let px = cw/2 + gs.pendulum;
+                    if(Math.abs(px - cw/2) < 30) { gs.stitches++; createParticles(cw/2, ch/2, '#2563eb'); }
+                }
+                else if (s === 'canvas_torque') { gs.activeScrew = gs.screws.findIndex(sc => Math.hypot(mx - sc.x, my - sc.y) < 40); }
+                else if (s === 'canvas_staple') { if(gs.staples.length < 5) { gs.staples.push({x: mx, y: ch/2}); createParticles(mx, ch/2, '#94a3b8'); } }
+            } 
+            else {
+                // Phase 5 Logic
+                if(s === 'canvas_cut_wires') {
+                    gs.wires.forEach(w => {
+                        if(w.type === 'bad' && !w.cut && Math.abs(my - w.y) < 30 && mx > cw*0.7) { 
+                            w.cut = true; createParticles(mx, my, '#ef4444', 10); 
+                        }
+                    });
+                }
+                else if (s === 'canvas_connect_wires') {
+                    dragStart = gs.terminals.find(t => Math.hypot(mx - t.x, my - t.y) < 40);
+                }
+                else if (s === 'canvas_edit_brain') {
+                    let clickedLobe = gs.lobes.find(l => Math.hypot(mx - l.x, my - l.y) < 50);
+                    if(clickedLobe) {
+                        clickedLobe.state++; if(clickedLobe.state > 2) clickedLobe.state = 0;
+                        createParticles(mx, my, '#38bdf8', 5);
+                    }
+                }
+            }
+        });
+
+        canvas.addEventListener('mousemove', (e) => {
+            let rect = canvas.getBoundingClientRect();
+            mx = e.clientX - rect.left; my = e.clientY - rect.top;
+        });
+
+        canvas.addEventListener('mouseup', () => {
+            isDown = false;
+            let s = protocol[currStep]?.type;
+            if(!s) return;
+            
+            if(currStep < 15 && s === 'canvas_torque' && gs.activeScrew !== -1) {
+                let sc = gs.screws[gs.activeScrew];
+                if(sc.t > Math.PI*1.2 && sc.t <= Math.PI*2) { sc.locked = true; createParticles(sc.x, sc.y, '#10b981'); }
+                else sc.t = 0; 
+                gs.activeScrew = -1;
+            }
+            
+            if(currStep >= 15 && s === 'canvas_connect_wires' && dragStart) {
+                let targetBrain = gs.brainNodes.find(b => !b.connected && Math.hypot(mx - b.x, my - b.y) < 40);
+                if(targetBrain) {
+                    targetBrain.connected = true;
+                    gs.connections.push({x1: dragStart.x, y1: dragStart.y, x2: targetBrain.x, y2: targetBrain.y});
+                    createParticles(targetBrain.x, targetBrain.y, '#10b981', 10);
+                }
+                dragStart = null;
+            }
+        });
+        canvas.addEventListener('mouseleave', () => { isDown = false; gs.activeScrew = -1; dragStart = null; mx = -100; my = -100; });
+
+        // --- HTML UI CONTROLLER ---
+        function setupHTMLTools() {
+            const overlay = document.getElementById('tool-overlay');
+            const type = protocol[currStep].type;
+            overlay.innerHTML = '';
+            
+            if(type.startsWith('slider')) {
+                overlay.classList.remove('hidden');
+                
+                if(type === 'slider_hold') {
+                    overlay.innerHTML = `<label class="text-xs font-bold text-slate-500 mb-2 block tech-font">PROPOFOL DRIP RATE</label><input type="range" id="ui-slider" min="0" max="100" value="0">`;
+                    document.getElementById('ui-slider').addEventListener('input', (e) => { gs.pressure += parseFloat(e.target.value) * 0.1; });
+                } else if (type === 'slider_target') {
+                    overlay.innerHTML = `<label class="text-xs font-bold text-slate-500 mb-2 block tech-font">OPTICAL FILTER (nm)</label><input type="range" id="ui-slider" min="400" max="700" value="400">`;
+                    document.getElementById('ui-slider').addEventListener('input', (e) => { gs.val = parseFloat(e.target.value); });
+                } else if (type === 'slider_wave') {
+                    overlay.innerHTML = `<label class="text-xs font-bold text-slate-500 mb-2 block tech-font">CUSA FREQUENCY (kHz)</label><input type="range" id="ui-slider" min="1" max="10" value="1" step="0.1">`;
+                    document.getElementById('ui-slider').addEventListener('input', (e) => { gs.playerFreq = parseFloat(e.target.value); });
+                }
+            } else if (type === 'button_mash' || type === 'button_finalize') {
+                overlay.classList.remove('hidden');
+                let txt = type === 'button_finalize' ? "FINALIZE OS BOOT" : "STIMULATE CORTEX";
+                overlay.innerHTML = `<button id="mash-btn" class="w-full py-4 bg-blue-600 hover:bg-blue-700 text-white rounded-lg font-bold transition-transform active:scale-95 tech-font text-lg shadow-md">${txt}</button>`;
+                document.getElementById('mash-btn').addEventListener('mousedown', () => { 
+                    if(type==='button_mash') gs.charge += 0.15; 
+                    else completeStep();
+                });
+            } else {
+                overlay.classList.add('hidden');
+            }
+        }
+
+        function renderProtocolUI() {
+            const container = document.getElementById('ui-steps-container');
+            container.innerHTML = '';
+            
+            protocol.forEach((step, i) => {
+                let isPast = i < currStep;
+                let isCurr = i === currStep;
+                
+                if(i === 0 || protocol[i].phase !== protocol[i-1].phase) {
+                    container.innerHTML += `<div class="text-[10px] font-bold text-slate-500 mt-6 mb-2 border-b border-slate-100 pb-1 tech-font">${step.phase}</div>`;
+                }
+
+                let icon = isPast ? `<svg class="w-4 h-4 text-emerald-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path></svg>` 
+                           : (isCurr ? `<div class="w-2 h-2 rounded-full bg-blue-600 pulse-ring m-1"></div>` 
+                           : `<div class="w-2 h-2 rounded-full bg-slate-300 m-1"></div>`);
+
+                let html = `
+                    <div class="flex items-start gap-3 mb-4 ${isCurr ? 'opacity-100' : (isPast ? 'opacity-50' : 'opacity-40')}">
+                        <div class="mt-1 flex-shrink-0">${icon}</div>
+                        <div class="w-full">
+                            <h3 class="text-sm font-bold ${isCurr ? 'text-blue-700' : 'text-slate-700'}">${step.name}</h3>
+                            ${isCurr ? `<div class="text-xs text-blue-700 mt-2 bg-blue-50 p-3 rounded-md border border-blue-100 font-medium leading-relaxed">${step.inst}</div>` : ''}
+                        </div>
+                    </div>
+                `;
+                container.innerHTML += html;
+            });
+
+            document.getElementById('ui-phase-name').innerText = protocol[currStep].phase;
+            document.getElementById('ui-phase-desc').innerText = protocol[currStep].desc;
+            document.getElementById('ui-progress-text').innerText = `${currStep}/20`;
+            document.getElementById('ui-progress-bar').style.width = `${(currStep/20)*100}%`;
+            
+            let btn = document.getElementById('btn-next');
+            btn.disabled = true; btn.innerText = "AWAITING STEP COMPLETION"; 
+            btn.classList.remove('bg-emerald-600', 'hover:bg-emerald-500'); 
+            btn.classList.add('bg-slate-300', 'text-slate-500');
+        }
+
+        function completeStep() {
+            if(stepCompleted) return;
+            stepCompleted = true;
+            let btn = document.getElementById('btn-next');
+            btn.disabled = false;
+            btn.innerText = (currStep === 19) ? "GENERATE FINAL REPORT" : "EXECUTE NEXT SEQUENCE >";
+            btn.classList.remove('bg-slate-300', 'text-slate-500'); 
+            btn.classList.add('bg-emerald-600', 'hover:bg-emerald-500', 'text-white');
+            document.getElementById('tool-overlay').classList.add('hidden');
+        }
+
+        document.getElementById('btn-next').addEventListener('click', () => {
+            if(currStep < 19) {
+                currStep++;
+                initGameState();
+                renderProtocolUI();
+                const container = document.getElementById('ui-steps-container');
+                container.scrollTop = container.scrollHeight;
+            } else {
+                showFinalReport();
+            }
+        });
+
+        // --- FINAL REPORT ---
+        function showFinalReport() {
+            const overlay = document.getElementById('report-overlay');
+            document.getElementById('rep-date').innerText = new Date().toISOString().split('T')[0];
+            overlay.classList.remove('translate-y-full');
+        }
+
+        function downloadPDF() {
+            const btn = document.getElementById('pdf-btn');
+            const originalText = btn.innerHTML;
+            btn.innerHTML = "GENERATING PDF..."; btn.disabled = true;
+
+            const element = document.getElementById('pdf-content');
+            const opt = { margin: 0.5, filename: 'surgical_log_TRN992.pdf', image: { type: 'jpeg', quality: 1.0 }, html2canvas: { scale: 2 }, jsPDF: { unit: 'in', format: 'letter', orientation: 'portrait' } };
+            
+            html2pdf().set(opt).from(element).save().then(() => {
+                btn.innerHTML = originalText; btn.disabled = false;
+            });
+        }
+
+        // --- INIT ---
+        resize();
+        renderProtocolUI();
+        animate();
+
+    </script>
+</body>
+</html>

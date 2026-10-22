@@ -1,0 +1,921 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Synapse | Cognitive Architecture</title>
+    
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
+    
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    fontFamily: { sans: ['Inter', 'sans-serif'] },
+                    colors: {
+                        notion: {
+                            bg: '#ffffff', text: '#37352f', muted: '#787774',
+                            hover: '#efefed', border: '#e9e9e7', highlight: '#fbf3db',
+                            red_bg: '#fdebec', red_text: '#eb5757',
+                            green_bg: '#edf3ec', green_text: '#0f7b0f',
+                            blue_bg: '#e1f0fc', blue_text: '#0b6e99',
+                            purple_bg: '#f4f0fa', purple_text: '#6b21a8'
+                        }
+                    }
+                }
+            }
+        }
+    </script>
+    
+    <style>
+        body {
+            background-color: var(--tw-colors-notion-bg);
+            color: var(--tw-colors-notion-text);
+            font-family: 'Inter', sans-serif;
+            margin: 0; padding: 0;
+            -webkit-font-smoothing: antialiased;
+        }
+
+        * { box-shadow: none !important; }
+
+        .notion-btn-primary {
+            background: #37352f; color: white; border-radius: 6px; padding: 10px 18px;
+            font-size: 14px; font-weight: 600; cursor: pointer; transition: background 0.1s;
+            border: 2px solid #37352f; display: inline-flex; align-items: center; justify-content: center; gap: 8px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.05) !important;
+        }
+        .notion-btn-primary:hover { background: #2f2d27; transform: translateY(-1px); }
+        
+        .notion-btn-secondary {
+            background: #ffffff; color: #37352f; border-radius: 6px; padding: 10px 18px;
+            font-size: 14px; font-weight: 600; cursor: pointer; transition: background 0.1s;
+            border: 2px solid #e9e9e7; display: inline-flex; align-items: center; justify-content: center; gap: 8px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.02) !important;
+        }
+        .notion-btn-secondary:hover { background: #efefed; }
+
+        .notion-input {
+            width: 100%; border: 2px solid #e9e9e7; border-radius: 8px; padding: 14px;
+            font-size: 15px; font-family: 'Inter', sans-serif; outline: none;
+            transition: border-color 0.2s; background: #fafafa; resize: vertical;
+        }
+        .notion-input:focus { border-color: #787774; background: white; }
+
+        .tab-container { display: flex; gap: 4px; background: #efefed; padding: 4px; border-radius: 8px; width: fit-content; }
+        .tab-btn { padding: 8px 16px; border-radius: 6px; font-size: 14px; font-weight: 600; color: #787774; cursor: pointer; transition: all 0.2s; border: 2px solid transparent; }
+        .tab-btn.active { background: white; color: #37352f; border: 2px solid #e9e9e7; box-shadow: 0 1px 2px rgba(0,0,0,0.05) !important; }
+
+        .cloze-input {
+            background-color: #efefed; color: #37352f; border-radius: 4px;
+            padding: 2px 6px; margin: 0 4px; outline: none; border: 2px solid #e9e9e7;
+            display: inline-block; font-size: 0.95em; font-weight: 600;
+            transition: all 0.2s ease; text-align: center;
+        }
+        .cloze-input:focus { border-color: var(--tw-colors-notion-blue_text); background: white; }
+        .cloze-input.correct { background-color: var(--tw-colors-notion-green_bg); border-color: var(--tw-colors-notion-green_text); color: var(--tw-colors-notion-green_text); pointer-events: none; }
+        .cloze-input.incorrect { background-color: var(--tw-colors-notion-red_bg); border-color: var(--tw-colors-notion-red_text); color: var(--tw-colors-notion-red_text); }
+
+        .cloze-word {
+            background-color: #37352f; color: #37352f; border-radius: 4px;
+            padding: 0 6px; margin: 0 2px; cursor: pointer; user-select: none;
+            display: inline-block; transition: all 0.2s; border: 2px solid #37352f;
+        }
+        .cloze-word:hover { opacity: 0.8; }
+        .cloze-word.revealed { background-color: var(--tw-colors-notion-highlight); color: var(--tw-colors-notion-text); border: 2px solid #e9e9e7; }
+
+        .hidden-view { display: none !important; }
+        
+        @keyframes float { 0%, 100% { transform: translateY(0); } 50% { transform: translateY(-4px); } }
+        .bot-float { animation: float 3s ease-in-out infinite; }
+        
+        @keyframes blink { 0%, 96%, 100% { transform: scaleY(1); } 98% { transform: scaleY(0.1); } }
+        .eye { transform-origin: center; animation: blink 4s infinite; }
+
+        input[type=range] { -webkit-appearance: none; width: 100%; background: transparent; }
+        input[type=range]::-webkit-slider-thumb { -webkit-appearance: none; height: 16px; width: 16px; border-radius: 50%; background: #37352f; cursor: pointer; margin-top: -6px; border: 2px solid white; box-sizing: content-box; box-shadow: 0 2px 4px rgba(0,0,0,0.2) !important; }
+        input[type=range]::-webkit-slider-runnable-track { width: 100%; height: 4px; cursor: pointer; background: #e9e9e7; border-radius: 2px; }
+
+        .tree-line-v { width: 2px; height: 24px; background-color: #e9e9e7; margin: 0 auto; }
+        
+        ::-webkit-scrollbar { width: 8px; height: 8px; }
+        ::-webkit-scrollbar-track { background: transparent; }
+        ::-webkit-scrollbar-thumb { background: #d4d4d8; border-radius: 4px; }
+        ::-webkit-scrollbar-thumb:hover { background: #a1a1aa; }
+        
+        .svg-grid-line { stroke: #e9e9e7; stroke-width: 1; stroke-dasharray: 4 4; }
+        .svg-axis { stroke: #37352f; stroke-width: 2; }
+        .svg-curve { fill: none; stroke-width: 3; stroke-linecap: round; stroke-linejoin: round; transition: d 0.5s ease-in-out; }
+        .svg-curve-base { stroke: #eb5757; opacity: 0.3; }
+        .svg-curve-active { stroke: #0f7b0f; }
+        .svg-point { fill: #ffffff; stroke: #0f7b0f; stroke-width: 2; cursor: pointer; transition: transform 0.2s; transform-origin: center; }
+        .svg-point:hover { transform: scale(1.5); }
+        
+        .pulse-btn.active { animation: softPulse 2s infinite; border-color: var(--tw-colors-notion-blue_text); background-color: var(--tw-colors-notion-blue_bg); }
+        @keyframes softPulse { 0% { box-shadow: 0 0 0 0 rgba(11, 110, 153, 0.4); } 70% { box-shadow: 0 0 0 10px rgba(11, 110, 153, 0); } 100% { box-shadow: 0 0 0 0 rgba(11, 110, 153, 0); } }
+    </style>
+</head>
+<body class="min-h-screen flex flex-col">
+
+    <header class="h-16 border-b-2 border-notion-border flex items-center justify-between px-6 shrink-0 bg-white sticky top-0 z-20 overflow-x-auto shadow-sm">
+        <div class="flex items-center gap-3 mr-6 shrink-0">
+            <div class="w-8 h-8 bg-notion-text text-white flex items-center justify-center rounded-lg text-sm font-bold">
+                <i class="fas fa-network-wired"></i>
+            </div>
+            <h1 class="text-lg font-bold text-notion-text tracking-tight">Synapse</h1>
+        </div>
+        <div class="tab-container shrink-0">
+            <div id="btn-tab-feynman" class="tab-btn active" onclick="switchTab('feynman')">Deconstruct</div>
+            <div id="btn-tab-recall" class="tab-btn" onclick="switchTab('recall')">Synthesize</div>
+            <div id="btn-tab-chronos" class="tab-btn" onclick="switchTab('chronos')">Chronos</div>
+            <div id="btn-tab-prism" class="tab-btn" onclick="switchTab('prism')">The Prism</div>
+            <div id="btn-tab-principles" class="tab-btn" onclick="switchTab('principles')">First Principles</div>
+            <div id="btn-tab-neural" class="tab-btn" onclick="switchTab('neural')">Neural Entrainment <i class="fas fa-wave-square text-[10px] ml-1 text-notion-blue_text"></i></div>
+        </div>
+    </header>
+
+    <main id="view-feynman" class="flex-1 flex flex-col p-6 md:p-12 w-full max-w-5xl mx-auto">
+        <div class="mb-8 flex items-center gap-6 bg-[#fafafa] p-6 rounded-2xl border-2 border-notion-border shadow-sm transition-all hover:border-notion-muted hover:shadow-md">
+            <div class="w-16 h-16 shrink-0 bot-float">
+                <svg id="bot-face" viewBox="0 0 100 100" class="w-full h-full transition-all duration-500 drop-shadow-sm">
+                    <rect x="10" y="10" width="80" height="80" rx="20" fill="white" stroke="#37352f" stroke-width="4"/>
+                    <g id="bot-eyes">
+                        <circle cx="35" cy="40" r="5" fill="#37352f" class="eye"/>
+                        <circle cx="65" cy="40" r="5" fill="#37352f" class="eye"/>
+                    </g>
+                    <path id="bot-mouth" d="M 35 65 Q 50 65 65 65" stroke="#37352f" stroke-width="4" fill="transparent" stroke-linecap="round" class="transition-all duration-300"/>
+                </svg>
+            </div>
+            <div>
+                <h2 class="text-xl font-bold text-notion-text mb-1">The Construct</h2>
+                <p class="text-notion-muted text-sm font-medium" id="bot-status">Awaiting input. Paste complex data below for cognitive deconstruction.</p>
+            </div>
+        </div>
+
+        <div class="mb-8">
+            <textarea id="raw-input" class="notion-input min-h-[120px] shadow-inner" placeholder="Paste complex textbook paragraphs, logic structures, or reports here..." oninput="processFeynman()"></textarea>
+            <div class="flex justify-between mt-3">
+                <button onclick="loadDemo()" class="text-sm font-semibold text-notion-muted hover:text-notion-text transition-colors"><i class="fas fa-flask mr-1"></i> Inject Demo Data</button>
+            </div>
+        </div>
+
+        <div id="feynman-cards-container" class="flex flex-col gap-6 pb-20">
+            <div class="text-center text-sm font-semibold text-notion-muted p-12 border-2 border-notion-border rounded-xl border-dashed">Awaiting structural input...</div>
+        </div>
+    </main>
+
+    <main id="view-recall" class="flex-1 flex flex-col p-6 md:p-12 w-full max-w-4xl mx-auto hidden-view">
+        <div class="w-full flex flex-col md:flex-row items-start md:items-center justify-between mb-8 gap-6 border-b-2 border-notion-border pb-6">
+            <div>
+                <h2 class="text-2xl font-bold text-notion-text">Synthesis Engine</h2>
+                <p class="text-sm text-notion-muted mt-1">Test neural retention via active retrieval practice.</p>
+            </div>
+            <div class="flex flex-col gap-4 bg-notion-hover p-4 rounded-xl border-2 border-notion-border shadow-sm">
+                <div class="flex items-center justify-between gap-6">
+                    <span class="text-sm font-semibold text-notion-text">Strict Mode (Typing)</span>
+                    <label class="relative inline-flex items-center cursor-pointer">
+                        <input type="checkbox" id="strict-mode-toggle" class="sr-only peer" onchange="applyRedaction()">
+                        <div class="w-11 h-6 bg-gray-300 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-notion-text"></div>
+                    </label>
+                </div>
+                <div class="flex items-center gap-4">
+                    <span class="text-sm font-semibold text-notion-text">Obfuscation</span>
+                    <input type="range" id="intensity-slider" min="10" max="80" value="30" class="w-24" oninput="applyRedaction()">
+                    <span id="intensity-display" class="text-sm font-bold text-notion-text w-8 text-right">30%</span>
+                </div>
+            </div>
+        </div>
+
+        <div id="recall-content" class="w-full text-lg leading-[2.4] text-notion-text mb-8">
+            <div class="text-center text-sm font-semibold text-notion-muted p-12 border-2 border-notion-border rounded-xl border-dashed bg-white">No structural data processed. Complete Deconstruction first.</div>
+        </div>
+
+        <div id="check-container" class="hidden-view flex justify-end mb-20 border-t-2 border-notion-border pt-6">
+            <div class="flex items-center gap-4">
+                <span id="score-display" class="text-lg font-bold text-notion-text hidden"></span>
+                <button onclick="checkRecallAnswers()" class="notion-btn-primary"><i class="fas fa-fingerprint"></i> Verify Retention</button>
+            </div>
+        </div>
+    </main>
+
+    <main id="view-chronos" class="flex-1 flex flex-col p-6 md:p-12 w-full max-w-5xl mx-auto hidden-view">
+        <div class="mb-8 border-b-2 border-notion-border pb-6 flex items-center justify-between">
+            <div>
+                <div class="flex items-center gap-3">
+                    <h2 class="text-2xl font-bold text-notion-text">Chronos</h2>
+                    <span class="bg-notion-text text-white text-[10px] font-bold px-2 py-0.5 rounded uppercase tracking-widest">Spaced Repetition Simulator</span>
+                </div>
+                <p class="text-sm text-notion-muted mt-2">Mathematically model memory decay and simulate the effects of active review over 30 days.</p>
+            </div>
+            <button onclick="resetChronos()" class="notion-btn-secondary"><i class="fas fa-undo"></i> Reset Curve</button>
+        </div>
+
+        <div class="flex flex-col md:flex-row gap-8 pb-20">
+            <div class="w-full md:w-1/3 flex flex-col gap-6">
+                <div class="bg-white border-2 border-notion-border rounded-2xl p-6 shadow-sm hover:shadow-md transition-shadow">
+                    <h3 class="font-bold text-notion-text mb-1">Knowledge Subject</h3>
+                    <p class="text-xs text-notion-muted mb-4">What concept are you locking into memory?</p>
+                    <input type="text" id="chronos-subject" class="notion-input font-bold" placeholder="e.g., Cellular Respiration">
+                </div>
+
+                <div class="bg-[#fafafa] border-2 border-notion-border rounded-2xl p-6 shadow-sm hover:shadow-md transition-shadow">
+                    <div class="flex items-center gap-2 text-notion-blue_text font-bold mb-1"><i class="fas fa-brain"></i> Synaptic Review</div>
+                    <p class="text-xs text-notion-muted mb-6 leading-relaxed">Reviewing the material resets retention to 100% and flattens the decay curve.</p>
+                    
+                    <div class="flex items-center gap-4 mb-4">
+                        <span class="text-sm font-bold text-notion-text">Review on Day:</span>
+                        <input type="number" id="chronos-day-input" class="notion-input flex-1 text-center font-mono" min="1" max="30" value="1">
+                    </div>
+                    <button onclick="simulateReview()" class="notion-btn-primary w-full shadow-sm"><i class="fas fa-plus"></i> Inject Review Node</button>
+                </div>
+                
+                <div id="chronos-stats" class="bg-notion-green_bg border-2 border-notion-green_text rounded-2xl p-6 shadow-sm hidden-view">
+                    <div class="flex items-center gap-2 text-notion-green_text font-bold mb-2"><i class="fas fa-check-circle"></i> Curve Flattened</div>
+                    <p class="text-sm font-medium text-notion-text">Memory decay rate mathematically slowed.</p>
+                </div>
+            </div>
+
+            <div class="w-full md:w-2/3 bg-white border-2 border-notion-border rounded-2xl p-6 shadow-sm relative overflow-hidden hover:shadow-md transition-shadow">
+                <div class="flex justify-between items-center mb-4">
+                    <span class="text-xs font-bold text-notion-muted uppercase tracking-widest">Retention %</span>
+                    <span class="text-xs font-bold text-notion-muted uppercase tracking-widest">Time (30 Days)</span>
+                </div>
+                <div class="w-full aspect-[4/3] bg-[#fafafa] border-2 border-notion-border rounded-xl relative shadow-inner">
+                    <svg id="chronos-svg" viewBox="0 0 1000 600" class="w-full h-full" preserveAspectRatio="none">
+                        <g id="chronos-grid"></g>
+                        <path id="chronos-path-base" class="svg-curve svg-curve-base" d=""></path>
+                        <path id="chronos-path-active" class="svg-curve svg-curve-active" d=""></path>
+                        <g id="chronos-nodes"></g>
+                    </svg>
+                </div>
+            </div>
+        </div>
+    </main>
+
+    <main id="view-prism" class="flex-1 flex flex-col p-6 md:p-12 w-full max-w-5xl mx-auto hidden-view">
+        <div class="mb-8 border-b-2 border-notion-border pb-6">
+            <h2 class="text-2xl font-bold text-notion-text">The Prism</h2>
+            <p class="text-sm text-notion-muted mt-1">A structured decision-making framework using applied mental models.</p>
+        </div>
+
+        <div class="bg-[#fafafa] border-2 border-notion-border rounded-2xl p-6 mb-8 shadow-sm transition-all hover:border-notion-muted hover:shadow-md">
+            <h3 class="font-bold text-notion-text mb-2">Define the core decision or dilemma:</h3>
+            <div class="flex flex-col md:flex-row gap-4">
+                <input type="text" id="decision-input" class="notion-input font-semibold text-lg flex-1 shadow-inner" placeholder="e.g. Pivot my major to Computer Science..." onkeypress="if(event.key==='Enter') generatePrism()">
+                <button onclick="generatePrism()" class="notion-btn-primary shrink-0 shadow-sm"><i class="fas fa-project-diagram"></i> Initiate Analysis</button>
+            </div>
+        </div>
+
+        <div id="prism-output" class="hidden-view flex flex-col gap-8 pb-20">
+            <div class="border-2 border-notion-red_text bg-notion-red_bg rounded-2xl p-6 relative overflow-hidden shadow-sm hover:shadow-md transition-shadow">
+                <div class="absolute right-[-20px] top-[-20px] text-notion-red_text opacity-10 text-9xl"><i class="fas fa-undo"></i></div>
+                <div class="flex items-center gap-2 text-notion-red_text font-bold mb-4 relative z-10"><i class="fas fa-exclamation-triangle"></i> Vector 1: Inversion Mapping</div>
+                <p class="text-sm font-medium text-notion-text mb-4 relative z-10">Invert the objective. Instead of asking how to succeed, answer: <span class="font-bold">What specific actions guarantee absolute failure?</span></p>
+                <textarea class="notion-input bg-white font-medium relative z-10 shadow-inner" rows="3" placeholder="1. I would do X...&#10;2. I would ignore Y..."></textarea>
+            </div>
+
+            <div class="border-2 border-notion-border bg-white rounded-2xl p-6 shadow-sm hover:shadow-md transition-shadow">
+                <div class="flex items-center gap-2 text-notion-text font-bold mb-2"><i class="fas fa-code-branch"></i> Vector 2: Consequence Tree</div>
+                <p class="text-sm font-medium text-notion-muted mb-8">Map the cascading effects of the decision over time.</p>
+                
+                <div class="flex flex-col items-center w-full">
+                    <div class="bg-notion-text text-white px-6 py-3 rounded-lg font-bold shadow-md" id="prism-root-text">Decision</div>
+                    <div class="tree-line-v"></div>
+                    
+                    <div class="w-full border-t-2 border-notion-border relative flex justify-between pt-6 px-4 md:px-12 gap-8">
+                        <div class="flex flex-col items-center flex-1">
+                            <span class="text-xs font-bold text-notion-text bg-notion-hover px-2 py-1 rounded mb-3 border border-notion-border shadow-sm">T + 10 Days (Immediate)</span>
+                            <textarea class="notion-input text-sm font-medium border-notion-green_text bg-notion-green_bg/20 shadow-inner" rows="2" placeholder="Best case immediate outcome?"></textarea>
+                            <div class="w-full flex items-center gap-2 mt-2">
+                                <span class="text-[10px] font-bold text-notion-muted uppercase">Prob:</span>
+                                <input type="range" min="0" max="100" value="70">
+                            </div>
+                            <div class="tree-line-v mt-4"></div>
+                            <span class="text-xs font-bold text-notion-text bg-notion-hover px-2 py-1 rounded mb-3 mt-4 border border-notion-border shadow-sm">T + 10 Months (2nd Order)</span>
+                            <textarea class="notion-input text-sm font-medium border-notion-blue_text bg-notion-blue_bg/20 shadow-inner" rows="2" placeholder="Hidden long-term consequence of this success?"></textarea>
+                        </div>
+
+                        <div class="flex flex-col items-center flex-1">
+                            <span class="text-xs font-bold text-notion-text bg-notion-hover px-2 py-1 rounded mb-3 border border-notion-border shadow-sm">T + 10 Days (Immediate)</span>
+                            <textarea class="notion-input text-sm font-medium border-notion-red_text bg-notion-red_bg/20 shadow-inner" rows="2" placeholder="Worst case immediate outcome?"></textarea>
+                            <div class="w-full flex items-center gap-2 mt-2">
+                                <span class="text-[10px] font-bold text-notion-muted uppercase">Prob:</span>
+                                <input type="range" min="0" max="100" value="30">
+                            </div>
+                            <div class="tree-line-v mt-4"></div>
+                            <span class="text-xs font-bold text-notion-text bg-notion-hover px-2 py-1 rounded mb-3 mt-4 border border-notion-border shadow-sm">T + 10 Months (2nd Order)</span>
+                            <textarea class="notion-input text-sm font-medium border-notion-red_text bg-notion-red_bg/20 shadow-inner" rows="2" placeholder="Cascading fallout of this failure?"></textarea>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="border-2 border-notion-purple_text bg-notion-purple_bg rounded-2xl p-6 shadow-sm hover:shadow-md transition-shadow">
+                <div class="flex items-center gap-2 text-notion-purple_text font-bold mb-4"><i class="fas fa-hourglass-end"></i> Vector 3: Regret Minimization</div>
+                <p class="text-sm font-medium text-notion-text leading-relaxed mb-6">
+                    Project yourself to the year <span class="font-bold">2076</span>. You are 80 years old, looking back. If you choose <span class="underline font-bold">NOT</span> to make this decision, will your 80-year-old self deeply regret it?
+                </p>
+                <div class="flex gap-4">
+                    <button class="notion-btn-secondary flex-1 border-notion-purple_text text-notion-purple_text hover:bg-notion-purple_text hover:text-white shadow-sm" onclick="resolveRegret(true)">Yes, I will regret inaction.</button>
+                    <button class="notion-btn-secondary flex-1 shadow-sm" onclick="resolveRegret(false)">No, it won't matter.</button>
+                </div>
+                <div id="regret-resolution" class="mt-4 text-sm font-bold text-notion-text hidden-view p-4 bg-white rounded-lg border border-notion-border shadow-sm"></div>
+            </div>
+        </div>
+    </main>
+
+    <main id="view-principles" class="flex-1 flex flex-col p-6 md:p-12 w-full max-w-4xl mx-auto hidden-view">
+        <div class="mb-8 border-b-2 border-notion-border pb-6">
+            <div class="flex items-center gap-3">
+                <h2 class="text-2xl font-bold text-notion-text">First Principles</h2>
+                <span class="bg-notion-text text-white text-[10px] font-bold px-2 py-0.5 rounded uppercase tracking-widest shadow-sm">Root Analysis</span>
+            </div>
+            <p class="text-sm text-notion-muted mt-2">Boil a complex problem down to its fundamental truths and construct a new solution from scratch.</p>
+        </div>
+
+        <div class="space-y-6 pb-20">
+            <div class="bg-white border-2 border-notion-border rounded-2xl p-6 shadow-sm transition-all hover:border-notion-muted hover:shadow-md">
+                <div class="flex items-center gap-2 text-notion-red_text font-bold mb-2"><i class="fas fa-comment-slash"></i> 1. The Assumption</div>
+                <p class="text-sm font-medium text-notion-muted mb-4">What is the current belief, problem, or assumption you are stuck on?</p>
+                <textarea class="notion-input shadow-inner" rows="2" placeholder="e.g., Batteries are too expensive to make electric cars affordable."></textarea>
+            </div>
+            
+            <div class="flex justify-center text-notion-border text-xl"><i class="fas fa-arrow-down drop-shadow-sm"></i></div>
+            
+            <div class="bg-[#fafafa] border-2 border-notion-border rounded-2xl p-6 shadow-sm transition-all hover:border-notion-muted hover:shadow-md">
+                <div class="flex items-center gap-2 text-notion-blue_text font-bold mb-2"><i class="fas fa-gem"></i> 2. Fundamental Truths</div>
+                <p class="text-sm font-medium text-notion-muted mb-4">What do we know is absolutely, undeniably true? Break the problem down to its raw components.</p>
+                <textarea class="notion-input shadow-inner" rows="3" placeholder="e.g., Batteries are made of cobalt, nickel, aluminum, carbon, etc. The spot market value of these raw materials is much lower than the finished battery."></textarea>
+            </div>
+            
+            <div class="flex justify-center text-notion-border text-xl"><i class="fas fa-arrow-down drop-shadow-sm"></i></div>
+            
+            <div class="bg-notion-green_bg border-2 border-notion-green_text rounded-2xl p-6 shadow-sm hover:shadow-md transition-shadow">
+                <div class="flex items-center gap-2 text-notion-green_text font-bold mb-2"><i class="fas fa-lightbulb"></i> 3. New Construction</div>
+                <p class="text-sm font-medium text-notion-text mb-4">How can you combine these truths to create a novel, better solution?</p>
+                <textarea class="notion-input bg-white shadow-inner" rows="3" placeholder="e.g., We can buy raw materials directly and find clever ways to assemble them in-house, bypassing the premium."></textarea>
+            </div>
+        </div>
+    </main>
+
+    <main id="view-neural" class="flex-1 flex flex-col p-6 md:p-12 w-full max-w-5xl mx-auto hidden-view">
+        <div class="mb-8 border-b-2 border-notion-border pb-6">
+            <div class="flex items-center gap-3">
+                <h2 class="text-2xl font-bold text-notion-text">Acoustic Flow</h2>
+                <span class="bg-notion-blue_bg text-notion-blue_text border border-notion-blue_text text-[10px] font-bold px-2 py-0.5 rounded uppercase tracking-widest shadow-sm">Neural Entrainment Engine</span>
+            </div>
+            <p class="text-sm text-notion-text mt-2 leading-relaxed max-w-3xl">
+                Binaural beats create an auditory illusion. By feeding slightly different mathematical frequencies into each ear, 
+                we can force your brainwaves to synchronize to target frequencies associated with peak concentration, flow states, or relaxation. 
+                <br><span class="font-bold text-notion-red_text">Note: Requires stereo headphones.</span>
+            </p>
+        </div>
+
+        <div class="flex flex-col md:flex-row gap-8 pb-20">
+            <!-- Left Controls -->
+            <div class="w-full md:w-1/2 flex flex-col gap-4">
+                
+                <div class="bg-white border-2 border-notion-border rounded-2xl p-6 shadow-sm hover:shadow-md transition-all cursor-pointer pulse-btn" id="btn-gamma" onclick="startEntrainment('gamma')">
+                    <div class="flex justify-between items-center mb-2">
+                        <h3 class="font-bold text-notion-text text-lg"><i class="fas fa-bolt text-[#d97706] mr-2"></i> Gamma Wave (40Hz)</h3>
+                        <span class="text-xs font-bold text-notion-muted bg-notion-hover px-2 py-1 rounded">Problem Solving</span>
+                    </div>
+                    <p class="text-sm text-notion-muted">Forces peak concentration and high-level cognitive processing. Best for math, coding, and intense logic work.</p>
+                </div>
+
+                <div class="bg-white border-2 border-notion-border rounded-2xl p-6 shadow-sm hover:shadow-md transition-all cursor-pointer pulse-btn" id="btn-alpha" onclick="startEntrainment('alpha')">
+                    <div class="flex justify-between items-center mb-2">
+                        <h3 class="font-bold text-notion-text text-lg"><i class="fas fa-book-open text-notion-blue_text mr-2"></i> Alpha Wave (10Hz)</h3>
+                        <span class="text-xs font-bold text-notion-muted bg-notion-hover px-2 py-1 rounded">Flow State</span>
+                    </div>
+                    <p class="text-sm text-notion-muted">Promotes relaxed focus. Best for reading, writing, and absorbing large amounts of text without fatigue.</p>
+                </div>
+
+                <div class="bg-white border-2 border-notion-border rounded-2xl p-6 shadow-sm hover:shadow-md transition-all cursor-pointer pulse-btn" id="btn-theta" onclick="startEntrainment('theta')">
+                    <div class="flex justify-between items-center mb-2">
+                        <h3 class="font-bold text-notion-text text-lg"><i class="fas fa-moon text-notion-purple_text mr-2"></i> Theta Wave (5Hz)</h3>
+                        <span class="text-xs font-bold text-notion-muted bg-notion-hover px-2 py-1 rounded">Memory Consolidation</span>
+                    </div>
+                    <p class="text-sm text-notion-muted">Deep relaxation state. Use immediately after a heavy study session to help the brain encode short-term to long-term memory.</p>
+                </div>
+
+                <button onclick="stopEntrainment()" class="notion-btn-secondary w-full mt-4 text-notion-red_text border-notion-red_text hover:bg-notion-red_bg shadow-sm">
+                    <i class="fas fa-stop-circle"></i> Stop Auditory Engine
+                </button>
+            </div>
+
+            <!-- Right Visualizer -->
+            <div class="w-full md:w-1/2 bg-white border-2 border-notion-border rounded-2xl p-6 shadow-sm relative overflow-hidden flex flex-col">
+                <div class="flex justify-between items-center mb-4">
+                    <span class="text-xs font-bold text-notion-text uppercase tracking-widest"><i class="fas fa-satellite-dish mr-1"></i> Live Oscilloscope</span>
+                    <span id="hz-display" class="text-xs font-bold text-notion-blue_text uppercase tracking-widest bg-notion-blue_bg px-2 py-1 rounded border border-notion-blue_text">0 Hz Offline</span>
+                </div>
+                
+                <!-- The Canvas -->
+                <div class="flex-1 w-full bg-[#fafafa] border-2 border-notion-border rounded-xl relative overflow-hidden shadow-inner flex items-center justify-center min-h-[300px]">
+                    <canvas id="neural-canvas" class="w-full h-full absolute inset-0"></canvas>
+                    <div id="neural-standby" class="text-sm font-bold text-notion-muted uppercase tracking-widest">Engine Standby</div>
+                </div>
+            </div>
+        </div>
+    </main>
+
+    <script>
+        // --- State ---
+        let sentenceData = [];
+
+        // Utilities for NLP
+        function countSyllables(word) {
+            word = word.toLowerCase().replace(/[^a-z]/g, '');
+            if (word.length <= 3) return 1;
+            word = word.replace(/(?:[^laeiouy]es|ed|[^laeiouy]e)$/, '');
+            word = word.replace(/^y/, '');
+            const syllables = word.match(/[aeiouy]{1,2}/g);
+            return syllables ? syllables.length : 1;
+        }
+
+        function scoreSentence(text) {
+            const tokens = text.split(/\s+/).filter(t => t.trim().length > 0);
+            if (tokens.length === 0) return { grade: 0, status: 'empty', hardestWord: '' };
+            
+            let syllables = 0; let jargonCount = 0; let hardestWord = ''; let maxSyl = 0;
+            
+            tokens.forEach(t => {
+                const cleanT = t.replace(/[^a-zA-Z]/g, '');
+                if(cleanT.length === 0) return;
+                const syl = countSyllables(cleanT);
+                syllables += syl;
+                if (syl >= 3 && cleanT.length > 7) {
+                    jargonCount++;
+                    if (syl > maxSyl) { maxSyl = syl; hardestWord = cleanT; }
+                }
+            });
+
+            const grade = (0.39 * tokens.length) + (11.8 * (syllables / tokens.length)) - 15.59;
+            
+            let status = 'green';
+            if (grade > 12 || jargonCount >= 2) status = 'red';
+            else if (grade > 8 || jargonCount === 1) status = 'orange';
+
+            return { grade: Math.max(0, grade).toFixed(1), jargonCount, status, hardestWord, tokens };
+        }
+
+        function processFeynman() {
+            const raw = document.getElementById('raw-input').value;
+            const container = document.getElementById('feynman-cards-container');
+            
+            if (!raw.trim()) {
+                container.innerHTML = '<div class="text-center text-sm font-semibold text-notion-muted p-12 border-2 border-notion-border rounded-xl border-dashed bg-white">Awaiting structural input...</div>';
+                sentenceData = []; updateBotDashboard(); return;
+            }
+
+            const rawSentences = raw.match(/[^.!?]+[.!?]+/g) || [raw];
+            
+            if (sentenceData.length !== rawSentences.length) {
+                sentenceData = rawSentences.map((s, index) => {
+                    const clean = s.trim();
+                    return { id: index, original: clean, rewrite: '', stats: scoreSentence(clean) };
+                });
+            } else {
+                rawSentences.forEach((s, index) => { sentenceData[index].original = s.trim(); });
+            }
+            renderFeynmanCards();
+        }
+
+        function updateBotDashboard() {
+            const mouth = document.getElementById('bot-mouth');
+            const status = document.getElementById('bot-status');
+            
+            if (sentenceData.length === 0) {
+                mouth.setAttribute('d', 'M 35 65 Q 50 65 65 65'); // Neutral
+                status.innerText = "Awaiting input. Paste complex data below for cognitive deconstruction."; 
+                status.className = "text-notion-muted font-medium text-sm";
+                return;
+            }
+
+            let redCount = 0; let greenCount = 0;
+            sentenceData.forEach(item => {
+                const textToScore = item.rewrite.trim() !== '' ? item.rewrite : item.original;
+                const stats = scoreSentence(textToScore);
+                if (stats.status === 'red') redCount++;
+                if (stats.status === 'green') greenCount++;
+            });
+
+            if (redCount > 0) {
+                mouth.setAttribute('d', 'M 35 65 Q 42.5 55 50 65 T 65 65'); // Squiggly
+                status.innerText = `High cognitive friction detected (${redCount} critical zones). Simplify the red blocks.`;
+                status.className = "text-notion-red_text font-bold text-sm";
+            } else if (greenCount === sentenceData.length) {
+                mouth.setAttribute('d', 'M 35 60 Q 50 75 65 60'); // Smile
+                status.innerText = "Data optimally compressed. Ready for Synthesis Engine.";
+                status.className = "text-notion-green_text font-bold text-sm";
+            } else {
+                mouth.setAttribute('d', 'M 35 65 Q 50 65 65 65'); // Neutral
+                status.innerText = "Processing acceptable, but structural efficiency can be improved.";
+                status.className = "text-notion-blue_text font-bold text-sm";
+            }
+        }
+
+        function renderFeynmanCards() {
+            const container = document.getElementById('feynman-cards-container');
+            container.innerHTML = '';
+
+            sentenceData.forEach(item => {
+                const textToScore = item.rewrite.trim() !== '' ? item.rewrite : item.original;
+                const currentStats = scoreSentence(textToScore);
+                
+                let borderClass, bgClass, textClass, icon, gradeLabel;
+
+                if (currentStats.status === 'red') {
+                    borderClass = 'border-notion-red_text'; bgClass = 'bg-notion-red_bg'; textClass = 'text-notion-red_text';
+                    icon = '<i class="fas fa-times-circle"></i>'; gradeLabel = 'High Friction';
+                } else if (currentStats.status === 'orange') {
+                    borderClass = 'border-[#d97706]'; bgClass = 'bg-notion-highlight'; textClass = 'text-[#d97706]';
+                    icon = '<i class="fas fa-exclamation-triangle"></i>'; gradeLabel = 'Sub-optimal';
+                } else {
+                    borderClass = 'border-notion-green_text'; bgClass = 'bg-notion-green_bg'; textClass = 'text-notion-green_text';
+                    icon = '<i class="fas fa-check-circle"></i>'; gradeLabel = 'Optimized';
+                }
+
+                let highlightedOriginal = item.original.split(/\s+/).map(w => {
+                    const cleanW = w.replace(/[^a-zA-Z]/g, '');
+                    if (countSyllables(cleanW) >= 3 && cleanW.length > 7) {
+                        return `<span class="bg-notion-red_bg text-notion-red_text px-1 rounded font-bold">${w}</span>`;
+                    }
+                    return w;
+                }).join(' ');
+
+                const card = document.createElement('div');
+                card.className = `flex flex-col gap-4 p-5 border-2 rounded-xl transition-all duration-300 ${borderClass} bg-[#fafafa] shadow-sm hover:shadow-md`;
+                card.innerHTML = `
+                    <div class="flex flex-col md:flex-row gap-6">
+                        <div class="flex-1 flex flex-col gap-2">
+                            <span class="text-[10px] font-bold text-notion-muted uppercase tracking-wider">Source Vector</span>
+                            <div class="text-sm font-medium text-notion-text leading-relaxed">${highlightedOriginal}</div>
+                        </div>
+                        <div class="flex-1 flex flex-col gap-2 relative">
+                            <div class="flex justify-between items-center">
+                                <span class="text-[10px] font-bold text-notion-muted uppercase tracking-wider">Deconstructed Output</span>
+                                <div class="flex items-center gap-1.5 ${bgClass} ${textClass} px-2 py-0.5 rounded text-[10px] font-bold border border-current shadow-sm">
+                                    ${icon} ${gradeLabel}
+                                </div>
+                            </div>
+                            <textarea class="notion-input text-sm flex-1 font-medium shadow-inner" placeholder="Rewrite in foundational terms..." oninput="updateRewrite(${item.id}, this.value)">${item.rewrite}</textarea>
+                        </div>
+                    </div>
+                `;
+                container.appendChild(card);
+            });
+            updateBotDashboard();
+        }
+
+        function updateRewrite(id, newText) {
+            const item = sentenceData.find(s => s.id === id);
+            if (item) { item.rewrite = newText; renderFeynmanCards(); }
+        }
+
+        // --- STREAMING_CHUNK: Recall Logic ---
+        const stopWords = new Set(['the','a','an','and','or','but','in','on','at','to','for','with','is','are','am','was','were','be','been','it','we','they','this','that','of','from','as','by']);
+
+        function applyRedaction() {
+            const intensity = parseInt(document.getElementById('intensity-slider').value);
+            document.getElementById('intensity-display').innerText = intensity + '%';
+            
+            const isStrictMode = document.getElementById('strict-mode-toggle').checked;
+            const checkContainer = document.getElementById('check-container');
+            const studyContainer = document.getElementById('recall-content');
+            
+            checkContainer.classList.toggle('hidden-view', !isStrictMode);
+            document.getElementById('score-display').classList.add('hidden');
+
+            const finalSentences = sentenceData.map(item => item.rewrite.trim() !== '' ? item.rewrite : item.original);
+            const fullText = finalSentences.join(' ');
+            
+            if(!fullText) {
+                studyContainer.innerHTML = '<div class="text-center text-sm font-semibold text-notion-muted p-12 border-2 border-notion-border rounded-xl border-dashed bg-white shadow-sm">No structural data processed. Complete Deconstruction first.</div>';
+                return;
+            }
+
+            let finalOutput = "";
+            const tokens = fullText.match(/[\w']+|[^\w]+/g) || [];
+
+            tokens.forEach((token, index) => {
+                const isWord = /[\w']+/.test(token);
+                if (isWord) {
+                    const lowerWord = token.toLowerCase();
+                    if (stopWords.has(lowerWord) || token.length <= 2) {
+                        finalOutput += token;
+                    } else {
+                        const pseudoRandom = ((lowerWord.charCodeAt(0) * index * 13) % 100);
+                        if (pseudoRandom < intensity) {
+                            if (isStrictMode) {
+                                const widthEm = (token.length * 0.6) + 1;
+                                finalOutput += `<input type="text" class="cloze-input test-input shadow-inner" style="width: ${widthEm}em;" data-answer="${lowerWord}" autocomplete="off" spellcheck="false">`;
+                            } else {
+                                finalOutput += `<span class="cloze-word shadow-sm" onclick="this.classList.toggle('revealed')">${token}</span>`;
+                            }
+                        } else { finalOutput += token; }
+                    }
+                } else { finalOutput += token.replace(/\n/g, '<br>'); }
+            });
+
+            studyContainer.innerHTML = finalOutput;
+        }
+
+        function checkRecallAnswers() {
+            const inputs = document.querySelectorAll('.test-input');
+            if(inputs.length === 0) return;
+
+            let correct = 0;
+            inputs.forEach(input => {
+                input.classList.remove('correct', 'incorrect');
+                const userAnswer = input.value.toLowerCase().trim();
+                const correctAnswer = input.dataset.answer;
+
+                if (userAnswer === correctAnswer) {
+                    input.classList.add('correct');
+                    input.value = correctAnswer; 
+                    correct++;
+                } else {
+                    input.classList.add('incorrect');
+                }
+            });
+
+            const scoreDisplay = document.getElementById('score-display');
+            scoreDisplay.innerText = `Retention: ${correct} / ${inputs.length}`;
+            scoreDisplay.classList.remove('hidden');
+            scoreDisplay.className = `text-lg font-bold ${correct === inputs.length ? 'text-notion-green_text' : 'text-notion-red_text'} mr-4`;
+        }
+
+        // --- STREAMING_CHUNK: Chronos SVG Mathematics ---
+        let reviewDays = [0]; 
+
+        function initChronos() {
+            renderChronosGraph();
+        }
+
+        function resetChronos() {
+            reviewDays = [0];
+            document.getElementById('chronos-stats').classList.add('hidden-view');
+            renderChronosGraph();
+        }
+
+        function simulateReview() {
+            const input = document.getElementById('chronos-day-input');
+            const day = parseInt(input.value);
+            
+            if (day > 0 && day <= 30 && !reviewDays.includes(day)) {
+                reviewDays.push(day);
+                reviewDays.sort((a, b) => a - b);
+                document.getElementById('chronos-stats').classList.remove('hidden-view');
+                renderChronosGraph();
+                if(day < 30) input.value = day + 1;
+            }
+        }
+
+        function renderChronosGraph() {
+            const svgWidth = 1000;
+            const svgHeight = 600;
+            const paddingX = 50;
+            const paddingY = 50;
+            const usableWidth = svgWidth - paddingX * 2;
+            const usableHeight = svgHeight - paddingY * 2;
+            const totalDays = 30;
+
+            const gridGroup = document.getElementById('chronos-grid');
+            const pathBase = document.getElementById('chronos-path-base');
+            const pathActive = document.getElementById('chronos-path-active');
+            const nodesGroup = document.getElementById('chronos-nodes');
+
+            if (gridGroup.children.length === 0) {
+                let gridHtml = '';
+                for (let i = 0; i <= 10; i++) {
+                    const y = paddingY + (usableHeight / 10) * i;
+                    gridHtml += `<line x1="${paddingX}" y1="${y}" x2="${svgWidth - paddingX}" y2="${y}" class="svg-grid-line" />`;
+                    if (i % 2 === 0) gridHtml += `<text x="${paddingX - 10}" y="${y + 5}" text-anchor="end" font-size="12" fill="#787774" font-weight="bold">${100 - i * 10}%</text>`;
+                }
+                for (let i = 0; i <= totalDays; i += 5) {
+                    const x = paddingX + (usableWidth / totalDays) * i;
+                    gridHtml += `<line x1="${x}" y1="${paddingY}" x2="${x}" y2="${svgHeight - paddingY}" class="svg-grid-line" />`;
+                    gridHtml += `<text x="${x}" y="${svgHeight - paddingY + 20}" text-anchor="middle" font-size="12" fill="#787774" font-weight="bold">${i}</text>`;
+                }
+                gridHtml += `<line x1="${paddingX}" y1="${svgHeight - paddingY}" x2="${svgWidth - paddingX}" y2="${svgHeight - paddingY}" class="svg-axis" />`;
+                gridHtml += `<line x1="${paddingX}" y1="${paddingY}" x2="${paddingX}" y2="${svgHeight - paddingY}" class="svg-axis" />`;
+                gridGroup.innerHTML = gridHtml;
+            }
+
+            let dBase = `M ${paddingX} ${paddingY}`; 
+            for (let day = 0; day <= totalDays; day += 0.5) {
+                const retention = Math.exp(-day / 2.5); 
+                const x = paddingX + (day / totalDays) * usableWidth;
+                const y = paddingY + (1 - retention) * usableHeight;
+                dBase += ` L ${x} ${y}`;
+            }
+            pathBase.setAttribute('d', dBase);
+
+            let dActive = `M ${paddingX} ${paddingY}`;
+            let nodesHtml = '';
+            let lastReviewDay = 0;
+            let currentStrength = 2.5; 
+            
+            for (let day = 0; day <= totalDays; day += 0.2) {
+                const pastReviews = reviewDays.filter(rd => rd <= day);
+                const latestReview = Math.max(...pastReviews);
+                
+                if (latestReview > lastReviewDay) {
+                    lastReviewDay = latestReview;
+                    currentStrength = currentStrength * 2.2; 
+                }
+
+                const daysSinceLastReview = day - lastReviewDay;
+                const retention = Math.exp(-daysSinceLastReview / currentStrength);
+                const x = paddingX + (day / totalDays) * usableWidth;
+                const y = paddingY + (1 - retention) * usableHeight;
+                
+                if (day === 0) dActive += `M ${x} ${y}`;
+                else dActive += ` L ${x} ${y}`;
+
+                if (Number.isInteger(day) && reviewDays.includes(day)) {
+                    nodesHtml += `<circle cx="${x}" cy="${y}" r="6" class="svg-point drop-shadow-sm"/>`;
+                }
+            }
+            
+            pathActive.setAttribute('d', dActive);
+            nodesGroup.innerHTML = nodesHtml;
+        }
+
+        // --- STREAMING_CHUNK: Prism Logic ---
+        function generatePrism() {
+            const input = document.getElementById('decision-input').value.trim();
+            if(!input) return;
+            document.getElementById('prism-root-text').innerText = input;
+            document.getElementById('prism-output').classList.remove('hidden-view');
+            document.getElementById('regret-resolution').classList.add('hidden-view');
+        }
+
+        function resolveRegret(willRegret) {
+            const res = document.getElementById('regret-resolution');
+            res.classList.remove('hidden-view');
+            if (willRegret) {
+                res.innerHTML = '<i class="fas fa-check-circle text-notion-green_text mr-2"></i> <span class="text-notion-green_text">Analysis Complete:</span> Proceed with the decision. Short-term friction is outweighed by long-term regret minimization.';
+                res.className = 'mt-4 text-sm font-bold p-4 bg-notion-green_bg border border-notion-green_text rounded-lg shadow-sm';
+            } else {
+                res.innerHTML = '<i class="fas fa-times-circle text-notion-red_text mr-2"></i> <span class="text-notion-red_text">Analysis Complete:</span> Abort or Deprioritize. The outcome does not hold compound value over a macro time horizon.';
+                res.className = 'mt-4 text-sm font-bold p-4 bg-notion-red_bg border border-notion-red_text rounded-lg shadow-sm';
+            }
+        }
+
+        // --- STREAMING_CHUNK: Neural Entrainment (Web Audio API) ---
+        let audioCtx;
+        let oscLeft, oscRight, gainNode, analyser;
+        let visualizerFrame;
+        let isEntraining = false;
+        
+        const canvas = document.getElementById('neural-canvas');
+        const canvasCtx = canvas.getContext('2d');
+
+        function initAudio() {
+            if (!audioCtx) {
+                audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+                
+                // Set up the routing graph
+                gainNode = audioCtx.createGain();
+                analyser = audioCtx.createAnalyser();
+                
+                gainNode.connect(analyser);
+                analyser.connect(audioCtx.destination);
+                
+                analyser.fftSize = 2048;
+                gainNode.gain.value = 0.15; // Safe volume
+            }
+            if (audioCtx.state === 'suspended') {
+                audioCtx.resume();
+            }
+        }
+
+        function startEntrainment(type) {
+            initAudio();
+            stopEntrainmentNodes(); // Clear existing
+            
+            document.getElementById('neural-standby').style.display = 'none';
+            document.querySelectorAll('.pulse-btn').forEach(btn => btn.classList.remove('active'));
+            document.getElementById(`btn-${type}`).classList.add('active');
+
+            // Carrier frequency: 200Hz is soothing and easily handled by headphones
+            const carrierFreq = 200; 
+            let beatFreq = 0;
+
+            if (type === 'gamma') beatFreq = 40; // Peak concentration
+            else if (type === 'alpha') beatFreq = 10; // Relaxed flow
+            else if (type === 'theta') beatFreq = 5;  // Deep rest/memory
+
+            document.getElementById('hz-display').innerText = `${beatFreq} Hz ${type.toUpperCase()}`;
+
+            oscLeft = audioCtx.createOscillator();
+            oscRight = audioCtx.createOscillator();
+
+            // Left Ear
+            oscLeft.type = 'sine';
+            oscLeft.frequency.setValueAtTime(carrierFreq, audioCtx.currentTime);
+            const pannerLeft = audioCtx.createStereoPanner ? audioCtx.createStereoPanner() : audioCtx.createPanner();
+            if (pannerLeft.pan) pannerLeft.pan.value = -1;
+            else { pannerLeft.setPosition(-1, 0, 0); pannerLeft.panningModel = 'equalpower'; }
+            oscLeft.connect(pannerLeft).connect(gainNode);
+
+            // Right Ear
+            oscRight.type = 'sine';
+            oscRight.frequency.setValueAtTime(carrierFreq + beatFreq, audioCtx.currentTime);
+            const pannerRight = audioCtx.createStereoPanner ? audioCtx.createStereoPanner() : audioCtx.createPanner();
+            if (pannerRight.pan) pannerRight.pan.value = 1;
+            else { pannerRight.setPosition(1, 0, 0); pannerRight.panningModel = 'equalpower'; }
+            oscRight.connect(pannerRight).connect(gainNode);
+
+            oscLeft.start();
+            oscRight.start();
+            isEntraining = true;
+
+            drawWaveform();
+        }
+
+        function stopEntrainmentNodes() {
+            if (oscLeft) { oscLeft.stop(); oscLeft.disconnect(); }
+            if (oscRight) { oscRight.stop(); oscRight.disconnect(); }
+            isEntraining = false;
+            cancelAnimationFrame(visualizerFrame);
+        }
+
+        function stopEntrainment() {
+            stopEntrainmentNodes();
+            document.getElementById('neural-standby').style.display = 'block';
+            document.querySelectorAll('.pulse-btn').forEach(btn => btn.classList.remove('active'));
+            document.getElementById('hz-display').innerText = `0 Hz OFFLINE`;
+            canvasCtx.clearRect(0, 0, canvas.width, canvas.height);
+        }
+
+        function drawWaveform() {
+            if (!isEntraining) return;
+            
+            // Adjust canvas to match display size for sharp rendering
+            canvas.width = canvas.parentElement.clientWidth;
+            canvas.height = canvas.parentElement.clientHeight;
+
+            const bufferLength = analyser.frequencyBinCount;
+            const dataArray = new Uint8Array(bufferLength);
+            analyser.getByteTimeDomainData(dataArray);
+
+            canvasCtx.fillStyle = '#fafafa'; // Match notion background
+            canvasCtx.fillRect(0, 0, canvas.width, canvas.height);
+
+            canvasCtx.lineWidth = 2;
+            canvasCtx.strokeStyle = '#37352f'; // Notion text color
+            canvasCtx.beginPath();
+
+            const sliceWidth = canvas.width * 1.0 / bufferLength;
+            let x = 0;
+
+            for (let i = 0; i < bufferLength; i++) {
+                const v = dataArray[i] / 128.0;
+                const y = v * (canvas.height / 2);
+
+                if (i === 0) canvasCtx.moveTo(x, y);
+                else canvasCtx.lineTo(x, y);
+
+                x += sliceWidth;
+            }
+
+            canvasCtx.lineTo(canvas.width, canvas.height / 2);
+            canvasCtx.stroke();
+
+            visualizerFrame = requestAnimationFrame(drawWaveform);
+        }
+
+        // --- STREAMING_CHUNK: Navigation ---
+        function switchTab(tabId) {
+            document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+            document.getElementById(`btn-tab-${tabId}`).classList.add('active');
+
+            document.getElementById('view-feynman').classList.add('hidden-view');
+            document.getElementById('view-recall').classList.add('hidden-view');
+            document.getElementById('view-chronos').classList.add('hidden-view');
+            document.getElementById('view-prism').classList.add('hidden-view');
+            document.getElementById('view-principles').classList.add('hidden-view');
+            document.getElementById('view-neural').classList.add('hidden-view');
+            
+            document.getElementById(`view-${tabId}`).classList.remove('hidden-view');
+            if (tabId === 'recall') applyRedaction(); 
+            if (tabId === 'chronos') setTimeout(initChronos, 50); 
+            // We intentionally don't stop auditory engine on tab switch so they can work while listening
+        }
+
+        function loadDemo() {
+            document.getElementById('raw-input').value = "Mitochondria are double-membrane-bound organelles found in most eukaryotic organisms. They generate most of the cell's supply of adenosine triphosphate (ATP), used as a source of chemical energy. They were discovered by Albert von Kölliker in 1857 in the voluntary muscles of insects.";
+            processFeynman();
+        }
+
+        window.onload = processFeynman;
+    </script>
+</body>
+</html>

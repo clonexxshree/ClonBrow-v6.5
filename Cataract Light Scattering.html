@@ -1,0 +1,419 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Cataract Simulation: Light Scattering</title>
+    <style>
+        :root {
+            --bg-color: #f8fafc;
+            --panel-bg: #ffffff;
+            --text-main: #0f172a;
+            --text-muted: #64748b;
+            --accent: #38bdf8;
+            --border-color: #e2e8f0;
+            --light-ray: #fbbf24;
+            --healthy-lens: rgba(224, 242, 254, 0.5);
+            --cloudy-lens: rgba(217, 186, 115, 0.95);
+            --danger: #ef4444;
+            --success: #10b981;
+            --warning: #f59e0b;
+        }
+
+        * { box-sizing: border-box; margin: 0; padding: 0; }
+
+        body {
+            background-color: #f1f5f9;
+            color: var(--text-main);
+            font-family: 'Inter', -apple-system, system-ui, sans-serif;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            padding: 20px;
+        }
+
+        .app-container {
+            display: flex;
+            background: var(--panel-bg);
+            border-radius: 20px;
+            box-shadow: 0 20px 50px -12px rgba(0, 0, 0, 0.15);
+            width: 100%;
+            max-width: 1200px;
+            height: 800px;
+            overflow: hidden;
+            border: 1px solid var(--border-color);
+        }
+
+        /* Sidebar */
+        .sidebar {
+            width: 380px;
+            padding: 35px;
+            border-right: 1px solid var(--border-color);
+            display: flex;
+            flex-direction: column;
+            gap: 25px;
+            background: #fff;
+            z-index: 10;
+        }
+
+        .sidebar h1 { font-size: 24px; font-weight: 800; color: #1e293b; }
+        
+        .control-group { display: flex; flex-direction: column; gap: 15px; }
+        label { font-size: 14px; font-weight: 700; display: flex; justify-content: space-between; }
+        
+        input[type="range"] {
+            width: 100%;
+            cursor: pointer;
+            accent-color: var(--warning);
+        }
+
+        .status-card {
+            background: #f0fdf4;
+            padding: 20px;
+            border-radius: 12px;
+            font-size: 14px;
+            line-height: 1.5;
+            color: var(--text-main);
+            border-left: 4px solid var(--success);
+            transition: all 0.3s;
+        }
+
+        .vision-preview {
+            background: #0f172a;
+            border-radius: 12px;
+            overflow: hidden;
+            height: 140px;
+            position: relative;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            border: 2px solid #334155;
+        }
+
+        .vision-text {
+            color: white;
+            font-size: 32px;
+            font-weight: 800;
+            letter-spacing: 2px;
+            transition: filter 0.3s, opacity 0.3s;
+        }
+
+        .vision-glare {
+            position: absolute;
+            top: 0; left: 0; width: 100%; height: 100%;
+            background: radial-gradient(circle at center, rgba(255,255,255,0.8) 0%, transparent 70%);
+            opacity: 0;
+            transition: opacity 0.3s;
+            pointer-events: none;
+        }
+
+        /* Lab Area */
+        .lab-area {
+            flex: 1;
+            background: radial-gradient(circle at center, #ffffff, #e2e8f0);
+            position: relative;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            overflow: hidden;
+        }
+
+        .svg-canvas {
+            width: 100%;
+            height: 100%;
+        }
+
+        /* SVG Anatomy Styles */
+        .eye-sclera { fill: #fdfdfd; stroke: #cbd5e1; stroke-width: 4; }
+        .eye-cornea { fill: rgba(224, 242, 254, 0.3); stroke: #94a3b8; stroke-width: 3; }
+        .eye-retina { fill: none; stroke: #ef4444; stroke-width: 6; stroke-linecap: round; }
+        .eye-macula { fill: #b91c1c; }
+        .eye-optic-nerve { fill: #fde047; stroke: #eab308; stroke-width: 2; }
+        
+        .lens {
+            fill: var(--healthy-lens);
+            stroke: #94a3b8;
+            stroke-width: 2;
+            transition: fill 0.3s, filter 0.3s;
+        }
+
+        .ray {
+            fill: none;
+            stroke: var(--light-ray);
+            stroke-width: 2;
+            stroke-linecap: round;
+            opacity: 0.8;
+            transition: stroke-width 0.3s, opacity 0.3s;
+        }
+
+        .scattered-ray {
+            fill: none;
+            stroke: var(--light-ray);
+            stroke-width: 1;
+            opacity: 0.4;
+        }
+
+        .label-text {
+            font-size: 12px;
+            font-weight: 700;
+            fill: #64748b;
+            text-anchor: middle;
+        }
+
+        @media (max-width: 900px) {
+            .app-container { flex-direction: column; height: auto; }
+            .sidebar { width: 100%; border-right: none; }
+            .lab-area { height: 500px; }
+        }
+    </style>
+</head>
+<body>
+
+    <div class="app-container">
+        <aside class="sidebar">
+            <h1>Cataract Optics</h1>
+            <p style="font-size: 14px; color: var(--text-muted);">
+                A cataract is a clouding of the normally clear lens of the eye, typically caused by proteins clumping together over time.
+            </p>
+
+            <div class="control-group">
+                <label>
+                    Lens Cloudiness (Severity)
+                    <span id="severityVal">0%</span>
+                </label>
+                <input type="range" id="severitySlider" min="0" max="100" value="0">
+            </div>
+
+            <div class="status-card" id="diagnosticCard">
+                <strong id="diagTitle">Status: Healthy Lens</strong><br>
+                <span id="diagText">The lens is perfectly clear. Light rays pass through undisturbed and converge sharply on the retina.</span>
+            </div>
+            
+            <div>
+                <label style="margin-bottom: 10px;">Patient Vision Preview</label>
+                <div class="vision-preview">
+                    <div class="vision-text" id="visionText">E F P T O Z</div>
+                    <div class="vision-glare" id="visionGlare"></div>
+                </div>
+            </div>
+            
+            <div style="margin-top: auto; font-size: 12px; color: var(--text-muted); line-height: 1.4;">
+                <strong>Physics of Scattering:</strong> In a healthy eye, the lens refracts light to a single focal point. A cloudy lens acts like frosted glass, causing random multidirectional light scattering (dispersion), which reduces contrast and creates blurry vision with glare.
+            </div>
+        </aside>
+
+        <main class="lab-area">
+            <svg class="svg-canvas" viewBox="0 0 800 600" id="mainSvg">
+                <defs>
+                    <filter id="cataractBlur">
+                        <feGaussianBlur id="lensBlur" stdDeviation="0" result="blur" />
+                        <feComposite in="SourceGraphic" in2="blur" operator="over" />
+                    </filter>
+                    <filter id="glow">
+                        <feGaussianBlur stdDeviation="3" result="coloredBlur"/>
+                        <feMerge>
+                            <feMergeNode in="coloredBlur"/>
+                            <feMergeNode in="SourceGraphic"/>
+                        </feMerge>
+                    </filter>
+                </defs>
+
+                <!-- Eye Anatomy Base -->
+                <g transform="translate(450, 300)">
+                    <!-- Optic Nerve -->
+                    <path class="eye-optic-nerve" d="M 120 -20 Q 200 -20 220 -40 L 220 40 Q 200 20 120 20 Z" />
+                    
+                    <!-- Sclera (White of eye) -->
+                    <path class="eye-sclera" d="M -150 -80 A 150 150 0 1 1 -150 80 A 130 130 0 0 0 -150 -80 Z" />
+                    <circle cx="0" cy="0" r="140" class="eye-sclera" />
+                    
+                    <!-- Cornea (Front bulge) -->
+                    <path class="eye-cornea" d="M -120 -75 A 90 90 0 0 0 -120 75 A 140 140 0 0 1 -120 -75 Z" />
+                    
+                    <!-- Retina (Inner back wall) -->
+                    <path class="eye-retina" d="M 0 -134 A 134 134 0 0 1 0 134" />
+                    
+                    <!-- Macula / Fovea (Focal point) -->
+                    <circle cx="134" cy="0" r="6" class="eye-macula" />
+                    
+                    <!-- The Lens -->
+                    <ellipse id="eyeLens" cx="-90" cy="0" rx="15" ry="45" class="lens" filter="url(#cataractBlur)" />
+                    
+                    <!-- Iris (Top and Bottom) -->
+                    <path d="M -110 -70 L -100 -40 Z" stroke="#3b82f6" stroke-width="8" stroke-linecap="round" />
+                    <path d="M -110 70 L -100 40 Z" stroke="#3b82f6" stroke-width="8" stroke-linecap="round" />
+                </g>
+
+                <!-- Labels -->
+                <text x="310" y="160" class="label-text">CORNEA</text>
+                <line x1="310" y1="170" x2="330" y2="225" stroke="#94a3b8" stroke-dasharray="2" />
+                
+                <text x="360" y="140" class="label-text">LENS</text>
+                <line x1="360" y1="150" x2="360" y2="250" stroke="#94a3b8" stroke-dasharray="2" />
+                
+                <text x="584" y="270" class="label-text" fill="#b91c1c">MACULA / FOVEA</text>
+                
+                <text x="120" y="200" class="label-text" fill="#d97706">INCOMING LIGHT RAYS</text>
+
+                <!-- Light Rays Group -->
+                <g id="raysGroup"></g>
+            </svg>
+        </main>
+    </div>
+
+    <script>
+        const severitySlider = document.getElementById('severitySlider');
+        const severityVal = document.getElementById('severityVal');
+        
+        const diagTitle = document.getElementById('diagTitle');
+        const diagText = document.getElementById('diagText');
+        const diagnosticCard = document.getElementById('diagnosticCard');
+        
+        const visionText = document.getElementById('visionText');
+        const visionGlare = document.getElementById('visionGlare');
+        const eyeLens = document.getElementById('eyeLens');
+        const lensBlur = document.getElementById('lensBlur');
+        const raysGroup = document.getElementById('raysGroup');
+
+        // Geometry Constants
+        const rayOrigins = [240, 270, 300, 330, 360]; // Y coordinates of incoming parallel rays
+        const lensX = 360; // X coord where rays hit the lens (450 - 90)
+        const focalX = 584; // X coord of the macula (450 + 134)
+        const focalY = 300; // Y coord of the macula
+
+        function drawRays(severity) {
+            raysGroup.innerHTML = ''; // Clear existing rays
+
+            rayOrigins.forEach(originY => {
+                // 1. Draw the primary incoming ray (Light Source to Lens)
+                const incomingRay = document.createElementNS("http://www.w3.org/2000/svg", "line");
+                incomingRay.setAttribute("x1", 50);
+                incomingRay.setAttribute("y1", originY);
+                incomingRay.setAttribute("x2", lensX);
+                incomingRay.setAttribute("y2", originY);
+                incomingRay.setAttribute("class", "ray");
+                raysGroup.appendChild(incomingRay);
+
+                // 2. Determine scattering based on severity
+                if (severity === 0) {
+                    // Perfect vision: Ray goes straight to the focal point
+                    const focusedRay = document.createElementNS("http://www.w3.org/2000/svg", "line");
+                    focusedRay.setAttribute("x1", lensX);
+                    focusedRay.setAttribute("y1", originY);
+                    focusedRay.setAttribute("x2", focalX);
+                    focusedRay.setAttribute("y2", focalY);
+                    focusedRay.setAttribute("class", "ray");
+                    raysGroup.appendChild(focusedRay);
+                } else {
+                    // Cataract vision: The primary ray weakens, and light scatters
+                    // A proportion of light still tries to focus, but gets blurry
+                    const scatterFactor = severity / 100;
+                    const numScatters = Math.floor(scatterFactor * 5) + 1; // 1 to 6 scattered rays per main ray
+
+                    for (let i = 0; i < numScatters; i++) {
+                        const scatteredRay = document.createElementNS("http://www.w3.org/2000/svg", "line");
+                        scatteredRay.setAttribute("x1", lensX);
+                        scatteredRay.setAttribute("y1", originY);
+                        
+                        // Calculate random scattering endpoint on the retina plane
+                        const maxDeviation = 150 * scatterFactor; 
+                        const randomOffset = (Math.random() - 0.5) * 2 * maxDeviation;
+                        const endY = focalY + randomOffset;
+                        
+                        scatteredRay.setAttribute("x2", focalX);
+                        scatteredRay.setAttribute("y2", endY);
+                        
+                        // Opacity drops as scattering increases
+                        const opacity = Math.max(0.1, 0.8 - scatterFactor);
+                        scatteredRay.setAttribute("stroke-opacity", opacity);
+                        scatteredRay.setAttribute("class", "scattered-ray");
+                        
+                        raysGroup.appendChild(scatteredRay);
+                    }
+                }
+            });
+        }
+
+        function hexToRgba(hex, alpha) {
+            const r = parseInt(hex.slice(1, 3), 16);
+            const g = parseInt(hex.slice(3, 5), 16);
+            const b = parseInt(hex.slice(5, 7), 16);
+            return `rgba(${r}, ${g}, ${b}, ${alpha})`;
+        }
+
+        function interpolateColor(color1, color2, factor) {
+            const result = color1.slice();
+            for (let i = 0; i < 3; i++) {
+                result[i] = Math.round(result[i] + factor * (color2[i] - color1[i]));
+            }
+            // Handle alpha
+            result[3] = color1[3] + factor * (color2[3] - color1[3]);
+            return `rgba(${result[0]}, ${result[1]}, ${result[2]}, ${result[3]})`;
+        }
+
+        function updateSim() {
+            const severity = parseInt(severitySlider.value);
+            severityVal.textContent = `${severity}%`;
+
+            // 1. Update Lens Appearance
+            // Transition from clear blue to cloudy yellow/brown
+            const healthyColor = [224, 242, 254, 0.5]; // #e0f2fe
+            const cloudyColor = [217, 186, 115, 0.95]; // brownish yellow
+            const lensColor = interpolateColor(healthyColor, cloudyColor, severity / 100);
+            
+            eyeLens.style.fill = lensColor;
+            
+            // Add SVG blur to the lens itself to simulate physical clouding
+            lensBlur.setAttribute("stdDeviation", (severity / 100) * 3);
+
+            // 2. Update Ray Tracing Physics
+            drawRays(severity);
+
+            // 3. Update Patient Vision Preview (Blur & Glare)
+            const blurAmount = (severity / 100) * 8; // Max 8px blur
+            visionText.style.filter = `blur(${blurAmount}px)`;
+            
+            // Severe cataracts create glare
+            const glareOpacity = severity > 50 ? (severity - 50) / 50 * 0.8 : 0;
+            visionGlare.style.opacity = glareOpacity;
+            
+            // Text color fades to a yellowish tint to simulate color shift
+            const shiftColor = interpolateColor([255,255,255,1], [253,230,138,1], severity/100);
+            visionText.style.color = shiftColor;
+
+            // 4. Diagnostic Feedback
+            if (severity === 0) {
+                diagnosticCard.style.borderLeftColor = "var(--success)";
+                diagnosticCard.style.backgroundColor = "#f0fdf4";
+                diagTitle.textContent = "Status: Healthy Lens";
+                diagTitle.style.color = "var(--success)";
+                diagText.textContent = "The lens is perfectly clear. Light rays pass through undisturbed and converge sharply on the retina.";
+            } else if (severity < 40) {
+                diagnosticCard.style.borderLeftColor = "var(--warning)";
+                diagnosticCard.style.backgroundColor = "#fffbeb";
+                diagTitle.textContent = "Status: Early Cataract";
+                diagTitle.style.color = "var(--warning)";
+                diagText.textContent = "Proteins are beginning to clump. Minor light scattering occurs, causing slight blurriness and reduced contrast.";
+            } else if (severity < 80) {
+                diagnosticCard.style.borderLeftColor = "#f97316"; // Orange
+                diagnosticCard.style.backgroundColor = "#fff7ed";
+                diagTitle.textContent = "Status: Moderate Cataract";
+                diagTitle.style.color = "#ea580c";
+                diagText.textContent = "Significant lens opacification. Light rays are highly scattered, leading to blurry vision and a yellowish color shift.";
+            } else {
+                diagnosticCard.style.borderLeftColor = "var(--danger)";
+                diagnosticCard.style.backgroundColor = "#fef2f2";
+                diagTitle.textContent = "Status: Severe / Mature Cataract";
+                diagTitle.style.color = "var(--danger)";
+                diagText.textContent = "The lens is entirely cloudy. Light is completely diffused across the retina, causing severe vision loss and heavy glare.";
+            }
+        }
+
+        severitySlider.addEventListener('input', updateSim);
+
+        // Initial setup
+        updateSim();
+    </script>
+</body>
+</html>

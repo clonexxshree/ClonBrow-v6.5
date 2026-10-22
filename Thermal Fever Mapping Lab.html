@@ -1,0 +1,542 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Thermal Fever Mapping & Heat Transfer Lab</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;700&family=Inter:wght@300;400;600;700&display=swap');
+
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: #020617; /* Slate 950 */
+            color: #f8fafc;
+            overflow-x: hidden;
+            user-select: none;
+        }
+
+        .font-mono { font-family: 'JetBrains Mono', monospace; }
+
+        /* UI Panels */
+        .glass-card {
+            background: rgba(15, 23, 42, 0.75);
+            backdrop-filter: blur(16px);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.5);
+        }
+
+        .digital-readout {
+            background: #020617;
+            color: #f97316; /* Orange 500 */
+            text-shadow: 0 0 10px rgba(249, 115, 22, 0.5);
+            border: 1px solid #1e293b;
+            transition: all 0.3s ease;
+        }
+
+        /* Thermal States */
+        .temp-cold { color: #38bdf8 !important; text-shadow: 0 0 10px rgba(56, 189, 248, 0.5) !important; }
+        .temp-normal { color: #10b981 !important; text-shadow: 0 0 10px rgba(16, 185, 129, 0.5) !important; }
+        .temp-fever { color: #f43f5e !important; text-shadow: 0 0 10px rgba(244, 63, 94, 0.5) !important; }
+        .temp-hyper { color: #fbbf24 !important; text-shadow: 0 0 10px rgba(251, 191, 36, 0.8) !important; background: rgba(251, 191, 36, 0.1); }
+
+        /* SVG Anatomy Styles */
+        .silhouette {
+            fill: url(#thermal-gradient);
+            stroke: #334155;
+            stroke-width: 2;
+            transition: all 0.5s ease;
+        }
+
+        .core-zone {
+            fill: url(#core-glow);
+            opacity: 0.8;
+            animation: pulse-core 2s infinite alternate ease-in-out;
+        }
+
+        @keyframes pulse-core {
+            0% { transform: scale(0.95); opacity: 0.7; }
+            100% { transform: scale(1.05); opacity: 0.9; }
+        }
+
+        .vessel {
+            fill: none;
+            stroke-linecap: round;
+            opacity: 0.4;
+        }
+        
+        .artery { stroke: #ef4444; stroke-width: 6; }
+        .vein { stroke: #3b82f6; stroke-width: 6; }
+
+        input[type=range] { accent-color: #f97316; }
+
+        /* Physics Grid */
+        .physics-grid {
+            background-size: 40px 40px;
+            background-image: 
+                linear-gradient(to right, rgba(249, 115, 22, 0.05) 1px, transparent 1px),
+                linear-gradient(to bottom, rgba(249, 115, 22, 0.05) 1px, transparent 1px);
+        }
+        
+        /* Radiating Heat Waves */
+        @keyframes radiate {
+            0% { transform: scale(1); opacity: 0.5; stroke-width: 4px; }
+            100% { transform: scale(1.2); opacity: 0; stroke-width: 1px; }
+        }
+        .heat-wave {
+            fill: none;
+            stroke: #f97316;
+            animation: radiate 2s infinite ease-out;
+            transform-origin: center;
+        }
+    </style>
+</head>
+<body class="min-h-screen p-4 md:p-8 flex items-center justify-center">
+
+    <div class="max-w-7xl w-full grid grid-cols-1 lg:grid-cols-12 gap-8 items-stretch">
+        
+        <!-- Simulation Viewport -->
+        <div class="lg:col-span-8 flex flex-col gap-6">
+            <div class="glass-card rounded-3xl p-0 relative flex-grow min-h-[500px] flex items-center justify-center overflow-hidden border border-slate-800 physics-grid">
+                
+                <!-- HUD Header -->
+                <div class="absolute top-6 left-8 flex items-center gap-3 z-30">
+                    <div id="status-dot" class="w-2.5 h-2.5 rounded-full bg-orange-500 shadow-[0_0_10px_#f97316] animate-pulse"></div>
+                    <span id="status-text" class="text-[10px] font-bold text-slate-400 uppercase tracking-widest font-mono">Thermography Active: <span id="hud-status" class="text-orange-500">NORMOTHERMIA</span></span>
+                </div>
+
+                <!-- SVG Layer: Body Thermogram -->
+                <div class="relative w-full h-full flex items-center justify-center">
+                    <svg id="thermo-svg" viewBox="0 0 600 500" class="absolute inset-0 w-full h-full z-10">
+                        <defs>
+                            <!-- Dynamic Thermal Gradient (Updated via JS) -->
+                            <radialGradient id="thermal-gradient" cx="50%" cy="40%" r="60%">
+                                <stop id="grad-core" offset="0%" stop-color="#ef4444" />
+                                <stop id="grad-mid" offset="50%" stop-color="#f59e0b" />
+                                <stop id="grad-skin" offset="100%" stop-color="#3b82f6" />
+                            </radialGradient>
+
+                            <radialGradient id="core-glow" cx="50%" cy="50%" r="50%">
+                                <stop offset="0%" stop-color="#ffffff" stop-opacity="0.8"/>
+                                <stop offset="30%" stop-color="#fef08a" stop-opacity="0.5"/>
+                                <stop offset="100%" stop-color="#ef4444" stop-opacity="0"/>
+                            </radialGradient>
+                        </defs>
+
+                        <!-- Heat Radiating Rings -->
+                        <g id="heat-radiation" transform="translate(300, 250)">
+                            <ellipse cx="0" cy="0" rx="150" ry="220" class="heat-wave" style="animation-delay: 0s;" />
+                            <ellipse cx="0" cy="0" rx="150" ry="220" class="heat-wave" style="animation-delay: 0.6s;" />
+                            <ellipse cx="0" cy="0" rx="150" ry="220" class="heat-wave" style="animation-delay: 1.2s;" />
+                        </g>
+
+                        <!-- Human Torso Silhouette -->
+                        <path d="M 300 50 
+                                 C 330 50, 340 80, 340 100 
+                                 C 340 120, 380 130, 420 140 
+                                 C 450 150, 460 200, 440 280 
+                                 C 430 320, 400 300, 380 250 
+                                 C 370 200, 360 200, 360 250 
+                                 C 360 350, 380 450, 340 450 
+                                 C 320 450, 310 350, 300 350 
+                                 C 290 350, 280 450, 260 450 
+                                 C 220 450, 240 350, 240 250 
+                                 C 240 200, 230 200, 220 250 
+                                 C 200 300, 170 320, 160 280 
+                                 C 140 200, 150 150, 180 140 
+                                 C 220 130, 260 120, 260 100 
+                                 C 260 80, 270 50, 300 50 Z" 
+                              class="silhouette" />
+
+                        <!-- Internal Vasculature -->
+                        <g id="vasculature">
+                            <!-- Right Arm (Left on screen) -->
+                            <path id="path-art-l" class="vessel artery" d="M 280 180 Q 220 160 180 250" />
+                            <path id="path-vein-l" class="vessel vein" d="M 170 240 Q 210 150 290 170" />
+                            
+                            <!-- Left Arm (Right on screen) -->
+                            <path id="path-art-r" class="vessel artery" d="M 320 180 Q 380 160 420 250" />
+                            <path id="path-vein-r" class="vessel vein" d="M 430 240 Q 390 150 310 170" />
+                        </g>
+
+                        <!-- Glowing Core (Heart/Liver Region) -->
+                        <circle cx="300" cy="200" r="60" class="core-zone" />
+                    </svg>
+
+                    <!-- Canvas for Blood Flow Particles -->
+                    <canvas id="blood-canvas" class="absolute inset-0 w-full h-full z-20 pointer-events-none"></canvas>
+                </div>
+
+                <!-- Educational Overlay -->
+                <div class="absolute bottom-6 left-8 flex flex-col gap-1 z-30">
+                    <span class="text-[9px] font-mono text-slate-400 uppercase">Primary Vector: Blood Perfusion</span>
+                    <span class="text-[9px] font-mono text-slate-400 uppercase">Convection: Q = h · A · (T_skin - T_ambient)</span>
+                </div>
+            </div>
+
+            <!-- Controls -->
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+                
+                <div class="glass-card p-5 rounded-2xl space-y-3">
+                    <div class="flex justify-between items-center">
+                        <label class="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Core Temp (T<sub>c</sub>)</label>
+                        <span id="core-display" class="text-xs font-bold font-mono text-emerald-400">37.0 °C</span>
+                    </div>
+                    <input type="range" id="core-slider" min="35.0" max="41.5" step="0.1" value="37.0" class="w-full h-1.5 bg-slate-800 rounded-lg appearance-none cursor-pointer">
+                    <div class="flex justify-between text-[8px] text-slate-500 uppercase">
+                        <span>Hypothermia</span>
+                        <span class="text-rose-500">Fever</span>
+                    </div>
+                </div>
+
+                <div class="glass-card p-5 rounded-2xl space-y-3">
+                    <div class="flex justify-between items-center">
+                        <label class="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Vasomotor Tone</label>
+                        <span id="vaso-display" class="text-xs font-bold font-mono text-orange-400">Normal</span>
+                    </div>
+                    <input type="range" id="vaso-slider" min="0.1" max="2.0" step="0.1" value="1.0" class="w-full h-1.5 bg-slate-800 rounded-lg appearance-none cursor-pointer">
+                    <div class="flex justify-between text-[8px] text-slate-500 uppercase">
+                        <span class="text-blue-400">Constrict</span>
+                        <span class="text-rose-400">Dilate</span>
+                    </div>
+                </div>
+
+                <div class="glass-card p-5 rounded-2xl space-y-3">
+                    <div class="flex justify-between items-center">
+                        <label class="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Ambient Temp</label>
+                        <span id="amb-display" class="text-xs font-bold font-mono text-sky-400">20.0 °C</span>
+                    </div>
+                    <input type="range" id="amb-slider" min="-10" max="40" step="1" value="20" class="w-full h-1.5 bg-slate-800 rounded-lg appearance-none cursor-pointer">
+                    <div class="flex justify-between text-[8px] text-slate-500 uppercase">
+                        <span>Freezing</span>
+                        <span class="text-rose-400">Hot</span>
+                    </div>
+                </div>
+
+            </div>
+        </div>
+
+        <!-- Sidebar: Analytics & Data -->
+        <div class="lg:col-span-4 flex flex-col gap-6">
+            
+            <!-- Digital Readout -->
+            <div id="telemetry-panel" class="digital-readout rounded-3xl p-6 space-y-6">
+                <div class="flex justify-between items-center border-b border-current pb-3 opacity-60">
+                    <span class="text-[10px] font-bold tracking-tighter uppercase">Thermal Telemetry</span>
+                    <span class="text-xs font-mono">LIVE</span>
+                </div>
+
+                <div class="space-y-4">
+                    
+                    <!-- Skin Temperature -->
+                    <div class="space-y-1">
+                        <label class="text-[10px] uppercase font-bold opacity-60">Surface/Skin Temp (T<sub>s</sub>)</label>
+                        <div class="flex items-baseline gap-2">
+                            <div id="data-skin" class="text-6xl font-bold font-mono">32.5</div>
+                            <span class="text-xl font-mono font-bold opacity-80">°C</span>
+                        </div>
+                        <div class="h-1.5 w-full bg-slate-900 rounded-full overflow-hidden mt-2">
+                            <div id="skin-bar" class="h-full bg-current transition-all duration-300" style="width: 50%"></div>
+                        </div>
+                    </div>
+
+                    <div class="grid grid-cols-2 gap-4 pt-4 border-t border-current opacity-80">
+                        <div class="space-y-1">
+                            <label class="text-[9px] uppercase font-bold text-current">Heat Loss Rate</label>
+                            <div id="data-heatloss" class="text-2xl font-bold font-mono">85 W</div>
+                        </div>
+                        <div class="space-y-1 text-right">
+                            <label class="text-[9px] uppercase font-bold text-current">Blood Flow</label>
+                            <div id="data-flow" class="text-2xl font-bold font-mono">5.0 L/m</div>
+                        </div>
+                    </div>
+
+                    <!-- Clinical Indicator -->
+                    <div id="clinical-status" class="p-3 bg-current/10 border border-current/30 rounded-xl space-y-1 mt-2">
+                        <div class="text-[10px] font-bold uppercase flex items-center gap-1">
+                            <span id="clinical-title">Normal Heat Dissipation</span>
+                        </div>
+                        <p id="clinical-desc" class="text-[9px] opacity-80 leading-tight">
+                            The body is effectively balancing heat production with heat loss to the environment.
+                        </p>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Physics Logic Card -->
+            <div class="glass-card p-6 rounded-3xl space-y-4 flex-grow flex flex-col">
+                <h3 class="text-xs font-bold text-slate-400 uppercase tracking-widest flex justify-between">
+                    <span>Hemodynamic Heat Transfer</span>
+                </h3>
+                
+                <div class="bg-slate-900/80 p-4 rounded-xl border border-slate-700 text-center">
+                    <span class="font-mono text-orange-400 text-sm">Q = c · F · (T<sub>c</sub> - T<sub>s</sub>)</span>
+                </div>
+
+                <div class="space-y-3 text-[10px] text-slate-400 leading-relaxed">
+                    <p>
+                        Blood has a high specific heat capacity ($c$). By adjusting the flow rate ($F$) via <strong>vasodilation</strong> or <strong>vasoconstriction</strong>, the hypothalamus controls how much internal heat is carried from the core ($T_c$) to the skin ($T_s$).
+                    </p>
+                    <div class="border-l-2 border-rose-500 pl-3">
+                        <strong class="text-rose-400">Fever (Chills Phase):</strong> The hypothalamus raises the set-point. Vessels constrict (low blood flow), making the skin feel cold and reducing heat loss to rapidly build up core heat.
+                    </div>
+                    <div class="border-l-2 border-emerald-500 pl-3">
+                        <strong class="text-emerald-400">Fever (Flush Phase):</strong> The fever breaks. Vessels dilate massively, turning the skin red and hot to rapidly dump excess heat into the environment via convection and sweat.
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', () => {
+            const coreSlider = document.getElementById('core-slider');
+            const vasoSlider = document.getElementById('vaso-slider');
+            const ambSlider = document.getElementById('amb-slider');
+            
+            const coreDisplay = document.getElementById('core-display');
+            const vasoDisplay = document.getElementById('vaso-display');
+            const ambDisplay = document.getElementById('amb-display');
+            
+            const gradCore = document.getElementById('grad-core');
+            const gradMid = document.getElementById('grad-mid');
+            const gradSkin = document.getElementById('grad-skin');
+            const heatRadiation = document.getElementById('heat-radiation');
+            
+            const telePanel = document.getElementById('telemetry-panel');
+            const hudStatus = document.getElementById('hud-status');
+            const statusDot = document.getElementById('status-dot');
+            const dataSkin = document.getElementById('data-skin');
+            const skinBar = document.getElementById('skin-bar');
+            const dataHeatloss = document.getElementById('data-heatloss');
+            const dataFlow = document.getElementById('data-flow');
+            
+            const clinicalStatus = document.getElementById('clinical-status');
+            const clinicalTitle = document.getElementById('clinical-title');
+            const clinicalDesc = document.getElementById('clinical-desc');
+
+            const canvas = document.getElementById('blood-canvas');
+            const ctx = canvas.getContext('2d');
+
+            // Physics Variables
+            let T_core = 37.0;
+            let T_amb = 20.0;
+            let vasoTone = 1.0; // 0.1 to 2.0 (Flow multiplier)
+            let T_skin = 32.0;
+
+            // Canvas specific
+            let particles = [];
+            const SVG_W = 600;
+            const SVG_H = 500;
+            let scaleX = 1;
+            let scaleY = 1;
+
+            // Base SVG paths for tracing particles
+            // We use simple bezier curve math to trace the arteries/veins
+            const paths = {
+                artL: { start: {x: 280, y: 180}, ctrl: {x: 220, y: 160}, end: {x: 180, y: 250}, dir: 1 },
+                veinL: { start: {x: 170, y: 240}, ctrl: {x: 210, y: 150}, end: {x: 290, y: 170}, dir: 1 },
+                artR: { start: {x: 320, y: 180}, ctrl: {x: 380, y: 160}, end: {x: 420, y: 250}, dir: 1 },
+                veinR: { start: {x: 430, y: 240}, ctrl: {x: 390, y: 150}, end: {x: 310, y: 170}, dir: 1 }
+            };
+
+            function resizeCanvas() {
+                const rect = canvas.parentElement.getBoundingClientRect();
+                canvas.width = rect.width;
+                canvas.height = rect.height;
+                scaleX = canvas.width / SVG_W;
+                scaleY = canvas.height / SVG_H;
+            }
+            window.addEventListener('resize', resizeCanvas);
+            resizeCanvas();
+
+            // Bezier curve helper
+            function getQuadraticBezierXYatT(startPt, controlPt, endPt, t) {
+                const x = Math.pow(1 - t, 2) * startPt.x + 2 * (1 - t) * t * controlPt.x + Math.pow(t, 2) * endPt.x;
+                const y = Math.pow(1 - t, 2) * startPt.y + 2 * (1 - t) * t * controlPt.y + Math.pow(t, 2) * endPt.y;
+                return { x, y };
+            }
+
+            function getTempColor(temp) {
+                // Map temp to a color string
+                if (temp >= 40) return '#ffffff'; // White hot
+                if (temp >= 38.5) return '#fbbf24'; // Yellow
+                if (temp >= 37) return '#ef4444'; // Red
+                if (temp >= 34) return '#f97316'; // Orange
+                if (temp >= 28) return '#8b5cf6'; // Purple
+                if (temp >= 20) return '#3b82f6'; // Blue
+                return '#0ea5e9'; // Light blue
+            }
+
+            function updatePhysics() {
+                T_core = parseFloat(coreSlider.value);
+                vasoTone = parseFloat(vasoSlider.value);
+                T_amb = parseFloat(ambSlider.value);
+
+                // Update Input UI
+                coreDisplay.textContent = `${T_core.toFixed(1)} °C`;
+                if (T_core >= 38) coreDisplay.className = "text-xs font-bold font-mono text-rose-500";
+                else if (T_core < 36) coreDisplay.className = "text-xs font-bold font-mono text-blue-400";
+                else coreDisplay.className = "text-xs font-bold font-mono text-emerald-400";
+
+                ambDisplay.textContent = `${T_amb.toFixed(1)} °C`;
+                
+                if (vasoTone < 0.5) {
+                    vasoDisplay.textContent = "Constricted";
+                    vasoDisplay.className = "text-xs font-bold font-mono text-blue-400";
+                } else if (vasoTone > 1.5) {
+                    vasoDisplay.textContent = "Dilated";
+                    vasoDisplay.className = "text-xs font-bold font-mono text-rose-500";
+                } else {
+                    vasoDisplay.textContent = "Normal";
+                    vasoDisplay.className = "text-xs font-bold font-mono text-orange-400";
+                }
+
+                // Heat Transfer Calculation
+                // T_skin = (c * Q * T_core + h * T_amb) / (c * Q + h)
+                // c = blood heat cap factor, Q = blood flow, h = convective cooling factor
+                const c = 50; 
+                const Q = vasoTone; 
+                const h = 10; // Ambient cooling factor (can be adjusted for wind, but constant here)
+
+                T_skin = ((c * Q * T_core) + (h * T_amb)) / ((c * Q) + h);
+
+                // Heat loss (Watts) = h * (T_skin - T_amb) * scaling_factor
+                const heatLoss = h * (T_skin - T_amb) * 0.7; // 0.7 to scale to a realistic resting wattage (~85W)
+                
+                // Blood Flow L/m
+                const bloodFlow = 5.0 * vasoTone;
+
+                // --- Update UI Telemetry ---
+                dataSkin.textContent = T_skin.toFixed(1);
+                dataHeatloss.textContent = `${Math.round(Math.max(0, heatLoss))} W`;
+                dataFlow.textContent = `${bloodFlow.toFixed(1)} L/m`;
+
+                // Skin bar visualization
+                const skinPct = Math.max(0, Math.min(100, ((T_skin - 15) / (40 - 15)) * 100));
+                skinBar.style.width = `${skinPct}%`;
+
+                // Set Theme based on Core Temp
+                if (T_core >= 39) {
+                    telePanel.className = "digital-readout temp-hyper rounded-3xl p-6 space-y-6";
+                    hudStatus.textContent = "HYPERPYREXIA";
+                    hudStatus.className = "text-amber-400";
+                    statusDot.className = "w-2.5 h-2.5 rounded-full bg-amber-400 shadow-[0_0_10px_#fbbf24] animate-pulse";
+                } else if (T_core >= 38) {
+                    telePanel.className = "digital-readout temp-fever rounded-3xl p-6 space-y-6";
+                    hudStatus.textContent = "FEBRILE";
+                    hudStatus.className = "text-rose-500";
+                    statusDot.className = "w-2.5 h-2.5 rounded-full bg-rose-500 shadow-[0_0_10px_#f43f5e] animate-pulse";
+                } else if (T_core < 36) {
+                    telePanel.className = "digital-readout temp-cold rounded-3xl p-6 space-y-6";
+                    hudStatus.textContent = "HYPOTHERMIA";
+                    hudStatus.className = "text-sky-400";
+                    statusDot.className = "w-2.5 h-2.5 rounded-full bg-sky-400 shadow-[0_0_10px_#38bdf8] animate-pulse";
+                } else {
+                    telePanel.className = "digital-readout temp-normal rounded-3xl p-6 space-y-6";
+                    hudStatus.textContent = "NORMOTHERMIA";
+                    hudStatus.className = "text-emerald-400";
+                    statusDot.className = "w-2.5 h-2.5 rounded-full bg-emerald-500 shadow-[0_0_10px_#10b981]";
+                }
+
+                // Clinical Logic Text
+                if (T_core > 38 && vasoTone < 0.8) {
+                    clinicalTitle.textContent = "Fever: Chills Phase";
+                    clinicalDesc.textContent = "Hypothalamus set-point raised. Severe vasoconstriction traps heat in the core to reach the new high temperature. Skin feels freezing.";
+                } else if (T_core > 38 && vasoTone > 1.5) {
+                    clinicalTitle.textContent = "Fever: Flush Phase (Breaking)";
+                    clinicalDesc.textContent = "Set-point returned to normal. Massive vasodilation pushes hot blood to the skin to dump heat into the environment. Sweating heavily.";
+                } else if (T_amb < 10 && vasoTone < 0.5) {
+                    clinicalTitle.textContent = "Cold Exposure Defense";
+                    clinicalDesc.textContent = "Peripheral vasoconstriction minimizes blood flow to extremities to preserve core temperature.";
+                } else {
+                    clinicalTitle.textContent = "Thermal Homeostasis";
+                    clinicalDesc.textContent = "Body is effectively balancing heat production with environmental heat loss.";
+                }
+
+                // --- Update SVG Colors ---
+                gradCore.setAttribute('stop-color', getTempColor(T_core));
+                gradMid.setAttribute('stop-color', getTempColor((T_core + T_skin) / 2));
+                gradSkin.setAttribute('stop-color', getTempColor(T_skin));
+
+                // Heat Radiation animation
+                if (heatLoss > 100) {
+                    heatRadiation.style.display = 'block';
+                    const speed = Math.max(0.5, 3.0 - (heatLoss / 100));
+                    document.querySelectorAll('.heat-wave').forEach(el => {
+                        el.style.animationDuration = `${speed}s`;
+                        el.style.stroke = getTempColor(T_skin);
+                    });
+                } else {
+                    heatRadiation.style.display = 'none';
+                }
+            }
+
+            // --- Canvas Animation ---
+            function spawnParticle() {
+                const types = ['artL', 'veinL', 'artR', 'veinR'];
+                const type = types[Math.floor(Math.random() * types.length)];
+                
+                particles.push({
+                    type: type,
+                    t: 0, // progression 0 to 1
+                    speed: (Math.random() * 0.01 + 0.01) * vasoTone // Speed depends on vaso tone
+                });
+            }
+
+            function animateCanvas() {
+                ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+                // Maintain particle count based on blood flow
+                const targetParticles = 20 * vasoTone;
+                if (particles.length < targetParticles && Math.random() < 0.2) {
+                    spawnParticle();
+                }
+
+                for (let i = particles.length - 1; i >= 0; i--) {
+                    let p = particles[i];
+                    p.t += p.speed;
+
+                    if (p.t > 1) {
+                        particles.splice(i, 1);
+                        continue;
+                    }
+
+                    const pathData = paths[p.type];
+                    const pos = getQuadraticBezierXYatT(pathData.start, pathData.ctrl, pathData.end, p.t);
+
+                    // Determine color based on type and position (T_core to T_skin)
+                    let color;
+                    if (p.type.includes('art')) {
+                        // Artery: Starts at T_core, cools slightly towards T_skin
+                        const currentTemp = T_core - ((T_core - T_skin) * p.t * 0.5);
+                        color = getTempColor(currentTemp);
+                    } else {
+                        // Vein: Starts at T_skin, warms up towards T_core
+                        const currentTemp = T_skin + ((T_core - T_skin) * p.t * 0.8);
+                        color = getTempColor(currentTemp);
+                    }
+
+                    ctx.beginPath();
+                    ctx.arc(pos.x * scaleX, pos.y * scaleY, 3 * scaleX, 0, Math.PI * 2);
+                    ctx.fillStyle = color;
+                    ctx.shadowColor = color;
+                    ctx.shadowBlur = 8;
+                    ctx.fill();
+                }
+
+                requestAnimationFrame(animateCanvas);
+            }
+
+            // Events
+            coreSlider.addEventListener('input', updatePhysics);
+            vasoSlider.addEventListener('input', updatePhysics);
+            ambSlider.addEventListener('input', updatePhysics);
+
+            // Init
+            updatePhysics();
+            animateCanvas();
+        });
+    </script>
+</body>
+</html>

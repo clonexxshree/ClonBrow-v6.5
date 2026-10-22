@@ -1,0 +1,617 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Property Tycoon</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Oswald:wght@400;700&family=Playfair+Display:wght@700&display=swap');
+
+        body { 
+            margin: 0; padding: 0; overflow: hidden; 
+            background: radial-gradient(circle, #2a3b2a 0%, #0a110a 100%); 
+            font-family: 'Oswald', sans-serif; color: #111; user-select: none;
+            display: flex; justify-content: center; align-items: center; height: 100vh;
+        }
+
+        /* --- LAYOUT --- */
+        #game-wrapper {
+            display: flex; gap: 20px; width: 100%; max-width: 1400px; padding: 20px;
+            height: 100%; box-sizing: border-box; align-items: center; justify-content: center;
+        }
+
+        /* --- SIDEBAR STATS --- */
+        #sidebar {
+            width: 300px; display: flex; flex-direction: column; gap: 15px;
+        }
+
+        .player-card {
+            background: #fdfbf7; border: 4px solid #d1d5db; border-radius: 12px;
+            padding: 15px; box-shadow: 0 10px 20px rgba(0,0,0,0.5); transition: 0.3s;
+            opacity: 0.6; transform: scale(0.95);
+        }
+        .player-card.active {
+            opacity: 1; border-color: #fbbf24; transform: scale(1);
+            box-shadow: 0 10px 30px rgba(251, 191, 36, 0.4);
+        }
+
+        .p-header { display: flex; align-items: center; gap: 10px; font-size: 24px; font-weight: bold; }
+        .p-money { font-family: 'Playfair Display', serif; font-size: 32px; color: #166534; margin: 10px 0; }
+        .p-props { font-size: 14px; color: #4b5563; min-height: 40px; }
+        .jail-tag { background: #ef4444; color: white; padding: 2px 8px; border-radius: 4px; font-size: 12px; display: none; }
+
+        /* --- THE BOARD --- */
+        #board-container {
+            position: relative; height: 90vh; aspect-ratio: 1/1; 
+            background: #d0d6d0; border: 8px solid #1a2421; border-radius: 12px;
+            box-shadow: 0 20px 50px rgba(0,0,0,0.8), inset 0 0 20px rgba(0,0,0,0.2);
+            padding: 5px; box-sizing: border-box;
+        }
+
+        .board-grid {
+            display: grid; width: 100%; height: 100%; gap: 2px;
+            grid-template-columns: 2fr repeat(9, 1.4fr) 2fr;
+            grid-template-rows: 2fr repeat(9, 1.4fr) 2fr;
+            background: #333; /* Gap color */
+            border: 2px solid #333;
+        }
+
+        .space {
+            background: #f1f5f1; display: flex; flex-direction: column;
+            position: relative; overflow: hidden; text-align: center; justify-content: space-between;
+        }
+
+        /* Space Specifics */
+        .corner { justify-content: center; align-items: center; font-family: 'Playfair Display', serif; font-size: 24px; font-weight: bold; text-transform: uppercase; line-height: 1.1; background: #e0e6e0;}
+        .corner span { display: block; font-size: 14px; font-family: 'Oswald', sans-serif;}
+
+        .color-bar { position: absolute; }
+        .bottom-row .color-bar { top: 0; left: 0; width: 100%; height: 25%; }
+        .top-row .color-bar { bottom: 0; left: 0; width: 100%; height: 25%; }
+        .left-col .color-bar { top: 0; right: 0; width: 25%; height: 100%; }
+        .right-col .color-bar { top: 0; left: 0; width: 25%; height: 100%; }
+
+        .space-name { font-size: 11px; font-weight: bold; padding: 2px; z-index: 2; word-wrap: break-word; line-height: 1.1; margin-top: auto; margin-bottom: auto;}
+        .space-price { font-size: 12px; font-weight: bold; color: #111; z-index: 2; padding-bottom: 2px; }
+        
+        .left-col .space-name, .right-col .space-name { font-size: 10px; transform: rotate(0deg); }
+
+        /* Tokens */
+        .token {
+            position: absolute; font-size: 24px; transition: all 0.3s cubic-bezier(0.25, 1, 0.5, 1);
+            filter: drop-shadow(2px 4px 4px rgba(0,0,0,0.5)); z-index: 10;
+        }
+
+        /* --- CENTER UI --- */
+        #center-ui {
+            grid-area: 2 / 2 / 11 / 11;
+            background: #ced6ce; display: flex; flex-direction: column;
+            align-items: center; justify-content: center; padding: 20px;
+            position: relative; overflow: hidden;
+        }
+
+        .center-logo {
+            font-family: 'Playfair Display', serif; font-size: 48px; font-weight: bold;
+            color: #ef4444; border: 4px solid #ef4444; padding: 10px 30px; transform: rotate(-5deg);
+            background: white; box-shadow: 5px 5px 15px rgba(0,0,0,0.2); margin-bottom: 30px;
+            text-transform: uppercase; letter-spacing: 2px;
+        }
+
+        #action-panel {
+            background: white; border: 4px solid #374151; border-radius: 12px;
+            width: 80%; padding: 20px; text-align: center; box-shadow: 0 10px 25px rgba(0,0,0,0.3);
+            display: flex; flex-direction: column; align-items: center; gap: 15px;
+        }
+
+        #log-text { font-size: 20px; font-weight: bold; color: #1f2937; min-height: 60px;}
+        
+        .dice-container { display: flex; gap: 15px; margin-bottom: 10px; }
+        .die { 
+            width: 60px; height: 60px; background: white; border: 2px solid #ccc;
+            border-radius: 12px; display: flex; align-items: center; justify-content: center;
+            font-size: 32px; font-weight: bold; box-shadow: inset 0 -4px 0 #e5e7eb, 0 5px 10px rgba(0,0,0,0.2);
+        }
+
+        .btn {
+            background: #3b82f6; color: white; border: none; padding: 12px 30px;
+            font-size: 20px; font-family: 'Oswald'; border-radius: 8px; cursor: pointer;
+            box-shadow: 0 4px 0 #2563eb; transition: 0.1s; text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+        .btn:hover { background: #60a5fa; transform: translateY(-2px); box-shadow: 0 6px 0 #2563eb; }
+        .btn:active { transform: translateY(4px); box-shadow: 0 0 0 #2563eb; }
+        .btn-green { background: #10b981; box-shadow: 0 4px 0 #059669; }
+        .btn-green:hover { background: #34d399; box-shadow: 0 6px 0 #059669; }
+        .btn-green:active { box-shadow: 0 0 0 #059669; }
+        .btn-red { background: #ef4444; box-shadow: 0 4px 0 #b91c1c; }
+        .btn-red:hover { background: #f87171; box-shadow: 0 6px 0 #b91c1c; }
+        .btn-red:active { box-shadow: 0 0 0 #b91c1c; }
+
+        .action-btns { display: flex; gap: 10px; width: 100%; justify-content: center;}
+
+        /* Owner Indicators */
+        .owner-bar { position: absolute; width: 100%; height: 6px; bottom: 0; left: 0; z-index: 5; }
+        .left-col .owner-bar { width: 6px; height: 100%; right: 0; left: auto; top: 0; }
+        .right-col .owner-bar { width: 6px; height: 100%; left: 0; top: 0; }
+        .top-row .owner-bar { top: 0; bottom: auto; }
+
+        /* Level Indicators */
+        .level-stars { position: absolute; top: 2px; left: 50%; transform: translateX(-50%); font-size: 10px; color: white; text-shadow: 1px 1px 0 #000; z-index: 6;}
+        .left-col .level-stars, .right-col .level-stars { top: 50%; left: 2px; transform: translateY(-50%); font-size: 8px;}
+
+    </style>
+</head>
+<body>
+
+    <div id="game-wrapper">
+        <!-- Sidebar -->
+        <div id="sidebar">
+            <div class="player-card active" id="pcard-0">
+                <div class="p-header">🚗 Player 1 <span class="jail-tag" id="jail-0">IN JAIL</span></div>
+                <div class="p-money" id="money-0">$1500</div>
+                <div class="p-props" id="props-0">Properties: None</div>
+            </div>
+            <div class="player-card" id="pcard-1">
+                <div class="p-header">🎩 Player 2 <span class="jail-tag" id="jail-1">IN JAIL</span></div>
+                <div class="p-money" id="money-1">$1500</div>
+                <div class="p-props" id="props-1">Properties: None</div>
+            </div>
+        </div>
+
+        <!-- Board -->
+        <div id="board-container">
+            <div class="board-grid" id="board">
+                <!-- Spaces generated via JS -->
+                
+                <!-- Center UI -->
+                <div id="center-ui">
+                    <div class="center-logo">TYCOON</div>
+                    
+                    <div id="action-panel">
+                        <div id="log-text">Player 1's Turn. Roll the dice!</div>
+                        
+                        <div class="dice-container" id="dice-cont">
+                            <div class="die" id="die1">1</div>
+                            <div class="die" id="die2">1</div>
+                        </div>
+
+                        <div class="action-btns" id="btn-group">
+                            <button class="btn" id="btn-roll" onclick="handleRoll()">ROLL DICE</button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Tokens -->
+            <div class="token" id="token-0">🚗</div>
+            <div class="token" id="token-1">🎩</div>
+        </div>
+    </div>
+
+    <script>
+        // --- AUDIO ENGINE ---
+        const AudioContext = window.AudioContext || window.webkitAudioContext;
+        let audioCtx;
+        function initAudio() { if(!audioCtx) audioCtx = new AudioContext(); }
+        
+        function playSound(type) {
+            if(!audioCtx) return;
+            const t = audioCtx.currentTime;
+            const osc = audioCtx.createOscillator(); const gain = audioCtx.createGain();
+            
+            if (type === 'move') {
+                osc.type = 'sine'; osc.frequency.setValueAtTime(600, t); osc.frequency.exponentialRampToValueAtTime(300, t+0.1);
+                gain.gain.setValueAtTime(0.2, t); gain.gain.exponentialRampToValueAtTime(0.01, t+0.1); osc.start(t); osc.stop(t+0.1);
+            } else if (type === 'cash') {
+                osc.type = 'triangle'; osc.frequency.setValueAtTime(800, t); osc.frequency.setValueAtTime(1200, t+0.1);
+                gain.gain.setValueAtTime(0.3, t); gain.gain.exponentialRampToValueAtTime(0.01, t+0.3); osc.start(t); osc.stop(t+0.3);
+            } else if (type === 'bad') {
+                osc.type = 'sawtooth'; osc.frequency.setValueAtTime(200, t); osc.frequency.exponentialRampToValueAtTime(50, t+0.4);
+                gain.gain.setValueAtTime(0.4, t); gain.gain.exponentialRampToValueAtTime(0.01, t+0.4); osc.start(t); osc.stop(t+0.4);
+            }
+            osc.connect(gain); gain.connect(audioCtx.destination);
+        }
+
+        // --- DATA ---
+        const SPACES = [
+            { name: "GO<br><span>Collect $200</span>", type: "go" },
+            { name: "Mediter- ranean Ave", type: "prop", color: "#8B4513", price: 60, rent: 2 },
+            { name: "Community Chest", type: "chest" },
+            { name: "Baltic Ave", type: "prop", color: "#8B4513", price: 60, rent: 4 },
+            { name: "Income Tax", type: "tax", amount: 200 },
+            { name: "Reading RR", type: "rr", price: 200, rent: 25 },
+            { name: "Oriental Ave", type: "prop", color: "#87CEEB", price: 100, rent: 6 },
+            { name: "Chance", type: "chance" },
+            { name: "Vermont Ave", type: "prop", color: "#87CEEB", price: 100, rent: 6 },
+            { name: "Conn. Ave", type: "prop", color: "#87CEEB", price: 120, rent: 8 },
+            { name: "JAIL", type: "jail" },
+            { name: "St. Charles Place", type: "prop", color: "#FF1493", price: 140, rent: 10 },
+            { name: "Electric Company", type: "util", price: 150, rent: 20 },
+            { name: "States Ave", type: "prop", color: "#FF1493", price: 140, rent: 10 },
+            { name: "Virginia Ave", type: "prop", color: "#FF1493", price: 160, rent: 12 },
+            { name: "Penn. RR", type: "rr", price: 200, rent: 25 },
+            { name: "St. James Place", type: "prop", color: "#FFA500", price: 180, rent: 14 },
+            { name: "Community Chest", type: "chest" },
+            { name: "Tenn. Ave", type: "prop", color: "#FFA500", price: 180, rent: 14 },
+            { name: "New York Ave", type: "prop", color: "#FFA500", price: 200, rent: 16 },
+            { name: "FREE<br>PARKING", type: "parking" },
+            { name: "Kentucky Ave", type: "prop", color: "#FF0000", price: 220, rent: 18 },
+            { name: "Chance", type: "chance" },
+            { name: "Indiana Ave", type: "prop", color: "#FF0000", price: 220, rent: 18 },
+            { name: "Illinois Ave", type: "prop", color: "#FF0000", price: 240, rent: 20 },
+            { name: "B. & O. RR", type: "rr", price: 200, rent: 25 },
+            { name: "Atlantic Ave", type: "prop", color: "#FFFF00", price: 260, rent: 22 },
+            { name: "Ventnor Ave", type: "prop", color: "#FFFF00", price: 260, rent: 22 },
+            { name: "Water Works", type: "util", price: 150, rent: 20 },
+            { name: "Marvin Gardens", type: "prop", color: "#FFFF00", price: 280, rent: 24 },
+            { name: "GO TO<br>JAIL", type: "gojail" },
+            { name: "Pacific Ave", type: "prop", color: "#008000", price: 300, rent: 26 },
+            { name: "North Carolina", type: "prop", color: "#008000", price: 300, rent: 26 },
+            { name: "Community Chest", type: "chest" },
+            { name: "Penn. Ave", type: "prop", color: "#008000", price: 320, rent: 28 },
+            { name: "Short Line", type: "rr", price: 200, rent: 25 },
+            { name: "Chance", type: "chance" },
+            { name: "Park Place", type: "prop", color: "#0000FF", price: 350, rent: 35 },
+            { name: "Luxury Tax", type: "tax", amount: 100 },
+            { name: "Boardwalk", type: "prop", color: "#0000FF", price: 400, rent: 50 }
+        ];
+
+        let boardData = []; // To store DOM elements and state per space
+        let players = [
+            { id: 0, name: "Player 1", icon: "🚗", color: "#3b82f6", pos: 0, money: 1500, jailTurns: 0, props: [] },
+            { id: 1, name: "Player 2", icon: "🎩", color: "#ef4444", pos: 0, money: 1500, jailTurns: 0, props: [] }
+        ];
+        
+        let turn = 0;
+        let isAnimating = false;
+        let doublesCount = 0;
+
+        const CHANCE_CARDS = [
+            { text: "Advance to GO. Collect $200.", action: (p) => moveTo(p, 0) },
+            { text: "Bank error in your favor. Collect $200.", action: (p) => modMoney(p, 200) },
+            { text: "Go to Jail. Do not pass GO.", action: (p) => sendToJail(p) },
+            { text: "Pay poor tax of $50.", action: (p) => modMoney(p, -50) },
+            { text: "Advance to Boardwalk.", action: (p) => moveTo(p, 39) },
+            { text: "You have won a crossword competition. Collect $100.", action: (p) => modMoney(p, 100) }
+        ];
+
+        // --- BOARD GENERATION ---
+        function getGridArea(idx) {
+            if(idx === 0) return '11 / 11';
+            if(idx < 10) return `11 / ${11 - idx}`;
+            if(idx === 10) return '11 / 1';
+            if(idx < 20) return `${11 - (idx - 10)} / 1`;
+            if(idx === 20) return '1 / 1';
+            if(idx < 30) return `1 / ${1 + (idx - 20)}`;
+            if(idx === 30) return '1 / 11';
+            if(idx < 40) return `${1 + (idx - 30)} / 11`;
+        }
+
+        function getOrientationClass(idx) {
+            if(idx % 10 === 0) return 'corner';
+            if(idx < 10) return 'bottom-row';
+            if(idx < 20) return 'left-col';
+            if(idx < 30) return 'top-row';
+            return 'right-col';
+        }
+
+        function initBoard() {
+            const boardEl = document.getElementById('board');
+            
+            SPACES.forEach((space, idx) => {
+                const el = document.createElement('div');
+                el.className = `space ${getOrientationClass(idx)}`;
+                el.style.gridArea = getGridArea(idx);
+                el.id = `space-${idx}`;
+
+                let html = '';
+                if(space.color) html += `<div class="color-bar" style="background:${space.color};"></div>`;
+                
+                if(idx % 10 === 0) {
+                    html += space.name; // Corners
+                } else {
+                    html += `<div class="level-stars" id="lvl-${idx}"></div>`;
+                    if(space.type !== 'prop' && space.type !== 'rr' && space.type !== 'util') {
+                        html += `<div style="margin:auto; font-size:12px; font-weight:bold;">${space.name}</div>`;
+                    } else {
+                        html += `<div class="space-name">${space.name}</div>`;
+                        if(space.price) html += `<div class="space-price">$${space.price}</div>`;
+                    }
+                    html += `<div class="owner-bar" id="owner-${idx}"></div>`;
+                }
+
+                el.innerHTML = html;
+                boardEl.appendChild(el);
+
+                boardData.push({
+                    ...space, el: el, owner: null, level: 0
+                });
+            });
+
+            // Initial Token Pos
+            setTimeout(() => { updateTokenPos(0); updateTokenPos(1); }, 500);
+        }
+
+        // --- CORE LOGIC ---
+
+        function updateStats() {
+            for(let i=0; i<2; i++) {
+                const p = players[i];
+                document.getElementById(`money-${i}`).innerText = `$${p.money}`;
+                
+                let pNames = p.props.map(idx => SPACES[idx].name.split('<')[0].substring(0,10));
+                document.getElementById(`props-${i}`).innerText = pNames.length > 0 ? pNames.join(', ') : "Properties: None";
+                
+                document.getElementById(`jail-${i}`).style.display = p.jailTurns > 0 ? 'inline-block' : 'none';
+                
+                if(i === turn) document.getElementById(`pcard-${i}`).classList.add('active');
+                else document.getElementById(`pcard-${i}`).classList.remove('active');
+            }
+        }
+
+        function setLog(text) {
+            document.getElementById('log-text').innerHTML = text;
+        }
+
+        function setButtons(html) {
+            document.getElementById('btn-group').innerHTML = html;
+        }
+
+        function getSpaceCenter(idx, pId) {
+            const el = document.getElementById(`space-${idx}`);
+            const rect = el.getBoundingClientRect();
+            const boardRect = document.getElementById('board-container').getBoundingClientRect();
+            
+            // Add slight offset for different players
+            const offsetX = pId === 0 ? -10 : 10;
+            const offsetY = pId === 0 ? -10 : 10;
+
+            return {
+                x: rect.left - boardRect.left + (rect.width/2) - 15 + offsetX, // -15 to center the 30px token
+                y: rect.top - boardRect.top + (rect.height/2) - 15 + offsetY
+            };
+        }
+
+        function updateTokenPos(pId) {
+            const p = players[pId];
+            const tEl = document.getElementById(`token-${pId}`);
+            const pos = getSpaceCenter(p.pos, pId);
+            tEl.style.left = `${pos.x}px`;
+            tEl.style.top = `${pos.y}px`;
+        }
+
+        function sleep(ms) { return new Promise(r => setTimeout(r, ms)); }
+
+        async function handleRoll() {
+            if(isAnimating) return;
+            initAudio();
+            const p = players[turn];
+
+            // Jail Check
+            if (p.jailTurns > 0) {
+                p.jailTurns--;
+                p.money -= 50;
+                playSound('bad');
+                setLog(`${p.name} paid $50 to get out of jail.`);
+                updateStats();
+                if(p.money < 0) return handleBankrupt();
+                await sleep(1500);
+            }
+
+            isAnimating = true;
+            setButtons(''); // Hide buttons
+            
+            // Dice Animation
+            const d1 = document.getElementById('die1'); const d2 = document.getElementById('die2');
+            let r1, r2;
+            for(let i=0; i<10; i++) {
+                r1 = Math.floor(Math.random()*6)+1; r2 = Math.floor(Math.random()*6)+1;
+                d1.innerText = r1; d2.innerText = r2;
+                await sleep(50);
+            }
+            
+            let total = r1 + r2;
+            setLog(`${p.name} rolled a ${total}!`);
+            
+            if(r1 === r2) doublesCount++; else doublesCount = 0;
+
+            if (doublesCount === 3) {
+                setLog("Three doubles! Go to jail!");
+                await sleep(1000);
+                await sendToJail(p);
+                return;
+            }
+
+            // Move
+            for(let i=0; i<total; i++) {
+                p.pos++;
+                if(p.pos > 39) {
+                    p.pos = 0;
+                    p.money += 200;
+                    playSound('cash');
+                    updateStats();
+                }
+                updateTokenPos(turn);
+                playSound('move');
+                await sleep(250);
+            }
+
+            isAnimating = false;
+            handleSpace(p);
+        }
+
+        async function moveTo(p, targetIdx) {
+            isAnimating = true;
+            while(p.pos !== targetIdx) {
+                p.pos++;
+                if(p.pos > 39) { p.pos = 0; p.money += 200; playSound('cash'); updateStats(); }
+                updateTokenPos(p.id);
+                playSound('move');
+                await sleep(150);
+            }
+            isAnimating = false;
+            handleSpace(p);
+        }
+
+        async function sendToJail(p) {
+            p.pos = 10;
+            p.jailTurns = 3;
+            updateTokenPos(p.id);
+            playSound('bad');
+            updateStats();
+            setLog(`${p.name} is now in JAIL!`);
+            setButtons(`<button class="btn" onclick="endTurn()">END TURN</button>`);
+        }
+
+        function modMoney(p, amt) {
+            p.money += amt;
+            updateStats();
+            if(amt > 0) playSound('cash'); else playSound('bad');
+            if(p.money < 0) handleBankrupt();
+            else setButtons(`<button class="btn" onclick="endTurn()">END TURN</button>`);
+        }
+
+        function handleSpace(p) {
+            const space = boardData[p.pos];
+            
+            if (space.type === 'go' || space.type === 'parking' || space.type === 'jail') {
+                setLog(`Landed on ${space.name.replace('<br>', ' ')}. Nothing happens.`);
+                setButtons(`<button class="btn" onclick="endTurn()">END TURN</button>`);
+            }
+            else if (space.type === 'gojail') {
+                setLog("Go directly to Jail!");
+                sendToJail(p);
+            }
+            else if (space.type === 'tax') {
+                setLog(`Pay ${space.name}: $${space.amount}`);
+                p.money -= space.amount;
+                playSound('bad');
+                updateStats();
+                if(p.money < 0) handleBankrupt();
+                else setButtons(`<button class="btn" onclick="endTurn()">END TURN</button>`);
+            }
+            else if (space.type === 'chance' || space.type === 'chest') {
+                const card = CHANCE_CARDS[Math.floor(Math.random() * CHANCE_CARDS.length)];
+                setLog(`Card: ${card.text}`);
+                setButtons('');
+                setTimeout(() => card.action(p), 1500);
+            }
+            else if (['prop', 'rr', 'util'].includes(space.type)) {
+                if (space.owner === null) {
+                    // Buy
+                    setLog(`Unowned: ${space.name.replace('<br>','')}<br>Price: $${space.price} | Rent: $${space.rent}`);
+                    if(p.money >= space.price) {
+                        setButtons(`
+                            <button class="btn btn-green" onclick="buyProperty(${p.pos})">BUY</button>
+                            <button class="btn btn-red" onclick="endTurn()">PASS</button>
+                        `);
+                    } else {
+                        setButtons(`<button class="btn btn-red" onclick="endTurn()">CANT AFFORD</button>`);
+                    }
+                } 
+                else if (space.owner === p.id) {
+                    // Upgrade
+                    if(space.type === 'prop' && space.level < 4) {
+                        const upCost = 100;
+                        setLog(`Your Property.<br>Upgrade for $${upCost} to double rent?`);
+                        if(p.money >= upCost) {
+                            setButtons(`
+                                <button class="btn btn-green" onclick="upgradeProperty(${p.pos})">UPGRADE</button>
+                                <button class="btn btn-red" onclick="endTurn()">PASS</button>
+                            `);
+                        } else {
+                            setButtons(`<button class="btn" onclick="endTurn()">END TURN</button>`);
+                        }
+                    } else {
+                        setLog("You own this. Welcome home.");
+                        setButtons(`<button class="btn" onclick="endTurn()">END TURN</button>`);
+                    }
+                }
+                else {
+                    // Pay Rent
+                    let rentDue = space.rent * Math.pow(2, space.level);
+                    if(space.type === 'rr') rentDue = 50 * players[space.owner].props.filter(idx=>boardData[idx].type==='rr').length;
+                    
+                    setLog(`Owned by ${players[space.owner].name}!<br>Pay Rent: $${rentDue}`);
+                    setButtons(`<button class="btn btn-red" onclick="payRent(${p.pos}, ${rentDue})">PAY RENT</button>`);
+                }
+            }
+        }
+
+        function buyProperty(idx) {
+            const p = players[turn];
+            const space = boardData[idx];
+            p.money -= space.price;
+            p.props.push(idx);
+            space.owner = p.id;
+            
+            // Visuals
+            document.getElementById(`owner-${idx}`).style.background = p.color;
+            playSound('cash');
+            updateStats();
+            
+            setLog(`Bought ${space.name.replace('<br>','')}!`);
+            setButtons(`<button class="btn" onclick="endTurn()">END TURN</button>`);
+        }
+
+        function upgradeProperty(idx) {
+            const p = players[turn];
+            const space = boardData[idx];
+            p.money -= 100;
+            space.level++;
+            
+            // Visuals
+            let stars = ''; for(let i=0; i<space.level; i++) stars+='🏠';
+            document.getElementById(`lvl-${idx}`).innerText = stars;
+            
+            playSound('cash');
+            updateStats();
+            
+            setLog(`Upgraded! Rent is now $${space.rent * Math.pow(2, space.level)}`);
+            setButtons(`<button class="btn" onclick="endTurn()">END TURN</button>`);
+        }
+
+        function payRent(idx, amt) {
+            const p = players[turn];
+            const owner = players[boardData[idx].owner];
+            
+            p.money -= amt;
+            owner.money += amt;
+            
+            playSound('bad');
+            updateStats();
+
+            if (p.money < 0) {
+                handleBankrupt();
+            } else {
+                setLog(`Paid $${amt} to ${owner.name}.`);
+                setButtons(`<button class="btn" onclick="endTurn()">END TURN</button>`);
+            }
+        }
+
+        function handleBankrupt() {
+            setLog(`<b>${players[turn].name} IS BANKRUPT!</b><br>${players[turn === 0 ? 1 : 0].name} WINS!`);
+            setButtons(`<button class="btn btn-green" onclick="location.reload()">PLAY AGAIN</button>`);
+        }
+
+        function endTurn() {
+            if (doublesCount > 0 && doublesCount < 3) {
+                setLog(`${players[turn].name} rolled doubles! Roll again.`);
+                setButtons(`<button class="btn" onclick="handleRoll()">ROLL DICE</button>`);
+            } else {
+                doublesCount = 0;
+                turn = turn === 0 ? 1 : 0;
+                updateStats();
+                setLog(`${players[turn].name}'s Turn. Roll the dice!`);
+                setButtons(`<button class="btn" onclick="handleRoll()">ROLL DICE</button>`);
+            }
+        }
+
+        // Boot
+        initBoard();
+        updateStats();
+
+    </script>
+</body>
+</html>

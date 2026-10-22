@@ -1,0 +1,590 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Carrom Master</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Fredoka+One&family=Nunito:wght@700&display=swap');
+
+        body { 
+            margin: 0; overflow: hidden; background-color: #1e293b; 
+            font-family: 'Nunito', sans-serif; user-select: none;
+            display: flex; flex-direction: column; align-items: center; justify-content: center;
+            height: 100vh; color: white;
+        }
+
+        #ui-container {
+            width: 100%; max-width: 800px; display: flex; justify-content: space-between;
+            padding: 10px 20px; box-sizing: border-box; font-family: 'Fredoka One';
+        }
+
+        .player-card {
+            background: #334155; padding: 10px 20px; border-radius: 12px;
+            border: 3px solid transparent; display: flex; flex-direction: column; align-items: center;
+            transition: 0.3s; width: 150px;
+        }
+        .player-card.active {
+            border-color: #38bdf8; transform: scale(1.05); box-shadow: 0 10px 20px rgba(56, 189, 248, 0.2);
+            background: #1e3a8a;
+        }
+
+        .score { font-size: 28px; color: #f8fafc; }
+        .p-name { font-size: 16px; color: #94a3b8; }
+        .color-badge { width: 20px; height: 20px; border-radius: 50%; margin-bottom: 5px; border: 2px solid white;}
+
+        #game-wrapper {
+            position: relative;
+            box-shadow: 0 20px 50px rgba(0,0,0,0.8);
+            border-radius: 24px; padding: 15px; background: #5c3a21; /* Dark wood outer border */
+        }
+
+        canvas {
+            display: block; background: #e6b981; /* Light wood board */
+            border-radius: 8px; cursor: grab;
+        }
+        canvas:active { cursor: grabbing; }
+
+        #info-banner {
+            position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%);
+            background: rgba(0,0,0,0.8); padding: 20px 40px; border-radius: 16px;
+            font-family: 'Fredoka One'; font-size: 32px; color: #fcd34d; border: 4px solid #fcd34d;
+            text-align: center; pointer-events: none; opacity: 0; transition: opacity 0.3s; z-index: 10;
+        }
+
+        /* Help Text */
+        #help-text {
+            margin-top: 15px; color: #94a3b8; font-size: 16px; text-align: center; max-width: 600px;
+        }
+    </style>
+</head>
+<body>
+
+    <div id="ui-container">
+        <div class="player-card active" id="p2-card">
+            <div class="color-badge" style="background: #222;"></div>
+            <div class="p-name">PLAYER 2 (TOP)</div>
+            <div class="score" id="p2-score">0</div>
+        </div>
+        <div style="display: flex; flex-direction: column; align-items: center; justify-content: center;">
+            <h1 style="font-family: 'Fredoka One'; font-size: 36px; margin: 0; color: #f8fafc; text-shadow: 0 4px 0 #000;">CARROM</h1>
+            <button onclick="resetBoard()" style="background: #ef4444; border:none; padding: 5px 15px; border-radius: 8px; color: white; font-family: 'Fredoka One'; cursor: pointer; margin-top: 5px; box-shadow: 0 3px 0 #991b1b;">RESET</button>
+        </div>
+        <div class="player-card" id="p1-card">
+            <div class="color-badge" style="background: #f1f1f1;"></div>
+            <div class="p-name">PLAYER 1 (BOTTOM)</div>
+            <div class="score" id="p1-score">0</div>
+        </div>
+    </div>
+
+    <div id="game-wrapper">
+        <canvas id="carrom-canvas"></canvas>
+        <div id="info-banner">PLAYER 1 TURN</div>
+    </div>
+
+    <div id="help-text">
+        <b>1. Place:</b> Drag the striker horizontally along your baseline.<br>
+        <b>2. Aim & Shoot:</b> Drag backwards from the striker and release to shoot!
+    </div>
+
+    <script>
+        // --- AUDIO ENGINE ---
+        const AudioContext = window.AudioContext || window.webkitAudioContext;
+        let audioCtx;
+        function initAudio() { if(!audioCtx) audioCtx = new AudioContext(); }
+        
+        function playHitSound(velocityMag) {
+            if(!audioCtx) return;
+            const t = audioCtx.currentTime;
+            const osc = audioCtx.createOscillator();
+            const gain = audioCtx.createGain();
+            
+            // Volume based on hit strength
+            const vol = Math.min(1.0, velocityMag / 20) * 0.5;
+            if (vol < 0.05) return; // Too soft to play sound
+
+            osc.type = 'triangle';
+            osc.frequency.setValueAtTime(800 + Math.random()*200, t);
+            osc.frequency.exponentialRampToValueAtTime(200, t + 0.05);
+            
+            gain.gain.setValueAtTime(vol, t);
+            gain.gain.exponentialRampToValueAtTime(0.01, t + 0.05);
+            
+            osc.connect(gain);
+            gain.connect(audioCtx.destination);
+            osc.start(t);
+            osc.stop(t + 0.05);
+        }
+
+        // --- CANVAS SETUP ---
+        const canvas = document.getElementById('carrom-canvas');
+        const ctx = canvas.getContext('2d');
+        
+        // Responsive size
+        const minDim = Math.min(window.innerWidth - 40, window.innerHeight - 200);
+        const SIZE = Math.floor(Math.max(400, minDim)); // Fixed logical size for physics stability
+        canvas.width = SIZE;
+        canvas.height = SIZE;
+
+        // --- CONSTANTS ---
+        const POCKET_RADIUS = SIZE * 0.055;
+        const BOARD_PADDING = SIZE * 0.05;
+        const INNER_SIZE = SIZE - (BOARD_PADDING * 2);
+        
+        const STRIKER_RADIUS = SIZE * 0.035;
+        const COIN_RADIUS = SIZE * 0.025;
+        
+        const MASS_STRIKER = 3.0;
+        const MASS_COIN = 1.0;
+        
+        const FRICTION = 0.985;
+        const RESTITUTION = 0.85; // Bounciness
+
+        const POCKETS = [
+            { x: BOARD_PADDING + POCKET_RADIUS*0.8, y: BOARD_PADDING + POCKET_RADIUS*0.8 }, // TL
+            { x: SIZE - BOARD_PADDING - POCKET_RADIUS*0.8, y: BOARD_PADDING + POCKET_RADIUS*0.8 }, // TR
+            { x: BOARD_PADDING + POCKET_RADIUS*0.8, y: SIZE - BOARD_PADDING - POCKET_RADIUS*0.8 }, // BL
+            { x: SIZE - BOARD_PADDING - POCKET_RADIUS*0.8, y: SIZE - BOARD_PADDING - POCKET_RADIUS*0.8 } // BR
+        ];
+
+        // Baselines
+        const LINE_DIST = SIZE * 0.15;
+        const BASELINES = {
+            1: { y: SIZE - BOARD_PADDING - LINE_DIST, minX: BOARD_PADDING + LINE_DIST + STRIKER_RADIUS, maxX: SIZE - BOARD_PADDING - LINE_DIST - STRIKER_RADIUS }, // Player 1 (Bottom)
+            2: { y: BOARD_PADDING + LINE_DIST, minX: BOARD_PADDING + LINE_DIST + STRIKER_RADIUS, maxX: SIZE - BOARD_PADDING - LINE_DIST - STRIKER_RADIUS }  // Player 2 (Top)
+        };
+
+        // --- GAME STATE ---
+        const STATE_PLACING = 0;
+        const STATE_AIMING = 1;
+        const STATE_MOVING = 2;
+
+        let gameState = STATE_PLACING;
+        let currentPlayer = 1; // 1 (White/Bottom), 2 (Black/Top)
+        let scores = { 1: 0, 2: 0 };
+        
+        let coins = [];
+        let striker = null;
+
+        // Input
+        let mouse = { x: 0, y: 0, isDown: false, dragStartX: 0, dragStartY: 0 };
+
+        // --- PHYSICS CLASSES ---
+
+        class Coin {
+            constructor(x, y, radius, mass, type, color) {
+                this.x = x;
+                this.y = y;
+                this.vx = 0;
+                this.vy = 0;
+                this.radius = radius;
+                this.mass = mass;
+                this.type = type; // 'white', 'black', 'queen', 'striker'
+                this.color = color;
+                this.active = true;
+            }
+
+            draw(ctx) {
+                if (!this.active) return;
+                
+                // Shadow
+                ctx.beginPath();
+                ctx.arc(this.x + 2, this.y + 2, this.radius, 0, Math.PI * 2);
+                ctx.fillStyle = 'rgba(0,0,0,0.3)';
+                ctx.fill();
+
+                // Base
+                ctx.beginPath();
+                ctx.arc(this.x, this.y, this.radius, 0, Math.PI * 2);
+                ctx.fillStyle = this.color;
+                ctx.fill();
+                
+                // Detail rings
+                ctx.lineWidth = this.type === 'striker' ? 3 : 1;
+                ctx.strokeStyle = this.type === 'white' ? '#ddd' : (this.type === 'black' ? '#555' : '#fff');
+                ctx.stroke();
+
+                ctx.beginPath();
+                ctx.arc(this.x, this.y, this.radius * 0.6, 0, Math.PI * 2);
+                if (this.type === 'striker') {
+                    ctx.strokeStyle = currentPlayer === 1 ? '#38bdf8' : '#ef4444';
+                    ctx.lineWidth = 3;
+                } else {
+                    ctx.strokeStyle = 'rgba(0,0,0,0.2)';
+                    ctx.lineWidth = 1;
+                }
+                ctx.stroke();
+            }
+
+            update() {
+                if (!this.active) return;
+                
+                this.x += this.vx;
+                this.y += this.vy;
+                
+                this.vx *= FRICTION;
+                this.vy *= FRICTION;
+
+                // Stop completely if very slow
+                if (Math.abs(this.vx) < 0.05) this.vx = 0;
+                if (Math.abs(this.vy) < 0.05) this.vy = 0;
+
+                // Wall Collisions
+                if (this.x - this.radius < BOARD_PADDING) {
+                    this.x = BOARD_PADDING + this.radius;
+                    this.vx *= -RESTITUTION;
+                    if(Math.abs(this.vx) > 1) playHitSound(Math.abs(this.vx));
+                } else if (this.x + this.radius > SIZE - BOARD_PADDING) {
+                    this.x = SIZE - BOARD_PADDING - this.radius;
+                    this.vx *= -RESTITUTION;
+                    if(Math.abs(this.vx) > 1) playHitSound(Math.abs(this.vx));
+                }
+
+                if (this.y - this.radius < BOARD_PADDING) {
+                    this.y = BOARD_PADDING + this.radius;
+                    this.vy *= -RESTITUTION;
+                    if(Math.abs(this.vy) > 1) playHitSound(Math.abs(this.vy));
+                } else if (this.y + this.radius > SIZE - BOARD_PADDING) {
+                    this.y = SIZE - BOARD_PADDING - this.radius;
+                    this.vy *= -RESTITUTION;
+                    if(Math.abs(this.vy) > 1) playHitSound(Math.abs(this.vy));
+                }
+            }
+        }
+
+        // --- INITIALIZATION ---
+
+        function resetBoard() {
+            coins = [];
+            scores = { 1: 0, 2: 0 };
+            updateUI();
+            currentPlayer = 1;
+            switchTurn(1);
+
+            const cx = SIZE / 2;
+            const cy = SIZE / 2;
+
+            // Add Queen
+            coins.push(new Coin(cx, cy, COIN_RADIUS, MASS_COIN, 'queen', '#e63946'));
+
+            // Inner Hexagon (6 coins)
+            let radius = COIN_RADIUS * 2.1;
+            for (let i = 0; i < 6; i++) {
+                let angle = (i * Math.PI) / 3;
+                let type = i % 2 === 0 ? 'white' : 'black';
+                let color = type === 'white' ? '#f1f5f9' : '#1e293b';
+                coins.push(new Coin(cx + Math.cos(angle) * radius, cy + Math.sin(angle) * radius, COIN_RADIUS, MASS_COIN, type, color));
+            }
+
+            // Outer Circle (12 coins)
+            radius = COIN_RADIUS * 4.2;
+            for (let i = 0; i < 12; i++) {
+                let angle = (i * Math.PI) / 6;
+                let type = i % 2 === 0 ? 'black' : 'white'; // Alternate differently
+                let color = type === 'white' ? '#f1f5f9' : '#1e293b';
+                coins.push(new Coin(cx + Math.cos(angle) * radius, cy + Math.sin(angle) * radius, COIN_RADIUS, MASS_COIN, type, color));
+            }
+        }
+
+        function initStriker() {
+            gameState = STATE_PLACING;
+            const bl = BASELINES[currentPlayer];
+            striker = new Coin(SIZE / 2, bl.y, STRIKER_RADIUS, MASS_STRIKER, 'striker', '#f8fafc');
+        }
+
+        function switchTurn(player) {
+            currentPlayer = player;
+            document.getElementById('p1-card').classList.toggle('active', player === 1);
+            document.getElementById('p2-card').classList.toggle('active', player === 2);
+            initStriker();
+            showBanner(`PLAYER ${player} TURN`);
+        }
+
+        function showBanner(text) {
+            const banner = document.getElementById('info-banner');
+            banner.innerText = text;
+            banner.style.opacity = '1';
+            setTimeout(() => banner.style.opacity = '0', 1500);
+        }
+
+        function updateUI() {
+            document.getElementById('p1-score').innerText = scores[1];
+            document.getElementById('p2-score').innerText = scores[2];
+        }
+
+        // --- PHYSICS ENGINE ---
+
+        function resolveCollisions() {
+            // Need multiple iterations for stable resolving of clustered coins
+            for (let iter = 0; iter < 3; iter++) {
+                const allObjects = [...coins, striker].filter(c => c && c.active);
+                
+                for (let i = 0; i < allObjects.length; i++) {
+                    for (let j = i + 1; j < allObjects.length; j++) {
+                        let c1 = allObjects[i];
+                        let c2 = allObjects[j];
+
+                        let dx = c2.x - c1.x;
+                        let dy = c2.y - c1.y;
+                        let dist = Math.hypot(dx, dy);
+                        let minDist = c1.radius + c2.radius;
+
+                        if (dist < minDist) {
+                            // Play sound on strong impact
+                            const relVel = Math.hypot(c2.vx - c1.vx, c2.vy - c1.vy);
+                            if (iter === 0 && relVel > 2) playHitSound(relVel);
+
+                            // 1. Separate to prevent sinking
+                            let overlap = minDist - dist;
+                            let nx = dx / dist;
+                            let ny = dy / dist;
+
+                            let totalMass = c1.mass + c2.mass;
+                            let m1Ratio = c2.mass / totalMass;
+                            let m2Ratio = c1.mass / totalMass;
+
+                            c1.x -= nx * overlap * m1Ratio;
+                            c1.y -= ny * overlap * m1Ratio;
+                            c2.x += nx * overlap * m2Ratio;
+                            c2.y += ny * overlap * m2Ratio;
+
+                            // 2. Calculate elastic collision velocities
+                            let kx = c1.vx - c2.vx;
+                            let ky = c1.vy - c2.vy;
+                            
+                            // Prevent pieces from sticking if moving apart
+                            let p = 2.0 * (nx * kx + ny * ky) / totalMass;
+                            
+                            if (p > 0) {
+                                // Apply restitution
+                                p *= RESTITUTION;
+                                c1.vx -= p * c2.mass * nx;
+                                c1.vy -= p * c2.mass * ny;
+                                c2.vx += p * c1.mass * nx;
+                                c2.vy += p * c1.mass * ny;
+                            }
+                        }
+                    }
+                }
+            }
+        }
+
+        function checkPockets() {
+            const allObjects = [...coins, striker].filter(c => c && c.active);
+            let scored = false;
+            let foul = false;
+
+            allObjects.forEach(obj => {
+                POCKETS.forEach(pocket => {
+                    let dist = Math.hypot(obj.x - pocket.x, obj.y - pocket.y);
+                    if (dist < POCKET_RADIUS) { // Center entered the pocket
+                        if (obj.type === 'striker') {
+                            foul = true;
+                            striker.active = false;
+                            striker.vx = 0; striker.vy = 0;
+                        } else {
+                            obj.active = false;
+                            
+                            // Scoring logic
+                            let pts = 0;
+                            if (obj.type === 'white') pts = 10;
+                            else if (obj.type === 'black') pts = 10;
+                            else if (obj.type === 'queen') pts = 50;
+
+                            // Technically carrom requires pocketing your color. We'll simplify: you score whatever falls in.
+                            scores[currentPlayer] += pts;
+                            scored = true;
+                        }
+                    }
+                });
+            });
+
+            if (scored || foul) updateUI();
+            return { scored, foul };
+        }
+
+        function isMotionActive() {
+            const all = [...coins, striker].filter(c => c && c.active);
+            return all.some(c => Math.abs(c.vx) > 0 || Math.abs(c.vy) > 0);
+        }
+
+        // --- RENDERING ---
+
+        function drawBoardVisuals() {
+            // Wood background
+            ctx.fillStyle = '#e6b981';
+            ctx.fillRect(0, 0, SIZE, SIZE);
+
+            // Dark Border
+            ctx.strokeStyle = '#5c3a21';
+            ctx.lineWidth = BOARD_PADDING * 2;
+            ctx.strokeRect(0, 0, SIZE, SIZE);
+
+            // Corner Pockets
+            ctx.fillStyle = '#111';
+            POCKETS.forEach(p => {
+                ctx.beginPath();
+                ctx.arc(p.x, p.y, POCKET_RADIUS, 0, Math.PI * 2);
+                ctx.fill();
+            });
+
+            // Center Decorations
+            ctx.lineWidth = 2;
+            ctx.strokeStyle = '#333';
+            ctx.beginPath(); ctx.arc(SIZE/2, SIZE/2, SIZE*0.15, 0, Math.PI*2); ctx.stroke();
+            ctx.strokeStyle = '#e63946';
+            ctx.beginPath(); ctx.arc(SIZE/2, SIZE/2, SIZE*0.17, 0, Math.PI*2); ctx.stroke();
+            ctx.fillStyle = 'rgba(230, 57, 70, 0.2)';
+            ctx.beginPath(); ctx.arc(SIZE/2, SIZE/2, COIN_RADIUS*1.5, 0, Math.PI*2); ctx.fill();
+
+            // Baselines
+            ctx.strokeStyle = '#333';
+            ctx.lineWidth = 2;
+            const drawBaseline = (y) => {
+                ctx.beginPath(); ctx.moveTo(BOARD_PADDING + LINE_DIST, y - STRIKER_RADIUS); ctx.lineTo(SIZE - BOARD_PADDING - LINE_DIST, y - STRIKER_RADIUS); ctx.stroke();
+                ctx.beginPath(); ctx.moveTo(BOARD_PADDING + LINE_DIST, y + STRIKER_RADIUS); ctx.lineTo(SIZE - BOARD_PADDING - LINE_DIST, y + STRIKER_RADIUS); ctx.stroke();
+                
+                // End circles
+                ctx.fillStyle = '#e63946';
+                ctx.beginPath(); ctx.arc(BOARD_PADDING + LINE_DIST, y, STRIKER_RADIUS, 0, Math.PI*2); ctx.fill(); ctx.stroke();
+                ctx.beginPath(); ctx.arc(SIZE - BOARD_PADDING - LINE_DIST, y, STRIKER_RADIUS, 0, Math.PI*2); ctx.fill(); ctx.stroke();
+            };
+
+            drawBaseline(BASELINES[1].y);
+            drawBaseline(BASELINES[2].y);
+        }
+
+        // --- MAIN LOOP ---
+
+        function render() {
+            requestAnimationFrame(render);
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+            drawBoardVisuals();
+
+            // Physics Update & Draw
+            if (gameState === STATE_MOVING) {
+                coins.forEach(c => c.update());
+                if(striker) striker.update();
+                
+                resolveCollisions();
+                const res = checkPockets();
+
+                if (!isMotionActive()) {
+                    // Turn over
+                    if (res.foul) {
+                        scores[currentPlayer] = Math.max(0, scores[currentPlayer] - 10);
+                        updateUI();
+                        showBanner("FOUL! -10 PTS");
+                    }
+                    
+                    // Switch turn if no score or fouled
+                    if (res.foul || !res.scored) {
+                        setTimeout(() => switchTurn(currentPlayer === 1 ? 2 : 1), 500);
+                    } else {
+                        setTimeout(() => initStriker(), 500);
+                        showBanner("SCORE! EXTRA TURN");
+                    }
+                    
+                    gameState = STATE_PLACING;
+                }
+            }
+
+            // Draw objects
+            coins.forEach(c => c.draw(ctx));
+            if(striker) striker.draw(ctx);
+
+            // Draw Aiming Line
+            if (gameState === STATE_AIMING && striker) {
+                const dx = striker.x - mouse.x;
+                const dy = striker.y - mouse.y;
+                
+                ctx.beginPath();
+                ctx.moveTo(striker.x, striker.y);
+                // Draw opposite to mouse pull
+                ctx.lineTo(striker.x + dx * 2, striker.y + dy * 2);
+                ctx.strokeStyle = 'rgba(255, 255, 255, 0.5)';
+                ctx.lineWidth = 4;
+                ctx.setLineDash([10, 10]);
+                ctx.stroke();
+                ctx.setLineDash([]);
+            }
+        }
+
+        // --- INPUT HANDLING ---
+
+        function getMousePos(evt) {
+            const rect = canvas.getBoundingClientRect();
+            return {
+                x: (evt.clientX - rect.left) * (canvas.width / rect.width),
+                y: (evt.clientY - rect.top) * (canvas.height / rect.height)
+            };
+        }
+
+        canvas.addEventListener('mousedown', (e) => {
+            initAudio();
+            if (gameState === STATE_MOVING || !striker) return;
+            
+            const pos = getMousePos(e);
+            mouse.isDown = true;
+
+            const dist = Math.hypot(pos.x - striker.x, pos.y - striker.y);
+            
+            if (gameState === STATE_PLACING) {
+                if (dist < striker.radius * 2) {
+                    gameState = STATE_AIMING;
+                }
+            }
+        });
+
+        canvas.addEventListener('mousemove', (e) => {
+            const pos = getMousePos(e);
+            mouse.x = pos.x;
+            mouse.y = pos.y;
+
+            if (gameState === STATE_PLACING && mouse.isDown && striker) {
+                // Drag striker along baseline
+                const bl = BASELINES[currentPlayer];
+                striker.x = Math.max(bl.minX, Math.min(bl.maxX, pos.x));
+            }
+        });
+
+        canvas.addEventListener('mouseup', () => {
+            mouse.isDown = false;
+            
+            if (gameState === STATE_AIMING && striker) {
+                // Calculate power
+                const dx = striker.x - mouse.x;
+                const dy = striker.y - mouse.y;
+                
+                // Limit max power
+                const powerMultiplier = 0.15;
+                const maxPower = 30;
+                
+                striker.vx = Math.max(-maxPower, Math.min(maxPower, dx * powerMultiplier));
+                striker.vy = Math.max(-maxPower, Math.min(maxPower, dy * powerMultiplier));
+
+                // Only shoot if pulled back enough
+                if (Math.hypot(striker.vx, striker.vy) > 1) {
+                    gameState = STATE_MOVING;
+                } else {
+                    gameState = STATE_PLACING; // Cancel shot
+                }
+            } else if (gameState === STATE_PLACING) {
+                // Stop placing drag
+            }
+        });
+
+        // Touch support
+        canvas.addEventListener('touchstart', (e) => { e.preventDefault(); canvas.dispatchEvent(new MouseEvent('mousedown', {clientX: e.touches[0].clientX, clientY: e.touches[0].clientY})); }, {passive: false});
+        canvas.addEventListener('touchmove', (e) => { e.preventDefault(); canvas.dispatchEvent(new MouseEvent('mousemove', {clientX: e.touches[0].clientX, clientY: e.touches[0].clientY})); }, {passive: false});
+        canvas.addEventListener('touchend', (e) => { e.preventDefault(); canvas.dispatchEvent(new MouseEvent('mouseup')); }, {passive: false});
+
+        // Boot
+        resetBoard();
+        render();
+
+    </script>
+</body>
+</html>

@@ -1,0 +1,687 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Ultrasound Echo Lab: Time of Flight</title>
+    <style>
+        :root {
+            --bg-color: #020617;
+            --panel-bg: #0f172a;
+            --text-main: #f8fafc;
+            --text-muted: #94a3b8;
+            --accent: #06b6d4; /* Cyan/Teal for Ultrasound */
+            --accent-glow: rgba(6, 182, 212, 0.5);
+            --border-color: #334155;
+            --organ-color: #be123c; /* Deep red */
+            --tissue-bg: #1e293b;
+            --success: #10b981;
+            --warning: #f59e0b;
+        }
+
+        * { box-sizing: border-box; margin: 0; padding: 0; }
+
+        body {
+            background-color: var(--bg-color);
+            color: var(--text-main);
+            font-family: 'Inter', -apple-system, system-ui, sans-serif;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            padding: 20px;
+        }
+
+        .app-container {
+            display: flex;
+            background: var(--panel-bg);
+            border-radius: 20px;
+            box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.6);
+            width: 100%;
+            max-width: 1200px;
+            height: 800px;
+            overflow: hidden;
+            border: 1px solid var(--border-color);
+        }
+
+        /* Sidebar */
+        .sidebar {
+            width: 380px;
+            padding: 35px;
+            border-right: 1px solid var(--border-color);
+            display: flex;
+            flex-direction: column;
+            gap: 20px;
+            background: #0f172a;
+            z-index: 10;
+        }
+
+        .sidebar h1 { font-size: 24px; font-weight: 800; color: var(--accent); letter-spacing: 0.5px;}
+        
+        .math-box {
+            background: #1e293b;
+            padding: 15px;
+            border-radius: 12px;
+            font-size: 13px;
+            border: 1px solid var(--border-color);
+            line-height: 1.5;
+        }
+
+        .formula {
+            font-family: 'Courier New', Courier, monospace;
+            font-size: 18px;
+            text-align: center;
+            margin: 10px 0;
+            font-weight: bold;
+            color: var(--accent);
+            background: #020617;
+            padding: 10px;
+            border-radius: 8px;
+            border: 1px solid #334155;
+            box-shadow: inset 0 0 10px rgba(0,0,0,0.5);
+        }
+
+        .control-group { display: flex; flex-direction: column; gap: 10px; }
+        label { font-size: 13px; font-weight: 700; display: flex; justify-content: space-between; align-items: center; color: #cbd5e1;}
+        
+        input[type="range"] {
+            width: 100%;
+            cursor: pointer;
+            accent-color: var(--accent);
+        }
+
+        select {
+            width: 100%;
+            padding: 10px;
+            background: #1e293b;
+            color: #f8fafc;
+            border: 1px solid #475569;
+            border-radius: 8px;
+            font-size: 14px;
+            outline: none;
+            cursor: pointer;
+        }
+
+        .main-btn {
+            width: 100%;
+            padding: 14px;
+            background: var(--accent);
+            color: #020617;
+            border: none;
+            border-radius: 10px;
+            font-size: 15px;
+            font-weight: 800;
+            cursor: pointer;
+            transition: all 0.2s;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            box-shadow: 0 0 15px var(--accent-glow);
+            margin-top: 10px;
+        }
+        .main-btn:hover:not(:disabled) { background: #22d3ee; transform: translateY(-1px); box-shadow: 0 0 20px rgba(34, 211, 238, 0.6); }
+        .main-btn:active:not(:disabled) { transform: translateY(0); }
+        .main-btn:disabled { background: #334155; color: #94a3b8; cursor: not-allowed; box-shadow: none; }
+
+        .status-card {
+            background: #1e293b;
+            padding: 20px;
+            border-radius: 12px;
+            font-size: 13px;
+            line-height: 1.5;
+            color: var(--text-muted);
+            border-left: 4px solid var(--accent);
+            margin-top: auto;
+        }
+
+        /* Simulation Area */
+        .lab-area {
+            flex: 1;
+            background: var(--tissue-bg);
+            position: relative;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            overflow: hidden;
+        }
+
+        /* A-Mode Graph Overlay */
+        .a-mode-panel {
+            position: absolute;
+            top: 30px;
+            right: 30px;
+            background: #020617;
+            border-radius: 12px;
+            border: 2px solid #334155;
+            padding: 15px;
+            width: 320px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.8);
+            z-index: 20;
+        }
+
+        .a-mode-header {
+            display: flex;
+            justify-content: space-between;
+            font-size: 10px;
+            text-transform: uppercase;
+            color: #94a3b8;
+            letter-spacing: 1px;
+            margin-bottom: 10px;
+        }
+
+        .a-mode-canvas {
+            width: 100%;
+            height: 100px;
+            background: #000;
+            border-radius: 6px;
+            border: 1px solid #1e293b;
+        }
+
+        /* Data Readouts */
+        .data-overlay {
+            position: absolute;
+            bottom: 30px;
+            right: 30px;
+            background: rgba(15, 23, 42, 0.85);
+            padding: 20px;
+            border-radius: 12px;
+            backdrop-filter: blur(8px);
+            border: 1px solid #334155;
+            z-index: 10;
+            min-width: 250px;
+        }
+
+        .data-row { margin-bottom: 15px; display: flex; flex-direction: column; }
+        .data-row:last-child { margin-bottom: 0; }
+        .data-label { font-size: 10px; text-transform: uppercase; color: #94a3b8; letter-spacing: 1px; }
+        .data-value { font-size: 26px; font-weight: 800; font-family: monospace; color: var(--text-main); }
+        .data-unit { font-size: 12px; color: #94a3b8; margin-left: 4px; font-family: 'Inter', sans-serif;}
+
+        /* Graphics */
+        .svg-canvas {
+            position: absolute;
+            top: 0; left: 0; width: 100%; height: 100%;
+            z-index: 1;
+            pointer-events: none;
+        }
+
+        #particleCanvas {
+            position: absolute;
+            top: 0; left: 0; width: 100%; height: 100%;
+            z-index: 2;
+            pointer-events: none;
+            mix-blend-mode: screen;
+        }
+
+        /* SVG Anatomy */
+        .transducer { fill: #cbd5e1; stroke: #475569; stroke-width: 2; }
+        .piezo-crystal { fill: #10b981; transition: fill 0.1s; }
+        .piezo-crystal.firing { fill: #fff; filter: drop-shadow(0 0 8px #fff); }
+        
+        .tissue-layer { fill: #1e293b; }
+        .organ-boundary { 
+            fill: var(--organ-color); 
+            stroke: #f43f5e; 
+            stroke-width: 3;
+            transition: transform 0.3s;
+        }
+
+        .grid-line { stroke: #334155; stroke-dasharray: 4 4; stroke-width: 1; }
+        .grid-text { font-size: 10px; fill: #64748b; font-family: monospace; }
+
+        @media (max-width: 900px) {
+            .app-container { flex-direction: column; height: auto; }
+            .sidebar { width: 100%; border-right: none; }
+            .lab-area { height: 600px; }
+        }
+    </style>
+</head>
+<body>
+
+    <div class="app-container">
+        <aside class="sidebar">
+            <h1>Ultrasound Physics</h1>
+            <p style="font-size: 13px; color: var(--text-muted);">
+                Ultrasound imaging works exactly like Sonar. It sends a sound pulse into the body and listens for the echo. The time it takes to return tells the machine how deep the organ is.
+            </p>
+
+            <div class="math-box">
+                <div style="font-size: 11px; color: var(--text-muted); text-transform: uppercase; letter-spacing: 1px;">Distance Equation</div>
+                <div class="formula">
+                    d = (v × t) / 2
+                </div>
+                <div style="font-size: 12px; color: var(--text-muted); margin-top: 10px;">
+                    <strong>d</strong> = Depth of Organ<br>
+                    <strong>v</strong> = Speed of Sound in Tissue<br>
+                    <strong>t</strong> = Total Time of Flight (Round Trip)<br>
+                    <em style="color: #64748b;">(Divided by 2 because the wave travels there AND back)</em>
+                </div>
+            </div>
+
+            <div class="control-group">
+                <label>
+                    Target Organ Depth (d)
+                    <span id="depthVal" style="color: var(--accent); font-family: monospace; font-size: 14px;">10.0 cm</span>
+                </label>
+                <input type="range" id="depthSlider" min="2" max="18" step="0.5" value="10">
+            </div>
+
+            <div class="control-group">
+                <label style="margin-top: 10px;">Tissue Density (Speed of Sound - v)</label>
+                <select id="tissueSelect">
+                    <option value="1540">Soft Tissue Average (1540 m/s)</option>
+                    <option value="1450">Adipose / Fat (1450 m/s)</option>
+                    <option value="1580">Muscle (1580 m/s)</option>
+                    <option value="4080">Bone (4080 m/s)</option>
+                </select>
+            </div>
+
+            <button class="main-btn" id="btnPing">Ping (Send Pulse)</button>
+
+            <div class="status-card" id="diagnosticCard">
+                <strong style="color: #f8fafc;">Piezoelectric Effect</strong><br>
+                <span id="diagText">The transducer contains crystals that vibrate when electrified to create sound, and generate electricity when hit by returning sound echoes.</span>
+            </div>
+            
+        </aside>
+
+        <main class="lab-area">
+            
+            <!-- A-Mode (Amplitude Mode) Oscilloscope -->
+            <div class="a-mode-panel">
+                <div class="a-mode-header">
+                    <span>A-Mode Display (Amplitude vs Time)</span>
+                    <span style="color: var(--accent);">Live</span>
+                </div>
+                <canvas class="a-mode-canvas" id="aModeCanvas"></canvas>
+            </div>
+
+            <!-- Real-time Data Readouts -->
+            <div class="data-overlay">
+                <div class="data-row">
+                    <div class="data-label">Time of Flight (t)</div>
+                    <div class="data-value" id="timeDisplay" style="color: var(--warning);">0.0<span class="data-unit">µs (microseconds)</span></div>
+                </div>
+                <div class="data-row" style="margin-top: 10px; padding-top: 15px; border-top: 1px solid #334155;">
+                    <div class="data-label">Calculated Depth (d)</div>
+                    <div class="data-value" id="calcDepthDisplay" style="color: var(--accent);">0.0<span class="data-unit">cm</span></div>
+                </div>
+            </div>
+
+            <!-- SVG Lab Setup -->
+            <svg class="svg-canvas" viewBox="0 0 800 800" id="mainSvg">
+                <defs>
+                    <filter id="organGlow">
+                        <feGaussianBlur stdDeviation="3" result="blur" />
+                        <feComposite in="SourceGraphic" in2="blur" operator="over" />
+                    </filter>
+                </defs>
+
+                <!-- Background Depth Grid (0 to 20 cm) -->
+                <!-- 1 cm = 30px visual scale. Start Y = 100 -->
+                <g id="depthGrid"></g>
+
+                <!-- Transducer Probe -->
+                <g transform="translate(350, -20)">
+                    <rect x="0" y="0" width="100" height="120" rx="10" class="transducer" />
+                    <rect x="30" y="-100" width="40" height="100" fill="#475569" /> <!-- Cable -->
+                    <path d="M 0 100 L 100 100 L 90 120 L 10 120 Z" fill="#94a3b8" /> <!-- Matching layer -->
+                    <!-- Piezoelectric Crystals -->
+                    <rect id="crystal1" x="20" y="110" width="15" height="5" class="piezo-crystal" />
+                    <rect id="crystal2" x="42" y="110" width="15" height="5" class="piezo-crystal" />
+                    <rect id="crystal3" x="65" y="110" width="15" height="5" class="piezo-crystal" />
+                </g>
+
+                <text x="400" y="85" font-size="12" font-weight="bold" fill="#020617" text-anchor="middle">TRANSDUCER</text>
+
+                <!-- Skin Surface Line -->
+                <line x1="0" y1="100" x2="800" y2="100" stroke="#06b6d4" stroke-width="4" opacity="0.5" />
+                <text x="20" y="90" class="grid-text" fill="#06b6d4">SKIN SURFACE (0 cm)</text>
+
+                <!-- Target Organ -->
+                <!-- Visual depth mapped: y = 100 + (depthCm * 30) -->
+                <g id="organGroup" transform="translate(0, 400)">
+                    <path d="M 200 0 Q 400 -30 600 0 Q 700 50 600 100 Q 400 120 200 100 Q 100 50 200 0 Z" class="organ-boundary" filter="url(#organGlow)" />
+                    <text x="400" y="50" font-size="16" font-weight="bold" fill="#f8fafc" text-anchor="middle" opacity="0.8">TARGET ORGAN / BOUNDARY</text>
+                </g>
+
+            </svg>
+
+            <!-- Dynamic Particles (Canvas) -->
+            <canvas id="particleCanvas"></canvas>
+        </main>
+    </div>
+
+    <script>
+        const depthSlider = document.getElementById('depthSlider');
+        const tissueSelect = document.getElementById('tissueSelect');
+        const depthVal = document.getElementById('depthVal');
+        const btnPing = document.getElementById('btnPing');
+        
+        const timeDisplay = document.getElementById('timeDisplay');
+        const calcDepthDisplay = document.getElementById('calcDepthDisplay');
+        
+        const organGroup = document.getElementById('organGroup');
+        const depthGrid = document.getElementById('depthGrid');
+        const crystals = [document.getElementById('crystal1'), document.getElementById('crystal2'), document.getElementById('crystal3')];
+        
+        const canvas = document.getElementById('particleCanvas');
+        const ctx = canvas.getContext('2d');
+
+        const aModeCanvas = document.getElementById('aModeCanvas');
+        const aModeCtx = aModeCanvas.getContext('2d');
+
+        // Physics Constants
+        // 1 cm = 30 px visually
+        const VISUAL_SCALE = 30; 
+        const PROBE_Y = 100;
+        
+        // Simulation state
+        let currentDepthCm = 10.0;
+        let speedOfSound = 1540; // m/s
+        let expectedTimeUs = 0;
+        
+        let isSimulating = false;
+        let simStartTime = 0;
+        let activeWave = null; // Represents the pulse/echo
+
+        // Canvas setup
+        function resizeCanvases() {
+            canvas.width = canvas.offsetWidth;
+            canvas.height = canvas.offsetHeight;
+            
+            aModeCanvas.width = aModeCanvas.offsetWidth;
+            aModeCanvas.height = aModeCanvas.offsetHeight;
+            drawAModeBase();
+        }
+        window.addEventListener('resize', resizeCanvases);
+
+        // Build SVG Grid
+        function buildGrid() {
+            depthGrid.innerHTML = '';
+            for (let i = 2; i <= 20; i += 2) {
+                const y = PROBE_Y + (i * VISUAL_SCALE);
+                const line = document.createElementNS("http://www.w3.org/2000/svg", "line");
+                line.setAttribute("x1", 0);
+                line.setAttribute("y1", y);
+                line.setAttribute("x2", 800);
+                line.setAttribute("y2", y);
+                line.setAttribute("class", "grid-line");
+                
+                const text = document.createElementNS("http://www.w3.org/2000/svg", "text");
+                text.setAttribute("x", 20);
+                text.setAttribute("y", y - 5);
+                text.setAttribute("class", "grid-text");
+                text.textContent = `${i} cm`;
+
+                depthGrid.appendChild(line);
+                depthGrid.appendChild(text);
+            }
+        }
+
+        class SoundWave {
+            constructor(targetDepthCm, speed) {
+                this.y = PROBE_Y;
+                this.targetY = PROBE_Y + (targetDepthCm * VISUAL_SCALE);
+                this.isEcho = false;
+                this.active = true;
+                
+                // We want the visual simulation to take about 1.5 seconds max so it's readable.
+                // 20cm round trip biological = ~260 microseconds.
+                // We scale the visual velocity.
+                // Distance to cover (one way) in pixels: targetDepthCm * 30
+                // Let's make 1 biological microsecond = 2 visual milliseconds.
+                this.bioTimeUs = 0;
+            }
+
+            update(dt) {
+                if (!this.active) return;
+
+                // biological time increment (microseconds)
+                // If 1 real ms = 0.2 biological microseconds
+                const bioDt = dt * 0.15; 
+                this.bioTimeUs += bioDt;
+
+                // Calculate where the wave should physically be
+                // Distance traveled = v * t
+                // speed is in m/s. Convert to cm/us:
+                // 1540 m/s = 154,000 cm/s = 0.154 cm/us
+                const speedCmPerUs = speedOfSound / 10000; 
+                
+                const distanceTraveledCm = this.bioTimeUs * speedCmPerUs;
+                
+                if (!this.isEcho) {
+                    // Going down
+                    this.y = PROBE_Y + (distanceTraveledCm * VISUAL_SCALE);
+                    
+                    if (this.y >= this.targetY) {
+                        // Hit the organ! Bounce back
+                        this.isEcho = true;
+                        this.y = this.targetY;
+                    }
+                } else {
+                    // Coming back up
+                    // Total distance traveled minus depth gives return distance
+                    const returnDistanceCm = distanceTraveledCm - currentDepthCm;
+                    this.y = this.targetY - (returnDistanceCm * VISUAL_SCALE);
+
+                    if (this.y <= PROBE_Y) {
+                        // Returned to probe
+                        this.active = false;
+                        finishSimulation(this.bioTimeUs);
+                    }
+                }
+
+                // Update displays
+                timeDisplay.innerHTML = `${this.bioTimeUs.toFixed(1)}<span class="data-unit">µs</span>`;
+                drawAModeUpdate(this.bioTimeUs);
+            }
+
+            draw() {
+                if (!this.active) return;
+                
+                // Draw wave packet (a few concentric arcs)
+                const cx = canvas.width / 2;
+                
+                ctx.save();
+                ctx.strokeStyle = this.isEcho ? '#10b981' : '#06b6d4'; // Green echo, Cyan pulse
+                ctx.shadowBlur = 10;
+                ctx.shadowColor = ctx.strokeStyle;
+                
+                // Draw 3 arcs to simulate a pulse packet
+                for(let i=0; i<3; i++) {
+                    const offset = this.isEcho ? -(i*10) : (i*10); // Offset trails behind
+                    const drawY = this.y - offset;
+                    
+                    // Radius of curvature increases as it travels
+                    const distFromProbe = Math.abs(drawY - PROBE_Y);
+                    const radius = 100 + (distFromProbe * 0.5);
+                    
+                    // Arc math
+                    const angleSpread = 0.8; // radians
+                    
+                    ctx.beginPath();
+                    if (!this.isEcho) {
+                        ctx.arc(cx, drawY - radius, radius, Math.PI/2 - angleSpread, Math.PI/2 + angleSpread);
+                    } else {
+                        ctx.arc(cx, drawY + radius, radius, -Math.PI/2 - angleSpread, -Math.PI/2 + angleSpread);
+                    }
+                    ctx.lineWidth = 4 - i;
+                    ctx.globalAlpha = 1 - (i * 0.2);
+                    ctx.stroke();
+                }
+                ctx.restore();
+            }
+        }
+
+        function drawAModeBase() {
+            aModeCtx.clearRect(0, 0, aModeCanvas.width, aModeCanvas.height);
+            // Draw grid
+            aModeCtx.strokeStyle = '#1e293b';
+            aModeCtx.lineWidth = 1;
+            for(let x=0; x<aModeCanvas.width; x+=20) {
+                aModeCtx.beginPath(); aModeCtx.moveTo(x, 0); aModeCtx.lineTo(x, aModeCanvas.height); aModeCtx.stroke();
+            }
+            // Draw baseline
+            aModeCtx.strokeStyle = '#06b6d4';
+            aModeCtx.lineWidth = 2;
+            aModeCtx.beginPath();
+            aModeCtx.moveTo(0, aModeCanvas.height - 20);
+            aModeCtx.lineTo(aModeCanvas.width, aModeCanvas.height - 20);
+            aModeCtx.stroke();
+        }
+
+        function drawAModeUpdate(currentBioTimeUs) {
+            drawAModeBase();
+            
+            // X axis maps to max time (e.g. 300 us)
+            const maxTimeUs = 300; 
+            const scaleX = aModeCanvas.width / maxTimeUs;
+            const baseY = aModeCanvas.height - 20;
+
+            aModeCtx.strokeStyle = '#10b981';
+            aModeCtx.lineWidth = 2;
+            aModeCtx.beginPath();
+            aModeCtx.moveTo(0, baseY);
+
+            // Initial Main Bang (Pulse creation)
+            aModeCtx.lineTo(5, baseY);
+            aModeCtx.lineTo(10, 10); // Big spike
+            aModeCtx.lineTo(15, baseY);
+
+            // Draw up to current time
+            const currentX = currentBioTimeUs * scaleX;
+            aModeCtx.lineTo(currentX, baseY);
+
+            aModeCtx.stroke();
+            
+            // Draw sweeping line
+            aModeCtx.strokeStyle = 'rgba(255,255,255,0.5)';
+            aModeCtx.beginPath();
+            aModeCtx.moveTo(currentX, 0);
+            aModeCtx.lineTo(currentX, aModeCanvas.height);
+            aModeCtx.stroke();
+        }
+
+        function drawAModeFinal(totalTimeUs) {
+            drawAModeBase();
+            const maxTimeUs = 300; 
+            const scaleX = aModeCanvas.width / maxTimeUs;
+            const baseY = aModeCanvas.height - 20;
+
+            aModeCtx.strokeStyle = '#10b981';
+            aModeCtx.shadowBlur = 5;
+            aModeCtx.shadowColor = '#10b981';
+            aModeCtx.lineWidth = 2;
+            aModeCtx.beginPath();
+            
+            // Main Bang
+            aModeCtx.moveTo(0, baseY);
+            aModeCtx.lineTo(5, baseY);
+            aModeCtx.lineTo(10, 10); 
+            aModeCtx.lineTo(15, baseY);
+
+            // Echo Spike
+            const echoX = totalTimeUs * scaleX;
+            aModeCtx.lineTo(echoX - 5, baseY);
+            aModeCtx.lineTo(echoX, 20); // Echo spike (smaller than main bang due to attenuation)
+            aModeCtx.lineTo(echoX + 5, baseY);
+            
+            aModeCtx.lineTo(aModeCanvas.width, baseY);
+            aModeCtx.stroke();
+            aModeCtx.shadowBlur = 0;
+        }
+
+        function updateGeometry() {
+            currentDepthCm = parseFloat(depthSlider.value);
+            depthVal.textContent = `${currentDepthCm.toFixed(1)} cm`;
+            speedOfSound = parseFloat(tissueSelect.value);
+
+            // Update Organ SVG position
+            const organY = PROBE_Y + (currentDepthCm * VISUAL_SCALE) - 50; // Offset for graphic center
+            organGroup.setAttribute('transform', `translate(0, ${organY})`);
+
+            // Reset displays if not running
+            if (!isSimulating) {
+                timeDisplay.innerHTML = `0.0<span class="data-unit">µs</span>`;
+                calcDepthDisplay.innerHTML = `0.0<span class="data-unit">cm</span>`;
+                drawAModeBase();
+            }
+        }
+
+        function triggerPing() {
+            if (isSimulating) return;
+            
+            isSimulating = true;
+            btnPing.disabled = true;
+            btnPing.textContent = "Listening for Echo...";
+            
+            // Flash Piezo crystals
+            crystals.forEach(c => c.classList.add('firing'));
+            setTimeout(() => crystals.forEach(c => c.classList.remove('firing')), 150);
+
+            // Initialize wave
+            activeWave = new SoundWave(currentDepthCm, speedOfSound);
+            lastTime = performance.now();
+            
+            calcDepthDisplay.innerHTML = `...<span class="data-unit">cm</span>`;
+            
+            requestAnimationFrame(animationLoop);
+        }
+
+        function finishSimulation(totalTimeUs) {
+            isSimulating = false;
+            
+            // Flash Piezo crystals for receiving echo
+            crystals.forEach(c => c.classList.add('firing'));
+            setTimeout(() => crystals.forEach(c => c.classList.remove('firing')), 150);
+
+            // Machine calculates depth: d = (v * t) / 2
+            // v is cm/us. t is us.
+            const speedCmPerUs = speedOfSound / 10000;
+            const calculatedDepth = (speedCmPerUs * totalTimeUs) / 2;
+
+            calcDepthDisplay.innerHTML = `${calculatedDepth.toFixed(1)}<span class="data-unit">cm</span>`;
+            
+            drawAModeFinal(totalTimeUs);
+
+            btnPing.disabled = false;
+            btnPing.textContent = "Ping (Send Pulse)";
+            
+            // Note: Don't set activeWave to null here, allow the animation frame 
+            // to naturally catch the flag change and clean up gracefully.
+        }
+
+        let lastTime = 0;
+        function animationLoop(timestamp) {
+            if (!lastTime) lastTime = timestamp;
+            const dt = timestamp - lastTime;
+            lastTime = timestamp;
+
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+            if (isSimulating && activeWave) {
+                activeWave.update(dt);
+                // Extra check to ensure it wasn't flagged complete within the update
+                if (activeWave && activeWave.active) {
+                    activeWave.draw();
+                    requestAnimationFrame(animationLoop);
+                } else if (!activeWave.active) {
+                    // Safe cleanup once update cycle confirms termination
+                    activeWave = null;
+                }
+            }
+        }
+
+        // Event Listeners
+        depthSlider.addEventListener('input', updateGeometry);
+        tissueSelect.addEventListener('change', updateGeometry);
+        btnPing.addEventListener('click', triggerPing);
+
+        // Init
+        buildGrid();
+        resizeCanvases();
+        updateGeometry();
+
+    </script>
+</body>
+</html>

@@ -1,0 +1,398 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>UV Mutation Lab: DNA Damage Sim</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;700;900&family=JetBrains+Mono:wght@500;800&display=swap');
+        
+        :root {
+            --uv-color: #a855f7;
+            --dna-bg: #1e293b;
+            --base-a: #ef4444;
+            --base-t: #3b82f6;
+            --base-c: #10b981;
+            --base-g: #f59e0b;
+        }
+
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: #0f172a;
+            color: #f8fafc;
+            overflow: hidden;
+        }
+
+        .dna-letter {
+            font-family: 'JetBrains Mono', monospace;
+            font-weight: 800;
+            transition: all 0.2s ease;
+            user-select: none;
+        }
+
+        .mutation-flash {
+            animation: flash 0.4s ease-out;
+        }
+
+        @keyframes flash {
+            0% { filter: brightness(3) saturate(2); transform: scale(1.2); }
+            100% { filter: brightness(1) saturate(1); transform: scale(1); }
+        }
+
+        .uv-beam-active {
+            filter: drop-shadow(0 0 15px var(--uv-color));
+        }
+
+        #particleCanvas {
+            pointer-events: none;
+            z-index: 10;
+        }
+
+        .glitch {
+            animation: glitch-anim 0.2s infinite;
+        }
+
+        @keyframes glitch-anim {
+            0% { transform: translate(0); }
+            20% { transform: translate(-2px, 1px); }
+            40% { transform: translate(2px, -1px); }
+            60% { transform: translate(-1px, -2px); }
+            80% { transform: translate(1px, 2px); }
+            100% { transform: translate(0); }
+        }
+
+        .sidebar-glass {
+            background: rgba(30, 41, 59, 0.7);
+            backdrop-filter: blur(12px);
+            border-right: 1px solid rgba(255,255,255,0.1);
+        }
+    </style>
+</head>
+<body class="flex h-screen">
+
+    <!-- Sidebar -->
+    <aside class="w-96 sidebar-glass p-8 flex flex-col gap-8 z-20">
+        <div>
+            <h1 class="text-3xl font-black tracking-tighter text-white mb-2">UV Mutation Lab</h1>
+            <p class="text-slate-400 text-sm leading-relaxed">
+                Ultraviolet radiation carries enough energy to break chemical bonds in DNA, causing permanent genetic errors.
+            </p>
+        </div>
+
+        <div class="space-y-6">
+            <div class="bg-slate-900/50 p-5 rounded-2xl border border-slate-700">
+                <label class="block text-xs font-bold uppercase tracking-widest text-slate-500 mb-4 text-center">Controls</label>
+                
+                <div class="space-y-4">
+                    <button id="btnFire" class="w-full py-4 bg-purple-600 hover:bg-purple-500 active:scale-95 text-white font-bold rounded-xl transition-all shadow-lg shadow-purple-500/20 flex items-center justify-center gap-2">
+                        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><path d="M5 12h14M12 5l7 7-7 7"/></svg>
+                        ACTIVATE UV BEAM
+                    </button>
+                    
+                    <button id="btnRepair" class="w-full py-3 bg-emerald-600/20 hover:bg-emerald-600/30 text-emerald-400 font-bold rounded-xl border border-emerald-500/30 transition-all text-sm uppercase tracking-wider">
+                        Simulate Enzyme Repair
+                    </button>
+                </div>
+            </div>
+
+            <div class="bg-slate-900/50 p-5 rounded-2xl border border-slate-700">
+                <div class="flex justify-between items-center mb-2">
+                    <span class="text-xs font-bold text-slate-400 uppercase">Mutation Count</span>
+                    <span id="mutationCount" class="font-mono text-xl font-bold text-purple-400">0</span>
+                </div>
+                <div class="h-2 bg-slate-800 rounded-full overflow-hidden">
+                    <div id="mutationProgress" class="h-full bg-purple-500 transition-all duration-300" style="width: 0%"></div>
+                </div>
+            </div>
+        </div>
+
+        <div id="statusCard" class="mt-auto p-5 rounded-2xl bg-blue-500/10 border border-blue-500/20 transition-all">
+            <h3 id="statusTitle" class="text-blue-400 font-bold mb-1 italic">Status: Stable DNA</h3>
+            <p id="statusText" class="text-xs text-slate-400 leading-normal">
+                Hydrogen bonds are intact. Base sequence is currently accurate. No radiation detected.
+            </p>
+        </div>
+    </aside>
+
+    <!-- Main Viewport -->
+    <main class="flex-1 relative flex items-center justify-center bg-[#020617]">
+        <!-- UV Beam Emitter UI -->
+        <div class="absolute left-10 top-1/2 -translate-y-1/2 flex flex-col items-center">
+            <div class="w-16 h-32 bg-slate-800 rounded-lg border-2 border-slate-700 relative overflow-hidden">
+                <div id="emitterGlow" class="absolute inset-0 bg-purple-500 opacity-0 transition-opacity"></div>
+                <div class="absolute inset-0 flex flex-col justify-around px-2 opacity-20">
+                    <div class="h-1 bg-white"></div><div class="h-1 bg-white"></div><div class="h-1 bg-white"></div>
+                </div>
+            </div>
+            <span class="mt-2 text-[10px] font-bold text-slate-600 tracking-widest uppercase">UV-C Emitter</span>
+        </div>
+
+        <!-- Canvas for beam and particles -->
+        <canvas id="particleCanvas" class="absolute inset-0 w-full h-full"></canvas>
+
+        <!-- DNA SVG -->
+        <svg id="dnaSvg" viewBox="0 0 400 800" class="h-[90vh] drop-shadow-2xl">
+            <!-- DNA Backbones will be drawn via JS for proper curve -->
+            <path id="backbone1" fill="none" stroke="rgba(255,255,255,0.1)" stroke-width="6" />
+            <path id="backbone2" fill="none" stroke="rgba(255,255,255,0.1)" stroke-width="6" />
+            
+            <g id="rungsGroup"></g>
+        </svg>
+
+        <!-- Mutation Toast -->
+        <div id="toast" class="absolute bottom-10 right-10 px-6 py-3 bg-red-600 text-white rounded-full font-bold text-sm transform translate-y-20 transition-transform duration-300 shadow-xl pointer-events-none uppercase tracking-widest">
+            Mutation Detected
+        </div>
+    </main>
+
+    <script>
+        const btnFire = document.getElementById('btnFire');
+        const btnRepair = document.getElementById('btnRepair');
+        const mutationCountEl = document.getElementById('mutationCount');
+        const mutationProgress = document.getElementById('mutationProgress');
+        const statusTitle = document.getElementById('statusTitle');
+        const statusText = document.getElementById('statusText');
+        const statusCard = document.getElementById('statusCard');
+        const emitterGlow = document.getElementById('emitterGlow');
+        const toast = document.getElementById('toast');
+        
+        const canvas = document.getElementById('particleCanvas');
+        const ctx = canvas.getContext('2d');
+        const rungsGroup = document.getElementById('rungsGroup');
+
+        // State
+        let isFiring = false;
+        let mutationCount = 0;
+        let rungs = [];
+        const numRungs = 16;
+        const bases = ['A', 'T', 'C', 'G'];
+        const pairs = { 'A': 'T', 'T': 'A', 'C': 'G', 'G': 'C' };
+        const baseColors = { 'A': '#ef4444', 'T': '#3b82f6', 'C': '#10b981', 'G': '#f59e0b' };
+
+        function resize() {
+            canvas.width = canvas.offsetWidth;
+            canvas.height = canvas.offsetHeight;
+        }
+        window.addEventListener('resize', resize);
+        resize();
+
+        // Initialize DNA Rungs
+        function initDNA() {
+            rungsGroup.innerHTML = '';
+            rungs = [];
+            for (let i = 0; i < numRungs; i++) {
+                const b1 = bases[Math.floor(Math.random() * bases.length)];
+                const b2 = pairs[b1];
+                
+                const g = document.createElementNS("http://www.w3.org/2000/svg", "g");
+                const line = document.createElementNS("http://www.w3.org/2000/svg", "line");
+                const text1 = document.createElementNS("http://www.w3.org/2000/svg", "text");
+                const text2 = document.createElementNS("http://www.w3.org/2000/svg", "text");
+                
+                line.setAttribute("stroke", "rgba(255,255,255,0.15)");
+                line.setAttribute("stroke-width", "2");
+                
+                text1.setAttribute("class", "dna-letter");
+                text2.setAttribute("class", "dna-letter");
+                text1.setAttribute("text-anchor", "middle");
+                text2.setAttribute("text-anchor", "middle");
+                text1.setAttribute("font-size", "18");
+                text2.setAttribute("font-size", "18");
+
+                g.appendChild(line);
+                g.appendChild(text1);
+                g.appendChild(text2);
+                rungsGroup.appendChild(g);
+
+                rungs.push({
+                    index: i,
+                    g, line, text1, text2,
+                    b1, b2,
+                    mutated: false,
+                    broken: false,
+                    phase: (i / numRungs) * Math.PI * 2
+                });
+            }
+            updateDNA(0);
+        }
+
+        function updateDNA(time) {
+            rungs.forEach((rung, i) => {
+                const y = 50 + (i * 45);
+                const xOffset = Math.sin(time + rung.phase) * 80;
+                
+                const x1 = 200 - xOffset;
+                const x2 = 200 + xOffset;
+
+                rung.line.setAttribute("x1", x1);
+                rung.line.setAttribute("y1", y);
+                rung.line.setAttribute("x2", x2);
+                rung.line.setAttribute("y2", y);
+
+                rung.text1.setAttribute("x", x1 - 20);
+                rung.text1.setAttribute("y", y + 6);
+                rung.text1.textContent = rung.b1;
+                rung.text1.setAttribute("fill", rung.broken ? "#475569" : baseColors[rung.b1]);
+
+                rung.text2.setAttribute("x", x2 + 20);
+                rung.text2.setAttribute("y", y + 6);
+                rung.text2.textContent = rung.b2;
+                rung.text2.setAttribute("fill", rung.broken ? "#475569" : baseColors[rung.b2]);
+
+                // Depth scaling
+                const scale = 0.8 + (Math.cos(time + rung.phase) + 1) * 0.2;
+                rung.g.setAttribute("transform", `scale(${scale})`);
+                rung.g.style.opacity = 0.4 + (Math.cos(time + rung.phase) + 1) * 0.3;
+            });
+        }
+
+        // Particle System
+        class Particle {
+            constructor(x, y, color) {
+                this.x = x;
+                this.y = y;
+                this.vx = (Math.random() - 0.5) * 10;
+                this.vy = (Math.random() - 0.5) * 10;
+                this.life = 1.0;
+                this.color = color;
+            }
+            update() {
+                this.x += this.vx;
+                this.y += this.vy;
+                this.life -= 0.03;
+            }
+            draw() {
+                ctx.globalAlpha = this.life;
+                ctx.fillStyle = this.color;
+                ctx.beginPath();
+                ctx.arc(this.x, this.y, 2, 0, Math.PI * 2);
+                ctx.fill();
+            }
+        }
+        let particles = [];
+
+        function triggerMutation() {
+            // Pick a random rung that is currently "in front" (xOffset is large)
+            const visibleRungs = rungs.filter(r => !r.broken);
+            if (visibleRungs.length === 0) return;
+
+            const target = visibleRungs[Math.floor(Math.random() * visibleRungs.length)];
+            
+            // Randomly decide type of damage
+            const roll = Math.random();
+            if (roll < 0.6) {
+                // Point Mutation (Swap)
+                const oldB1 = target.b1;
+                target.b1 = bases.filter(b => b !== oldB1)[Math.floor(Math.random() * 3)];
+                target.b2 = pairs[target.b1] || bases[Math.floor(Math.random()*4)];
+                target.mutated = true;
+                showToast("Point Mutation: " + oldB1 + " → " + target.b1);
+            } else {
+                // DNA Break
+                target.broken = true;
+                showToast("Strand Breakage");
+            }
+
+            mutationCount++;
+            mutationCountEl.textContent = mutationCount;
+            mutationProgress.style.width = Math.min(100, (mutationCount / 20) * 100) + "%";
+
+            // Visual feedback
+            target.g.classList.add('mutation-flash');
+            setTimeout(() => target.g.classList.remove('mutation-flash'), 400);
+
+            // Particles
+            const rect = target.g.getBoundingClientRect();
+            for(let i=0; i<20; i++) particles.push(new Particle(rect.left + rect.width/2, rect.top + rect.height/2, '#a855f7'));
+
+            updateStatus();
+        }
+
+        function showToast(msg) {
+            toast.textContent = msg;
+            toast.style.transform = "translateY(0)";
+            setTimeout(() => {
+                toast.style.transform = "translateY(80px)";
+            }, 1500);
+        }
+
+        function updateStatus() {
+            if (mutationCount === 0) {
+                statusCard.className = "mt-auto p-5 rounded-2xl bg-blue-500/10 border border-blue-500/20";
+                statusTitle.textContent = "Status: Stable DNA";
+                statusTitle.className = "text-blue-400 font-bold mb-1 italic";
+                statusText.textContent = "Hydrogen bonds are intact. Base sequence is currently accurate.";
+            } else if (mutationCount < 5) {
+                statusCard.className = "mt-auto p-5 rounded-2xl bg-amber-500/10 border border-amber-500/20";
+                statusTitle.textContent = "Status: Minor Lesions";
+                statusTitle.className = "text-amber-400 font-bold mb-1 italic";
+                statusText.textContent = "Isolated point mutations detected. Cell may function but risks protein misfolding.";
+            } else {
+                statusCard.className = "mt-auto p-5 rounded-2xl bg-red-500/10 border border-red-500/20";
+                statusTitle.textContent = "Status: Genotoxic Stress";
+                statusTitle.className = "text-red-400 font-bold mb-1 italic";
+                statusText.textContent = "Severe accumulation of dimers and breaks. DNA repair mechanisms overwhelmed. Apoptosis likely.";
+            }
+        }
+
+        function animate(time) {
+            const t = time / 1000;
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+            // Draw Beam
+            if (isFiring) {
+                const gradient = ctx.createLinearGradient(100, 0, canvas.width, 0);
+                gradient.addColorStop(0, 'rgba(168, 85, 247, 0)');
+                gradient.addColorStop(0.2, 'rgba(168, 85, 247, 0.8)');
+                gradient.addColorStop(1, 'rgba(168, 85, 247, 0)');
+                
+                ctx.shadowBlur = 20;
+                ctx.shadowColor = '#a855f7';
+                ctx.fillStyle = gradient;
+                ctx.fillRect(80, canvas.height/2 - 40, canvas.width, 80);
+                ctx.shadowBlur = 0;
+
+                // Chance to mutate while firing
+                if (Math.random() < 0.1) triggerMutation();
+            }
+
+            // Update Particles
+            for(let i=particles.length-1; i>=0; i--) {
+                particles[i].update();
+                particles[i].draw();
+                if(particles[i].life <= 0) particles.splice(i, 1);
+            }
+
+            updateDNA(t);
+            requestAnimationFrame(animate);
+        }
+
+        btnFire.addEventListener('mousedown', () => {
+            isFiring = true;
+            emitterGlow.style.opacity = "1";
+            btnFire.classList.add('uv-beam-active');
+        });
+
+        window.addEventListener('mouseup', () => {
+            isFiring = false;
+            emitterGlow.style.opacity = "0";
+            btnFire.classList.remove('uv-beam-active');
+        });
+
+        btnRepair.addEventListener('click', () => {
+            mutationCount = 0;
+            mutationCountEl.textContent = "0";
+            mutationProgress.style.width = "0%";
+            initDNA();
+            updateStatus();
+            showToast("DNA Replaced");
+        });
+
+        // Initialize
+        initDNA();
+        requestAnimationFrame(animate);
+
+    </script>
+</body>
+</html>

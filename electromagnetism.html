@@ -1,0 +1,475 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Physics Lab - Electromagnetism</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        body, html {
+            margin: 0;
+            padding: 0;
+            width: 100%;
+            height: 100%;
+            overflow: hidden;
+            background-color: #020617; /* Slate 950 */
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+            touch-action: none;
+            user-select: none;
+        }
+        
+        #sim-canvas {
+            display: block;
+            width: 100%;
+            height: 100%;
+            cursor: default;
+        }
+
+        /* Premium Minimalist Sliders */
+        input[type=range] {
+            -webkit-appearance: none;
+            width: 100%;
+            background: transparent;
+        }
+        input[type=range]::-webkit-slider-thumb {
+            -webkit-appearance: none;
+            height: 18px;
+            width: 18px;
+            border-radius: 50%;
+            background: #ffffff;
+            cursor: pointer;
+            margin-top: -7px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.6);
+            transition: transform 0.1s ease;
+            border: 1px solid rgba(255,255,255,0.2);
+        }
+        input[type=range]::-webkit-slider-thumb:hover {
+            transform: scale(1.15);
+        }
+        input[type=range]::-webkit-slider-runnable-track {
+            width: 100%;
+            height: 4px;
+            cursor: pointer;
+            background: rgba(255, 255, 255, 0.15);
+            border-radius: 2px;
+            box-shadow: inset 0 1px 2px rgba(0,0,0,0.5);
+        }
+        
+        /* Deep Glassmorphism Panel */
+        .glass-panel {
+            background: linear-gradient(145deg, rgba(15, 23, 42, 0.85) 0%, rgba(2, 6, 23, 0.95) 100%);
+            backdrop-filter: blur(30px);
+            -webkit-backdrop-filter: blur(30px);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            border-top: 1px solid rgba(255, 255, 255, 0.2);
+            box-shadow: 0 30px 60px -12px rgba(0, 0, 0, 0.8), inset 0 1px 10px rgba(255, 255, 255, 0.05);
+        }
+
+        .scroll-area::-webkit-scrollbar { width: 4px; }
+        .scroll-area::-webkit-scrollbar-thumb { background: rgba(255, 255, 255, 0.2); border-radius: 4px; }
+    </style>
+</head>
+<body>
+
+    <!-- Main UI Overlay -->
+    <div class="absolute top-5 left-5 md:top-8 md:left-8 z-10 w-[360px] glass-panel p-6 rounded-[1.5rem] pointer-events-auto flex flex-col max-h-[92vh]">
+        
+        <!-- Header -->
+        <div class="mb-5 border-b border-white/10 pb-5 shrink-0 flex items-center justify-between">
+            <div>
+                <h1 class="text-2xl font-bold tracking-tight text-white mb-1">Electromagnet</h1>
+                <p class="text-[11px] font-medium text-amber-400 uppercase tracking-widest">Coil & Core Dynamics</p>
+            </div>
+            <div class="w-10 h-10 rounded-full bg-amber-500/20 flex items-center justify-center text-amber-400 shadow-[0_0_15px_rgba(245,158,11,0.3)]">
+                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"></path></svg>
+            </div>
+        </div>
+
+        <div class="scroll-area overflow-y-auto pr-2 pb-2 space-y-7">
+            
+            <div class="bg-black/30 p-4 rounded-xl border border-white/5 shadow-inner text-xs text-gray-400 leading-relaxed">
+                <p><strong class="text-white">The Physics:</strong> Electric current through a wire creates a magnetic field. Coiling the wire concentrates this field, and the iron nail (ferromagnetic core) multiplies its strength significantly.</p>
+            </div>
+
+            <!-- Controls -->
+            <div class="space-y-6">
+                <!-- Voltage -->
+                <div class="space-y-3">
+                    <div class="flex justify-between items-end">
+                        <label class="text-[11px] font-semibold text-blue-400 uppercase tracking-widest">Battery Voltage</label>
+                        <span id="volt-display" class="text-[11px] font-mono bg-blue-500/10 px-2 py-1 rounded text-blue-300">9.0 V</span>
+                    </div>
+                    <input type="range" id="volt-slider" min="0" max="24" step="0.5" value="9" style="accent-color: #3b82f6;">
+                </div>
+
+                <!-- Number of Coils -->
+                <div class="space-y-3">
+                    <div class="flex justify-between items-end">
+                        <label class="text-[11px] font-semibold text-amber-400 uppercase tracking-widest">Wire Turns (N)</label>
+                        <span id="coil-display" class="text-[11px] font-mono bg-amber-500/10 px-2 py-1 rounded text-amber-300">15 Turns</span>
+                    </div>
+                    <input type="range" id="coil-slider" min="5" max="40" step="1" value="15" style="accent-color: #f59e0b;">
+                </div>
+
+                <!-- Main Switch -->
+                <div class="pt-4 border-t border-white/10 flex items-center justify-between">
+                    <div>
+                        <div class="text-[13px] font-bold text-white mb-0.5">Circuit Switch</div>
+                        <div class="text-[10px] text-gray-500 uppercase tracking-widest font-semibold" id="switch-status">Open (Off)</div>
+                    </div>
+                    <label class="relative inline-flex items-center cursor-pointer">
+                        <input type="checkbox" id="power-switch" class="sr-only peer">
+                        <div class="w-14 h-7 bg-gray-700 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-6 after:w-6 after:transition-all peer-checked:bg-amber-500 shadow-inner"></div>
+                    </label>
+                </div>
+            </div>
+
+            <!-- Interaction Hints -->
+            <div class="pt-4 border-t border-white/10">
+                <label class="text-[10px] font-bold uppercase tracking-widest text-gray-500 mb-3 block">Experiment</label>
+                <p class="text-[11px] text-gray-400">Drag the <span class="text-white font-bold">Paperclips</span> near the nail tip. When the current flows, the magnetic force will attract them!</p>
+            </div>
+        </div>
+    </div>
+
+    <!-- Live Physics HUD (Bottom Right) -->
+    <div class="absolute bottom-6 right-6 z-10 glass-panel p-5 rounded-2xl pointer-events-none min-w-[220px]">
+        <div class="text-[10px] font-bold uppercase tracking-widest text-gray-500 mb-3 border-b border-white/10 pb-2">Sensor Feedback</div>
+        <div class="space-y-3">
+            <div class="flex justify-between items-center">
+                <span class="text-sm text-gray-300 font-medium">Current (I)</span>
+                <span id="current-display" class="text-base font-mono font-bold text-blue-400">0.00 A</span>
+            </div>
+            <div class="flex justify-between items-center">
+                <span class="text-sm text-gray-300 font-medium">Field (B)</span>
+                <span id="field-display" class="text-base font-mono font-bold text-amber-400">0.00 mT</span>
+            </div>
+        </div>
+    </div>
+
+    <!-- 2D Physics Canvas -->
+    <canvas id="sim-canvas"></canvas>
+
+    <script>
+        const canvas = document.getElementById('sim-canvas');
+        const ctx = canvas.getContext('2d');
+
+        // --- LAYOUT ENGINE ---
+        let cx, cy;
+        let sidebarWidth = 380;
+        
+        function resize() {
+            canvas.width = window.innerWidth;
+            canvas.height = window.innerHeight;
+            sidebarWidth = window.innerWidth >= 768 ? 380 : 0;
+            const availableW = canvas.width - sidebarWidth;
+            cx = sidebarWidth + availableW / 2;
+            cy = canvas.height / 2;
+        }
+        window.addEventListener('resize', resize);
+        resize();
+
+        // --- PHYSICS STATE ---
+        let voltage = 9.0;
+        let turns = 15;
+        let isPowered = false;
+        let current = 0;
+        let magneticStrength = 0; // Relative B field strength
+        let animationTime = 0;
+
+        const voltSlider = document.getElementById('volt-slider');
+        const coilSlider = document.getElementById('coil-slider');
+        const powerSwitch = document.getElementById('power-switch');
+
+        voltSlider.addEventListener('input', (e) => {
+            voltage = parseFloat(e.target.value);
+            document.getElementById('volt-display').innerText = voltage.toFixed(1) + " V";
+            updatePhysics();
+        });
+
+        coilSlider.addEventListener('input', (e) => {
+            turns = parseInt(e.target.value);
+            document.getElementById('coil-display').innerText = turns + " Turns";
+            updatePhysics();
+        });
+
+        powerSwitch.addEventListener('change', (e) => {
+            isPowered = e.target.checked;
+            document.getElementById('switch-status').innerText = isPowered ? "Closed (On)" : "Open (Off)";
+            document.getElementById('switch-status').className = isPowered 
+                ? "text-[10px] text-amber-500 uppercase tracking-widest font-bold" 
+                : "text-[10px] text-gray-500 uppercase tracking-widest font-semibold";
+            updatePhysics();
+        });
+
+        function updatePhysics() {
+            if (isPowered) {
+                // Simplified physics: B = mu * (N/L) * I
+                // Assume constant wire resistance for simplicity
+                current = voltage / 2.0; 
+                magneticStrength = (turns * current) * 0.05;
+            } else {
+                current = 0;
+                magneticStrength = 0;
+            }
+            document.getElementById('current-display').innerText = current.toFixed(2) + " A";
+            document.getElementById('field-display').innerText = (magneticStrength * 10).toFixed(2) + " mT";
+        }
+
+        // --- ENTITIES: PAPERCLIPS ---
+        const paperclips = [];
+        for(let i=0; i<8; i++) {
+            paperclips.push({
+                x: cx + (Math.random() - 0.5) * 400,
+                y: cy + 200 + (Math.random() * 100),
+                vx: 0, vy: 0,
+                angle: Math.random() * Math.PI,
+                isDragging: false,
+                isAttached: false,
+                attachOffset: {x:0, y:0}
+            });
+        }
+
+        // --- DRAWING FUNCTIONS ---
+
+        function drawNail() {
+            const nailW = 350;
+            const nailH = 40;
+
+            ctx.save();
+            ctx.translate(cx, cy);
+
+            // Shadow
+            ctx.shadowBlur = 20;
+            ctx.shadowColor = 'rgba(0,0,0,0.5)';
+            ctx.shadowOffsetY = 10;
+
+            // Nail Body (The Iron Core)
+            const nailGrad = ctx.createLinearGradient(0, -nailH/2, 0, nailH/2);
+            nailGrad.addColorStop(0, '#94a3b8');
+            nailGrad.addColorStop(0.5, '#475569');
+            nailGrad.addColorStop(1, '#1e293b');
+            
+            ctx.fillStyle = nailGrad;
+            ctx.beginPath();
+            ctx.roundRect(-nailW/2, -nailH/2, nailW, nailH, 4);
+            ctx.fill();
+
+            // Nail Head (Left)
+            ctx.fillStyle = '#64748b';
+            ctx.beginPath();
+            ctx.roundRect(-nailW/2 - 15, -nailH/2 - 15, 20, nailH + 30, 4);
+            ctx.fill();
+
+            // Nail Point (Right)
+            ctx.beginPath();
+            ctx.moveTo(nailW/2, -nailH/2);
+            ctx.lineTo(nailW/2 + 40, 0);
+            ctx.lineTo(nailW/2, nailH/2);
+            ctx.closePath();
+            ctx.fill();
+
+            ctx.restore();
+        }
+
+        function drawCoils(layer) {
+            // Drawn in two layers: back coils and front coils to sandwich the nail
+            const startX = cx - 140;
+            const endX = cx + 140;
+            const coilSpan = endX - startX;
+            const step = coilSpan / turns;
+
+            ctx.lineWidth = 4;
+            ctx.strokeStyle = '#d97706'; // Copper color
+            ctx.lineCap = 'round';
+
+            for (let i = 0; i < turns; i++) {
+                const x = startX + i * step;
+                ctx.beginPath();
+                if (layer === 'back') {
+                    // Curved line behind the nail
+                    ctx.ellipse(x + step/2, cy, step/2, 35, 0, Math.PI, 0, false);
+                } else {
+                    // Curved line in front of the nail
+                    ctx.ellipse(x + step/2, cy, step/2, 35, 0, 0, Math.PI, false);
+                    
+                    // Draw flowing electrons if powered
+                    if (isPowered && current > 0) {
+                        const electronPos = (animationTime + (i/turns)) % 1.0;
+                        const arcLen = Math.PI;
+                        const angle = Math.PI + (1 - electronPos) * arcLen;
+                        const ex = x + step/2 + Math.cos(angle) * (step/2);
+                        const ey = cy + Math.sin(angle) * 35;
+                        
+                        ctx.fillStyle = '#3b82f6';
+                        ctx.shadowBlur = 10;
+                        ctx.shadowColor = '#3b82f6';
+                        ctx.beginPath();
+                        ctx.arc(ex, ey, 2.5, 0, Math.PI*2);
+                        ctx.fill();
+                        ctx.shadowBlur = 0;
+                    }
+                }
+                ctx.stroke();
+            }
+        }
+
+        function drawFieldLines() {
+            if (!isPowered || magneticStrength <= 0) return;
+
+            ctx.save();
+            ctx.globalCompositeOperation = 'screen';
+            ctx.lineWidth = 1.5;
+            
+            const numLines = 6;
+            const pulse = Math.sin(animationTime * 10) * 0.1 + 0.9;
+
+            for (let i = 1; i <= numLines; i++) {
+                const opacity = (1 - i/numLines) * 0.3 * (magneticStrength / 5);
+                ctx.strokeStyle = `rgba(245, 158, 11, ${opacity})`;
+                
+                const rx = 180 + i * 40 * pulse;
+                const ry = 80 + i * 30 * pulse;
+
+                ctx.beginPath();
+                ctx.ellipse(cx, cy, rx, ry, 0, 0, Math.PI * 2);
+                ctx.stroke();
+            }
+            ctx.restore();
+        }
+
+        function drawPaperclip(p) {
+            ctx.save();
+            ctx.translate(p.x, p.y);
+            ctx.rotate(p.angle);
+            
+            ctx.strokeStyle = '#94a3b8';
+            ctx.lineWidth = 2.5;
+            ctx.lineCap = 'round';
+            
+            // Standard paperclip shape
+            ctx.beginPath();
+            ctx.moveTo(0, -15);
+            ctx.lineTo(0, 10);
+            ctx.arc(-5, 10, 5, 0, Math.PI);
+            ctx.lineTo(-10, -12);
+            ctx.arc(-5, -12, 5, Math.PI, 0);
+            ctx.lineTo(0, -12);
+            ctx.stroke();
+
+            ctx.restore();
+        }
+
+        // --- INTERACTION LOGIC ---
+        let dragTarget = null;
+        function getMousePos(e) {
+            const rect = canvas.getBoundingClientRect();
+            const clientX = e.touches ? e.touches[0].clientX : e.clientX;
+            const clientY = e.touches ? e.touches[0].clientY : e.clientY;
+            return { x: clientX - rect.left, y: clientY - rect.top };
+        }
+
+        canvas.addEventListener('mousedown', (e) => {
+            if(e.target.closest('.glass-panel')) return;
+            const pos = getMousePos(e);
+            for(let p of paperclips) {
+                const d = Math.hypot(pos.x - p.x, pos.y - p.y);
+                if (d < 30) {
+                    p.isDragging = true;
+                    p.isAttached = false;
+                    dragTarget = p;
+                    break;
+                }
+            }
+        });
+
+        window.addEventListener('mousemove', (e) => {
+            if(!dragTarget) return;
+            const pos = getMousePos(e);
+            dragTarget.x = pos.x;
+            dragTarget.y = pos.y;
+        });
+
+        window.addEventListener('mouseup', () => {
+            if(dragTarget) dragTarget.isDragging = false;
+            dragTarget = null;
+        });
+
+        // --- MAIN RENDER LOOP ---
+        function render(timestamp) {
+            animationTime += isPowered ? (current * 0.005) : 0;
+
+            ctx.fillStyle = '#020617';
+            ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+            // Grid
+            ctx.strokeStyle = 'rgba(255,255,255,0.02)';
+            ctx.lineWidth = 1;
+            ctx.beginPath();
+            for(let i=0; i<canvas.width; i+=60) { ctx.moveTo(i,0); ctx.lineTo(i,canvas.height); }
+            for(let i=0; i<canvas.height; i+=60) { ctx.moveTo(0,i); ctx.lineTo(canvas.width,i); }
+            ctx.stroke();
+
+            drawFieldLines();
+            drawCoils('back');
+            drawNail();
+            drawCoils('front');
+
+            // --- Paperclip Physics ---
+            for (let p of paperclips) {
+                if (p.isDragging) continue;
+
+                if (isPowered && magneticStrength > 1) {
+                    // Pull towards the nail tips (Right tip is the strongest)
+                    const tipX = cx + 180;
+                    const tipY = cy;
+                    const dist = Math.hypot(tipX - p.x, tipY - p.y);
+                    
+                    if (dist < 250) {
+                        const force = (magneticStrength * 500) / (dist * dist);
+                        const angle = Math.atan2(tipY - p.y, tipX - p.x);
+                        
+                        p.vx += Math.cos(angle) * force;
+                        p.vy += Math.sin(angle) * force;
+                        
+                        // Snap to nail
+                        if (dist < 40) {
+                            p.isAttached = true;
+                            p.vx = 0; p.vy = 0;
+                            p.angle = angle + Math.PI/2;
+                        }
+                    } else {
+                        p.isAttached = false;
+                    }
+                } else {
+                    p.isAttached = false;
+                }
+
+                if (!p.isAttached) {
+                    // Gravity
+                    p.vy += 0.25;
+                    p.vx *= 0.98;
+                    p.vy *= 0.98;
+                    p.x += p.vx;
+                    p.y += p.vy;
+
+                    // Floor Collision
+                    if (p.y > canvas.height - 40) {
+                        p.y = canvas.height - 40;
+                        p.vy *= -0.2;
+                    }
+                }
+
+                drawPaperclip(p);
+            }
+
+            requestAnimationFrame(render);
+        }
+
+        updatePhysics();
+        requestAnimationFrame(render);
+
+    </script>
+</body>
+</html>

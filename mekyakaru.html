@@ -1,0 +1,431 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Laner Social | Brutalist UI</title>
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Lucide Icons -->
+    <script src="https://unpkg.com/lucide@latest"></script>
+    <!-- Google Fonts -->
+    <link href="https://fonts.googleapis.com/css2?family=Fredoka+One&family=Nunito:wght@400;700;900&display=swap" rel="stylesheet">
+    
+    <style>
+        :root {
+            --border-width: 4px;
+        }
+
+        body {
+            font-family: 'Nunito', sans-serif;
+            color: #000000;
+            background-color: #0ea5e9; /* Bright Sky Blue */
+            background-image: radial-gradient(circle at 2px 2px, rgba(255,255,255,0.2) 1px, transparent 0);
+            background-size: 40px 40px;
+        }
+        
+        .no-scrollbar::-webkit-scrollbar { display: none; }
+        .no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
+
+        /* Custom Brutalist Scrollbar for specific areas */
+        .brutal-scroll::-webkit-scrollbar { width: 12px; }
+        .brutal-scroll::-webkit-scrollbar-track { background: #f8fafc; border-left: 4px solid #000; }
+        .brutal-scroll::-webkit-scrollbar-thumb { background: #000; border-left: 4px solid #000; }
+        .brutal-scroll::-webkit-scrollbar-thumb:hover { background: #333; }
+
+        /* --- Brutalist Components --- */
+        .brutalist-panel {
+            background: #ffffff;
+            border: var(--border-width) solid #000000;
+            border-radius: 24px;
+            box-shadow: 8px 8px 0px #000000;
+        }
+
+        .brutalist-button {
+            background: #ffffff;
+            color: #000000;
+            border: var(--border-width) solid #000000;
+            border-radius: 9999px;
+            box-shadow: 4px 4px 0px #000000;
+            transition: all 0.1s ease;
+            font-family: 'Fredoka One', cursive;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            cursor: pointer;
+            display: flex; align-items: center; justify-content: center; gap: 8px;
+        }
+
+        .brutalist-button:hover {
+            transform: translate(-2px, -2px);
+            box-shadow: 6px 6px 0px #000000;
+            background: #f8fafc;
+        }
+
+        .brutalist-button:active {
+            transform: translate(4px, 4px);
+            box-shadow: 0px 0px 0px #000000;
+        }
+
+        .brutalist-button.active { background: #FBBF24; }
+        
+        .brutalist-input {
+            border: var(--border-width) solid #000;
+            border-radius: 12px;
+            padding: 12px 16px;
+            font-family: 'Nunito', sans-serif;
+            font-weight: 700;
+            box-shadow: inset 4px 4px 0px rgba(0,0,0,0.05);
+            outline: none;
+            transition: 0.2s;
+        }
+        .brutalist-input:focus {
+            background: #fef08a;
+            box-shadow: inset 4px 4px 0px rgba(0,0,0,0.1), 0 0 0 4px rgba(251, 191, 36, 0.5);
+        }
+
+        .avatar {
+            border: 3px solid #000;
+            box-shadow: 3px 3px 0 #000;
+            border-radius: 50%;
+            object-fit: cover;
+            background: #e2e8f0;
+        }
+
+        /* Chat Bubbles */
+        .bubble-received {
+            background: #ffffff;
+            border: 3px solid #000;
+            border-radius: 16px 16px 16px 4px;
+            box-shadow: 4px 4px 0 #000;
+            padding: 12px 16px;
+            max-width: 80%;
+            font-weight: 700;
+        }
+        .bubble-sent {
+            background: #FBBF24;
+            border: 3px solid #000;
+            border-radius: 16px 16px 4px 16px;
+            box-shadow: 4px 4px 0 #000;
+            padding: 12px 16px;
+            max-width: 80%;
+            font-weight: 700;
+        }
+
+        .font-fredoka { font-family: 'Fredoka One', cursive; }
+        .title-shadow { text-shadow: 3px 3px 0px #0ea5e9; }
+        
+        /* View transitions */
+        .view-section { display: none; height: 100%; width: 100%; flex-direction: column; }
+        .view-section.active { display: flex; animation: popIn 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275); }
+
+        @keyframes popIn {
+            0% { opacity: 0; transform: scale(0.98) translateY(10px); }
+            100% { opacity: 1; transform: scale(1) translateY(0); }
+        }
+    </style>
+</head>
+<body class="h-screen w-full flex flex-col p-4 sm:p-6 gap-5 overflow-hidden relative selection:bg-[#FBBF24] selection:text-black">
+
+    <!-- 1. Header & Categories Bar -->
+    <header class="brutalist-panel p-3 flex flex-col md:flex-row items-center gap-4 shrink-0 z-20">
+        <!-- Logo -->
+        <div class="flex items-center gap-3 pl-4 pr-6 md:border-r-4 border-black">
+            <div>
+                <h1 class="text-3xl font-fredoka tracking-wide text-black title-shadow uppercase flex items-center gap-2">
+                    <i data-lucide="zap" class="w-8 h-8 stroke-[3px]"></i>
+                    LANER
+                </h1>
+            </div>
+        </div>
+
+        <!-- Navigation Tabs -->
+        <nav id="main-nav" class="flex-1 flex gap-4 overflow-x-auto no-scrollbar w-full py-2 px-2 items-center">
+            <button class="brutalist-button px-6 py-3 active text-[16px]" onclick="switchTab('feed', this)">
+                <i data-lucide="layout-list" class="w-5 h-5 stroke-[3px]"></i> <span class="pt-1">Feed</span>
+            </button>
+            <button class="brutalist-button px-6 py-3 text-[16px]" onclick="switchTab('chats', this)">
+                <i data-lucide="message-square-text" class="w-5 h-5 stroke-[3px]"></i> <span class="pt-1">Chats</span>
+                <span class="bg-red-500 text-white text-xs px-2 py-0.5 rounded-full border-2 border-black ml-1">3</span>
+            </button>
+            <button class="brutalist-button px-6 py-3 text-[16px]" onclick="switchTab('calls', this)">
+                <i data-lucide="video" class="w-5 h-5 stroke-[3px]"></i> <span class="pt-1">Calls</span>
+            </button>
+            <button class="brutalist-button px-6 py-3 text-[16px]" onclick="switchTab('profile', this)">
+                <i data-lucide="user-circle" class="w-5 h-5 stroke-[3px]"></i> <span class="pt-1">Profile</span>
+            </button>
+        </nav>
+        
+        <div class="pr-4 hidden lg:flex items-center gap-3 font-bold text-gray-500 text-sm">
+            <div class="w-3 h-3 bg-green-500 rounded-full border-2 border-black animate-pulse"></div>
+            ../Backend/laner.sql connected
+        </div>
+    </header>
+
+    <!-- 2. Main Viewer Area -->
+    <main class="brutalist-panel flex-1 overflow-hidden relative z-20 bg-gray-50">
+        
+        <!-- ================= VIEW: FEED ================= -->
+        <div id="view-feed" class="view-section active brutal-scroll overflow-y-auto bg-gray-100">
+            <div class="max-w-3xl mx-auto w-full p-6 flex flex-col gap-8">
+                
+                <!-- Composer -->
+                <div class="bg-white border-4 border-black rounded-2xl p-4 shadow-[6px_6px_0_#000]">
+                    <div class="flex gap-4">
+                        <img src="https://api.dicebear.com/7.x/avataaars/svg?seed=Felix" class="avatar w-12 h-12 shrink-0">
+                        <div class="flex-1">
+                            <textarea class="brutalist-input w-full resize-none h-24 mb-3" placeholder="What's happening? Drop a status or video..."></textarea>
+                            <div class="flex justify-between items-center">
+                                <div class="flex gap-2">
+                                    <button class="p-2 border-4 border-black rounded-full hover:bg-gray-200 transition-colors shadow-[2px_2px_0_#000] active:translate-y-1 active:shadow-none"><i data-lucide="image" class="w-5 h-5"></i></button>
+                                    <button class="p-2 border-4 border-black rounded-full hover:bg-gray-200 transition-colors shadow-[2px_2px_0_#000] active:translate-y-1 active:shadow-none"><i data-lucide="video" class="w-5 h-5"></i></button>
+                                    <button class="p-2 border-4 border-black rounded-full hover:bg-gray-200 transition-colors shadow-[2px_2px_0_#000] active:translate-y-1 active:shadow-none"><i data-lucide="smile" class="w-5 h-5"></i></button>
+                                </div>
+                                <button class="brutalist-button px-8 py-2 bg-blue-400 text-white">Post</button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Post 1 (Video) -->
+                <div class="bg-white border-4 border-black rounded-2xl p-5 shadow-[6px_6px_0_#000]">
+                    <div class="flex items-center gap-3 mb-4">
+                        <img src="https://api.dicebear.com/7.x/avataaars/svg?seed=Alex" class="avatar w-12 h-12">
+                        <div>
+                            <h3 class="font-fredoka text-lg leading-none">Alex Hunter</h3>
+                            <p class="text-sm font-bold text-gray-500">2 hrs ago • 🟢 Online</p>
+                        </div>
+                    </div>
+                    <p class="font-bold text-lg mb-4">Check out this crazy gameplay clip! 🎮🔥</p>
+                    
+                    <!-- Video Placeholder -->
+                    <div class="w-full aspect-video bg-black border-4 border-black rounded-xl mb-4 relative flex items-center justify-center overflow-hidden cursor-pointer group">
+                        <img src="https://images.unsplash.com/photo-1542751371-adc38448a05e?auto=format&fit=crop&w=800&q=80" class="absolute inset-0 w-full h-full object-cover opacity-60 group-hover:opacity-80 transition-opacity">
+                        <div class="w-16 h-16 bg-white border-4 border-black rounded-full flex items-center justify-center z-10 shadow-[4px_4px_0_#000] group-hover:scale-110 transition-transform">
+                            <i data-lucide="play" class="w-8 h-8 fill-black"></i>
+                        </div>
+                    </div>
+
+                    <div class="flex gap-4 border-t-4 border-black pt-4">
+                        <button class="flex items-center gap-2 font-fredoka hover:text-blue-500 transition-colors"><i data-lucide="heart" class="w-5 h-5"></i> 2.4k</button>
+                        <button class="flex items-center gap-2 font-fredoka hover:text-green-500 transition-colors"><i data-lucide="message-circle" class="w-5 h-5"></i> 142</button>
+                        <button class="flex items-center gap-2 font-fredoka hover:text-purple-500 transition-colors ml-auto"><i data-lucide="share-2" class="w-5 h-5"></i> Share</button>
+                    </div>
+                </div>
+
+                <!-- Post 2 (Text) -->
+                <div class="bg-white border-4 border-black rounded-2xl p-5 shadow-[6px_6px_0_#000]">
+                    <div class="flex items-center gap-3 mb-4">
+                        <img src="https://api.dicebear.com/7.x/avataaars/svg?seed=Sarah" class="avatar w-12 h-12">
+                        <div>
+                            <h3 class="font-fredoka text-lg leading-none">Sarah Jenkins</h3>
+                            <p class="text-sm font-bold text-gray-500">5 hrs ago • 🌙 Away</p>
+                        </div>
+                    </div>
+                    <p class="font-bold text-lg mb-4">Just finished setting up the new database schema! `../Backend/laner.sql` is fully operational and ready for data ingestion. Let's go! 🚀💻</p>
+                    
+                    <div class="flex gap-4 border-t-4 border-black pt-4">
+                        <button class="flex items-center gap-2 font-fredoka text-red-500 transition-colors"><i data-lucide="heart" class="w-5 h-5 fill-current"></i> 89</button>
+                        <button class="flex items-center gap-2 font-fredoka hover:text-green-500 transition-colors"><i data-lucide="message-circle" class="w-5 h-5"></i> 12</button>
+                    </div>
+                </div>
+
+            </div>
+        </div>
+
+        <!-- ================= VIEW: CHATS ================= -->
+        <div id="view-chats" class="view-section">
+            <div class="flex h-full w-full">
+                <!-- Chat List -->
+                <div class="w-80 border-r-4 border-black bg-white flex flex-col shrink-0">
+                    <div class="p-4 border-b-4 border-black bg-gray-100 flex justify-between items-center">
+                        <h2 class="font-fredoka text-xl">Messages</h2>
+                        <button class="p-2 border-2 border-black rounded-full bg-white shadow-[2px_2px_0_#000] hover:bg-yellow-300 active:translate-y-1 active:shadow-none"><i data-lucide="edit" class="w-4 h-4"></i></button>
+                    </div>
+                    <div class="flex-1 brutal-scroll overflow-y-auto">
+                        <!-- Contact 1 -->
+                        <div class="flex items-center gap-3 p-4 border-b-2 border-gray-200 hover:bg-yellow-100 cursor-pointer transition-colors bg-yellow-50">
+                            <div class="relative">
+                                <img src="https://api.dicebear.com/7.x/avataaars/svg?seed=Alex" class="avatar w-12 h-12">
+                                <div class="absolute bottom-0 right-0 w-3 h-3 bg-green-500 border-2 border-black rounded-full"></div>
+                            </div>
+                            <div class="flex-1 overflow-hidden">
+                                <div class="flex justify-between items-baseline">
+                                    <h4 class="font-fredoka text-md truncate">Alex Hunter</h4>
+                                    <span class="text-xs font-bold text-gray-500">10:42 AM</span>
+                                </div>
+                                <p class="text-sm font-bold text-gray-600 truncate">Did you see my new clip?</p>
+                            </div>
+                            <div class="w-5 h-5 bg-red-500 rounded-full border-2 border-black text-white text-[10px] font-black flex items-center justify-center">1</div>
+                        </div>
+                        <!-- Contact 2 -->
+                        <div class="flex items-center gap-3 p-4 border-b-2 border-gray-200 hover:bg-yellow-100 cursor-pointer transition-colors">
+                            <div class="relative">
+                                <img src="https://api.dicebear.com/7.x/avataaars/svg?seed=Sarah" class="avatar w-12 h-12">
+                                <div class="absolute bottom-0 right-0 w-3 h-3 bg-yellow-500 border-2 border-black rounded-full"></div>
+                            </div>
+                            <div class="flex-1 overflow-hidden">
+                                <div class="flex justify-between items-baseline">
+                                    <h4 class="font-fredoka text-md truncate">Sarah Jenkins</h4>
+                                    <span class="text-xs font-bold text-gray-500">Yesterday</span>
+                                </div>
+                                <p class="text-sm font-bold text-gray-600 truncate">The SQL file is ready.</p>
+                            </div>
+                        </div>
+                        <!-- Contact 3 -->
+                        <div class="flex items-center gap-3 p-4 border-b-2 border-gray-200 hover:bg-yellow-100 cursor-pointer transition-colors">
+                            <div class="relative">
+                                <img src="https://api.dicebear.com/7.x/avataaars/svg?seed=Mike" class="avatar w-12 h-12">
+                                <div class="absolute bottom-0 right-0 w-3 h-3 bg-gray-400 border-2 border-black rounded-full"></div>
+                            </div>
+                            <div class="flex-1 overflow-hidden">
+                                <div class="flex justify-between items-baseline">
+                                    <h4 class="font-fredoka text-md truncate">Mike D.</h4>
+                                    <span class="text-xs font-bold text-gray-500">Mon</span>
+                                </div>
+                                <p class="text-sm font-bold text-gray-600 truncate">Let's play Carrom later.</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Active Chat -->
+                <div class="flex-1 flex flex-col bg-[#f1f5f9] relative">
+                    <!-- Chat Header -->
+                    <div class="h-16 border-b-4 border-black bg-white flex items-center justify-between px-6 shrink-0 z-10">
+                        <div class="flex items-center gap-3">
+                            <img src="https://api.dicebear.com/7.x/avataaars/svg?seed=Alex" class="avatar w-10 h-10">
+                            <div>
+                                <h3 class="font-fredoka text-lg leading-none">Alex Hunter</h3>
+                                <p class="text-xs font-bold text-green-600">Online</p>
+                            </div>
+                        </div>
+                        <div class="flex gap-3">
+                            <button class="p-2 border-2 border-black rounded-xl bg-white shadow-[2px_2px_0_#000] hover:bg-blue-100 active:translate-y-1 active:shadow-none" onclick="switchTab('calls', document.querySelectorAll('.brutalist-button')[2])"><i data-lucide="phone" class="w-5 h-5"></i></button>
+                            <button class="p-2 border-2 border-black rounded-xl bg-white shadow-[2px_2px_0_#000] hover:bg-blue-100 active:translate-y-1 active:shadow-none" onclick="switchTab('calls', document.querySelectorAll('.brutalist-button')[2])"><i data-lucide="video" class="w-5 h-5"></i></button>
+                        </div>
+                    </div>
+
+                    <!-- Messages -->
+                    <div class="flex-1 brutal-scroll overflow-y-auto p-6 flex flex-col gap-4 bg-[radial-gradient(#cbd5e1_1px,transparent_1px)]" style="background-size: 20px 20px;">
+                        
+                        <div class="flex items-end gap-2">
+                            <img src="https://api.dicebear.com/7.x/avataaars/svg?seed=Alex" class="w-8 h-8 rounded-full border-2 border-black self-end">
+                            <div class="bubble-received">Yo! Are you online?</div>
+                        </div>
+                        
+                        <div class="flex items-end gap-2">
+                            <img src="https://api.dicebear.com/7.x/avataaars/svg?seed=Alex" class="w-8 h-8 rounded-full border-2 border-black self-end">
+                            <div class="bubble-received">Did you see my new clip?</div>
+                        </div>
+
+                        <div class="flex flex-col items-end gap-1 mt-4">
+                            <div class="bubble-sent">Yeah man, it was insane! 🔥</div>
+                            <span class="text-xs font-bold text-gray-500 mr-2">Read 10:45 AM</span>
+                        </div>
+
+                    </div>
+
+                    <!-- Input Area -->
+                    <div class="p-4 border-t-4 border-black bg-white shrink-0">
+                        <div class="flex gap-3">
+                            <button class="p-3 border-4 border-black rounded-xl bg-gray-100 hover:bg-gray-200 shadow-[2px_2px_0_#000] active:translate-y-1 active:shadow-none"><i data-lucide="plus" class="w-6 h-6"></i></button>
+                            <input type="text" class="brutalist-input flex-1 text-lg" placeholder="Type a message...">
+                            <button class="brutalist-button px-6 bg-blue-400 text-white"><i data-lucide="send" class="w-6 h-6"></i></button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- ================= VIEW: CALLS ================= -->
+        <div id="view-calls" class="view-section bg-black relative">
+            <!-- Main Video (Mock) -->
+            <img src="https://images.unsplash.com/photo-1560253023-3ec5d502959f?auto=format&fit=crop&w=1200&q=80" class="absolute inset-0 w-full h-full object-cover opacity-80">
+            
+            <!-- PIP Video (Self) -->
+            <div class="absolute top-6 right-6 w-48 aspect-[3/4] bg-gray-800 border-4 border-white rounded-2xl overflow-hidden shadow-[8px_8px_0_#000] z-10">
+                <img src="https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?auto=format&fit=crop&w=400&q=80" class="w-full h-full object-cover">
+            </div>
+
+            <!-- Call Info -->
+            <div class="absolute top-6 left-6 bg-white border-4 border-black rounded-xl p-3 shadow-[6px_6px_0_#000] z-10">
+                <h2 class="font-fredoka text-xl">Alex Hunter</h2>
+                <p class="font-bold text-red-500 flex items-center gap-2"><span class="w-2 h-2 rounded-full bg-red-500 animate-pulse"></span> 12:45</p>
+            </div>
+
+            <!-- Call Controls -->
+            <div class="absolute bottom-10 left-10 right-10 flex justify-center gap-6 z-10">
+                <button class="w-16 h-16 rounded-full bg-white border-4 border-black shadow-[4px_4px_0_#000] flex items-center justify-center hover:bg-gray-200 active:translate-y-1 active:shadow-none transition-all"><i data-lucide="mic" class="w-7 h-7"></i></button>
+                <button class="w-16 h-16 rounded-full bg-white border-4 border-black shadow-[4px_4px_0_#000] flex items-center justify-center hover:bg-gray-200 active:translate-y-1 active:shadow-none transition-all"><i data-lucide="video" class="w-7 h-7"></i></button>
+                <button class="w-20 h-16 rounded-3xl bg-red-500 border-4 border-black shadow-[4px_4px_0_#000] flex items-center justify-center hover:bg-red-600 active:translate-y-1 active:shadow-none transition-all" onclick="switchTab('chats', document.querySelectorAll('.brutalist-button')[1])"><i data-lucide="phone-off" class="w-8 h-8 text-white"></i></button>
+                <button class="w-16 h-16 rounded-full bg-white border-4 border-black shadow-[4px_4px_0_#000] flex items-center justify-center hover:bg-gray-200 active:translate-y-1 active:shadow-none transition-all"><i data-lucide="monitor-up" class="w-7 h-7"></i></button>
+            </div>
+        </div>
+
+        <!-- ================= VIEW: PROFILE ================= -->
+        <div id="view-profile" class="view-section bg-yellow-50 brutal-scroll overflow-y-auto">
+            <div class="max-w-2xl mx-auto w-full p-8 flex flex-col gap-8">
+                
+                <!-- Profile Header -->
+                <div class="bg-white border-4 border-black rounded-3xl p-8 shadow-[8px_8px_0_#000] flex flex-col md:flex-row items-center gap-8 relative overflow-hidden">
+                    <div class="absolute top-0 left-0 w-full h-32 bg-blue-400 border-b-4 border-black z-0"></div>
+                    
+                    <div class="relative z-10 pt-16">
+                        <img src="https://api.dicebear.com/7.x/avataaars/svg?seed=Felix" class="w-32 h-32 rounded-full border-4 border-black shadow-[4px_4px_0_#000] bg-white object-cover">
+                        <button class="absolute bottom-0 right-0 w-10 h-10 bg-yellow-400 border-4 border-black rounded-full flex items-center justify-center shadow-[2px_2px_0_#000] hover:bg-yellow-300"><i data-lucide="camera" class="w-5 h-5"></i></button>
+                    </div>
+
+                    <div class="relative z-10 text-center md:text-left pt-16 md:pt-20 flex-1">
+                        <h2 class="font-fredoka text-4xl mb-1">Felix Coder</h2>
+                        <p class="font-bold text-gray-500 text-lg mb-3">@felix_dev</p>
+                        
+                        <div class="flex flex-wrap justify-center md:justify-start gap-2 mb-4">
+                            <span class="bg-green-100 text-green-800 border-2 border-green-800 font-bold px-3 py-1 rounded-lg text-sm flex items-center gap-1"><div class="w-2 h-2 rounded-full bg-green-500"></div> Online</span>
+                            <span class="bg-purple-100 text-purple-800 border-2 border-purple-800 font-bold px-3 py-1 rounded-lg text-sm">Developer</span>
+                            <span class="bg-orange-100 text-orange-800 border-2 border-orange-800 font-bold px-3 py-1 rounded-lg text-sm">Gamer</span>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Settings / Status -->
+                <div class="bg-white border-4 border-black rounded-3xl p-8 shadow-[8px_8px_0_#000] flex flex-col gap-6">
+                    <h3 class="font-fredoka text-2xl border-b-4 border-black pb-4">Edit Profile</h3>
+                    
+                    <div>
+                        <label class="block font-fredoka text-lg mb-2">Display Name</label>
+                        <input type="text" class="brutalist-input w-full text-lg" value="Felix Coder">
+                    </div>
+
+                    <div>
+                        <label class="block font-fredoka text-lg mb-2">Status / Bio</label>
+                        <textarea class="brutalist-input w-full resize-none h-24 text-lg">Building cool brutalist UIs and linking up ../Backend/laner.sql databases! 🚀</textarea>
+                    </div>
+
+                    <button class="brutalist-button w-full py-4 bg-green-400 text-xl mt-2">Save Changes</button>
+                </div>
+
+            </div>
+        </div>
+
+    </main>
+
+    <script>
+        // Tab switching logic
+        function switchTab(tabId, btnElement) {
+            // Update Buttons
+            const nav = document.getElementById('main-nav');
+            const buttons = nav.querySelectorAll('.brutalist-button');
+            buttons.forEach(btn => btn.classList.remove('active'));
+            btnElement.classList.add('active');
+
+            // Update Views
+            const views = document.querySelectorAll('.view-section');
+            views.forEach(view => view.classList.remove('active'));
+            document.getElementById('view-' + tabId).classList.add('active');
+        }
+
+        // Initialize icons
+        lucide.createIcons();
+    </script>
+</body>
+</html>

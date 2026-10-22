@@ -1,0 +1,605 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Teacher Portal | ClonBrow Schools</title>
+    
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Nunito:wght@400;600;700;800;900&display=swap" rel="stylesheet">
+    
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    fontFamily: { 
+                        sans: ['Nunito', '-apple-system', 'BlinkMacSystemFont', 'Segoe UI', 'sans-serif']
+                    },
+                    colors: {
+                        duo: {
+                            dark: '#1e293b', blue: '#1cb0f6', green: '#58cc02', 
+                            red: '#ff4b4b', yellow: '#ffc800', purple: '#ce82ff', 
+                            pink: '#ff718d', gray: '#e5e7eb', bg: '#f8f9fa',
+                            teal: '#14b8a6', orange: '#fb923c', indigo: '#6366f1'
+                        }
+                    }
+                }
+            }
+        }
+    </script>
+    
+    <style>
+        body { font-family: 'Nunito', sans-serif; letter-spacing: -0.01em; background-color: #f8f9fa; }
+        
+        .bg-dots {
+            background-image: radial-gradient(#cbd5e1 2px, transparent 2px);
+            background-size: 24px 24px;
+        }
+
+        .duo-card {
+            background-color: white;
+            border: 3px solid #1e293b;
+            border-radius: 20px;
+            box-shadow: 6px 6px 0px #1e293b;
+            transition: all 0.2s ease;
+        }
+        
+        .duo-btn {
+            position: relative;
+            border: 3px solid #1e293b;
+            border-radius: 12px;
+            font-weight: 800;
+            text-transform: uppercase;
+            transition: all 0.1s;
+            cursor: pointer;
+            box-shadow: 0px 4px 0px #1e293b;
+            text-align: center;
+        }
+        .duo-btn:active { transform: translateY(4px); box-shadow: 0px 0px 0px #1e293b; }
+
+        .duo-input {
+            background-color: #f8fafc;
+            border: 3px solid #cbd5e1;
+            border-radius: 12px;
+            padding: 12px;
+            width: 100%;
+            font-weight: 700;
+            color: #1e293b;
+            transition: all 0.2s;
+            outline: none;
+        }
+        .duo-input:focus { border-color: #1cb0f6; background-color: white; }
+
+        .tool-row {
+            display: flex;
+            align-items: stretch;
+            gap: 1.5rem;
+            padding: 1.5rem;
+            cursor: pointer;
+            border: 3px solid #1e293b;
+            border-radius: 24px;
+            transition: all 0.2s ease;
+            box-shadow: 6px 6px 0px #1e293b;
+            background: white;
+            text-align: left;
+        }
+        .tool-row:hover {
+            transform: translateY(-4px);
+            box-shadow: 8px 8px 0px #1e293b;
+        }
+        .tool-row:active {
+            transform: translateY(2px);
+            box-shadow: 2px 2px 0px #1e293b;
+        }
+
+        .icon-box {
+            width: 80px;
+            height: 80px;
+            border-radius: 16px;
+            border: 3px solid #1e293b;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 2.5rem;
+            flex-shrink: 0;
+            background-color: white;
+            transition: transform 0.2s;
+        }
+        .tool-row:hover .icon-box { transform: scale(1.05) rotate(-5deg); }
+
+        .seq-btn {
+            width: 100%; text-align: left; padding: 12px 16px; border-radius: 12px;
+            font-weight: 800; color: #64748b; transition: all 0.2s;
+            border: 3px solid transparent;
+        }
+        .seq-btn:hover { background: #f1f5f9; color: #1e293b; }
+        .seq-btn.active { 
+            background: white; color: #1cb0f6; border-color: #1e293b; 
+            box-shadow: 4px 4px 0px #1e293b; 
+        }
+
+        ::-webkit-scrollbar { width: 8px; }
+        ::-webkit-scrollbar-track { background: transparent; }
+        ::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 10px; border: 2px solid #f8f9fa;}
+        ::-webkit-scrollbar-thumb:hover { background: #94a3b8; }
+    </style>
+</head>
+<body class="bg-dots h-screen w-screen overflow-hidden text-duo-dark selection:bg-duo-blue selection:text-white flex flex-col">
+
+    <header class="bg-white border-b-[3px] border-duo-dark px-6 py-4 flex items-center justify-between z-30 shadow-sm shrink-0">
+        <div class="flex items-center gap-4">
+            <button onclick="window.location.href='../frontend/school.html'" class="w-12 h-12 duo-btn bg-white flex items-center justify-center text-slate-500 hover:text-duo-dark">
+                <i class="fas fa-arrow-left text-xl"></i>
+            </button>
+            <div class="flex items-center gap-3">
+                <div class="w-12 h-12 bg-white rounded-xl border-[3px] border-duo-dark flex items-center justify-center text-duo-dark text-2xl shadow-[4px_4px_0_#cbd5e1] overflow-hidden">
+                    <img id="inst-logo" src="" alt="Institution Logo" class="w-full h-full object-cover hidden">
+                    <i class="fas fa-school" id="inst-icon"></i>
+                </div>
+                <div>
+                    <h1 class="text-2xl sm:text-3xl font-black leading-none" id="portal-teacher-name">Faculty Portal</h1>
+                    <p class="text-xs sm:text-sm font-bold text-slate-500 uppercase tracking-widest" id="portal-teacher-domain">Loading Cloud Data...</p>
+                </div>
+            </div>
+        </div>
+        <div class="hidden md:flex items-center gap-4">
+            <div class="font-bold text-slate-500 text-sm"><i class="fas fa-circle text-duo-green text-[10px] mr-1 animate-pulse"></i> Cloud Connected</div>
+            <button class="duo-btn bg-white text-duo-dark px-6 py-2 text-sm flex items-center gap-2"><i class="fas fa-clock"></i> My Timetable</button>
+        </div>
+    </header>
+
+    <div class="flex-1 flex overflow-hidden">
+        
+        <aside class="w-72 bg-slate-50 border-r-[3px] border-duo-dark flex flex-col p-6 shrink-0 overflow-y-auto hidden lg:flex">
+            <h3 class="font-black text-slate-400 text-xs uppercase tracking-widest mb-4">Teacher Workflow</h3>
+            
+            <div class="space-y-3 relative before:absolute before:inset-y-0 before:left-[22px] before:w-[3px] before:bg-slate-300">
+                
+                <button onclick="scrollToSection('sec-profile')" class="seq-btn active relative z-10 flex items-center gap-3 bg-white">
+                    <div class="w-8 h-8 rounded-lg bg-duo-blue text-white flex items-center justify-center shrink-0 border-2 border-duo-dark">1</div>
+                    <span class="truncate">My Profile</span>
+                </button>
+
+                <button onclick="scrollToSection('sec-classroom')" class="seq-btn relative z-10 flex items-center gap-3 bg-white">
+                    <div class="w-8 h-8 rounded-lg bg-duo-purple text-white flex items-center justify-center shrink-0 border-2 border-duo-dark">2</div>
+                    <span class="truncate">My Classroom</span>
+                </button>
+
+                <button onclick="scrollToSection('sec-academics')" class="seq-btn relative z-10 flex items-center gap-3 bg-white">
+                    <div class="w-8 h-8 rounded-lg bg-duo-pink text-white flex items-center justify-center shrink-0 border-2 border-duo-dark">3</div>
+                    <span class="truncate">Academics & Grading</span>
+                </button>
+
+                <button onclick="scrollToSection('sec-comms')" class="seq-btn relative z-10 flex items-center gap-3 bg-white">
+                    <div class="w-8 h-8 rounded-lg bg-duo-orange text-white flex items-center justify-center shrink-0 border-2 border-duo-dark">4</div>
+                    <span class="truncate">Comms & Updates</span>
+                </button>
+
+            </div>
+
+            <div class="mt-auto bg-purple-50 border-2 border-duo-purple p-4 rounded-xl">
+                <i class="fas fa-apple-alt text-duo-purple mb-2 text-xl"></i>
+                <p class="text-xs font-bold text-slate-600">Empower your students. All your teaching tools are organized right here.</p>
+            </div>
+        </aside>
+
+        <main class="flex-1 overflow-y-auto p-6 md:p-10" id="main-scroll">
+            <div class="max-w-5xl mx-auto space-y-16 pb-20">
+                
+                <!-- SECTION 1: My Profile -->
+                <section id="sec-profile" class="scroll-mt-10">
+                    <div class="flex items-center gap-4 mb-6">
+                        <div class="w-12 h-12 bg-duo-blue rounded-xl border-[3px] border-duo-dark flex items-center justify-center text-white font-black text-xl shadow-[4px_4px_0_#1e293b]">1</div>
+                        <h2 class="text-3xl font-black text-duo-dark tracking-tight">My Profile</h2>
+                        <div class="h-[3px] flex-1 bg-slate-300 rounded-full ml-4"></div>
+                    </div>
+
+                    <div class="duo-card p-6 sm:p-8 bg-gradient-to-r from-blue-50 to-indigo-50 border-duo-blue shadow-[8px_8px_0px_#1cb0f6]">
+                        <div class="flex flex-col md:flex-row gap-8 items-center md:items-start">
+                            <!-- Teacher Picture & ID -->
+                            <div class="flex flex-col items-center gap-3 shrink-0">
+                                <div class="relative group cursor-pointer" onclick="document.getElementById('teacher-pfp-upload').click()">
+                                    <div class="w-40 h-40 rounded-3xl border-[4px] border-duo-dark bg-white shadow-[6px_6px_0px_#1e293b] flex items-center justify-center overflow-hidden transition-transform group-hover:scale-105">
+                                        <img id="teacher-avatar" src="" alt="Teacher Profile" class="w-full h-full object-cover">
+                                        <div class="absolute inset-0 bg-black/50 hidden group-hover:flex items-center justify-center text-white text-3xl"><i class="fas fa-camera"></i></div>
+                                    </div>
+                                </div>
+                                <input type="file" id="teacher-pfp-upload" class="hidden" accept="image/*" onchange="uploadTeacherAvatar(event)">
+                                <div class="bg-duo-dark text-white text-xs font-black px-4 py-1 rounded-full uppercase tracking-widest mt-2" id="teacher-id-display">EMP ID: Loading...</div>
+                            </div>
+
+                            <!-- Basic Info fetched live from server -->
+                            <div class="flex-1 w-full space-y-4 relative">
+                                <button onclick="toggleProfileEdit()" id="btn-edit-profile" class="absolute -top-2 right-0 text-slate-400 hover:text-duo-blue transition-colors text-xl bg-white rounded-full w-10 h-10 border-2 border-slate-300 shadow-sm flex items-center justify-center z-10"><i class="fas fa-pen"></i></button>
+
+                                <div class="grid grid-cols-1 sm:grid-cols-2 gap-4 pt-2">
+                                    <div class="bg-white p-4 rounded-xl border-[3px] border-slate-300 relative">
+                                        <div class="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1">Full Name</div>
+                                        <div class="flex items-center gap-2">
+                                            <input type="text" id="profile-full-name" class="text-xl font-bold text-duo-dark bg-transparent outline-none w-full border-b-2 border-transparent focus:border-duo-blue transition-colors" value="Loading..." readonly>
+                                        </div>
+                                    </div>
+                                    
+                                    <div class="bg-white p-4 rounded-xl border-[3px] border-slate-300 relative">
+                                        <div class="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1">Department / Subject</div>
+                                        <div class="flex items-center gap-2">
+                                            <input type="text" id="profile-subject" class="text-xl font-bold text-duo-dark bg-transparent outline-none w-full border-b-2 border-transparent focus:border-duo-blue transition-colors" value="Not Set" placeholder="e.g. Mathematics" readonly>
+                                        </div>
+                                    </div>
+
+                                    <div class="bg-white p-4 rounded-xl border-[3px] border-slate-300 sm:col-span-2 relative">
+                                        <div class="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1">Grades / Classes Taught</div>
+                                        <div class="flex items-center gap-2">
+                                            <input type="text" id="profile-grades-taught" class="text-xl font-bold text-duo-dark bg-transparent outline-none w-full border-b-2 border-transparent focus:border-duo-blue transition-colors" value="Not Set" placeholder="e.g. 9th, 10th" readonly>
+                                        </div>
+                                    </div>
+
+                                    <div class="bg-white p-4 rounded-xl border-[3px] border-slate-300 sm:col-span-2">
+                                        <div class="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1">Official Email Account</div>
+                                        <div class="text-xl font-bold text-duo-dark truncate" id="profile-email">Loading...</div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </section>
+
+                <!-- SECTION 2: My Classroom -->
+                <section id="sec-classroom" class="scroll-mt-10">
+                    <div class="flex items-center gap-4 mb-6">
+                        <div class="w-12 h-12 bg-duo-purple rounded-xl border-[3px] border-duo-dark flex items-center justify-center text-white font-black text-xl shadow-[4px_4px_0_#1e293b]">2</div>
+                        <h2 class="text-3xl font-black text-duo-dark tracking-tight">My Classroom</h2>
+                        <div class="h-[3px] flex-1 bg-slate-300 rounded-full ml-4"></div>
+                    </div>
+
+                    <!-- Live Roster Search Widget -->
+                    <div class="duo-card p-6 bg-white mb-8 border-duo-purple shadow-[6px_6px_0px_#ce82ff]">
+                        <h3 class="font-black text-2xl mb-4 text-duo-dark"><i class="fas fa-search text-duo-purple mr-2"></i> Live Roster Search</h3>
+                        <p class="text-sm font-bold text-slate-500 mb-4">Pull real-time student data directly from the School Cloud Database.</p>
+                        
+                        <div class="flex flex-col sm:flex-row gap-4 mb-4">
+                            <input type="text" id="roster-search-grade" class="duo-input flex-1" placeholder="Enter Grade (e.g. 10)">
+                            <button onclick="fetchRoster()" class="duo-btn bg-duo-purple text-white px-8 py-3 text-lg shrink-0 shadow-[4px_4px_0_#1e293b]">Find Students</button>
+                        </div>
+
+                        <div id="roster-results" class="bg-slate-50 border-[3px] border-slate-200 rounded-xl p-4 max-h-80 overflow-y-auto no-scrollbar">
+                            <p class="text-sm font-bold text-slate-400 text-center py-8">Enter a grade and click search to view your students.</p>
+                        </div>
+                    </div>
+
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                        <!-- Class Data & Teams -->
+                        <div class="tool-row hover:bg-purple-50 group border-duo-purple" onclick="window.location.href='t_classdata.html'" id="t_classdata">
+                            <div class="icon-circle icon-box text-duo-purple shadow-[4px_4px_0_#ce82ff]"><i class="fas fa-users-class"></i></div>
+                            <div class="flex-1">
+                                <h3 class="font-black text-2xl text-duo-dark mb-1">Class Data & Teams</h3>
+                                <div class="inline-block bg-purple-100 text-purple-700 text-[10px] font-black px-2 py-1 rounded uppercase tracking-widest mb-2 border border-purple-200">Student Rosters</div>
+                                <p class="text-sm font-bold text-slate-500 leading-snug">View profiles for all students assigned to your classes. Group students into project teams and review individual academic histories.</p>
+                            </div>
+                        </div>
+
+                        <!-- Daily Register -->
+                        <div class="tool-row hover:bg-teal-50 group border-duo-teal" onclick="window.location.href='t_attendance.html'" id="t_attendance">
+                            <div class="icon-circle icon-box text-duo-teal shadow-[4px_4px_0_#14b8a6]"><i class="fas fa-user-check"></i></div>
+                            <div class="flex-1">
+                                <h3 class="font-black text-2xl text-duo-dark mb-1">Daily Register</h3>
+                                <div class="inline-block bg-teal-100 text-teal-700 text-[10px] font-black px-2 py-1 rounded uppercase tracking-widest mb-2 border border-teal-200">Attendance</div>
+                                <p class="text-sm font-bold text-slate-500 leading-snug">Quickly mark students as Present, Absent, or Late. Generate monthly attendance reports for parent-teacher meetings.</p>
+                            </div>
+                        </div>
+
+                        <!-- Teacher's Diary -->
+                        <div class="tool-row hover:bg-red-50 group border-duo-red md:col-span-2" onclick="window.location.href='t_diary.html'" id="t_diary">
+                            <div class="icon-circle icon-box text-duo-red shadow-[4px_4px_0_#ff4b4b]"><i class="fas fa-book-dead"></i></div>
+                            <div class="flex-1">
+                                <h3 class="font-black text-2xl text-duo-dark mb-1">Teacher's Diary</h3>
+                                <div class="inline-block bg-red-100 text-red-700 text-[10px] font-black px-2 py-1 rounded uppercase tracking-widest mb-2 border border-red-200">Behavior & Misconduct</div>
+                                <p class="text-sm font-bold text-slate-500 leading-snug">A private digital logbook. Record instances of student misconduct, document behavioral improvements, or write detailed observation notes that feed directly into the student's official discipline record.</p>
+                            </div>
+                        </div>
+                    </div>
+                </section>
+
+                <!-- SECTION 3: Academics & Grading -->
+                <section id="sec-academics" class="scroll-mt-10">
+                    <div class="flex items-center gap-4 mb-6">
+                        <div class="w-12 h-12 bg-duo-pink rounded-xl border-[3px] border-duo-dark flex items-center justify-center text-white font-black text-xl shadow-[4px_4px_0_#1e293b]">3</div>
+                        <h2 class="text-3xl font-black text-duo-dark tracking-tight">Academics & Grading</h2>
+                        <div class="h-[3px] flex-1 bg-slate-300 rounded-full ml-4"></div>
+                    </div>
+
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                        <!-- Assignment Hub -->
+                        <div class="tool-row hover:bg-blue-50 group border-duo-blue" onclick="window.location.href='t_homework.html'" id="t_homework">
+                            <div class="icon-circle icon-box text-duo-blue shadow-[4px_4px_0_#1cb0f6]"><i class="fas fa-tasks"></i></div>
+                            <div class="flex-1">
+                                <h3 class="font-black text-2xl text-duo-dark mb-1">Assignment Hub</h3>
+                                <div class="inline-block bg-blue-100 text-blue-700 text-[10px] font-black px-2 py-1 rounded uppercase tracking-widest mb-2 border border-blue-200">Homework Uploads</div>
+                                <p class="text-sm font-bold text-slate-500 leading-snug">Assign daily homework, set strict submission deadlines, and review/grade digital files uploaded by your students.</p>
+                            </div>
+                        </div>
+
+                        <!-- Official Gradebook -->
+                        <div class="tool-row hover:bg-orange-50 group border-duo-orange" onclick="window.location.href='t_grades.html'" id="t_grades">
+                            <div class="icon-circle icon-box text-duo-orange shadow-[4px_4px_0_#fb923c]"><i class="fas fa-marker"></i></div>
+                            <div class="flex-1">
+                                <h3 class="font-black text-2xl text-duo-dark mb-1">Official Gradebook</h3>
+                                <div class="inline-block bg-orange-100 text-orange-700 text-[10px] font-black px-2 py-1 rounded uppercase tracking-widest mb-2 border border-orange-200">Exams & Rubrics</div>
+                                <p class="text-sm font-bold text-slate-500 leading-snug">Input scores for pop quizzes, mid-terms, and final exams. The system automatically calculates class averages and term grades.</p>
+                            </div>
+                        </div>
+
+                        <!-- Study Materials Repository -->
+                        <div class="tool-row hover:bg-pink-50 group border-duo-pink md:col-span-2" onclick="window.location.href='t_materials.html'" id="t_materials">
+                            <div class="icon-circle icon-box text-duo-pink shadow-[4px_4px_0_#ff718d]"><i class="fas fa-file-upload"></i></div>
+                            <div class="flex-1">
+                                <h3 class="font-black text-2xl text-duo-dark mb-1">Study Materials Repository</h3>
+                                <div class="inline-block bg-pink-100 text-pink-700 text-[10px] font-black px-2 py-1 rounded uppercase tracking-widest mb-2 border border-pink-200">Notes & Resources</div>
+                                <p class="text-sm font-bold text-slate-500 leading-snug">Upload PDF lecture notes, presentation slides, and interactive links. Materials posted here become instantly accessible in your students' Digital Labs.</p>
+                            </div>
+                        </div>
+                    </div>
+                </section>
+
+                <!-- SECTION 4: Comms & Updates -->
+                <section id="sec-comms" class="scroll-mt-10">
+                    <div class="flex items-center gap-4 mb-6">
+                        <div class="w-12 h-12 bg-duo-orange rounded-xl border-[3px] border-duo-dark flex items-center justify-center text-white font-black text-xl shadow-[4px_4px_0_#1e293b]">4</div>
+                        <h2 class="text-3xl font-black text-duo-dark tracking-tight">Comms & Updates</h2>
+                        <div class="h-[3px] flex-1 bg-slate-300 rounded-full ml-4"></div>
+                    </div>
+
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                        <!-- Announcement Board -->
+                        <div class="tool-row hover:bg-yellow-50 group border-duo-yellow" onclick="window.location.href='announcement_hub.html'" id="t_announce">
+                            <div class="icon-circle icon-box text-duo-yellow shadow-[4px_4px_0_#ffc800]"><i class="fas fa-broadcast-tower text-duo-dark"></i></div>
+                            <div class="flex-1">
+                                <h3 class="font-black text-2xl text-duo-dark mb-1">Announcement Board</h3>
+                                <div class="inline-block bg-yellow-100 text-yellow-700 text-[10px] font-black px-2 py-1 rounded uppercase tracking-widest mb-2 border border-yellow-300">Live Feed</div>
+                                <p class="text-sm font-bold text-slate-500 leading-snug">Post critical updates, test reminders, or syllabus changes. Pinned announcements immediately pop up on the student portal homepage.</p>
+                            </div>
+                        </div>
+
+                        <!-- Direct Comms -->
+                        <div class="tool-row hover:bg-indigo-50 group border-duo-indigo" onclick="window.location.href='../frontend/mailgo.html'" id="mailgo">
+                            <div class="icon-circle icon-box text-duo-indigo shadow-[4px_4px_0_#6366f1]"><i class="fas fa-envelope-open-text"></i></div>
+                            <div class="flex-1">
+                                <h3 class="font-black text-2xl text-duo-dark mb-1">Direct Comms</h3>
+                                <div class="inline-block bg-indigo-100 text-indigo-700 text-[10px] font-black px-2 py-1 rounded uppercase tracking-widest mb-2 border border-indigo-200">Email & Parents</div>
+                                <p class="text-sm font-bold text-slate-500 leading-snug">Send direct emails to parents regarding student progress, behavioral concerns, or permission slips for upcoming field trips.</p>
+                            </div>
+                        </div>
+                    </div>
+                </section>
+
+            </div>
+        </main>
+    </div>
+
+    <script>
+        const CLOUD_API = 'https://clonexxshree.pythonanywhere.com/api';
+        let windowUserEmail = '';
+        let isEditingProfile = false;
+
+        async function uploadTeacherAvatar(event) {
+            const file = event.target.files[0];
+            if (!file) return;
+            const reader = new FileReader();
+            reader.onload = async function(e) {
+                const dataUrl = e.target.result;
+                document.getElementById('teacher-avatar').src = dataUrl;
+                
+                // Save directly to Cloud DB
+                try {
+                    await fetch(`${CLOUD_API}/users/update`, {
+                        method: 'POST',
+                        headers: {'Content-Type': 'application/json'},
+                        body: JSON.stringify({ email: windowUserEmail, avatar: dataUrl })
+                    });
+                    
+                    let u = JSON.parse(localStorage.getItem('clonbrow_active_user'));
+                    u.avatar = dataUrl;
+                    localStorage.setItem('clonbrow_active_user', JSON.stringify(u));
+                } catch(err) {
+                    console.error("Cloud save failed.", err);
+                }
+            }
+            reader.readAsDataURL(file);
+        }
+
+        async function toggleProfileEdit() {
+            const nameInput = document.getElementById('profile-full-name');
+            const subjectInput = document.getElementById('profile-subject');
+            const gradesInput = document.getElementById('profile-grades-taught');
+            const btn = document.getElementById('btn-edit-profile');
+            
+            if (!isEditingProfile) {
+                isEditingProfile = true;
+                nameInput.removeAttribute('readonly');
+                subjectInput.removeAttribute('readonly');
+                gradesInput.removeAttribute('readonly');
+                nameInput.focus();
+                btn.innerHTML = '<i class="fas fa-save text-duo-green"></i>';
+                btn.classList.add('border-duo-green', 'shadow-[2px_2px_0px_#58cc02]');
+            } else {
+                isEditingProfile = false;
+                nameInput.setAttribute('readonly', 'true');
+                subjectInput.setAttribute('readonly', 'true');
+                gradesInput.setAttribute('readonly', 'true');
+                btn.innerHTML = '<i class="fas fa-pen"></i>';
+                btn.classList.remove('border-duo-green', 'shadow-[2px_2px_0px_#58cc02]');
+                
+                const newName = nameInput.value;
+                const newSubject = subjectInput.value;
+                const newGrades = gradesInput.value;
+                const formattedName = newName ? (newName.charAt(0).toUpperCase() + newName.slice(1)) : 'Faculty';
+                document.getElementById('portal-teacher-name').innerText = `Prof. ${formattedName}`;
+                
+                // Save directly to Cloud DB (Removed Game Engine fetch call)
+                try {
+                    await fetch(`${CLOUD_API}/users/update`, {
+                        method: 'POST',
+                        headers: {'Content-Type': 'application/json'},
+                        body: JSON.stringify({ email: windowUserEmail, name: newName, grade: newGrades })
+                    });
+                    
+                    // Update local session
+                    let u = JSON.parse(localStorage.getItem('clonbrow_active_user'));
+                    u.name = newName;
+                    u.subject = newSubject;
+                    u.grade = newGrades;
+                    localStorage.setItem('clonbrow_active_user', JSON.stringify(u));
+                } catch(err) {
+                    console.error("Cloud save failed.", err);
+                }
+            }
+        }
+
+        async function fetchRoster() {
+            const grade = document.getElementById('roster-search-grade').value.trim();
+            const resultsDiv = document.getElementById('roster-results');
+            
+            if (!grade) {
+                resultsDiv.innerHTML = '<p class="text-center font-bold text-duo-red py-4">Please enter a Grade to search.</p>';
+                return;
+            }
+
+            resultsDiv.innerHTML = '<p class="text-center font-bold text-slate-500 py-8"><i class="fas fa-spinner fa-spin text-2xl text-duo-purple mb-2"></i><br>Fetching cloud data...</p>';
+            
+            try {
+                // Call the correct endpoint from ../Backend/gamer.py
+                let url = `${CLOUD_API}/teacher/students?grade=${encodeURIComponent(grade)}`;
+                
+                const res = await fetch(url);
+                if (!res.ok) {
+                    const errText = await res.text();
+                    throw new Error(`Server returned ${res.status}:\n${errText}`);
+                }
+                
+                const data = await res.json();
+                
+                if (data.length === 0) {
+                    resultsDiv.innerHTML = '<p class="text-center font-bold text-slate-500 py-8">No students found matching this class.</p>';
+                    return;
+                }
+                
+                let html = '<div class="grid grid-cols-1 gap-3">';
+                data.forEach(student => {
+                    const studentName = student.name ? (student.name.charAt(0).toUpperCase() + student.name.slice(1)) : 'Unknown';
+                    const avatarUrl = student.avatar || `https://api.dicebear.com/7.x/avataaars/svg?seed=${encodeURIComponent(studentName)}`;
+                    
+                    html += `
+                        <div class="bg-white border-[3px] border-slate-300 p-4 rounded-xl flex justify-between items-center shadow-sm hover:border-duo-purple transition-colors">
+                            <div class="flex items-center gap-4">
+                                <img src="${avatarUrl}" class="w-12 h-12 rounded-lg bg-slate-100 border-2 border-slate-300">
+                                <div>
+                                    <div class="font-black text-duo-dark text-lg">${studentName}</div>
+                                    <div class="font-bold text-slate-500 text-[10px] uppercase tracking-widest mt-1">
+                                        <i class="fas fa-envelope text-slate-400 mr-1"></i> ${student.email}
+                                    </div>
+                                    <div class="font-bold text-duo-green text-[10px] uppercase tracking-widest mt-1">
+                                        <i class="fas fa-star text-duo-yellow mr-1"></i> Level: ${student.current_level || 1} | XP: ${student.xp_points || 0}
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="text-right shrink-0">
+                                <div class="font-black text-xl text-duo-purple">Grade ${student.grade || 'N/A'}</div>
+                                <div class="font-bold text-slate-500 text-[10px] uppercase tracking-widest mt-1">
+                                    Roll: ${student.roll_number || 'N/A'}
+                                </div>
+                            </div>
+                        </div>
+                    `;
+                });
+                html += '</div>';
+                resultsDiv.innerHTML = html;
+                
+            } catch (err) {
+                resultsDiv.innerHTML = `<p class="text-center font-bold text-duo-red py-8 whitespace-pre-wrap"><i class="fas fa-exclamation-triangle text-2xl mb-2"></i><br>Sync Failed: ${err.message}</p>`;
+            }
+        }
+
+        document.addEventListener('DOMContentLoaded', async () => {
+            const activeUserStr = localStorage.getItem('clonbrow_active_user');
+            if (!activeUserStr) {
+                window.location.href = '../frontend/school.html';
+                return;
+            }
+
+            try {
+                const user = JSON.parse(activeUserStr);
+                windowUserEmail = user.email || 'teacher@demo.edu';
+                const formattedName = user.name ? (user.name.charAt(0).toUpperCase() + user.name.slice(1)) : 'Faculty';
+                
+                document.getElementById('portal-teacher-name').innerText = `Prof. ${formattedName}`;
+                document.getElementById('profile-full-name').value = formattedName;
+                document.getElementById('profile-email').innerText = windowUserEmail;
+                document.getElementById('teacher-id-display').innerText = `EMP ID: FAC-${user.id || '9021'}`;
+                
+                if (user.grade) document.getElementById('profile-grades-taught').value = user.grade;
+                if (user.section || user.subject) document.getElementById('profile-subject').value = user.section || user.subject;
+                
+                if (user.avatar) {
+                    document.getElementById('teacher-avatar').src = user.avatar;
+                } else {
+                    document.getElementById('teacher-avatar').src = `https://api.dicebear.com/7.x/avataaars/svg?seed=${encodeURIComponent(user.name || 'faculty')}`;
+                }
+
+                // Fetch real school logo and name based on email domain
+                const res = await fetch(`${CLOUD_API}/school/config?email=${encodeURIComponent(windowUserEmail)}`);
+                const data = await res.json();
+                
+                if (data.settings) {
+                    if (data.settings.school_name) {
+                        document.getElementById('portal-teacher-domain').innerText = data.settings.school_name.toUpperCase();
+                    } else if (user.domain) {
+                        document.getElementById('portal-teacher-domain').innerText = user.domain.toUpperCase();
+                    }
+                    
+                    if (data.settings.logo) {
+                        const imgEl = document.getElementById('inst-logo');
+                        const iconEl = document.getElementById('inst-icon');
+                        imgEl.src = data.settings.logo;
+                        imgEl.classList.remove('hidden');
+                        iconEl.classList.add('hidden');
+                    }
+                }
+            } catch(e) {
+                console.warn("Could not load cloud teacher profile.", e);
+            }
+        });
+
+        function scrollToSection(id) {
+            const el = document.getElementById(id);
+            if(el) {
+                document.getElementById('main-scroll').scrollTo({
+                    top: el.offsetTop - 40,
+                    behavior: 'smooth'
+                });
+            }
+        }
+
+        const mainScroll = document.getElementById('main-scroll');
+        const sections = document.querySelectorAll('section');
+        const seqBtns = document.querySelectorAll('.seq-btn');
+
+        mainScroll.addEventListener('scroll', () => {
+            let current = '';
+            sections.forEach(section => {
+                const sectionTop = section.offsetTop;
+                if (mainScroll.scrollTop >= sectionTop - 100) {
+                    current = section.getAttribute('id');
+                }
+            });
+
+            seqBtns.forEach(btn => {
+                btn.classList.remove('active');
+                if (btn.getAttribute('onclick').includes(current)) {
+                    btn.classList.add('active');
+                }
+            });
+        });
+    </script>
+</body>
+</html>

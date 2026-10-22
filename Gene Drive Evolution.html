@@ -1,0 +1,708 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Gene Drive Evolution | Advanced Simulator</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;600;800&family=JetBrains+Mono:wght@400;700&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --bg-base: #02040a;
+            --wild-color: #64748b; /* Slate */
+            --wild-glow: rgba(100, 116, 139, 0.4);
+            --drive-color: #06b6d4; /* Cyan */
+            --drive-glow: rgba(6, 182, 212, 0.6);
+            --mendel-color: #f59e0b; /* Amber */
+            --mendel-glow: rgba(245, 158, 11, 0.6);
+        }
+
+        body {
+            font-family: 'Plus Jakarta Sans', sans-serif;
+            background-color: var(--bg-base);
+            color: #f8fafc;
+            overflow-x: hidden;
+            overflow-y: auto;
+            margin: 0;
+            background-image: 
+                radial-gradient(circle at 50% 50%, rgba(6, 182, 212, 0.03) 0%, transparent 60%);
+        }
+
+        /* Custom Scrollbar */
+        ::-webkit-scrollbar {
+            width: 8px;
+        }
+        ::-webkit-scrollbar-track {
+            background: rgba(2, 4, 10, 0.8);
+        }
+        ::-webkit-scrollbar-thumb {
+            background: rgba(6, 182, 212, 0.3);
+            border-radius: 4px;
+        }
+        ::-webkit-scrollbar-thumb:hover {
+            background: rgba(6, 182, 212, 0.6);
+        }
+
+        /* Glassmorphism UI */
+        .glass-panel {
+            background: rgba(10, 15, 30, 0.6);
+            backdrop-filter: blur(24px);
+            -webkit-backdrop-filter: blur(24px);
+            border: 1px solid rgba(255, 255, 255, 0.08);
+            box-shadow: 0 30px 60px -15px rgba(0, 0, 0, 0.7), inset 0 0 20px rgba(255,255,255,0.02);
+        }
+
+        .font-mono {
+            font-family: 'JetBrains Mono', monospace;
+        }
+
+        /* Ecosystem Canvas Container */
+        .eco-container {
+            background: radial-gradient(circle at center, #0a1128 0%, #02040a 100%);
+            box-shadow: inset 0 0 80px rgba(0,0,0,0.9);
+            border: 1px solid rgba(6, 182, 212, 0.1);
+        }
+
+        canvas {
+            display: block;
+            width: 100%;
+            height: 100%;
+        }
+
+        /* Custom Radio Buttons */
+        .mode-label {
+            cursor: pointer;
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+        
+        .mode-input:checked + .mode-label.drive {
+            background-color: rgba(6, 182, 212, 0.15);
+            border-color: var(--drive-color);
+            box-shadow: 0 0 20px rgba(6, 182, 212, 0.2);
+        }
+        .mode-input:checked + .mode-label.drive .mode-title { color: var(--drive-color); }
+
+        .mode-input:checked + .mode-label.mendel {
+            background-color: rgba(245, 158, 11, 0.15);
+            border-color: var(--mendel-color);
+            box-shadow: 0 0 20px rgba(245, 158, 11, 0.2);
+        }
+        .mode-input:checked + .mode-label.mendel .mode-title { color: var(--mendel-color); }
+
+        /* Dynamic DNA Background */
+        .dna-overlay {
+            position: absolute;
+            inset: 0;
+            background-image: url('data:image/svg+xml;utf8,<svg width="40" height="40" viewBox="0 0 40 40" xmlns="http://www.w3.org/2000/svg"><path d="M20 0l20 20-20 20L0 20z" fill="rgba(255,255,255,0.01)" fill-rule="evenodd"/></svg>');
+            z-index: -1;
+            pointer-events: none;
+        }
+    </style>
+</head>
+<body class="flex flex-col min-h-screen">
+
+    <div class="dna-overlay"></div>
+
+    <!-- Header HUD -->
+    <header class="w-full max-w-[100rem] mx-auto px-8 pt-6 flex justify-between items-start relative z-10">
+        <div>
+            <h1 class="text-[10px] font-bold tracking-[0.4em] text-slate-500 uppercase mb-2">Population Genetics Engine v3.0</h1>
+            <div class="text-3xl font-light tracking-tight text-white flex items-center gap-3">
+                CRISPR <span class="font-bold transition-colors duration-500" id="title-highlight" style="color: var(--drive-color);">Gene Drive Evolution</span>
+            </div>
+        </div>
+        
+        <div class="flex gap-4">
+            <div class="glass-panel px-5 py-2.5 rounded-2xl flex items-center gap-3 border-slate-700/50">
+                <span class="w-2.5 h-2.5 rounded-full bg-slate-400 shadow-[0_0_8px_rgba(100,116,139,0.5)]"></span>
+                <span class="text-xs font-bold uppercase tracking-widest text-slate-300">Wild Type</span>
+            </div>
+            <div class="glass-panel px-5 py-2.5 rounded-2xl flex items-center gap-3" id="legend-active">
+                <span class="w-2.5 h-2.5 rounded-full bg-cyan-400 shadow-[0_0_12px_#06b6d4] animate-pulse"></span>
+                <span class="text-xs font-bold uppercase tracking-widest text-cyan-400">CRISPR Modified</span>
+            </div>
+        </div>
+    </header>
+
+    <!-- Main Dashboard -->
+    <main class="flex-grow flex flex-col xl:flex-row items-center justify-center relative z-10 w-full max-w-[100rem] mx-auto px-8 py-6 gap-6">
+        
+        <!-- Left Panel: Controls & Telemetry -->
+        <div class="w-full xl:w-[400px] flex flex-col gap-5 h-full min-h-[650px] shrink-0">
+            
+            <!-- Mechanism Selection -->
+            <div class="glass-panel rounded-3xl p-6 flex flex-col gap-4">
+                <div class="flex justify-between items-center mb-1">
+                    <h2 class="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Inheritance Mechanism</h2>
+                    <div class="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-ping"></div>
+                </div>
+                
+                <div class="grid grid-cols-1 gap-3">
+                    <label>
+                        <input type="radio" name="mode" value="drive" class="hidden mode-input" checked>
+                        <div class="mode-label drive p-4 rounded-2xl border border-white/5 bg-black/20 flex flex-col hover:bg-white/5">
+                            <span class="mode-title text-sm font-bold uppercase tracking-widest mb-1.5">Gene Drive (CRISPR)</span>
+                            <span class="text-[10px] text-slate-400 leading-relaxed normal-case">Forces <strong>100% inheritance</strong>. The modified gene cuts the wild-type chromosome and copies itself, rapidly cascading through the entire population.</span>
+                        </div>
+                    </label>
+
+                    <label>
+                        <input type="radio" name="mode" value="mendelian" class="hidden mode-input">
+                        <div class="mode-label mendel p-4 rounded-2xl border border-white/5 bg-black/20 flex flex-col hover:bg-white/5">
+                            <span class="mode-title text-sm font-bold uppercase tracking-widest mb-1.5">Standard (Mendelian)</span>
+                            <span class="text-[10px] text-slate-400 leading-relaxed normal-case">Natural <strong>50% inheritance</strong>. A single mutation struggles to survive and is usually wiped out by random genetic drift without strong selective pressure.</span>
+                        </div>
+                    </label>
+                </div>
+
+                <!-- Population Scroller / Slider -->
+                <div class="mt-1 space-y-2 border-t border-white/5 pt-4">
+                    <div class="flex justify-between text-[10px] font-bold uppercase text-slate-400">
+                        <span>Max Population Capacity</span>
+                        <span id="pop-limit-val" class="text-cyan-400 font-mono">450</span>
+                    </div>
+                    <input type="range" id="pop-slider" min="50" max="1000" value="450" class="w-full accent-cyan-500 h-1 bg-white/10 rounded-lg appearance-none cursor-pointer">
+                </div>
+
+                <button id="inject-btn" class="mt-2 w-full py-4 bg-cyan-600 hover:bg-cyan-500 text-white text-xs font-bold uppercase tracking-widest rounded-2xl transition-all duration-300 shadow-[0_0_20px_rgba(6,182,212,0.4)] active:scale-95">
+                    Inject 1 Modified Subject
+                </button>
+            </div>
+
+            <!-- Live Telemetry & Graph -->
+            <div class="glass-panel rounded-3xl p-6 flex flex-col flex-grow">
+                <h2 class="text-[10px] font-bold text-slate-400 uppercase tracking-widest border-b border-white/5 pb-3 mb-4">Real-Time Data Feed</h2>
+                
+                <!-- Stats Grid -->
+                <div class="grid grid-cols-2 gap-4 mb-5">
+                    <div class="bg-black/30 p-4 rounded-2xl border border-white/5 relative overflow-hidden group">
+                        <div class="absolute inset-0 bg-cyan-500/5 opacity-0 group-hover:opacity-100 transition-opacity"></div>
+                        <span class="text-[9px] uppercase text-slate-500 font-bold block mb-1">Genetic Penetrance</span>
+                        <div class="flex items-baseline gap-1">
+                            <span id="penetrance-val" class="font-mono text-4xl font-light text-cyan-400 transition-colors duration-500">0</span>
+                            <span class="text-sm text-cyan-400/50">%</span>
+                        </div>
+                    </div>
+                    <div class="bg-black/30 p-4 rounded-2xl border border-white/5 relative overflow-hidden group">
+                        <span class="text-[9px] uppercase text-slate-500 font-bold block mb-1">Elapsed Generations</span>
+                        <div class="flex items-baseline gap-1">
+                            <span id="gen-val" class="font-mono text-4xl font-light text-white">0</span>
+                            <span class="text-sm text-slate-500 font-mono" id="pop-val">/ 400 Pop</span>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Smooth Canvas Graph -->
+                <div class="flex-grow flex flex-col relative bg-[#02040a] rounded-2xl border border-white/5 p-4 overflow-hidden min-h-[150px]">
+                    <div class="absolute top-4 left-4 z-10">
+                        <span class="text-[9px] font-bold text-slate-500 uppercase tracking-widest">% Modified Over Time</span>
+                    </div>
+                    <canvas id="graph-canvas" class="w-full h-full mt-4"></canvas>
+                </div>
+
+                <div class="flex gap-3 mt-4">
+                    <button id="reset-btn" class="w-1/2 py-3 border border-rose-500/30 hover:bg-rose-500/10 text-rose-400 text-[10px] font-bold uppercase tracking-widest rounded-xl transition-all">
+                        Sterilize Eco
+                    </button>
+                    <button id="speed-btn" class="w-1/2 py-3 border border-white/10 hover:bg-white/10 text-slate-300 text-[10px] font-bold uppercase tracking-widest rounded-xl transition-all flex items-center justify-center gap-2">
+                        Speed: <span id="speed-indicator" class="text-white">1x</span>
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Right Panel: Micro-Ecosystem -->
+        <div class="w-full xl:w-auto flex-grow eco-container rounded-[2.5rem] relative overflow-hidden flex flex-col h-[600px] xl:h-full">
+            <canvas id="eco-canvas"></canvas>
+            
+            <!-- HUD Overlays -->
+            <div class="absolute top-8 left-8 flex flex-col pointer-events-none">
+                <span class="text-[11px] font-bold tracking-[0.2em] text-slate-400 uppercase">Biosphere Chamber 04</span>
+                <span class="text-[9px] font-mono text-slate-500 mt-1">Target: Anopheles gambiae (Vector)</span>
+            </div>
+
+            <!-- Simulation Status -->
+            <div class="absolute bottom-8 right-8 text-[10px] font-mono text-slate-400 pointer-events-none flex items-center gap-3 bg-black/60 px-4 py-2 rounded-full border border-white/10 backdrop-blur-sm">
+                <div class="w-2 h-2 rounded-full bg-emerald-500 animate-pulse shadow-[0_0_8px_#10b981]"></div> 
+                <span id="eco-status">Ecosystem Stable</span>
+            </div>
+
+            <!-- Optical Grid overlay -->
+            <div class="absolute inset-0 border border-white/5 rounded-[2.5rem] pointer-events-none mix-blend-screen" style="background-image: linear-gradient(rgba(255,255,255,0.02) 1px, transparent 1px), linear-gradient(90deg, rgba(255,255,255,0.02) 1px, transparent 1px); background-size: 40px 40px;"></div>
+        </div>
+
+    </main>
+
+    <script>
+        // --- Setup & Context ---
+        const ecoCanvas = document.getElementById('eco-canvas');
+        const ecoCtx = ecoCanvas.getContext('2d');
+        const graphCanvas = document.getElementById('graph-canvas');
+        const graphCtx = graphCanvas.getContext('2d');
+
+        // UI Elements
+        const modeInputs = document.querySelectorAll('.mode-input');
+        const injectBtn = document.getElementById('inject-btn');
+        const resetBtn = document.getElementById('reset-btn');
+        const speedBtn = document.getElementById('speed-btn');
+        const popSlider = document.getElementById('pop-slider');
+        const popLimitVal = document.getElementById('pop-limit-val');
+        const penetranceVal = document.getElementById('penetrance-val');
+        const genVal = document.getElementById('gen-val');
+        const popVal = document.getElementById('pop-val');
+        const titleHighlight = document.getElementById('title-highlight');
+        const legendActive = document.getElementById('legend-active');
+        const speedIndicator = document.getElementById('speed-indicator');
+        const ecoStatus = document.getElementById('eco-status');
+
+        // --- Config ---
+        let TARGET_POP = 450;
+        const MATING_DIST = 25;
+        const BASE_SPEED = 1.2;
+        const LIFESPAN = 800; // Frames before natural death
+        const MARGIN = 60;    // Soft boundary margin to prevent corner clumping
+
+        let mode = 'drive'; 
+        let simSpeed = 1;
+        let mosquitoes = [];
+        let particles = [];
+        let graphHistory = [];
+        let timeTicks = 0;
+        let generationFloat = 0;
+
+        // Visual constants
+        const COLORS = {
+            wild: { core: '#64748b', glow: 'rgba(100, 116, 139, 0.4)' },
+            drive: { core: '#06b6d4', glow: 'rgba(6, 182, 212, 0.6)' },
+            mendel: { core: '#f59e0b', glow: 'rgba(245, 158, 11, 0.6)' }
+        };
+
+        // --- Resize Handling (High DPI) ---
+        function resize() {
+            const dpr = window.devicePixelRatio || 1;
+            
+            // Eco Canvas
+            const ecoRect = ecoCanvas.parentElement.getBoundingClientRect();
+            ecoCanvas.width = ecoRect.width * dpr;
+            ecoCanvas.height = ecoRect.height * dpr;
+            ecoCtx.scale(dpr, dpr);
+            ecoCanvas.style.width = `${ecoRect.width}px`;
+            ecoCanvas.style.height = `${ecoRect.height}px`;
+
+            // Graph Canvas
+            const graphRect = graphCanvas.parentElement.getBoundingClientRect();
+            graphCanvas.width = graphRect.width * dpr;
+            graphCanvas.height = graphRect.height * dpr;
+            graphCtx.scale(dpr, dpr);
+            graphCanvas.style.width = `${graphRect.width}px`;
+            graphCanvas.style.height = `${graphRect.height}px`;
+        }
+        window.addEventListener('resize', resize);
+
+        // --- Entities ---
+        class Mosquito {
+            constructor(x, y, type, age = 0) {
+                this.x = x;
+                this.y = y;
+                this.vx = (Math.random() - 0.5) * BASE_SPEED * 2;
+                this.vy = (Math.random() - 0.5) * BASE_SPEED * 2;
+                this.type = type; // 'wild' or 'modified'
+                this.age = age;
+                this.cooldown = 150; // Mating cooldown
+                this.angle = Math.atan2(this.vy, this.vx);
+                this.wingPhase = Math.random() * Math.PI * 2;
+                this.wobble = Math.random() * 100;
+            }
+
+            update(width, height) {
+                // 1. Natural Flight Path (Organic Wobble)
+                this.wobble += 0.05;
+                const turn = Math.sin(this.wobble) * 0.1;
+                this.angle += turn;
+
+                // 2. Soft Boundary Steering (Prevents Corner Clumping!)
+                let steerX = 0;
+                let steerY = 0;
+                const steerForce = 0.15;
+
+                if (this.x < MARGIN) steerX = steerForce;
+                else if (this.x > width - MARGIN) steerX = -steerForce;
+                
+                if (this.y < MARGIN) steerY = steerForce;
+                else if (this.y > height - MARGIN) steerY = -steerForce;
+
+                // Apply steering to velocity
+                this.vx += Math.cos(this.angle) * 0.05 + steerX;
+                this.vy += Math.sin(this.angle) * 0.05 + steerY;
+
+                // Normalize Speed
+                const currentSpeed = Math.hypot(this.vx, this.vy);
+                if (currentSpeed > BASE_SPEED * 1.5) {
+                    this.vx = (this.vx / currentSpeed) * BASE_SPEED * 1.5;
+                    this.vy = (this.vy / currentSpeed) * BASE_SPEED * 1.5;
+                } else if (currentSpeed < BASE_SPEED * 0.5) {
+                    this.vx = (this.vx / currentSpeed) * BASE_SPEED * 0.5;
+                    this.vy = (this.vy / currentSpeed) * BASE_SPEED * 0.5;
+                }
+
+                // Update Position
+                this.x += this.vx;
+                this.y += this.vy;
+                this.angle = Math.atan2(this.vy, this.vx);
+
+                // Hard clamp fallback (just in case they breach the soft margin)
+                if (this.x < 5) { this.x = 5; this.vx = Math.abs(this.vx); }
+                if (this.x > width - 5) { this.x = width - 5; this.vx = -Math.abs(this.vx); }
+                if (this.y < 5) { this.y = 5; this.vy = Math.abs(this.vy); }
+                if (this.y > height - 5) { this.y = height - 5; this.vy = -Math.abs(this.vy); }
+
+                // Aging & Cooldown
+                this.age++;
+                if (this.cooldown > 0) this.cooldown--;
+                this.wingPhase += 0.8;
+            }
+
+            draw(ctx) {
+                ctx.save();
+                ctx.translate(this.x, this.y);
+                ctx.rotate(this.angle);
+
+                const colorSet = this.type === 'wild' ? COLORS.wild : (mode === 'drive' ? COLORS.drive : COLORS.mendel);
+                
+                // Draw Body
+                ctx.fillStyle = colorSet.core;
+                ctx.shadowColor = colorSet.glow;
+                ctx.shadowBlur = this.type === 'wild' ? 2 : 12;
+
+                // Thorax & Abdomen
+                ctx.beginPath();
+                ctx.ellipse(0, 0, 3, 1.5, 0, 0, Math.PI * 2);
+                ctx.fill();
+                
+                // Wings
+                ctx.shadowBlur = 0;
+                ctx.fillStyle = 'rgba(255,255,255,0.6)';
+                const wingSpread = Math.sin(this.wingPhase) * 3;
+                
+                ctx.beginPath();
+                // Left Wing
+                ctx.ellipse(-1, -1.5 - wingSpread, 1.5, 3, Math.PI/6, 0, Math.PI*2);
+                // Right Wing
+                ctx.ellipse(-1, 1.5 + wingSpread, 1.5, 3, -Math.PI/6, 0, Math.PI*2);
+                ctx.fill();
+
+                ctx.restore();
+            }
+        }
+
+        class Particle {
+            constructor(x, y, color) {
+                this.x = x;
+                this.y = y;
+                this.vx = (Math.random() - 0.5) * 6;
+                this.vy = (Math.random() - 0.5) * 6;
+                this.life = 1.0;
+                this.decay = 0.02 + Math.random() * 0.03;
+                this.color = color;
+            }
+            update() {
+                this.x += this.vx;
+                this.y += this.vy;
+                this.vx *= 0.9;
+                this.vy *= 0.9;
+                this.life -= this.decay;
+            }
+            draw(ctx) {
+                ctx.globalAlpha = Math.max(0, this.life);
+                ctx.fillStyle = this.color;
+                ctx.beginPath();
+                ctx.arc(this.x, this.y, 1.5, 0, Math.PI * 2);
+                ctx.fill();
+                ctx.globalAlpha = 1.0;
+            }
+        }
+
+        function spawnParticles(x, y, type) {
+            const colorSet = type === 'wild' ? COLORS.wild : (mode === 'drive' ? COLORS.drive : COLORS.mendel);
+            for(let i=0; i<8; i++) {
+                particles.push(new Particle(x, y, colorSet.core));
+            }
+        }
+
+        // --- Core Simulation Logic ---
+        function initEco() {
+            resize();
+            mosquitoes = [];
+            particles = [];
+            graphHistory = [];
+            timeTicks = 0;
+            generationFloat = 0;
+
+            const rect = ecoCanvas.parentElement.getBoundingClientRect();
+            for (let i = 0; i < TARGET_POP; i++) {
+                mosquitoes.push(new Mosquito(
+                    MARGIN + Math.random() * (rect.width - MARGIN * 2),
+                    MARGIN + Math.random() * (rect.height - MARGIN * 2),
+                    'wild',
+                    Math.random() * LIFESPAN // Stagger initial ages
+                ));
+            }
+            updateUI();
+        }
+
+        function injectSubject() {
+            if (mosquitoes.length === 0) return;
+            
+            // Convert a random wild type into a modified type
+            const wilds = mosquitoes.filter(m => m.type === 'wild');
+            if (wilds.length > 0) {
+                const target = wilds[Math.floor(Math.random() * wilds.length)];
+                target.type = 'modified';
+                target.age = 0; // Renew lifespan
+                spawnParticles(target.x, target.y, 'modified');
+                ecoStatus.innerText = "Foreign Subject Detected";
+                ecoStatus.className = "absolute bottom-8 right-8 text-[10px] font-mono text-cyan-400 pointer-events-none flex items-center gap-3 bg-black/60 px-4 py-2 rounded-full border border-cyan-500/30 backdrop-blur-sm";
+            }
+        }
+
+        function runGenerationStep(width, height) {
+            timeTicks++;
+            // Approx lifespan = 1 generation
+            generationFloat = timeTicks / (LIFESPAN / 2); 
+
+            // 1. Death by old age
+            for (let i = mosquitoes.length - 1; i >= 0; i--) {
+                if (mosquitoes[i].age > LIFESPAN) {
+                    mosquitoes.splice(i, 1);
+                }
+            }
+
+            // 2. Movement
+            mosquitoes.forEach(m => m.update(width, height));
+
+            // 3. Mating (Only if population has room)
+            if (mosquitoes.length < TARGET_POP + 50) { // Allow slight overshoot
+                for (let i = 0; i < mosquitoes.length; i++) {
+                    const m1 = mosquitoes[i];
+                    if (m1.cooldown > 0) continue;
+
+                    for (let j = i + 1; j < mosquitoes.length; j++) {
+                        const m2 = mosquitoes[j];
+                        if (m2.cooldown > 0) continue;
+
+                        // Spatial check
+                        const dx = m1.x - m2.x;
+                        const dy = m1.y - m2.y;
+                        if (dx*dx + dy*dy < MATING_DIST*MATING_DIST) {
+                            
+                            // Successful Mate!
+                            m1.cooldown = 200;
+                            m2.cooldown = 200;
+
+                            let childType = 'wild';
+
+                            // Inheritance Logic
+                            if (m1.type === 'modified' && m2.type === 'modified') {
+                                childType = 'modified';
+                            } else if (m1.type === 'wild' && m2.type === 'wild') {
+                                childType = 'wild';
+                            } else {
+                                // Mismatch (Wild + Modified)
+                                if (mode === 'drive') {
+                                    childType = 'modified'; // 100% inheritance (CRISPR cut-and-copy)
+                                } else {
+                                    childType = Math.random() < 0.5 ? 'modified' : 'wild'; // 50% Mendelian
+                                }
+                            }
+
+                            // Birth
+                            const child = new Mosquito((m1.x + m2.x)/2, (m1.y + m2.y)/2, childType, 0);
+                            child.cooldown = 300; // Newborns take longer to mature
+                            mosquitoes.push(child);
+                            
+                            spawnParticles(child.x, child.y, childType);
+                            break; // m1 mated, move to next m1
+                        }
+                    }
+                }
+            }
+
+            // Record Graph Data periodically
+            if (timeTicks % 30 === 0) {
+                const modCount = mosquitoes.filter(m => m.type === 'modified').length;
+                const total = Math.max(1, mosquitoes.length);
+                graphHistory.push((modCount / total) * 100);
+                if (graphHistory.length > 100) graphHistory.shift(); // Max 100 data points
+            }
+
+            // Update UI periodically
+            if (timeTicks % 10 === 0) updateUI();
+        }
+
+        // --- Rendering ---
+        function drawEco(width, height) {
+            // Trail effect (Motion Blur)
+            ecoCtx.fillStyle = 'rgba(2, 4, 10, 0.3)';
+            ecoCtx.fillRect(0, 0, width, height);
+
+            // Draw Mosquitoes
+            mosquitoes.forEach(m => m.draw(ecoCtx));
+
+            // Draw Particles
+            for(let i = particles.length - 1; i >= 0; i--) {
+                particles[i].update();
+                particles[i].draw(ecoCtx);
+                if(particles[i].life <= 0) particles.splice(i, 1);
+            }
+        }
+
+        function drawGraph(width, height) {
+            graphCtx.clearRect(0, 0, width, height);
+            if (graphHistory.length < 2) return;
+
+            const stepX = width / 100;
+            
+            // Draw Grid Lines
+            graphCtx.strokeStyle = 'rgba(255,255,255,0.05)';
+            graphCtx.lineWidth = 1;
+            for(let i=1; i<4; i++) {
+                const y = i * (height/4);
+                graphCtx.beginPath();
+                graphCtx.moveTo(0, y);
+                graphCtx.lineTo(width, y);
+                graphCtx.stroke();
+            }
+
+            // Draw Data Line
+            graphCtx.beginPath();
+            graphCtx.lineWidth = 3;
+            graphCtx.strokeStyle = mode === 'drive' ? COLORS.drive.core : COLORS.mendel.core;
+            graphCtx.lineJoin = 'round';
+            graphCtx.lineCap = 'round';
+
+            for (let i = 0; i < graphHistory.length; i++) {
+                const x = i * stepX;
+                const y = height - (graphHistory[i] / 100) * height;
+                if (i === 0) graphCtx.moveTo(x, y);
+                else graphCtx.lineTo(x, y);
+            }
+
+            graphCtx.shadowBlur = 12;
+            graphCtx.shadowColor = graphCtx.strokeStyle;
+            graphCtx.stroke();
+            graphCtx.shadowBlur = 0;
+
+            // Gradient Fill under curve
+            const gradient = graphCtx.createLinearGradient(0, 0, 0, height);
+            const colorSet = mode === 'drive' ? COLORS.drive : COLORS.mendel;
+            gradient.addColorStop(0, colorSet.glow);
+            gradient.addColorStop(1, 'rgba(0,0,0,0)');
+            
+            graphCtx.lineTo((graphHistory.length - 1) * stepX, height);
+            graphCtx.lineTo(0, height);
+            graphCtx.fillStyle = gradient;
+            graphCtx.fill();
+        }
+
+        // --- UI Updates ---
+        function updateUI() {
+            const modCount = mosquitoes.filter(m => m.type === 'modified').length;
+            const total = Math.max(1, mosquitoes.length);
+            const percent = ((modCount / total) * 100).toFixed(1);
+            
+            penetranceVal.innerText = percent;
+            genVal.innerText = Math.floor(generationFloat);
+            popVal.innerText = `/ ${mosquitoes.length} Pop`;
+
+            const activeColorClass = mode === 'drive' ? 'text-cyan-400' : 'text-amber-400';
+            penetranceVal.className = `font-mono text-4xl font-light transition-colors duration-500 ${activeColorClass}`;
+        }
+
+        function updateModeColors() {
+            if (mode === 'drive') {
+                injectBtn.className = "mt-2 w-full py-4 bg-cyan-600 hover:bg-cyan-500 text-white text-xs font-bold uppercase tracking-widest rounded-2xl transition-all duration-300 shadow-[0_0_20px_rgba(6,182,212,0.4)] active:scale-95";
+                titleHighlight.style.color = "var(--drive-color)";
+                legendActive.innerHTML = `
+                    <span class="w-2.5 h-2.5 rounded-full bg-cyan-400 shadow-[0_0_12px_#06b6d4] animate-pulse"></span>
+                    <span class="text-xs font-bold uppercase tracking-widest text-cyan-400">Gene Drive (CRISPR)</span>
+                `;
+            } else {
+                injectBtn.className = "mt-2 w-full py-4 bg-amber-600 hover:bg-amber-500 text-white text-xs font-bold uppercase tracking-widest rounded-2xl transition-all duration-300 shadow-[0_0_20px_rgba(245,158,11,0.4)] active:scale-95";
+                titleHighlight.style.color = "var(--mendel-color)";
+                legendActive.innerHTML = `
+                    <span class="w-2.5 h-2.5 rounded-full bg-amber-500 shadow-[0_0_12px_#f59e0b] animate-pulse"></span>
+                    <span class="text-xs font-bold uppercase tracking-widest text-amber-500">Standard Mutation</span>
+                `;
+            }
+        }
+
+        // --- Main Loop ---
+        function animate() {
+            const ecoRect = ecoCanvas.parentElement.getBoundingClientRect();
+            const graphRect = graphCanvas.parentElement.getBoundingClientRect();
+
+            // Run simulation steps based on speed
+            for(let i=0; i<simSpeed; i++) {
+                runGenerationStep(ecoRect.width, ecoRect.height);
+            }
+
+            drawEco(ecoRect.width, ecoRect.height);
+            drawGraph(graphRect.width, graphRect.height);
+
+            requestAnimationFrame(animate);
+        }
+
+        // --- Event Listeners ---
+        modeInputs.forEach(input => {
+            input.addEventListener('change', (e) => {
+                mode = e.target.value;
+                updateModeColors();
+                initEco();
+                ecoStatus.innerText = "Chamber Reset. Awaiting Injection.";
+                ecoStatus.className = "absolute bottom-8 right-8 text-[10px] font-mono text-slate-400 pointer-events-none flex items-center gap-3 bg-black/60 px-4 py-2 rounded-full border border-white/10 backdrop-blur-sm";
+            });
+        });
+
+        injectBtn.addEventListener('click', injectSubject);
+        resetBtn.addEventListener('click', initEco);
+
+        speedBtn.addEventListener('click', () => {
+            if (simSpeed === 1) {
+                simSpeed = 3;
+                speedIndicator.innerText = "3x";
+                speedIndicator.className = "text-rose-400 font-bold";
+            } else if (simSpeed === 3) {
+                simSpeed = 10;
+                speedIndicator.innerText = "MAX";
+                speedIndicator.className = "text-cyan-400 font-bold";
+            } else {
+                simSpeed = 1;
+                speedIndicator.innerText = "1x";
+                speedIndicator.className = "text-white";
+            }
+        });
+
+        popSlider.addEventListener('input', (e) => {
+            TARGET_POP = parseInt(e.target.value);
+            popLimitVal.innerText = TARGET_POP;
+            
+            // Provide feedback
+            ecoStatus.innerText = "Chamber Capacity Adjusting...";
+            ecoStatus.className = "absolute bottom-8 right-8 text-[10px] font-mono text-amber-400 pointer-events-none flex items-center gap-3 bg-black/60 px-4 py-2 rounded-full border border-amber-500/30 backdrop-blur-sm";
+            
+            setTimeout(() => {
+                ecoStatus.innerText = "Ecosystem Stable";
+                ecoStatus.className = "absolute bottom-8 right-8 text-[10px] font-mono text-slate-400 pointer-events-none flex items-center gap-3 bg-black/60 px-4 py-2 rounded-full border border-white/10 backdrop-blur-sm";
+            }, 2000);
+        });
+
+        // Start
+        setTimeout(() => {
+            initEco();
+            updateModeColors();
+            animate();
+        }, 100);
+
+    </script>
+</body>
+</html>

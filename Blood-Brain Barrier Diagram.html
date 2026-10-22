@@ -1,0 +1,488 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Blood-Brain Barrier (BBB) - Clinical Diagram</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap');
+
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: #f8fafc; /* slate-50 */
+            color: #334155; /* slate-700 */
+        }
+
+        /* Subtle, precise animations */
+        @keyframes bloodFlow {
+            0% { transform: translateX(-150px); }
+            100% { transform: translateX(900px); }
+        }
+
+        @keyframes diffuseThrough {
+            0% { transform: translateY(0) scale(1); opacity: 0; }
+            10% { opacity: 1; }
+            50% { transform: translateY(-70px) scale(0.9); opacity: 1; }
+            90% { opacity: 1; }
+            100% { transform: translateY(-130px) scale(0.8); opacity: 0; }
+        }
+
+        @keyframes carrierTransport {
+            0% { transform: translateY(0); opacity: 0; }
+            20% { transform: translateY(-30px); opacity: 1; }
+            40% { transform: translateY(-45px); opacity: 1; } /* Pauses in carrier */
+            60% { transform: translateY(-45px); opacity: 1; }
+            80% { transform: translateY(-90px); opacity: 1; }
+            100% { transform: translateY(-120px); opacity: 0; }
+        }
+
+        @keyframes paracellularBlock {
+            0% { transform: translateY(0); opacity: 0; }
+            20% { opacity: 1; }
+            45% { transform: translateY(-35px); opacity: 1; } /* Hits tight junction */
+            55% { transform: translateY(-35px); opacity: 1; }
+            80% { transform: translateY(10px) translateX(20px); opacity: 0; }
+            100% { transform: translateY(10px) translateX(20px); opacity: 0; }
+        }
+        
+        @keyframes subtlePulse {
+            0%, 100% { transform: scale(1); opacity: 0.8; }
+            50% { transform: scale(1.05); opacity: 1; }
+        }
+
+        /* RBC Classes */
+        .rbc-slow { animation: bloodFlow 8s linear infinite; }
+        .rbc-med { animation: bloodFlow 6s linear infinite; }
+        .rbc-fast { animation: bloodFlow 5s linear infinite; }
+        
+        /* Molecule Classes */
+        .mol-diffuse { animation: diffuseThrough 5s ease-in-out infinite; }
+        .mol-carrier { animation: carrierTransport 6s ease-in-out infinite 1s; }
+        .mol-blocked { animation: paracellularBlock 5s ease-in-out infinite 2s; }
+        
+        /* SVG Styling */
+        .tissue-line { stroke-dasharray: 4 4; }
+        .focus-ring { animation: subtlePulse 3s infinite ease-in-out; transform-origin: center; }
+
+        /* Interactivity Styles */
+        .interactive-part { transition: all 0.3s ease; transform-origin: center; cursor: pointer; }
+        .interactive-part:hover { filter: drop-shadow(0px 0px 8px rgba(14, 165, 233, 0.6)); }
+        .dimmed { opacity: 0.25 !important; filter: grayscale(40%); }
+        .card-highlighted { border-color: #3b82f6 !important; box-shadow: 0 10px 15px -3px rgba(59, 130, 246, 0.2) !important; transform: translateY(-4px); }
+        .interactive-card { cursor: pointer; transition: all 0.3s ease; }
+        svg text { pointer-events: none; }
+    </style>
+</head>
+<body class="min-h-screen p-4 md:p-10">
+
+    <div class="max-w-7xl mx-auto space-y-10">
+        
+        <!-- Header -->
+        <header class="border-b border-slate-200 pb-8 mb-8">
+            <div class="flex items-center space-x-3 mb-2">
+                <span class="bg-blue-100 text-blue-800 text-xs font-semibold px-2.5 py-0.5 rounded uppercase tracking-wide">Neuroanatomy</span>
+                <span class="bg-slate-100 text-slate-600 text-xs font-semibold px-2.5 py-0.5 rounded uppercase tracking-wide">Physiology</span>
+            </div>
+            <h1 class="text-3xl md:text-5xl font-bold text-slate-900 tracking-tight mb-4">
+                The Blood-Brain Barrier (BBB)
+            </h1>
+            <p class="text-slate-600 max-w-3xl text-lg leading-relaxed">
+                A highly selective, semipermeable cellular interface that separates the circulating blood from the brain and extracellular fluid in the central nervous system (CNS). It is essential for maintaining cerebral homeostasis and protecting neural tissue from pathogens and neurotoxins.
+            </p>
+        </header>
+
+        <!-- Diagram Container -->
+        <div class="grid grid-cols-1 xl:grid-cols-12 gap-8 bg-white border border-slate-200 rounded-2xl p-6 md:p-10 shadow-sm">
+            
+            <!-- Left Panel: Macro View (Brain Cross-Section) -->
+            <div class="xl:col-span-4 flex flex-col items-center border-b xl:border-b-0 xl:border-r border-slate-200 pb-8 xl:pb-0 xl:pr-8">
+                <h3 class="text-sm font-semibold text-slate-400 uppercase tracking-widest w-full text-left mb-6">Fig 1. Macro Structure</h3>
+                
+                <div class="relative w-full max-w-sm">
+                    <svg viewBox="0 0 400 400" class="w-full h-auto drop-shadow-md" xmlns="http://www.w3.org/2000/svg">
+                        <defs>
+                            <linearGradient id="brainGlow" x1="0%" y1="0%" x2="100%" y2="100%">
+                                <stop offset="0%" stop-color="#f8fafc"/>
+                                <stop offset="100%" stop-color="#e2e8f0"/>
+                            </linearGradient>
+                            <filter id="softShadow">
+                                <feDropShadow dx="0" dy="4" stdDeviation="6" flood-color="#cbd5e1" flood-opacity="0.5"/>
+                            </filter>
+                        </defs>
+                        
+                        <!-- Brain Outline (Anatomical approximation) -->
+                        <g filter="url(#softShadow)">
+                            <!-- Cerebellum & Brainstem -->
+                            <path d="M 220 330 C 220 360, 240 380, 250 390 C 260 380, 260 350, 270 330 Z" fill="#e2e8f0" stroke="#94a3b8" stroke-width="2"/>
+                            <path d="M 260 310 C 310 330, 340 310, 340 270 C 340 250, 310 240, 290 240 Z" fill="#cbd5e1" stroke="#94a3b8" stroke-width="2"/>
+                            
+                            <!-- Cerebrum -->
+                            <path d="M 230 40 
+                                     C 340 40, 390 120, 370 210 
+                                     C 350 280, 290 310, 250 310 
+                                     C 210 310, 180 280, 160 280 
+                                     C 120 280, 70 260, 50 200 
+                                     C 30 130, 120 40, 230 40 Z" 
+                                  fill="url(#brainGlow)" stroke="#64748b" stroke-width="3"/>
+                                  
+                            <!-- Sulci (Folds) -->
+                            <path d="M 120 130 C 160 110, 180 150, 230 140 C 280 130, 290 180, 330 160" fill="none" stroke="#cbd5e1" stroke-width="3" stroke-linecap="round"/>
+                            <path d="M 100 210 C 150 230, 180 180, 240 210 C 290 240, 310 210, 350 230" fill="none" stroke="#cbd5e1" stroke-width="3" stroke-linecap="round"/>
+                            <path d="M 220 80 C 230 110, 280 100, 290 130" fill="none" stroke="#cbd5e1" stroke-width="3" stroke-linecap="round"/>
+                        </g>
+
+                        <!-- Capillary Network Indicator -->
+                        <path d="M 160 160 Q 200 180 240 150 T 300 170" fill="none" stroke="#ef4444" stroke-width="2" opacity="0.6"/>
+                        <path d="M 180 220 Q 220 200 260 230 T 320 200" fill="none" stroke="#ef4444" stroke-width="2" opacity="0.6"/>
+                        
+                        <!-- Zoom Region Lens -->
+                        <circle cx="280" cy="220" r="28" fill="#ecfeff" fill-opacity="0.3" stroke="#0ea5e9" stroke-width="2" class="focus-ring"/>
+                        <line x1="300" y1="200" x2="380" y2="120" stroke="#0ea5e9" stroke-width="1.5" stroke-dasharray="4 2" />
+                    </svg>
+                </div>
+                
+                <div class="mt-6 text-sm text-slate-500 bg-slate-50 p-4 rounded-lg border border-slate-100 w-full">
+                    <p>The BBB exists along all capillaries within the CNS, representing a total surface area of roughly 12-20 m², forming a highly regulated biochemical vault.</p>
+                </div>
+            </div>
+
+            <!-- Right Panel: Micro View (Cellular Diagram) -->
+            <div class="xl:col-span-8 flex flex-col w-full relative">
+                <h3 class="text-sm font-semibold text-slate-400 uppercase tracking-widest w-full text-left mb-6 flex items-center">
+                    Fig 2. Cellular Interface (Cross-Section)
+                    <span class="ml-4 text-xs text-blue-600 font-medium normal-case tracking-normal animate-pulse bg-blue-50 px-3 py-1 rounded-full border border-blue-200 shadow-sm">Interactive: Hover or Click structures below</span>
+                </h3>
+                
+                <div class="w-full bg-slate-50 rounded-xl border border-slate-200 overflow-hidden relative shadow-inner" style="min-height: 450px;">
+                    <svg width="100%" height="100%" viewBox="0 0 800 500" preserveAspectRatio="xMidYMid meet" xmlns="http://www.w3.org/2000/svg" class="absolute inset-0 w-full h-full">
+                        <defs>
+                            <!-- Gradients for physiological realism -->
+                            <linearGradient id="lumenGrad" x1="0%" y1="0%" x2="0%" y2="100%">
+                                <stop offset="0%" stop-color="#fee2e2" />
+                                <stop offset="10%" stop-color="#fca5a5" />
+                                <stop offset="50%" stop-color="#ef4444" />
+                                <stop offset="90%" stop-color="#fca5a5" />
+                                <stop offset="100%" stop-color="#fee2e2" />
+                            </linearGradient>
+                            
+                            <linearGradient id="endothelialGrad" x1="0%" y1="0%" x2="0%" y2="100%">
+                                <stop offset="0%" stop-color="#fce7f3" />
+                                <stop offset="100%" stop-color="#fbcfe8" />
+                            </linearGradient>
+
+                            <!-- RBC Pattern -->
+                            <radialGradient id="rbcGrad" cx="50%" cy="50%" r="50%">
+                                <stop offset="30%" stop-color="#f87171" />
+                                <stop offset="80%" stop-color="#dc2626" />
+                                <stop offset="100%" stop-color="#991b1b" />
+                            </radialGradient>
+                        </defs>
+
+                        <!-- Tissue Background Grid -->
+                        <path d="M 0 0 L 800 0 L 800 500 L 0 500 Z" fill="#f8fafc" />
+                        <path d="M 0 50 L 800 50 M 0 100 L 800 100 M 0 400 L 800 400 M 0 450 L 800 450" stroke="#e2e8f0" stroke-width="1" fill="none" class="tissue-line" opacity="0.5"/>
+
+                        <!-- CAPILLARY LUMEN (Bloodstream) -->
+                        <!-- Blood plasma background -->
+                        <rect x="0" y="200" width="800" height="100" fill="url(#lumenGrad)" opacity="0.15"/>
+
+                        <!-- INTERACTIVE GROUP: ASTROCYTES & PERICYTES -->
+                        <g id="svg-astrocytes" class="interactive-part">
+                            <!-- Top Astrocytes -->
+                            <path d="M 50 150 C 70 80, 150 60, 180 0 L 220 0 C 190 70, 250 120, 280 150 Z" fill="#dcfce7" stroke="#86efac" stroke-width="2"/>
+                            <path d="M 450 150 C 470 100, 520 80, 500 0 L 550 0 C 580 60, 620 100, 650 150 Z" fill="#dcfce7" stroke="#86efac" stroke-width="2"/>
+                            
+                            <!-- Bottom Astrocytes -->
+                            <path d="M 100 350 C 120 400, 180 430, 150 500 L 200 500 C 230 430, 280 380, 320 350 Z" fill="#dcfce7" stroke="#86efac" stroke-width="2"/>
+                            <path d="M 600 350 C 580 410, 650 440, 680 500 L 730 500 C 700 420, 750 380, 780 350 Z" fill="#dcfce7" stroke="#86efac" stroke-width="2"/>
+
+                            <!-- PERICYTES -->
+                            <g transform="translate(320, 130)">
+                                <path d="M 0 20 C 20 -10, 80 -10, 120 15 C 130 25, 100 30, 80 25 C 50 15, 20 30, 0 20 Z" fill="#fef08a" stroke="#fde047" stroke-width="2"/>
+                                <ellipse cx="60" cy="10" rx="15" ry="8" fill="#ca8a04" opacity="0.6"/>
+                            </g>
+                        </g>
+
+                        <!-- INTERACTIVE GROUP: ENDOTHELIAL CELLS & BASEMENT MEMBRANE -->
+                        <g id="svg-endothelial" class="interactive-part">
+                            <!-- BASEMENT MEMBRANE (Basal Lamina) -->
+                            <rect x="0" y="146" width="800" height="8" fill="#fef9c3" stroke="#fde047" stroke-width="1"/>
+                            <rect x="0" y="346" width="800" height="8" fill="#fef9c3" stroke="#fde047" stroke-width="1"/>
+
+                            <!-- Top Wall Endothelial Cells -->
+                            <path d="M 0 154 L 240 154 C 245 154, 248 160, 248 175 C 248 190, 245 198, 240 198 L 0 198 Z" fill="url(#endothelialGrad)" stroke="#f472b6" stroke-width="2"/>
+                            <path d="M 252 154 L 540 154 C 545 154, 548 160, 548 175 C 548 190, 545 198, 540 198 L 252 198 C 247 198, 244 190, 244 175 C 244 160, 247 154, 252 154 Z" fill="url(#endothelialGrad)" stroke="#f472b6" stroke-width="2"/>
+                            <path d="M 552 154 L 800 154 L 800 198 L 552 198 C 547 198, 544 190, 544 175 C 544 160, 547 154, 552 154 Z" fill="url(#endothelialGrad)" stroke="#f472b6" stroke-width="2"/>
+
+                            <!-- Bottom Wall Endothelial Cells -->
+                            <path d="M 0 302 L 380 302 C 385 302, 388 310, 388 325 C 388 340, 385 346, 380 346 L 0 346 Z" fill="url(#endothelialGrad)" stroke="#f472b6" stroke-width="2"/>
+                            <path d="M 392 302 L 800 302 L 800 346 L 392 346 C 387 346, 384 340, 384 325 C 384 310, 387 302, 392 302 Z" fill="url(#endothelialGrad)" stroke="#f472b6" stroke-width="2"/>
+
+                            <!-- Endothelial Nuclei -->
+                            <ellipse cx="120" cy="176" rx="25" ry="10" fill="#a855f7" opacity="0.7"/>
+                            <ellipse cx="400" cy="176" rx="22" ry="9" fill="#a855f7" opacity="0.7"/>
+                            <ellipse cx="700" cy="176" rx="28" ry="11" fill="#a855f7" opacity="0.7"/>
+                            <ellipse cx="200" cy="324" rx="24" ry="10" fill="#a855f7" opacity="0.7"/>
+                            <ellipse cx="600" cy="324" rx="26" ry="11" fill="#a855f7" opacity="0.7"/>
+                        </g>
+
+                        <!-- INTERACTIVE GROUP: TIGHT JUNCTIONS -->
+                        <g id="svg-tight-junctions" class="interactive-part">
+                            <g transform="translate(245, 160)">
+                                <path d="M 0 0 L 6 8 L 0 16 L 6 24 L 0 32" fill="none" stroke="#be123c" stroke-width="3" stroke-linejoin="miter"/>
+                                <circle cx="3" cy="16" r="8" fill="#be123c" opacity="0.3"/>
+                            </g>
+                            <g transform="translate(545, 160)">
+                                <path d="M 0 0 L 6 8 L 0 16 L 6 24 L 0 32" fill="none" stroke="#be123c" stroke-width="3" stroke-linejoin="miter"/>
+                                <circle cx="3" cy="16" r="8" fill="#be123c" opacity="0.3"/>
+                            </g>
+                            <g transform="translate(385, 308)">
+                                <path d="M 0 0 L 6 8 L 0 16 L 6 24 L 0 32" fill="none" stroke="#be123c" stroke-width="3" stroke-linejoin="miter"/>
+                                <circle cx="3" cy="16" r="8" fill="#be123c" opacity="0.3"/>
+                            </g>
+                        </g>
+
+                        <!-- INTERACTIVE GROUP: SELECTIVE TRANSPORT -->
+                        <g id="svg-transport" class="interactive-part">
+                            <!-- GLUT1 Transporter for Glucose -->
+                            <g transform="translate(480, 152)">
+                                <rect x="0" y="0" width="24" height="48" rx="6" fill="#3b82f6" stroke="#1d4ed8" stroke-width="1.5"/>
+                                <path d="M 12 0 L 12 48" stroke="#eff6ff" stroke-width="4" stroke-dasharray="4 2"/>
+                            </g>
+                            
+                            <!-- 1. Lipid Soluble Diffusion -->
+                            <g transform="translate(180, 210)">
+                                <circle cx="0" cy="0" r="5" fill="#0ea5e9" class="mol-diffuse"/>
+                                <path d="M 0 0 L 0 -80" stroke="#bae6fd" stroke-width="2" stroke-dasharray="2 2" fill="none" opacity="0.6"/>
+                            </g>
+
+                            <!-- 2. Carrier-Mediated Transport -->
+                            <g transform="translate(492, 210)">
+                                <polygon points="0,-6 5,-3 5,3 0,6 -5,3 -5,-3" fill="#22c55e" class="mol-carrier"/>
+                                <path d="M 0 0 L 0 -80" stroke="#bbf7d0" stroke-width="2" stroke-dasharray="2 2" fill="none" opacity="0.6"/>
+                            </g>
+
+                            <!-- 3. Paracellular Blockade -->
+                            <g transform="translate(248, 210)">
+                                <path d="M 0 -8 L 3 -3 L 8 0 L 3 3 L 0 8 L -3 3 L -8 0 L -3 -3 Z" fill="#9333ea" class="mol-blocked"/>
+                                <path d="M 0 0 L 0 -40 L 20 -20" stroke="#e9d5ff" stroke-width="2" stroke-dasharray="2 2" fill="none" opacity="0.6"/>
+                                <path d="M -6 -46 L 6 -34 M -6 -34 L 6 -46" stroke="#ef4444" stroke-width="2" opacity="0.8"/>
+                            </g>
+                        </g>
+
+                        <!-- ANIMATED BLOOD CELLS -->
+                        <g class="rbc-med" style="animation-delay: 0s;">
+                            <ellipse cx="0" cy="230" rx="25" ry="15" fill="url(#rbcGrad)"/>
+                            <ellipse cx="0" cy="230" rx="12" ry="7" fill="#f87171" opacity="0.3"/>
+                        </g>
+                        <g class="rbc-fast" style="animation-delay: -2s;">
+                            <ellipse cx="0" cy="270" rx="22" ry="14" fill="url(#rbcGrad)" transform="rotate(10 0 270)"/>
+                            <ellipse cx="0" cy="270" rx="10" ry="6" fill="#f87171" opacity="0.3" transform="rotate(10 0 270)"/>
+                        </g>
+                        <g class="rbc-slow" style="animation-delay: -5s;">
+                            <ellipse cx="0" cy="250" rx="26" ry="16" fill="url(#rbcGrad)" transform="rotate(-15 0 250)"/>
+                            <ellipse cx="0" cy="250" rx="13" ry="8" fill="#f87171" opacity="0.3" transform="rotate(-15 0 250)"/>
+                        </g>
+
+                        <!-- ANIMATED TRANSPORT MECHANISMS -->
+                        
+                        <!-- 1. Lipid Soluble Diffusion (e.g., O2, Alcohol) -->
+                        <g transform="translate(180, 210)">
+                            <!-- Molecule -->
+                            <circle cx="0" cy="0" r="5" fill="#0ea5e9" class="mol-diffuse"/>
+                            <!-- Pathway Line -->
+                            <path d="M 0 0 L 0 -80" stroke="#bae6fd" stroke-width="2" stroke-dasharray="2 2" fill="none" opacity="0.6"/>
+                        </g>
+
+                        <!-- 2. Carrier-Mediated Transport (e.g., Glucose via GLUT1) -->
+                        <g transform="translate(492, 210)">
+                            <!-- Molecule (Hexagon) -->
+                            <polygon points="0,-6 5,-3 5,3 0,6 -5,3 -5,-3" fill="#22c55e" class="mol-carrier"/>
+                            <!-- Pathway Line -->
+                            <path d="M 0 0 L 0 -80" stroke="#bbf7d0" stroke-width="2" stroke-dasharray="2 2" fill="none" opacity="0.6"/>
+                        </g>
+
+                        <!-- 3. Paracellular Blockade (Toxins/Pathogens blocked by Tight Junctions) -->
+                        <g transform="translate(248, 210)">
+                            <!-- Molecule (Spiky) -->
+                            <path d="M 0 -8 L 3 -3 L 8 0 L 3 3 L 0 8 L -3 3 L -8 0 L -3 -3 Z" fill="#9333ea" class="mol-blocked"/>
+                            <!-- Bounce Line -->
+                            <path d="M 0 0 L 0 -40 L 20 -20" stroke="#e9d5ff" stroke-width="2" stroke-dasharray="2 2" fill="none" opacity="0.6"/>
+                            <!-- X Mark at junction -->
+                            <path d="M -6 -46 L 6 -34 M -6 -34 L 6 -46" stroke="#ef4444" stroke-width="2" opacity="0.8"/>
+                        </g>
+
+                        <!-- LABELS & CALLOUTS -->
+                        
+                        <!-- Brain Parenchyma Label -->
+                        <text x="400" y="30" fill="#475569" font-size="16" font-weight="600" text-anchor="middle" letter-spacing="0.5">Brain Parenchyma (CNS Tissue)</text>
+                        
+                        <!-- Capillary Lumen Label -->
+                        <text x="400" y="255" fill="#7f1d1d" font-size="16" font-weight="600" text-anchor="middle" letter-spacing="0.5" opacity="0.7">Capillary Lumen</text>
+
+                        <!-- Endothelial Cell Label -->
+                        <text x="90" y="190" fill="#be185d" font-size="12" font-weight="600">Endothelial Cell</text>
+                        
+                        <!-- Tight Junction Label -->
+                        <rect x="250" y="100" width="100" height="24" rx="4" fill="#fff1f2" stroke="#fda4af" stroke-width="1"/>
+                        <text x="300" y="116" fill="#be123c" font-size="11" font-weight="700" text-anchor="middle">Tight Junction</text>
+                        <line x1="280" y1="124" x2="252" y2="155" stroke="#fda4af" stroke-width="1.5" />
+
+                        <!-- Astrocyte Label -->
+                        <rect x="580" y="40" width="120" height="24" rx="4" fill="#f0fdf4" stroke="#86efac" stroke-width="1"/>
+                        <text x="640" y="56" fill="#166534" font-size="11" font-weight="700" text-anchor="middle">Astrocytic Endfoot</text>
+                        
+                        <!-- Basement Membrane Label -->
+                        <text x="30" y="142" fill="#854d0e" font-size="11" font-weight="600">Basement Membrane</text>
+
+                        <!-- Pericyte Label -->
+                        <text x="450" y="130" fill="#854d0e" font-size="11" font-weight="600">Pericyte</text>
+
+                    </svg>
+                </div>
+            </div>
+        </div>
+
+        <!-- Detailed Legend / Explanation Cards -->
+        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mt-6">
+            
+            <div id="card-endothelial" class="interactive-card bg-white p-5 rounded-xl border border-slate-200 shadow-sm relative group overflow-hidden">
+                <div class="absolute inset-0 bg-blue-50 opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
+                <div class="relative z-10">
+                    <div class="flex items-center space-x-2 mb-3">
+                        <div class="w-4 h-4 rounded bg-pink-200 border border-pink-400"></div>
+                        <h4 class="font-bold text-slate-800 text-sm">Endothelial Cells</h4>
+                    </div>
+                    <p class="text-xs text-slate-600 leading-relaxed">The fundamental building blocks of the BBB. Unlike peripheral capillaries, cerebral endothelial cells lack fenestrations (pores), strictly limiting pinocytosis and passive diffusion.</p>
+                </div>
+            </div>
+
+            <div id="card-tight-junctions" class="interactive-card bg-white p-5 rounded-xl border border-slate-200 shadow-sm border-l-4 border-l-rose-600 relative group overflow-hidden">
+                <div class="absolute inset-0 bg-blue-50 opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
+                <div class="relative z-10">
+                    <div class="flex items-center space-x-2 mb-3">
+                        <div class="w-4 h-4 bg-rose-600 rounded-sm"></div>
+                        <h4 class="font-bold text-slate-800 text-sm">Tight Junctions</h4>
+                    </div>
+                    <p class="text-xs text-slate-600 leading-relaxed">Protein complexes (claudins, occludins) that completely seal the paracellular clefts between adjacent endothelial cells. This forces all traffic to utilize transcellular pathways.</p>
+                </div>
+            </div>
+
+            <div id="card-astrocytes" class="interactive-card bg-white p-5 rounded-xl border border-slate-200 shadow-sm relative group overflow-hidden">
+                <div class="absolute inset-0 bg-blue-50 opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
+                <div class="relative z-10">
+                    <div class="flex items-center space-x-2 mb-3">
+                        <div class="w-4 h-4 rounded bg-green-100 border border-green-400"></div>
+                        <h4 class="font-bold text-slate-800 text-sm">Astrocytes & Pericytes</h4>
+                    </div>
+                    <p class="text-xs text-slate-600 leading-relaxed">Astrocytic endfeet ensheath over 90% of the capillary, providing biochemical support. Pericytes embedded in the basement membrane regulate capillary blood flow and barrier permeability.</p>
+                </div>
+            </div>
+
+            <div id="card-transport" class="interactive-card bg-white p-5 rounded-xl border border-slate-200 shadow-sm relative group overflow-hidden">
+                <div class="absolute inset-0 bg-blue-50 opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
+                <div class="relative z-10">
+                    <div class="flex items-center space-x-2 mb-3">
+                        <svg width="16" height="16" viewBox="0 0 16 16"><polygon points="2,8 8,2 14,8 8,14" fill="#22c55e"/></svg>
+                        <h4 class="font-bold text-slate-800 text-sm">Selective Transport</h4>
+                    </div>
+                    <p class="text-xs text-slate-600 leading-relaxed">Small lipophilic molecules (O₂, CO₂) diffuse passively. Crucial water-soluble nutrients (like glucose) require specific carrier-mediated transport proteins (e.g., GLUT1) to cross the membrane.</p>
+                </div>
+            </div>
+
+        </div>
+
+    </div>
+
+    <!-- Interaction Script -->
+    <script>
+        document.addEventListener('DOMContentLoaded', () => {
+            const structuralGroups = ['endothelial', 'tight-junctions', 'astrocytes', 'transport'];
+            let pinnedGroup = null;
+
+            function highlightGroup(id) {
+                if (pinnedGroup && pinnedGroup !== id) return;
+                
+                structuralGroups.forEach(groupId => {
+                    const svgGroup = document.getElementById(`svg-${groupId}`);
+                    const cardElement = document.getElementById(`card-${groupId}`);
+                    
+                    if (svgGroup) {
+                        if (groupId === id) {
+                            svgGroup.classList.remove('dimmed');
+                        } else {
+                            svgGroup.classList.add('dimmed');
+                        }
+                    }
+                    
+                    if (cardElement) {
+                        if (groupId === id) {
+                            cardElement.classList.add('card-highlighted');
+                        } else {
+                            cardElement.classList.remove('card-highlighted');
+                        }
+                    }
+                });
+            }
+
+            function resetHighlight() {
+                if (pinnedGroup) {
+                    highlightGroup(pinnedGroup);
+                    return;
+                }
+                
+                structuralGroups.forEach(groupId => {
+                    const svgGroup = document.getElementById(`svg-${groupId}`);
+                    const cardElement = document.getElementById(`card-${groupId}`);
+                    
+                    if (svgGroup) svgGroup.classList.remove('dimmed');
+                    if (cardElement) cardElement.classList.remove('card-highlighted');
+                });
+            }
+
+            function togglePin(id) {
+                if (pinnedGroup === id) {
+                    pinnedGroup = null; // Unpin if already pinned
+                    resetHighlight();
+                } else {
+                    pinnedGroup = id; // Pin new group
+                    highlightGroup(id);
+                }
+            }
+
+            // Bind Event Listeners
+            structuralGroups.forEach(groupId => {
+                const svgGroup = document.getElementById(`svg-${groupId}`);
+                const cardElement = document.getElementById(`card-${groupId}`);
+                
+                if (svgGroup) {
+                    svgGroup.addEventListener('mouseenter', () => highlightGroup(groupId));
+                    svgGroup.addEventListener('mouseleave', resetHighlight);
+                    svgGroup.addEventListener('click', (e) => {
+                        e.stopPropagation();
+                        togglePin(groupId);
+                    });
+                }
+                
+                if (cardElement) {
+                    cardElement.addEventListener('mouseenter', () => highlightGroup(groupId));
+                    cardElement.addEventListener('mouseleave', resetHighlight);
+                    cardElement.addEventListener('click', (e) => {
+                        e.stopPropagation();
+                        togglePin(groupId);
+                    });
+                }
+            });
+
+            // Clicking outside unpins the current selection
+            document.addEventListener('click', () => {
+                if (pinnedGroup) {
+                    pinnedGroup = null;
+                    resetHighlight();
+                }
+            });
+        });
+    </script>
+</body>
+</html>

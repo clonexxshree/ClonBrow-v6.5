@@ -1,0 +1,553 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Solar System Explorer</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        body, html {
+            margin: 0;
+            padding: 0;
+            width: 100%;
+            height: 100%;
+            overflow: hidden;
+            background-color: #020205; /* Deep space black */
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+            touch-action: none;
+            user-select: none;
+        }
+        
+        #sim-canvas {
+            display: block;
+            width: 100%;
+            height: 100%;
+            cursor: grab;
+        }
+        #sim-canvas:active {
+            cursor: grabbing;
+        }
+
+        /* Minimalist Professional Slider */
+        input[type=range] {
+            -webkit-appearance: none;
+            width: 100%;
+            background: transparent;
+        }
+        input[type=range]::-webkit-slider-thumb {
+            -webkit-appearance: none;
+            height: 16px;
+            width: 16px;
+            border-radius: 50%;
+            background: #ffffff;
+            cursor: pointer;
+            margin-top: -6px;
+            box-shadow: 0 2px 6px rgba(0,0,0,0.5);
+            transition: transform 0.1s ease;
+        }
+        input[type=range]::-webkit-slider-thumb:hover {
+            transform: scale(1.2);
+        }
+        input[type=range]::-webkit-slider-runnable-track {
+            width: 100%;
+            height: 3px;
+            cursor: pointer;
+            background: rgba(255, 255, 255, 0.2);
+            border-radius: 2px;
+        }
+        
+        /* Premium Frosted Glass Panel */
+        .glass-panel {
+            background: rgba(10, 10, 15, 0.65);
+            backdrop-filter: blur(40px);
+            -webkit-backdrop-filter: blur(40px);
+            border: 1px solid rgba(255, 255, 255, 0.08);
+            box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.5);
+        }
+
+        /* Smooth Custom Scrollbar */
+        .scroll-area::-webkit-scrollbar {
+            width: 3px;
+        }
+        .scroll-area::-webkit-scrollbar-thumb {
+            background: rgba(255, 255, 255, 0.2);
+            border-radius: 4px;
+        }
+
+        #loading-screen {
+            position: absolute;
+            inset: 0;
+            background: #020205;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: white;
+            font-weight: 400;
+            z-index: 50;
+            transition: opacity 0.6s ease;
+        }
+
+        .fade-in { animation: fadeIn 0.3s ease-in-out; }
+        @keyframes fadeIn { from { opacity: 0; transform: translateY(5px); } to { opacity: 1; transform: translateY(0); } }
+    </style>
+</head>
+<body>
+
+    <!-- Loading Screen -->
+    <div id="loading-screen">
+        <div class="flex flex-col items-center gap-5">
+            <svg class="animate-spin h-8 w-8 text-blue-500" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="3"></circle><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path></svg>
+            <span class="text-xs font-medium tracking-widest text-gray-400 uppercase">Loading Cosmos... (<span id="load-progress">0</span>/10)</span>
+        </div>
+    </div>
+
+    <!-- Main UI Overlay -->
+    <div class="absolute top-5 left-5 md:top-8 md:left-8 z-10 w-80 glass-panel p-6 rounded-2xl pointer-events-auto flex flex-col max-h-[90vh]">
+        
+        <!-- Header -->
+        <div class="mb-6 border-b border-white/5 pb-5 shrink-0 flex items-center justify-between">
+            <div>
+                <h1 class="text-xl font-semibold tracking-tight text-gray-100 mb-1">Cosmic Explorer</h1>
+                <p class="text-[11px] font-medium text-blue-400 uppercase tracking-widest">Our Solar System</p>
+            </div>
+            <div class="w-8 h-8 rounded-full bg-blue-500/10 flex items-center justify-center text-blue-400">
+                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M3.055 11H5a2 2 0 012 2v1a2 2 0 002 2 2 2 0 012 2v2.945M8 3.935V5.5A2.5 2.5 0 0010.5 8h.5a2 2 0 012 2 2 2 0 104 0 2 2 0 012-2h1.064M15 20.488V18a2 2 0 012-2h3.064M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
+            </div>
+        </div>
+
+        <div class="space-y-6 scroll-area overflow-y-auto pr-2 pb-2">
+            
+            <!-- Controls -->
+            <div class="space-y-4">
+                <div class="flex justify-between items-end">
+                    <label class="text-[11px] font-semibold uppercase tracking-wider text-gray-400">Simulation Speed</label>
+                    <span id="speed-display" class="text-[11px] font-mono bg-white/5 px-2 py-1 rounded text-gray-300">1.0x</span>
+                </div>
+                <input type="range" id="speed-slider" min="0" max="5" step="0.1" value="1" class="w-full">
+            </div>
+
+            <!-- Dynamic Information Panel -->
+            <div id="info-panel" class="bg-black/30 p-4 rounded-xl border border-white/5 fade-in">
+                <h2 id="info-title" class="text-lg font-bold text-white mb-1">Solar System</h2>
+                <p id="info-type" class="text-[10px] uppercase tracking-widest text-blue-400 mb-3">Star System</p>
+                <p id="info-desc" class="text-xs text-gray-400 leading-relaxed">
+                    Click on any planet or the Sun to view detailed information. Drag to pan the camera and scroll to zoom in and out.
+                </p>
+                <div id="info-stats" class="mt-4 grid grid-cols-2 gap-2 hidden">
+                    <div class="bg-white/5 p-2 rounded-lg">
+                        <div class="text-[9px] text-gray-500 uppercase">Orbit Radius</div>
+                        <div id="info-dist" class="text-xs font-semibold text-gray-200">--</div>
+                    </div>
+                    <div class="bg-white/5 p-2 rounded-lg">
+                        <div class="text-[9px] text-gray-500 uppercase">Orbital Speed</div>
+                        <div id="info-spd" class="text-xs font-semibold text-gray-200">--</div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Actions -->
+            <div class="pt-4 border-t border-white/5">
+                <button id="btn-reset" class="w-full py-2.5 bg-white/5 hover:bg-white/10 text-gray-300 text-[12px] font-medium tracking-wide rounded-lg transition-all border border-white/5">
+                    Reset Camera
+                </button>
+            </div>
+
+        </div>
+    </div>
+
+    <!-- Instructions Overlay (Bottom) -->
+    <div class="absolute bottom-6 left-1/2 -translate-x-1/2 text-center pointer-events-none opacity-50">
+        <p class="text-xs text-white tracking-widest uppercase font-medium drop-shadow-md">Drag to Pan • Scroll to Zoom • Click to Select</p>
+    </div>
+
+    <!-- 2D Canvas Container -->
+    <canvas id="sim-canvas"></canvas>
+
+    <script>
+        const canvas = document.getElementById('sim-canvas');
+        const ctx = canvas.getContext('2d');
+
+        function resize() {
+            canvas.width = window.innerWidth;
+            canvas.height = window.innerHeight;
+        }
+        window.addEventListener('resize', resize);
+        resize();
+
+        // --- ASSET LOADING ---
+        const imageUrls = {
+            sun: 'https://res.cloudinary.com/ds93qby5a/image/upload/q_auto/f_auto/v1775882647/efefc41d-4063-4461-b33c-5b6e819a78b4-Photoroom_gh0vok.png',
+            mercury: 'https://res.cloudinary.com/ds93qby5a/image/upload/q_auto/f_auto/v1775882645/6f86bdb7-b3d4-43fd-8481-5ec1c339e53e-Photoroom_phukof.png',
+            venus: 'https://res.cloudinary.com/ds93qby5a/image/upload/q_auto/f_auto/v1775882659/PIA00271_large-Photoroom_obsd0y.png',
+            earth: 'https://res.cloudinary.com/ds93qby5a/image/upload/q_auto/f_auto/v1775882647/d746cf80-3073-40f3-9c03-a79cba273e8a-Photoroom_ygqjvc.png',
+            moon: 'https://res.cloudinary.com/ds93qby5a/image/upload/q_auto/f_auto/v1775882943/photo-1490814525860-594e82bfd34a-Photoroom_1_n9eit4.png',
+            mars: 'https://res.cloudinary.com/ds93qby5a/image/upload/q_auto/f_auto/v1775882645/3d37fd2e-e1a7-472e-afe5-c6bf67050977-Photoroom_fxpza2.png',
+            jupiter: 'https://res.cloudinary.com/ds93qby5a/image/upload/q_auto/f_auto/v1775882646/025828bd-1c29-4257-b628-c8dd2c30ba8b-Photoroom_vh1izr.png',
+            saturn: 'https://res.cloudinary.com/ds93qby5a/image/upload/q_auto/f_auto/v1775882646/771de4b2-299c-4617-9d03-8065d42f91ab-Photoroom_rp4stb.png',
+            uranus: 'https://res.cloudinary.com/ds93qby5a/image/upload/q_auto/f_auto/v1775882648/d64662a2-c172-4459-bc16-5c23eea20f02-Photoroom_fhnd4d.png',
+            neptune: 'https://res.cloudinary.com/ds93qby5a/image/upload/q_auto/f_auto/v1775882645/aedf78e2-6992-416a-aa14-851aa61a8aa7-Photoroom_lkqdo7.png'
+        };
+
+        const images = {};
+        let assetsLoaded = 0;
+        const totalAssets = Object.keys(imageUrls).length;
+        let simStarted = false;
+
+        function checkLoad() {
+            assetsLoaded++;
+            document.getElementById('load-progress').innerText = assetsLoaded;
+            if(assetsLoaded >= totalAssets && !simStarted) {
+                simStarted = true;
+                const loader = document.getElementById('loading-screen');
+                if(loader) {
+                    loader.style.opacity = 0;
+                    setTimeout(() => loader.style.display = 'none', 600);
+                }
+                initStars();
+            }
+        }
+
+        for (let key in imageUrls) {
+            images[key] = new Image();
+            images[key].onload = checkLoad;
+            images[key].onerror = checkLoad; 
+            images[key].src = imageUrls[key];
+        }
+
+        setTimeout(() => {
+            if (!simStarted) {
+                assetsLoaded = totalAssets;
+                checkLoad();
+            }
+        }, 5000);
+
+        // --- MASSIVE CELESTIAL DATA ---
+        // Significantly increased radii (r) and orbital distances (dist)
+        const celestialBodies = {
+            sun: { name: "Sun", type: "G-Type Main-Sequence Star", img: 'sun', r: 180, dist: 0, speed: 0, angle: 0, desc: "The star at the center of the Solar System. It is a nearly perfect sphere of hot plasma, with internal convective motion that generates a magnetic field." },
+            mercury: { name: "Mercury", type: "Terrestrial Planet", img: 'mercury', r: 18, dist: 350, speed: 0.04, angle: Math.random()*Math.PI*2, desc: "The smallest planet in the Solar System and the closest to the Sun. Its orbit around the Sun takes 87.97 Earth days." },
+            venus: { name: "Venus", type: "Terrestrial Planet", img: 'venus', r: 38, dist: 550, speed: 0.03, angle: Math.random()*Math.PI*2, desc: "The second planet from the Sun. It is sometimes called Earth's 'sister planet' because of their similar size, mass, proximity to the Sun, and bulk composition." },
+            earth: { name: "Earth", type: "Terrestrial Planet", img: 'earth', r: 42, dist: 800, speed: 0.02, angle: Math.random()*Math.PI*2, desc: "Our home planet. It is the third planet from the Sun and the only astronomical object known to harbor life." },
+            mars: { name: "Mars", type: "Terrestrial Planet", img: 'mars', r: 24, dist: 1100, speed: 0.016, angle: Math.random()*Math.PI*2, desc: "The fourth planet from the Sun. Known as the Red Planet due to the iron oxide prevalent on its surface." },
+            jupiter: { name: "Jupiter", type: "Gas Giant", img: 'jupiter', r: 110, dist: 1700, speed: 0.008, angle: Math.random()*Math.PI*2, desc: "The largest planet in the Solar System. A gas giant with a mass more than two and a half times that of all the other planets in the Solar System combined." },
+            saturn: { name: "Saturn", type: "Gas Giant", img: 'saturn', r: 95, dist: 2400, speed: 0.006, angle: Math.random()*Math.PI*2, desc: "The sixth planet from the Sun, famous for its prominent ring system composed mainly of ice particles, rocky debris, and dust." },
+            uranus: { name: "Uranus", type: "Ice Giant", img: 'uranus', r: 60, dist: 3100, speed: 0.004, angle: Math.random()*Math.PI*2, desc: "The seventh planet from the Sun. It has a unique configuration among the planets because its axis of rotation is tilted sideways." },
+            neptune: { name: "Neptune", type: "Ice Giant", img: 'neptune', r: 58, dist: 3800, speed: 0.003, angle: Math.random()*Math.PI*2, desc: "The eighth and farthest-known Solar planet from the Sun. It is the densest giant planet." }
+        };
+
+        const moon = { name: "Moon", img: 'moon', r: 12, dist: 90, speed: 0.08, angle: 0 };
+
+        // --- CAMERA & CONTROLS ---
+        let camX = 0, camY = 0;
+        let targetZoom = 0.25; // Default zoomed out enough to see the inner solar system
+        let currentZoom = 0.25;
+        let isDragging = false;
+        let lastMouseX, lastMouseY;
+        let selectedBody = null;
+
+        const speedSlider = document.getElementById('speed-slider');
+        const speedDisplay = document.getElementById('speed-display');
+        let simSpeed = 1;
+
+        speedSlider.addEventListener('input', (e) => {
+            simSpeed = parseFloat(e.target.value);
+            speedDisplay.innerText = simSpeed.toFixed(1) + 'x';
+        });
+
+        document.getElementById('btn-reset').addEventListener('click', () => {
+            camX = 0; camY = 0; targetZoom = 0.25; selectedBody = null;
+            resetInfoPanel();
+        });
+
+        // --- EXPANDED STARFIELD ---
+        const stars = [];
+        function initStars() {
+            stars.length = 0;
+            // Increased to 3,000 stars across a massive 15,000px coordinate plane!
+            for(let i=0; i<3000; i++) {
+                stars.push({
+                    x: (Math.random() - 0.5) * 15000,
+                    y: (Math.random() - 0.5) * 15000,
+                    size: Math.random() * 2.0 + 0.5,
+                    alpha: Math.random() * 0.8 + 0.2
+                });
+            }
+        }
+
+        // --- UI UPDATES ---
+        function updateInfoPanel(bodyKey) {
+            const panel = document.getElementById('info-panel');
+            const title = document.getElementById('info-title');
+            const type = document.getElementById('info-type');
+            const desc = document.getElementById('info-desc');
+            const stats = document.getElementById('info-stats');
+            const dist = document.getElementById('info-dist');
+            const spd = document.getElementById('info-spd');
+
+            panel.classList.remove('fade-in');
+            void panel.offsetWidth;
+            panel.classList.add('fade-in');
+
+            const data = celestialBodies[bodyKey];
+            title.innerText = data.name;
+            type.innerText = data.type;
+            desc.innerText = data.desc;
+            
+            if(data.dist > 0) {
+                stats.classList.remove('hidden');
+                dist.innerText = data.dist + " Mkm"; 
+                spd.innerText = (data.speed * 1000).toFixed(1) + " km/s";
+            } else {
+                stats.classList.add('hidden');
+            }
+        }
+
+        function resetInfoPanel() {
+            const panel = document.getElementById('info-panel');
+            panel.classList.remove('fade-in');
+            void panel.offsetWidth;
+            panel.classList.add('fade-in');
+            
+            document.getElementById('info-title').innerText = "Solar System";
+            document.getElementById('info-type').innerText = "Star System";
+            document.getElementById('info-desc').innerText = "Click on any planet or the Sun to view detailed information. Drag to pan the camera and scroll to zoom in and out.";
+            document.getElementById('info-stats').classList.add('hidden');
+        }
+
+        // --- RENDER LOOP ---
+        function render() {
+            // Background
+            ctx.fillStyle = '#020205';
+            ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+            // Smooth Zoom Interpolation
+            currentZoom += (targetZoom - currentZoom) * 0.1;
+
+            ctx.save();
+            // Move to center of screen, apply camera pan and zoom
+            ctx.translate(canvas.width / 2 + camX, canvas.height / 2 + camY);
+            ctx.scale(currentZoom, currentZoom);
+
+            // 1. Draw Massive Starfield 
+            ctx.fillStyle = '#ffffff';
+            for(let s of stars) {
+                ctx.globalAlpha = s.alpha;
+                ctx.beginPath();
+                // Ensure stars don't vanish entirely when zooming out
+                const starSize = Math.max(s.size / currentZoom, 0.8);
+                ctx.arc(s.x, s.y, starSize, 0, Math.PI*2); 
+                ctx.fill();
+            }
+            ctx.globalAlpha = 1.0;
+
+            // 2. Draw Orbit Rings
+            ctx.lineWidth = 2 / currentZoom; // Noticeable orbit lines
+            for (let key in celestialBodies) {
+                const body = celestialBodies[key];
+                if (body.dist > 0) {
+                    ctx.strokeStyle = key === selectedBody ? 'rgba(59, 130, 246, 0.5)' : 'rgba(255, 255, 255, 0.08)';
+                    ctx.beginPath();
+                    ctx.arc(0, 0, body.dist, 0, Math.PI * 2);
+                    ctx.stroke();
+                }
+            }
+
+            // 3. Update & Draw Bodies
+            for (let key in celestialBodies) {
+                const body = celestialBodies[key];
+                
+                // Update orbital position
+                if (body.dist > 0) {
+                    body.angle += body.speed * simSpeed * 0.016; 
+                }
+
+                const x = Math.cos(body.angle) * body.dist;
+                const y = Math.sin(body.angle) * body.dist;
+                body.currentX = x; 
+                body.currentY = y;
+
+                ctx.save();
+                ctx.translate(x, y);
+
+                // Sun Glow
+                if(key === 'sun') {
+                    const glow = ctx.createRadialGradient(0, 0, body.r * 0.5, 0, 0, body.r * 2.8);
+                    glow.addColorStop(0, 'rgba(253, 224, 71, 0.9)'); 
+                    glow.addColorStop(0.4, 'rgba(239, 68, 68, 0.3)'); 
+                    glow.addColorStop(1, 'rgba(0, 0, 0, 0)');
+                    ctx.fillStyle = glow;
+                    ctx.beginPath(); ctx.arc(0, 0, body.r * 2.8, 0, Math.PI*2); ctx.fill();
+                }
+
+                // Selection Highlight
+                if(key === selectedBody) {
+                    ctx.strokeStyle = 'rgba(96, 165, 250, 0.9)';
+                    ctx.lineWidth = 4 / currentZoom;
+                    ctx.setLineDash([10 / currentZoom, 10 / currentZoom]);
+                    ctx.beginPath();
+                    ctx.arc(0, 0, body.r * 1.5, 0, Math.PI*2);
+                    ctx.stroke();
+                    ctx.setLineDash([]);
+                }
+
+                // Draw Planet/Star Image (Preserving Aspect Ratio perfectly)
+                const img = images[body.img];
+                if (img && img.complete && img.naturalWidth) {
+                    const aspect = img.naturalWidth / img.naturalHeight;
+                    let drawW = body.r * 2;
+                    let drawH = body.r * 2;
+                    
+                    if (aspect > 1) {
+                        drawW = drawH * aspect;
+                    } else {
+                        drawH = drawW / aspect;
+                    }
+                    
+                    // Maintain Saturn's ring aesthetic
+                    if(key === 'saturn') {
+                        drawW *= 2.2; drawH *= 2.2; 
+                    }
+
+                    ctx.drawImage(img, -drawW/2, -drawH/2, drawW, drawH);
+                } else {
+                    ctx.fillStyle = '#475569';
+                    ctx.beginPath(); ctx.arc(0, 0, body.r, 0, Math.PI*2); ctx.fill();
+                }
+
+                // Draw Moon if Earth
+                if (key === 'earth') {
+                    moon.angle += moon.speed * simSpeed * 0.016;
+                    const mx = Math.cos(moon.angle) * moon.dist;
+                    const my = Math.sin(moon.angle) * moon.dist;
+                    
+                    // Faint moon orbit
+                    ctx.strokeStyle = 'rgba(255, 255, 255, 0.15)';
+                    ctx.lineWidth = 1 / currentZoom;
+                    ctx.beginPath(); ctx.arc(0, 0, moon.dist, 0, Math.PI*2); ctx.stroke();
+
+                    // Moon Image
+                    const mImg = images[moon.img];
+                    if (mImg && mImg.complete) {
+                        ctx.drawImage(mImg, mx - moon.r, my - moon.r, moon.r*2, moon.r*2);
+                    } else {
+                        ctx.fillStyle = '#e2e8f0';
+                        ctx.beginPath(); ctx.arc(mx, my, moon.r, 0, Math.PI*2); ctx.fill();
+                    }
+                }
+
+                // Draw Adaptive Text Labels
+                ctx.fillStyle = 'rgba(255, 255, 255, 0.9)';
+                // Calculate font size that scales slightly with zoom but doesn't get absurdly huge/tiny
+                const fontSize = Math.min(Math.max(14 / currentZoom, 6), 40); 
+                ctx.font = `${fontSize}px Inter`;
+                ctx.textAlign = 'center';
+                ctx.fillText(body.name, 0, body.r + (20 / currentZoom));
+
+                ctx.restore();
+            }
+
+            ctx.restore(); 
+            requestAnimationFrame(render);
+        }
+
+        requestAnimationFrame(render);
+
+        // --- INTERACTION ---
+        canvas.addEventListener('mousedown', (e) => {
+            isDragging = true;
+            lastMouseX = e.clientX;
+            lastMouseY = e.clientY;
+            canvas.style.cursor = 'grabbing';
+            
+            const rect = canvas.getBoundingClientRect();
+            const worldX = (e.clientX - rect.left - canvas.width/2 - camX) / currentZoom;
+            const worldY = (e.clientY - rect.top - canvas.height/2 - camY) / currentZoom;
+
+            let clickedSomething = false;
+            for (let key in celestialBodies) {
+                const body = celestialBodies[key];
+                const dx = worldX - body.currentX;
+                const dy = worldY - body.currentY;
+                const clickRadius = Math.max(body.r * 1.5, 15 / currentZoom); 
+                
+                if (dx*dx + dy*dy <= clickRadius*clickRadius) {
+                    selectedBody = key;
+                    updateInfoPanel(key);
+                    clickedSomething = true;
+                    break;
+                }
+            }
+
+            if(!clickedSomething) {
+                selectedBody = null;
+                resetInfoPanel();
+            }
+        });
+
+        canvas.addEventListener('mousemove', (e) => {
+            if (isDragging) {
+                camX += e.clientX - lastMouseX;
+                camY += e.clientY - lastMouseY;
+                lastMouseX = e.clientX;
+                lastMouseY = e.clientY;
+            }
+        });
+
+        window.addEventListener('mouseup', () => {
+            isDragging = false;
+            canvas.style.cursor = 'grab';
+        });
+
+        // Expanded Zoom capability (from 2% to 1000% scale)
+        canvas.addEventListener('wheel', (e) => {
+            e.preventDefault();
+            const zoomAmount = 0.1;
+            if (e.deltaY > 0) {
+                targetZoom *= (1 - zoomAmount); 
+            } else {
+                targetZoom *= (1 + zoomAmount); 
+            }
+            targetZoom = Math.max(0.02, Math.min(targetZoom, 10.0));
+        }, {passive: false});
+
+        let lastTouchDist = null;
+        canvas.addEventListener('touchstart', (e) => {
+            e.preventDefault();
+            if (e.touches.length === 1) {
+                isDragging = true;
+                lastMouseX = e.touches[0].clientX;
+                lastMouseY = e.touches[0].clientY;
+            } else if (e.touches.length === 2) {
+                const dx = e.touches[0].clientX - e.touches[1].clientX;
+                const dy = e.touches[0].clientY - e.touches[1].clientY;
+                lastTouchDist = Math.sqrt(dx*dx + dy*dy);
+            }
+        }, {passive: false});
+
+        canvas.addEventListener('touchmove', (e) => {
+            e.preventDefault();
+            if (isDragging && e.touches.length === 1) {
+                camX += e.touches[0].clientX - lastMouseX;
+                camY += e.touches[0].clientY - lastMouseY;
+                lastMouseX = e.touches[0].clientX;
+                lastMouseY = e.touches[0].clientY;
+            } else if (e.touches.length === 2 && lastTouchDist) {
+                const dx = e.touches[0].clientX - e.touches[1].clientX;
+                const dy = e.touches[0].clientY - e.touches[1].clientY;
+                const dist = Math.sqrt(dx*dx + dy*dy);
+                
+                targetZoom *= (dist / lastTouchDist);
+                targetZoom = Math.max(0.02, Math.min(targetZoom, 10.0));
+                lastTouchDist = dist;
+            }
+        }, {passive: false});
+
+        canvas.addEventListener('touchend', () => {
+            isDragging = false;
+            lastTouchDist = null;
+        });
+
+    </script>
+</body>
+</html>

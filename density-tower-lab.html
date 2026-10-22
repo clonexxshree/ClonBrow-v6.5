@@ -1,0 +1,422 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Physics Lab - Density Towers</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        body, html {
+            margin: 0;
+            padding: 0;
+            width: 100%;
+            height: 100%;
+            overflow: hidden;
+            background-color: #020617; /* Slate 950 */
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+            touch-action: none;
+            user-select: none;
+        }
+        
+        #sim-canvas {
+            display: block;
+            width: 100%;
+            height: 100%;
+            cursor: grab;
+        }
+        #sim-canvas:active {
+            cursor: grabbing;
+        }
+
+        /* Deep Glassmorphism Panel */
+        .glass-panel {
+            background: linear-gradient(145deg, rgba(15, 23, 42, 0.85) 0%, rgba(2, 6, 23, 0.95) 100%);
+            backdrop-filter: blur(30px);
+            -webkit-backdrop-filter: blur(30px);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            border-top: 1px solid rgba(255, 255, 255, 0.2);
+            box-shadow: 0 30px 60px -12px rgba(0, 0, 0, 0.8), inset 0 1px 10px rgba(255, 255, 255, 0.05);
+        }
+
+        .scroll-area::-webkit-scrollbar { width: 4px; }
+        .scroll-area::-webkit-scrollbar-thumb { background: rgba(255, 255, 255, 0.2); border-radius: 4px; }
+
+        .liquid-btn {
+            transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+            border: 1px solid rgba(255,255,255,0.05);
+        }
+        .liquid-btn:hover {
+            transform: translateY(-2px);
+            border-color: rgba(255,255,255,0.2);
+            filter: brightness(1.2);
+        }
+        .liquid-btn:active {
+            transform: translateY(0px);
+        }
+    </style>
+</head>
+<body>
+
+    <!-- Main UI Overlay -->
+    <div class="absolute top-5 left-5 md:top-8 md:left-8 z-10 w-[380px] glass-panel p-6 rounded-[1.5rem] pointer-events-auto flex flex-col max-h-[92vh]">
+        
+        <!-- Header -->
+        <div class="mb-5 border-b border-white/10 pb-5 shrink-0 flex items-center justify-between">
+            <div>
+                <h1 class="text-2xl font-bold tracking-tight text-white mb-1">Density Tower</h1>
+                <p class="text-[11px] font-medium text-emerald-400 uppercase tracking-widest">Fluid Mechanics Lab</p>
+            </div>
+            <div class="w-10 h-10 rounded-full bg-emerald-500/20 flex items-center justify-center text-emerald-400 shadow-[0_0_15px_rgba(16,185,129,0.3)]">
+                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19.428 15.428a2 2 0 00-1.022-.547l-2.387-.477a6 6 0 00-3.86.517l-.318.158a6 6 0 01-3.86.517L6.05 15.21a2 2 0 00-1.806.547M8 4h8l-1 1v5.172a2 2 0 00.586 1.414l5 5c1.26 1.26.367 3.414-1.415 3.414H4.828c-1.782 0-2.674-2.154-1.414-3.414l5-5A2 2 0 009 10.172V5L8 4z"></path></svg>
+            </div>
+        </div>
+
+        <div class="scroll-area overflow-y-auto pr-2 pb-2 space-y-7">
+            
+            <div class="bg-black/30 p-4 rounded-xl border border-white/5 shadow-inner">
+                <p class="text-xs text-gray-400 leading-relaxed">
+                    <strong class="text-white">The Physics of Sinking:</strong> Liquids with higher density sink to the bottom. Drop objects into the tower to see them float on the layer that matches their density!
+                </p>
+            </div>
+
+            <!-- Liquid Controls -->
+            <div class="space-y-4">
+                <label class="text-[10px] font-bold uppercase tracking-widest text-gray-500">Pour Liquids</label>
+                <div class="grid grid-cols-1 gap-2">
+                    <button id="add-honey" class="liquid-btn py-2.5 px-4 rounded-xl text-xs font-bold text-amber-900 flex justify-between items-center bg-gradient-to-r from-amber-400 to-yellow-600">
+                        <span>Honey (1.42 g/cm³)</span>
+                        <svg class="w-4 h-4" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M10 3a1 1 0 011 1v5h5a1 1 0 110 2h-5v5a1 1 0 11-2 0v-5H4a1 1 0 110-2h5V4a1 1 0 011-1z" clip-rule="evenodd"></path></svg>
+                    </button>
+                    <button id="add-soap" class="liquid-btn py-2.5 px-4 rounded-xl text-xs font-bold text-emerald-900 flex justify-between items-center bg-gradient-to-r from-emerald-400 to-green-600">
+                        <span>Dish Soap (1.06 g/cm³)</span>
+                        <svg class="w-4 h-4" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M10 3a1 1 0 011 1v5h5a1 1 0 110 2h-5v5a1 1 0 11-2 0v-5H4a1 1 0 110-2h5V4a1 1 0 011-1z" clip-rule="evenodd"></path></svg>
+                    </button>
+                    <button id="add-water" class="liquid-btn py-2.5 px-4 rounded-xl text-xs font-bold text-blue-900 flex justify-between items-center bg-gradient-to-r from-blue-400 to-cyan-500">
+                        <span>Water (1.00 g/cm³)</span>
+                        <svg class="w-4 h-4" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M10 3a1 1 0 011 1v5h5a1 1 0 110 2h-5v5a1 1 0 11-2 0v-5H4a1 1 0 110-2h5V4a1 1 0 011-1z" clip-rule="evenodd"></path></svg>
+                    </button>
+                    <button id="add-oil" class="liquid-btn py-2.5 px-4 rounded-xl text-xs font-bold text-yellow-900 flex justify-between items-center bg-gradient-to-r from-yellow-300 to-amber-400">
+                        <span>Oil (0.92 g/cm³)</span>
+                        <svg class="w-4 h-4" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M10 3a1 1 0 011 1v5h5a1 1 0 110 2h-5v5a1 1 0 11-2 0v-5H4a1 1 0 110-2h5V4a1 1 0 011-1z" clip-rule="evenodd"></path></svg>
+                    </button>
+                    <button id="add-alcohol" class="liquid-btn py-2.5 px-4 rounded-xl text-xs font-bold text-rose-900 flex justify-between items-center bg-gradient-to-r from-rose-400 to-pink-500">
+                        <span>Alcohol (0.79 g/cm³)</span>
+                        <svg class="w-4 h-4" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M10 3a1 1 0 011 1v5h5a1 1 0 110 2h-5v5a1 1 0 11-2 0v-5H4a1 1 0 110-2h5V4a1 1 0 011-1z" clip-rule="evenodd"></path></svg>
+                    </button>
+                </div>
+            </div>
+
+            <!-- Actions -->
+            <div class="pt-4 border-t border-white/10 space-y-3">
+                <button id="reset-tower" class="w-full py-2.5 bg-white/5 hover:bg-white/10 text-gray-400 hover:text-white text-[11px] font-bold uppercase tracking-widest rounded-xl transition-all border border-white/5">
+                    Clear All Liquids
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Buoyancy Sensor HUD (Bottom Right) -->
+    <div id="sensor-hud" class="absolute bottom-6 right-6 z-10 glass-panel p-5 rounded-2xl pointer-events-none min-w-[240px] opacity-0 transition-opacity duration-300">
+        <div class="text-[10px] font-bold uppercase tracking-widest text-gray-500 mb-3 border-b border-white/10 pb-2">Buoyancy Analysis</div>
+        <div class="space-y-3">
+            <div class="flex justify-between items-center">
+                <span class="text-sm text-gray-400 font-medium">Object Density</span>
+                <span id="obj-density" class="text-base font-mono font-bold text-white">0.00</span>
+            </div>
+            <div class="flex justify-between items-center">
+                <span class="text-sm text-gray-400 font-medium">Fluid Density</span>
+                <span id="fluid-density" class="text-base font-mono font-bold text-emerald-400">0.00</span>
+            </div>
+            <div id="buoyancy-status" class="text-center pt-2 text-[10px] font-bold uppercase tracking-tighter text-blue-400">Neutral Buoyancy Achieved</div>
+        </div>
+    </div>
+
+    <!-- Canvas -->
+    <canvas id="sim-canvas"></canvas>
+
+    <script>
+        const canvas = document.getElementById('sim-canvas');
+        const ctx = canvas.getContext('2d');
+
+        // --- PHYSICAL PARAMETERS ---
+        const g = 0.25; 
+        const towerW = 280;
+        const towerH = 650;
+        let towerX, towerBottom, towerTop;
+
+        const LIQUIDS = {
+            honey: { name: "Honey", density: 1.42, color: "rgba(180, 83, 9, 0.85)", top: 0, height: 0, targetH: 0 },
+            soap:  { name: "Soap",  density: 1.06, color: "rgba(16, 185, 129, 0.75)", top: 0, height: 0, targetH: 0 },
+            water: { name: "Water", density: 1.00, color: "rgba(59, 130, 246, 0.4)", top: 0, height: 0, targetH: 0 },
+            oil:   { name: "Oil",   density: 0.92, color: "rgba(234, 179, 8, 0.65)", top: 0, height: 0, targetH: 0 },
+            alcohol: { name: "Alcohol", density: 0.79, color: "rgba(244, 114, 182, 0.6)", top: 0, height: 0, targetH: 0 }
+        };
+
+        const OBJECT_TYPES = [
+            { name: "Steel Bolt", density: 7.8, radius: 25, color: "#94a3b8", stroke: "#cbd5e1", label: "Bolt" },
+            { name: "Tomato", density: 1.02, radius: 22, color: "#ef4444", stroke: "#f87171", label: "Tomato" },
+            { name: "Plastic Bead", density: 0.95, radius: 18, color: "#6366f1", stroke: "#818cf8", label: "Bead" },
+            { name: "Bottle Cap", density: 0.85, radius: 24, color: "#ffffff", stroke: "#e2e8f0", label: "Cap" },
+            { name: "Ping Pong", density: 0.1, radius: 20, color: "#fef3c7", stroke: "#ffffff", label: "Ball" }
+        ];
+
+        let activeLiquids = [];
+        let objects = [];
+
+        // --- DYNAMIC CENTERING LOGIC ---
+        function updateSceneLayout() {
+            // UI panel is 380px on desktop
+            const uiWidth = window.innerWidth >= 768 ? 400 : 0;
+            const availableX = window.innerWidth - uiWidth;
+            
+            towerX = uiWidth + availableX / 2;
+            towerBottom = window.innerHeight / 2 + 300;
+            towerTop = towerBottom - towerH;
+
+            // Recalculate object "Shelf" positions to be centered in workspace but outside tower
+            const shelfX = towerX + towerW / 2 + 100;
+            
+            if (objects.length === 0) {
+                objects = OBJECT_TYPES.map((type, i) => ({
+                    ...type,
+                    x: shelfX,
+                    y: 150 + i * 110,
+                    baseX: shelfX,
+                    baseY: 150 + i * 110,
+                    vx: 0, vy: 0,
+                    isDragging: false
+                }));
+            } else {
+                // Update shelf targets if already initialized
+                objects.forEach((obj, i) => {
+                    obj.baseX = shelfX;
+                    obj.baseY = 150 + i * 110;
+                });
+            }
+        }
+
+        function resize() {
+            canvas.width = window.innerWidth;
+            canvas.height = window.innerHeight;
+            updateSceneLayout();
+        }
+        window.addEventListener('resize', resize);
+        resize();
+
+        // UI Event Listeners
+        function addLiquid(key) {
+            if (!activeLiquids.includes(key)) {
+                activeLiquids.push(key);
+                activeLiquids.sort((a, b) => LIQUIDS[b].density - LIQUIDS[a].density);
+            }
+            LIQUIDS[key].targetH += 100;
+            let total = 0;
+            for(let k of activeLiquids) total += LIQUIDS[k].targetH;
+            if (total > towerH - 20) {
+                LIQUIDS[key].targetH -= (total - (towerH - 20));
+            }
+        }
+
+        document.getElementById('add-honey').onclick = () => addLiquid('honey');
+        document.getElementById('add-soap').onclick = () => addLiquid('soap');
+        document.getElementById('add-water').onclick = () => addLiquid('water');
+        document.getElementById('add-oil').onclick = () => addLiquid('oil');
+        document.getElementById('add-alcohol').onclick = () => addLiquid('alcohol');
+        document.getElementById('reset-tower').onclick = () => {
+            activeLiquids = [];
+            for(let k in LIQUIDS) { LIQUIDS[k].targetH = 0; LIQUIDS[k].height = 0; }
+        };
+
+        // --- RENDER LOOP ---
+        function render() {
+            ctx.fillStyle = '#020617';
+            ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+            // 1. Update Liquid Animations
+            let currentBaseY = towerBottom;
+            const sortedKeys = [...activeLiquids].sort((a, b) => LIQUIDS[b].density - LIQUIDS[a].density);
+
+            for (let key of sortedKeys) {
+                const liq = LIQUIDS[key];
+                liq.height += (liq.targetH - liq.height) * 0.1;
+                
+                let displacementInThisLayer = 0;
+                for (let obj of objects) {
+                    if (obj.isDragging) continue;
+                    if (obj.x > towerX - towerW/2 && obj.x < towerX + towerW/2) {
+                        const layerBottom = currentBaseY;
+                        const layerTop = currentBaseY - liq.height;
+                        if (obj.y + obj.radius > layerTop && obj.y - obj.radius < layerBottom) {
+                            const submergedH = Math.min(obj.y + obj.radius, layerBottom) - Math.max(obj.y - obj.radius, layerTop);
+                            const factor = Math.max(0, submergedH / (obj.radius * 2));
+                            displacementInThisLayer += (obj.radius * 0.5) * factor;
+                        }
+                    }
+                }
+
+                const visualH = liq.height + displacementInThisLayer;
+                liq.top = currentBaseY - visualH;
+
+                ctx.fillStyle = liq.color;
+                ctx.fillRect(towerX - towerW/2, liq.top, towerW, visualH);
+                ctx.fillStyle = 'rgba(255,255,255,0.05)';
+                ctx.fillRect(towerX - towerW/2 + 10, liq.top, 30, visualH);
+
+                currentBaseY -= visualH;
+            }
+
+            // 2. Draw Tower Glass
+            ctx.strokeStyle = 'rgba(255, 255, 255, 0.15)';
+            ctx.lineWidth = 10;
+            ctx.lineCap = 'round';
+            ctx.beginPath();
+            ctx.moveTo(towerX - towerW/2, towerTop);
+            ctx.lineTo(towerX - towerW/2, towerBottom);
+            ctx.lineTo(towerX + towerW/2, towerBottom);
+            ctx.lineTo(towerX + towerW/2, towerTop);
+            ctx.stroke();
+
+            // Tower Base
+            ctx.fillStyle = '#1e293b';
+            ctx.beginPath(); ctx.roundRect(towerX - towerW/2 - 20, towerBottom, towerW + 40, 25, 6); ctx.fill();
+
+            // 3. Update & Draw Objects
+            let showSensor = false;
+
+            for (let obj of objects) {
+                if (!obj.isDragging) {
+                    let localDensity = 0; 
+                    for (let key of sortedKeys) {
+                        if (obj.y > LIQUIDS[key].top) {
+                            localDensity = LIQUIDS[key].density;
+                            break;
+                        }
+                    }
+
+                    let accelerationY = g * (1 - localDensity / obj.density);
+                    let damping = localDensity > 0 ? Math.max(0.6, 0.85 - (localDensity * 0.05)) : 0.99;
+                    
+                    obj.vy += accelerationY;
+                    obj.vy *= damping;
+                    obj.y += obj.vy;
+
+                    if (obj.y + obj.radius > towerBottom) {
+                        obj.y = towerBottom - obj.radius;
+                        obj.vy = 0;
+                    }
+                    
+                    if (obj.x > towerX - towerW/2 && obj.x < towerX + towerW/2) {
+                        obj.vx += (towerX - obj.x) * 0.05;
+                        obj.vx *= 0.8;
+                        obj.x += obj.vx;
+
+                        if (obj.x - obj.radius < towerX - towerW/2) obj.x = towerX - towerW/2 + obj.radius;
+                        if (obj.x + obj.radius > towerX + towerW/2) obj.x = towerX + towerW/2 - obj.radius;
+
+                        if (Math.abs(obj.vy) < 1.5) {
+                            showSensor = true;
+                            document.getElementById('obj-density').innerText = obj.density.toFixed(2);
+                            document.getElementById('fluid-density').innerText = localDensity.toFixed(2);
+                            const status = document.getElementById('buoyancy-status');
+                            if (localDensity === 0) status.innerText = "Falling through Air";
+                            else if (obj.density > localDensity) status.innerText = "Sinking...";
+                            else status.innerText = "Floating / Balanced";
+                        }
+                    } else {
+                        // Return to shelf logic (Smooth interpolation)
+                        obj.x += (obj.baseX - obj.x) * 0.1;
+                        obj.y += (obj.baseY - obj.y) * 0.1;
+                    }
+                }
+
+                ctx.save();
+                ctx.translate(obj.x, obj.y);
+                
+                if (obj.isDragging) {
+                    ctx.shadowColor = 'rgba(255,255,255,0.4)';
+                    ctx.shadowBlur = 25;
+                    ctx.scale(1.1, 1.1);
+                } else {
+                    ctx.shadowColor = 'rgba(0,0,0,0.5)';
+                    ctx.shadowBlur = 15;
+                    ctx.shadowOffsetY = 5;
+                }
+
+                ctx.fillStyle = obj.color;
+                ctx.beginPath(); ctx.arc(0, 0, obj.radius, 0, Math.PI*2); ctx.fill();
+                ctx.strokeStyle = obj.stroke;
+                ctx.lineWidth = 3;
+                ctx.stroke();
+
+                const grad = ctx.createRadialGradient(-obj.radius/3, -obj.radius/3, 2, -obj.radius/3, -obj.radius/3, obj.radius);
+                grad.addColorStop(0, 'rgba(255,255,255,0.4)');
+                grad.addColorStop(1, 'rgba(0,0,0,0.1)');
+                ctx.fillStyle = grad;
+                ctx.fill();
+
+                ctx.shadowBlur = 0;
+                ctx.shadowOffsetY = 0;
+                ctx.fillStyle = 'rgba(255,255,255,0.9)';
+                ctx.font = 'bold 11px Inter';
+                ctx.textAlign = 'center';
+                ctx.fillText(obj.label, 0, 4);
+
+                ctx.restore();
+            }
+
+            document.getElementById('sensor-hud').style.opacity = showSensor ? "1" : "0";
+            requestAnimationFrame(render);
+        }
+        render();
+
+        // --- INTERACTION LOGIC ---
+        let dragTarget = null;
+        let dragOffsetX = 0, dragOffsetY = 0;
+
+        function getMousePos(e) {
+            const rect = canvas.getBoundingClientRect();
+            const clientX = e.touches ? e.touches[0].clientX : e.clientX;
+            const clientY = e.touches ? e.touches[0].clientY : e.clientY;
+            return { x: clientX - rect.left, y: clientY - rect.top };
+        }
+
+        window.addEventListener('mousedown', (e) => {
+            if(e.target.closest('.glass-panel')) return;
+            const pos = getMousePos(e);
+            for(let i = objects.length - 1; i >= 0; i--) {
+                const obj = objects[i];
+                const dist = Math.hypot(pos.x - obj.x, pos.y - obj.y);
+                if (dist < obj.radius + 15) {
+                    obj.isDragging = true;
+                    dragTarget = obj;
+                    dragOffsetX = obj.x - pos.x;
+                    dragOffsetY = obj.y - pos.y;
+                    canvas.style.cursor = 'grabbing';
+                    return;
+                }
+            }
+        });
+
+        window.addEventListener('mousemove', (e) => {
+            if (!dragTarget) return;
+            const pos = getMousePos(e);
+            dragTarget.x = pos.x + dragOffsetX;
+            dragTarget.y = pos.y + dragOffsetY;
+        });
+
+        window.addEventListener('mouseup', () => {
+            if (dragTarget) {
+                dragTarget.isDragging = false;
+                dragTarget = null;
+                canvas.style.cursor = 'grab';
+            }
+        });
+
+        canvas.addEventListener('touchstart', (e) => { e.preventDefault(); const t = e.touches[0]; window.dispatchEvent(new MouseEvent('mousedown', {clientX: t.clientX, clientY: t.clientY})); }, {passive: false});
+        canvas.addEventListener('touchmove', (e) => { e.preventDefault(); const t = e.touches[0]; window.dispatchEvent(new MouseEvent('mousemove', {clientX: t.clientX, clientY: t.clientY})); }, {passive: false});
+        window.addEventListener('touchend', () => window.dispatchEvent(new MouseEvent('mouseup')));
+
+    </script>
+</body>
+</html>

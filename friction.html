@@ -1,0 +1,542 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Physics Lab - Friction & Surfaces</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        body, html {
+            margin: 0;
+            padding: 0;
+            width: 100%;
+            height: 100%;
+            overflow: hidden;
+            background-color: #09090b; /* Ultra-dark background */
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+            touch-action: none;
+            user-select: none;
+        }
+        
+        #sim-canvas {
+            display: block;
+            width: 100%;
+            height: 100%;
+        }
+
+        /* Minimalist Professional Slider */
+        input[type=range] {
+            -webkit-appearance: none;
+            width: 100%;
+            background: transparent;
+        }
+        input[type=range]::-webkit-slider-thumb {
+            -webkit-appearance: none;
+            height: 18px;
+            width: 18px;
+            border-radius: 50%;
+            background: #ffffff;
+            cursor: pointer;
+            margin-top: -7px;
+            box-shadow: 0 2px 6px rgba(0,0,0,0.5);
+            transition: transform 0.1s ease;
+        }
+        input[type=range]::-webkit-slider-thumb:hover {
+            transform: scale(1.2);
+        }
+        input[type=range]::-webkit-slider-runnable-track {
+            width: 100%;
+            height: 4px;
+            cursor: pointer;
+            background: rgba(255, 255, 255, 0.2);
+            border-radius: 2px;
+        }
+        
+        /* Premium Frosted Glass Panel */
+        .glass-panel {
+            background: linear-gradient(135deg, rgba(30, 41, 59, 0.75) 0%, rgba(15, 23, 42, 0.85) 100%);
+            backdrop-filter: blur(40px);
+            -webkit-backdrop-filter: blur(40px);
+            border: 1px solid rgba(255, 255, 255, 0.08);
+            border-top: 1px solid rgba(255, 255, 255, 0.15); 
+            box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.6), inset 0 0 30px rgba(0, 0, 0, 0.2);
+        }
+
+        .scroll-area::-webkit-scrollbar { width: 3px; }
+        .scroll-area::-webkit-scrollbar-thumb { background: rgba(255, 255, 255, 0.2); border-radius: 4px; }
+
+        /* Material Selection Buttons */
+        .mat-btn {
+            transition: all 0.2s ease;
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            background: rgba(255, 255, 255, 0.05);
+        }
+        .mat-btn.active {
+            background: rgba(59, 130, 246, 0.2);
+            border-color: rgba(59, 130, 246, 0.5);
+            color: #93c5fd;
+            box-shadow: 0 0 10px rgba(59, 130, 246, 0.1);
+        }
+        .mat-btn:hover:not(.active) {
+            background: rgba(255, 255, 255, 0.1);
+        }
+    </style>
+</head>
+<body>
+
+    <!-- Main UI Overlay -->
+    <div class="absolute top-5 left-5 md:top-8 md:left-8 z-10 w-[350px] glass-panel p-6 rounded-2xl pointer-events-auto flex flex-col select-none max-h-[90vh]">
+        
+        <!-- Header -->
+        <div class="mb-6 border-b border-white/5 pb-5 shrink-0 flex items-center justify-between">
+            <div>
+                <h1 class="text-xl font-semibold tracking-tight text-gray-100 mb-1">Kinematics Lab</h1>
+                <p class="text-[11px] font-medium text-blue-400 uppercase tracking-widest">Friction & Surfaces</p>
+            </div>
+            <div class="w-8 h-8 rounded-full bg-blue-500/10 flex items-center justify-center text-blue-400">
+                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M13 10V3L4 14h7v7l9-11h-7z"></path></svg>
+            </div>
+        </div>
+
+        <div class="space-y-6 scroll-area overflow-y-auto pr-2 pb-2">
+            
+            <div class="bg-black/20 p-3.5 rounded-xl border border-white/5">
+                <p class="text-[12px] text-gray-400 leading-relaxed">
+                    <strong class="text-gray-200">Kinetic Friction:</strong> Rough surfaces grab objects, creating a force that opposes motion. Compare two materials below by launching identical blocks!
+                </p>
+            </div>
+
+            <!-- Track Configurations -->
+            <div class="space-y-5">
+                <!-- Track A -->
+                <div class="space-y-2">
+                    <label class="text-[11px] font-bold uppercase tracking-wider text-gray-400">Track A Material (Top)</label>
+                    <div class="grid grid-cols-2 gap-2" id="track-a-btns">
+                        <button data-mat="ice" class="mat-btn active py-1.5 rounded-lg text-xs font-semibold text-gray-300">Smooth Ice</button>
+                        <button data-mat="wood" class="mat-btn py-1.5 rounded-lg text-xs font-semibold text-gray-300">Polished Wood</button>
+                        <button data-mat="rubber" class="mat-btn py-1.5 rounded-lg text-xs font-semibold text-gray-300">Rubber Mat</button>
+                        <button data-mat="sandpaper" class="mat-btn py-1.5 rounded-lg text-xs font-semibold text-gray-300">Sandpaper</button>
+                    </div>
+                </div>
+
+                <!-- Track B -->
+                <div class="space-y-2 pt-2 border-t border-white/5">
+                    <label class="text-[11px] font-bold uppercase tracking-wider text-gray-400">Track B Material (Bottom)</label>
+                    <div class="grid grid-cols-2 gap-2" id="track-b-btns">
+                        <button data-mat="ice" class="mat-btn py-1.5 rounded-lg text-xs font-semibold text-gray-300">Smooth Ice</button>
+                        <button data-mat="wood" class="mat-btn py-1.5 rounded-lg text-xs font-semibold text-gray-300">Polished Wood</button>
+                        <button data-mat="rubber" class="mat-btn py-1.5 rounded-lg text-xs font-semibold text-gray-300">Rubber Mat</button>
+                        <button data-mat="sandpaper" class="mat-btn active py-1.5 rounded-lg text-xs font-semibold text-gray-300">Sandpaper</button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Universal Controls -->
+            <div class="space-y-5 pt-4 border-t border-white/5">
+                
+                <div class="space-y-3">
+                    <div class="flex justify-between items-end">
+                        <label class="text-[11px] font-bold uppercase tracking-wider text-blue-400">Launch Velocity</label>
+                        <span id="vel-display" class="text-[11px] font-mono bg-blue-500/10 px-2 py-1 rounded text-blue-300">3.0 m/s</span>
+                    </div>
+                    <input type="range" id="vel-slider" min="1.0" max="6.0" step="0.1" value="3.0" class="w-full" style="accent-color: #38bdf8;">
+                </div>
+
+                <div class="space-y-3">
+                    <div class="flex justify-between items-end">
+                        <label class="text-[11px] font-bold uppercase tracking-wider text-purple-400">Block Mass</label>
+                        <span id="mass-display" class="text-[11px] font-mono bg-purple-500/10 px-2 py-1 rounded text-purple-300">50 kg</span>
+                    </div>
+                    <input type="range" id="mass-slider" min="10" max="200" step="10" value="50" class="w-full" style="accent-color: #c084fc;">
+                </div>
+            </div>
+
+            <!-- Visual Toggles -->
+            <div class="pt-4 border-t border-white/5 space-y-4">
+                <label class="flex items-center justify-between cursor-pointer group">
+                    <div>
+                        <div class="text-[13px] font-semibold text-gray-200 mb-1">Show Forces & Math</div>
+                        <div class="text-[11px] text-gray-500 font-medium">Display Friction vectors</div>
+                    </div>
+                    <div class="relative">
+                        <input type="checkbox" id="toggle-math" class="sr-only peer" checked>
+                        <div class="w-10 h-5 bg-gray-800 rounded-full shadow-inner transition-colors peer-checked:bg-blue-500"></div>
+                        <div class="dot absolute left-1 top-1 bg-gray-400 w-3 h-3 rounded-full transition-all peer-checked:translate-x-5 peer-checked:bg-white shadow-sm"></div>
+                    </div>
+                </label>
+            </div>
+
+            <!-- Launch Button -->
+            <div class="pt-2">
+                <button id="btn-launch" class="w-full py-3 bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-500 hover:to-indigo-500 text-white text-sm font-bold tracking-wide rounded-xl transition-all shadow-[0_4px_14px_rgba(37,99,235,0.4)] flex items-center justify-center gap-2">
+                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"></path></svg>
+                    LAUNCH BLOCKS
+                </button>
+            </div>
+
+        </div>
+    </div>
+
+    <!-- 2D Canvas Container -->
+    <canvas id="sim-canvas"></canvas>
+
+    <script>
+        const canvas = document.getElementById('sim-canvas');
+        const ctx = canvas.getContext('2d');
+
+        // Scale: 100 pixels = 1 meter
+        const METER = 100;
+        const g = 9.8; // Gravity
+
+        // Dynamic layout boundaries
+        let trackA_Y = 0;
+        let trackB_Y = 0;
+        let trackHeight = 180;
+        let startX = 0; // The 0-meter launch line
+
+        function resize() {
+            canvas.width = window.innerWidth;
+            canvas.height = window.innerHeight;
+            
+            // Adjust layout based on screen size
+            const uiWidth = window.innerWidth >= 768 ? 400 : 20;
+            startX = uiWidth + 80; // Start line is to the right of the UI
+            
+            // Vertically center the two tracks
+            const totalH = trackHeight * 2;
+            trackA_Y = (canvas.height - totalH) / 2;
+            trackB_Y = trackA_Y + trackHeight;
+        }
+        window.addEventListener('resize', resize);
+        resize();
+
+        // --- MATERIALS DATABASE ---
+        const materials = {
+            ice: { name: "Smooth Ice", mu: 0.05, color1: '#bae6fd', color2: '#7dd3fc', text: '#0ea5e9' },
+            wood: { name: "Polished Wood", mu: 0.25, color1: '#fcd34d', color2: '#f59e0b', text: '#b45309' },
+            rubber: { name: "Rubber Mat", mu: 0.60, color1: '#94a3b8', color2: '#475569', text: '#1e293b' },
+            sandpaper: { name: "Sandpaper", mu: 0.95, color1: '#3f3f46', color2: '#18181b', text: '#a1a1aa' }
+        };
+
+        // --- STATE ---
+        let matA = 'ice';
+        let matB = 'sandpaper';
+        let launchVel = 3.0; // m/s
+        let blockMass = 50; // kg
+        
+        let blockA = { x: 0, v: 0, d: 0 }; // x is in meters
+        let blockB = { x: 0, v: 0, d: 0 };
+        let isSimulating = false;
+
+        // Pre-generate sandpaper noise texture for performance
+        const noiseCanvas = document.createElement('canvas');
+        noiseCanvas.width = 400; noiseCanvas.height = 400;
+        const nCtx = noiseCanvas.getContext('2d');
+        nCtx.fillStyle = '#27272a'; nCtx.fillRect(0,0,400,400);
+        for(let i=0; i<15000; i++) {
+            nCtx.fillStyle = Math.random() > 0.5 ? '#18181b' : '#3f3f46';
+            nCtx.fillRect(Math.random()*400, Math.random()*400, 1.5, 1.5);
+        }
+        const sandpaperPattern = ctx.createPattern(noiseCanvas, 'repeat');
+
+        // --- UI BINDING ---
+        const velSlider = document.getElementById('vel-slider');
+        const massSlider = document.getElementById('mass-slider');
+        const velDisplay = document.getElementById('vel-display');
+        const massDisplay = document.getElementById('mass-display');
+        const toggleMath = document.getElementById('toggle-math');
+
+        velSlider.addEventListener('input', (e) => {
+            launchVel = parseFloat(e.target.value);
+            velDisplay.innerText = launchVel.toFixed(1) + " m/s";
+            resetSimulation();
+        });
+
+        massSlider.addEventListener('input', (e) => {
+            blockMass = parseInt(e.target.value);
+            massDisplay.innerText = blockMass + " kg";
+        });
+
+        // Setup material selectors
+        function setupMatSelectors(containerId, setMatCallback) {
+            const btns = document.querySelectorAll(`#${containerId} .mat-btn`);
+            btns.forEach(btn => {
+                btn.addEventListener('click', (e) => {
+                    btns.forEach(b => b.classList.remove('active'));
+                    e.target.classList.add('active');
+                    setMatCallback(e.target.getAttribute('data-mat'));
+                    resetSimulation();
+                });
+            });
+        }
+        setupMatSelectors('track-a-btns', (mat) => matA = mat);
+        setupMatSelectors('track-b-btns', (mat) => matB = mat);
+
+        document.getElementById('btn-launch').addEventListener('click', () => {
+            blockA.x = 0; blockA.v = launchVel; blockA.d = 0;
+            blockB.x = 0; blockB.v = launchVel; blockB.d = 0;
+            isSimulating = true;
+        });
+
+        function resetSimulation() {
+            isSimulating = false;
+            blockA.x = 0; blockA.v = 0; blockA.d = 0;
+            blockB.x = 0; blockB.v = 0; blockB.d = 0;
+        }
+
+        // --- RENDER LOOP ---
+        let lastTime = 0;
+
+        function updatePhysics(block, matKey, dt) {
+            if (block.v <= 0) return; // Stopped
+
+            const mu = materials[matKey].mu;
+            
+            // F_f = mu * m * g
+            const frictionForce = mu * blockMass * g;
+            
+            // a = -F_f / m = -mu * g  (Notice mass cancels out for deceleration! But force is different)
+            const deceleration = mu * g;
+            
+            block.v -= deceleration * dt;
+            if (block.v < 0) block.v = 0; // Stop completely
+
+            block.x += block.v * dt;
+            block.d = block.x; // Record distance traveled in meters
+        }
+
+        function drawTrack(y, matKey, label) {
+            const mat = materials[matKey];
+            
+            // Draw background
+            if (matKey === 'sandpaper') {
+                ctx.fillStyle = sandpaperPattern;
+                ctx.fillRect(0, y, canvas.width, trackHeight);
+            } else {
+                const grad = ctx.createLinearGradient(0, y, 0, y + trackHeight);
+                grad.addColorStop(0, mat.color1);
+                grad.addColorStop(1, mat.color2);
+                ctx.fillStyle = grad;
+                ctx.fillRect(0, y, canvas.width, trackHeight);
+                
+                // Add sheen for ice
+                if(matKey === 'ice') {
+                    ctx.fillStyle = 'rgba(255,255,255,0.1)';
+                    ctx.beginPath();
+                    ctx.moveTo(0, y);
+                    ctx.lineTo(canvas.width, y);
+                    ctx.lineTo(canvas.width, y + trackHeight/3);
+                    ctx.lineTo(0, y + trackHeight/2);
+                    ctx.fill();
+                }
+                
+                // Add planks for wood
+                if(matKey === 'wood') {
+                    ctx.strokeStyle = 'rgba(0,0,0,0.1)';
+                    ctx.lineWidth = 1.5;
+                    for(let i=1; i<4; i++) {
+                        ctx.beginPath();
+                        ctx.moveTo(0, y + (trackHeight/4)*i);
+                        ctx.lineTo(canvas.width, y + (trackHeight/4)*i);
+                        ctx.stroke();
+                    }
+                }
+            }
+
+            // Track Border
+            ctx.strokeStyle = 'rgba(255,255,255,0.15)';
+            ctx.lineWidth = 2;
+            ctx.strokeRect(0, y, canvas.width, trackHeight);
+
+            // Distance Grid (Meters)
+            ctx.fillStyle = 'rgba(0,0,0,0.4)';
+            ctx.textAlign = 'center';
+            ctx.font = '600 10px Inter';
+            for (let m = 0; m < 50; m++) {
+                const px = startX + m * METER;
+                if (px > canvas.width) break;
+                
+                ctx.strokeStyle = 'rgba(0,0,0,0.15)';
+                ctx.beginPath();
+                ctx.moveTo(px, y);
+                ctx.lineTo(px, y + trackHeight);
+                ctx.stroke();
+                
+                ctx.fillText(`${m}m`, px, y + trackHeight - 5);
+            }
+
+            // Start Line
+            ctx.strokeStyle = '#ef4444';
+            ctx.lineWidth = 3;
+            ctx.beginPath();
+            ctx.moveTo(startX, y);
+            ctx.lineTo(startX, y + trackHeight);
+            ctx.stroke();
+
+            // Track Label
+            ctx.fillStyle = 'rgba(0,0,0,0.7)';
+            ctx.beginPath(); ctx.roundRect(startX - 90, y + 15, 80, 24, 4); ctx.fill();
+            ctx.fillStyle = mat.color1;
+            ctx.textAlign = 'right';
+            ctx.font = 'bold 11px Inter';
+            ctx.fillText(`μk = ${mat.mu}`, startX - 15, y + 31);
+            
+            ctx.textAlign = 'left';
+            ctx.fillStyle = 'rgba(255,255,255,0.9)';
+            ctx.font = 'bold 14px Inter';
+            ctx.fillText(label + " - " + mat.name, startX + 15, y + 25);
+        }
+
+        function drawBlock(block, y, matKey) {
+            const px = startX + block.x * METER;
+            const py = y + trackHeight / 2;
+            
+            const bw = 80;
+            const bh = 50;
+
+            ctx.save();
+            ctx.translate(px, py);
+
+            // Shadow
+            ctx.shadowColor = 'rgba(0,0,0,0.6)';
+            ctx.shadowBlur = 10;
+            ctx.shadowOffsetY = 6;
+
+            // Block Body
+            ctx.fillStyle = '#64748b'; // Steel blue block
+            ctx.beginPath();
+            ctx.roundRect(0, -bh/2, bw, bh, 6);
+            ctx.fill();
+
+            // Highlight
+            const grad = ctx.createLinearGradient(0, -bh/2, 0, bh/2);
+            grad.addColorStop(0, 'rgba(255,255,255,0.3)');
+            grad.addColorStop(1, 'rgba(0,0,0,0.1)');
+            ctx.fillStyle = grad;
+            ctx.fill();
+
+            // Border
+            ctx.lineWidth = 1.5;
+            ctx.strokeStyle = '#cbd5e1';
+            ctx.stroke();
+
+            // Text
+            ctx.shadowBlur = 0;
+            ctx.fillStyle = '#ffffff';
+            ctx.textAlign = 'center';
+            ctx.textBaseline = 'middle';
+            ctx.font = 'bold 14px Inter';
+            ctx.fillText(`${blockMass}kg`, bw/2, 0);
+
+            ctx.restore();
+
+            // Forces & HUD
+            if (toggleMath.checked) {
+                // Friction Vector (Points left)
+                if (block.v > 0 || block.x > 0) {
+                    const mu = materials[matKey].mu;
+                    const fFriction = mu * blockMass * g;
+                    
+                    if (block.v > 0) {
+                        ctx.strokeStyle = '#ef4444'; // Red force arrow
+                        ctx.fillStyle = '#ef4444';
+                        ctx.lineWidth = 3;
+                        
+                        // Vector points backwards from center
+                        const cx = px + bw/2;
+                        const vLen = Math.min(100, Math.log10(fFriction) * 20 + 20); // Scaled for visuals
+                        
+                        ctx.beginPath();
+                        ctx.moveTo(cx, py);
+                        ctx.lineTo(cx - vLen, py);
+                        ctx.stroke();
+                        
+                        ctx.beginPath();
+                        ctx.moveTo(cx - vLen - 6, py);
+                        ctx.lineTo(cx - vLen + 4, py - 6);
+                        ctx.lineTo(cx - vLen + 4, py + 6);
+                        ctx.fill();
+
+                        ctx.textAlign = 'right';
+                        ctx.font = 'bold 11px Inter';
+                        ctx.fillText(`Ff = ${Math.round(fFriction)} N`, cx - vLen - 10, py + 4);
+                    }
+                }
+
+                // HUD Pill above block
+                const hudY = py - bh/2 - 25;
+                ctx.fillStyle = 'rgba(15, 23, 42, 0.8)';
+                ctx.strokeStyle = 'rgba(255,255,255,0.1)';
+                ctx.beginPath();
+                ctx.roundRect(px + bw/2 - 45, hudY - 12, 90, 24, 12);
+                ctx.fill(); ctx.stroke();
+
+                ctx.fillStyle = '#38bdf8';
+                ctx.textAlign = 'center';
+                ctx.font = 'bold 10px Inter';
+                ctx.fillText(`v = ${block.v.toFixed(1)} m/s`, px + bw/2, hudY);
+            }
+        }
+
+        function render(timestamp) {
+            if (!lastTime) lastTime = timestamp;
+            let dt = (timestamp - lastTime) / 1000;
+            if (dt > 0.05) dt = 0.05; 
+            lastTime = timestamp;
+
+            // Background
+            ctx.fillStyle = '#09090b';
+            ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+            // Update Physics
+            if (isSimulating) {
+                updatePhysics(blockA, matA, dt);
+                updatePhysics(blockB, matB, dt);
+                
+                // If both stopped, stop simulating
+                if(blockA.v === 0 && blockB.v === 0) isSimulating = false;
+            }
+
+            // Auto-pan camera if blocks go off screen
+            const maxPx = Math.max(blockA.x, blockB.x) * METER;
+            let targetStartX = (window.innerWidth >= 768 ? 400 : 20) + 80;
+            if (maxPx > canvas.width - targetStartX - 150) {
+                // Shift the start line leftwards to keep blocks in view
+                targetStartX = canvas.width - maxPx - 150;
+            }
+            // Smoothly pan
+            startX += (targetStartX - startX) * dt * 5.0;
+
+            // Draw Tracks
+            drawTrack(trackA_Y, matA, "Track A");
+            drawTrack(trackB_Y, matB, "Track B");
+
+            // Draw Blocks
+            drawBlock(blockA, trackA_Y, matA);
+            drawBlock(blockB, trackB_Y, matB);
+
+            // Distance Markers (End lines)
+            if (blockA.v === 0 && blockA.x > 0) {
+                ctx.strokeStyle = '#10b981'; ctx.lineWidth = 2; ctx.setLineDash([5, 5]);
+                ctx.beginPath(); ctx.moveTo(startX + blockA.x * METER + 80, trackA_Y); ctx.lineTo(startX + blockA.x * METER + 80, trackA_Y + trackHeight); ctx.stroke();
+                ctx.setLineDash([]);
+                ctx.fillStyle = '#10b981'; ctx.font = 'bold 12px Inter'; ctx.textAlign='right';
+                ctx.fillText(`${blockA.x.toFixed(2)}m`, startX + blockA.x * METER + 75, trackA_Y + trackHeight - 15);
+            }
+            if (blockB.v === 0 && blockB.x > 0) {
+                ctx.strokeStyle = '#10b981'; ctx.lineWidth = 2; ctx.setLineDash([5, 5]);
+                ctx.beginPath(); ctx.moveTo(startX + blockB.x * METER + 80, trackB_Y); ctx.lineTo(startX + blockB.x * METER + 80, trackB_Y + trackHeight); ctx.stroke();
+                ctx.setLineDash([]);
+                ctx.fillStyle = '#10b981'; ctx.font = 'bold 12px Inter'; ctx.textAlign='right';
+                ctx.fillText(`${blockB.x.toFixed(2)}m`, startX + blockB.x * METER + 75, trackB_Y + trackHeight - 15);
+            }
+
+            requestAnimationFrame(render);
+        }
+
+        requestAnimationFrame(render);
+
+    </script>
+</body>
+</html>

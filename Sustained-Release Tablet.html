@@ -1,0 +1,294 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Sustained-Release Tablet Architecture</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap');
+
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: #f8fafc; /* slate-50 */
+            color: #334155; /* slate-700 */
+        }
+
+        /* Interactivity Styles */
+        .interactive-layer { 
+            transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1); 
+            transform-origin: center; 
+            cursor: pointer; 
+        }
+        
+        .interactive-layer:hover, .layer-active { 
+            filter: drop-shadow(0px 8px 16px rgba(0, 0, 0, 0.15));
+            transform: scale(1.02);
+        }
+
+        .dimmed { 
+            opacity: 0.3 !important; 
+            filter: grayscale(60%); 
+            transform: scale(0.98);
+        }
+
+        .card-highlighted { 
+            border-color: #6366f1 !important; /* Indigo 500 */
+            box-shadow: 0 10px 25px -5px rgba(99, 102, 241, 0.15) !important; 
+            transform: translateY(-4px); 
+            background-color: #ffffff;
+        }
+
+        .interactive-card { 
+            cursor: pointer; 
+            transition: all 0.3s ease; 
+        }
+
+        /* Floating particles animation for the API (Active Pharmaceutical Ingredient) */
+        @keyframes float-particle {
+            0%, 100% { transform: translate(0, 0); }
+            50% { transform: translate(2px, -2px); }
+        }
+        .api-particle { animation: float-particle 4s infinite ease-in-out; }
+    </style>
+</head>
+<body class="min-h-screen p-4 md:p-10 flex items-center justify-center">
+
+    <div class="max-w-6xl w-full space-y-10">
+        
+        <!-- Header -->
+        <header class="border-b border-slate-200 pb-6 mb-8 text-center md:text-left">
+            <div class="flex items-center justify-center md:justify-start space-x-3 mb-3">
+                <span class="bg-indigo-100 text-indigo-800 text-xs font-semibold px-2.5 py-0.5 rounded uppercase tracking-wide">Pharmacology</span>
+                <span class="bg-emerald-100 text-emerald-800 text-xs font-semibold px-2.5 py-0.5 rounded uppercase tracking-wide">Drug Delivery</span>
+            </div>
+            <h1 class="text-3xl md:text-4xl font-bold text-slate-900 tracking-tight mb-4">
+                Sustained-Release Tablet Architecture
+            </h1>
+            <p class="text-slate-600 max-w-3xl text-lg leading-relaxed mx-auto md:mx-0">
+                A cross-sectional view of a multi-layer modified-release oral dosage form. This design ensures a rapid initial therapeutic effect followed by a prolonged, steady release of the active pharmaceutical ingredient (API) over 12 to 24 hours.
+            </p>
+        </header>
+
+        <!-- Main Content Grid -->
+        <div class="grid grid-cols-1 lg:grid-cols-2 gap-10 items-center">
+            
+            <!-- Left: SVG Diagram -->
+            <div class="relative w-full flex justify-center bg-white border border-slate-200 rounded-3xl p-8 shadow-sm">
+                <h3 class="absolute top-6 left-6 text-xs font-semibold text-slate-400 uppercase tracking-widest">Cross-Sectional View</h3>
+                
+                <svg viewBox="0 0 600 600" class="w-full max-w-lg h-auto" xmlns="http://www.w3.org/2000/svg">
+                    <defs>
+                        <!-- Gradients for realistic pill texture -->
+                        <radialGradient id="grad-immediate" cx="30%" cy="30%" r="70%">
+                            <stop offset="0%" stop-color="#fecdd3" /> <!-- rose-200 -->
+                            <stop offset="100%" stop-color="#fb7185" /> <!-- rose-400 -->
+                        </radialGradient>
+                        
+                        <radialGradient id="grad-enteric" cx="30%" cy="30%" r="70%">
+                            <stop offset="0%" stop-color="#ffffff" />
+                            <stop offset="80%" stop-color="#f1f5f9" /> <!-- slate-100 -->
+                            <stop offset="100%" stop-color="#cbd5e1" /> <!-- slate-300 -->
+                        </radialGradient>
+
+                        <radialGradient id="grad-extended" cx="30%" cy="30%" r="70%">
+                            <stop offset="0%" stop-color="#bae6fd" /> <!-- sky-200 -->
+                            <stop offset="100%" stop-color="#38bdf8" /> <!-- sky-400 -->
+                        </radialGradient>
+
+                        <radialGradient id="grad-core" cx="30%" cy="30%" r="70%">
+                            <stop offset="0%" stop-color="#818cf8" /> <!-- indigo-400 -->
+                            <stop offset="100%" stop-color="#4f46e5" /> <!-- indigo-600 -->
+                        </radialGradient>
+
+                        <!-- Shadows -->
+                        <filter id="inner-shadow" x="-20%" y="-20%" width="140%" height="140%">
+                            <feDropShadow dx="0" dy="4" stdDeviation="6" flood-opacity="0.3" flood-color="#0f172a" />
+                        </filter>
+                    </defs>
+
+                    <!-- Base Shadow -->
+                    <circle cx="300" cy="310" r="240" fill="#e2e8f0" filter="blur(12px)" opacity="0.6"/>
+
+                    <!-- LAYER 4: Immediate Release (Outer) -->
+                    <g id="svg-immediate" class="interactive-layer">
+                        <circle cx="300" cy="300" r="240" fill="url(#grad-immediate)" stroke="#f43f5e" stroke-width="1.5"/>
+                        <!-- API Particles -->
+                        <g class="api-particle" fill="#be123c" opacity="0.4">
+                            <circle cx="120" cy="200" r="3"/> <circle cx="450" cy="120" r="4"/>
+                            <circle cx="300" cy="80" r="3.5"/> <circle cx="480" cy="350" r="3"/>
+                            <circle cx="150" cy="450" r="4"/> <circle cx="350" cy="510" r="3"/>
+                            <circle cx="90" cy="320" r="2"/> <circle cx="200" cy="100" r="3"/>
+                        </g>
+                        <!-- Label Line -->
+                        <polyline points="100,160 50,110 20,110" fill="none" stroke="#be123c" stroke-width="2" opacity="0.6"/>
+                        <text x="20" y="100" fill="#be123c" font-size="14" font-weight="600" font-family="Inter">Immediate Release Coat</text>
+                    </g>
+
+                    <!-- LAYER 3: Enteric / Control Barrier -->
+                    <g id="svg-enteric" class="interactive-layer">
+                        <circle cx="300" cy="300" r="185" fill="url(#grad-enteric)" stroke="#94a3b8" stroke-width="2" filter="url(#inner-shadow)"/>
+                        <!-- Label Line -->
+                        <polyline points="430,160 500,110 560,110" fill="none" stroke="#64748b" stroke-width="2" opacity="0.6"/>
+                        <text x="560" y="100" fill="#64748b" font-size="14" font-weight="600" font-family="Inter" text-anchor="end">Polymer Barrier</text>
+                    </g>
+
+                    <!-- LAYER 2: Extended Release Matrix -->
+                    <g id="svg-extended" class="interactive-layer">
+                        <circle cx="300" cy="300" r="150" fill="url(#grad-extended)" stroke="#0ea5e9" stroke-width="1.5" filter="url(#inner-shadow)"/>
+                        <!-- API Particles (Denser) -->
+                        <g class="api-particle" style="animation-delay: 1s;" fill="#0369a1" opacity="0.5">
+                            <circle cx="200" cy="220" r="3"/> <circle cx="380" cy="200" r="4"/>
+                            <circle cx="420" cy="320" r="3.5"/> <circle cx="230" cy="400" r="3"/>
+                            <circle cx="350" cy="420" r="2"/> <circle cx="180" cy="300" r="3"/>
+                            <circle cx="300" cy="180" r="4"/> <circle cx="250" cy="260" r="2.5"/>
+                            <circle cx="390" cy="270" r="3"/> <circle cx="280" cy="400" r="3.5"/>
+                        </g>
+                        <!-- Label Line -->
+                        <polyline points="180,400 120,470 50,470" fill="none" stroke="#0284c7" stroke-width="2" opacity="0.6"/>
+                        <text x="50" y="490" fill="#0284c7" font-size="14" font-weight="600" font-family="Inter">Extended Release Matrix</text>
+                    </g>
+
+                    <!-- LAYER 1: Core Matrix -->
+                    <g id="svg-core" class="interactive-layer">
+                        <circle cx="300" cy="300" r="80" fill="url(#grad-core)" filter="url(#inner-shadow)"/>
+                        <!-- Heavy API Concentration -->
+                        <g class="api-particle" style="animation-delay: 2s;" fill="#e0e7ff" opacity="0.8">
+                            <circle cx="280" cy="280" r="3"/> <circle cx="320" cy="310" r="4"/>
+                            <circle cx="270" cy="320" r="2.5"/> <circle cx="310" cy="260" r="3"/>
+                            <circle cx="330" cy="290" r="2"/> <circle cx="290" cy="330" r="3.5"/>
+                            <circle cx="300" cy="300" r="5"/> <circle cx="260" cy="290" r="2"/>
+                        </g>
+                        <!-- Label Line -->
+                        <polyline points="350,350 480,470 550,470" fill="none" stroke="#4f46e5" stroke-width="2" opacity="0.6"/>
+                        <text x="550" y="490" fill="#4f46e5" font-size="14" font-weight="600" font-family="Inter" text-anchor="end">Inert Core / Maintenance</text>
+                    </g>
+                </svg>
+
+                <div class="absolute bottom-6 right-6 flex items-center space-x-2 text-xs font-medium text-slate-400 bg-slate-50 px-3 py-1.5 rounded-full border border-slate-200">
+                    <svg class="w-4 h-4 text-indigo-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 15l-2 5L9 9l11 4-5 2zm0 0l5 5M7.188 2.239l.777 2.897M5.136 7.965l-2.898-.777M13.95 4.05l-2.122 2.122m-5.657 5.656l-2.12 2.122"></path></svg>
+                    <span>Hover/Click Layers</span>
+                </div>
+            </div>
+
+            <!-- Right: Explanatory Cards -->
+            <div class="flex flex-col space-y-4">
+                
+                <!-- Card 4: Immediate Release -->
+                <div id="card-immediate" class="interactive-card bg-slate-50 p-5 rounded-2xl border border-slate-200 shadow-sm border-l-4 border-l-rose-400 flex flex-col justify-center">
+                    <div class="flex items-center space-x-3 mb-2">
+                        <div class="w-4 h-4 rounded-full bg-rose-400 shadow-inner"></div>
+                        <h4 class="font-bold text-slate-800 text-base">1. Immediate Release Coat</h4>
+                        <span class="ml-auto text-xs font-semibold text-rose-500 bg-rose-100 px-2 py-1 rounded">0 - 1 Hour</span>
+                    </div>
+                    <p class="text-sm text-slate-600 leading-relaxed">
+                        The outermost layer dissolves instantly upon reaching the stomach. This provides an initial burst of the drug, ensuring rapid onset of symptom relief.
+                    </p>
+                </div>
+
+                <!-- Card 3: Enteric/Polymer Barrier -->
+                <div id="card-enteric" class="interactive-card bg-slate-50 p-5 rounded-2xl border border-slate-200 shadow-sm border-l-4 border-l-slate-400 flex flex-col justify-center">
+                    <div class="flex items-center space-x-3 mb-2">
+                        <div class="w-4 h-4 rounded-full bg-slate-300 shadow-inner border border-slate-400"></div>
+                        <h4 class="font-bold text-slate-800 text-base">2. Polymer Barrier / Enteric Coat</h4>
+                        <span class="ml-auto text-xs font-semibold text-slate-500 bg-slate-200 px-2 py-1 rounded">Protection</span>
+                    </div>
+                    <p class="text-sm text-slate-600 leading-relaxed">
+                        A semi-permeable or pH-sensitive polymer film. It prevents the inner layers from dissolving in acidic gastric juices, delaying release until the tablet reaches the intestines.
+                    </p>
+                </div>
+
+                <!-- Card 2: Extended Release Matrix -->
+                <div id="card-extended" class="interactive-card bg-slate-50 p-5 rounded-2xl border border-slate-200 shadow-sm border-l-4 border-l-sky-400 flex flex-col justify-center">
+                    <div class="flex items-center space-x-3 mb-2">
+                        <div class="w-4 h-4 rounded-full bg-sky-400 shadow-inner"></div>
+                        <h4 class="font-bold text-slate-800 text-base">3. Extended Release Matrix</h4>
+                        <span class="ml-auto text-xs font-semibold text-sky-600 bg-sky-100 px-2 py-1 rounded">2 - 12 Hours</span>
+                    </div>
+                    <p class="text-sm text-slate-600 leading-relaxed">
+                        The drug is embedded in a hydrophilic polymer matrix. As fluid enters, the matrix swells and forms a gel layer, allowing the drug to slowly diffuse out at a controlled rate.
+                    </p>
+                </div>
+
+                <!-- Card 1: Inert Core -->
+                <div id="card-core" class="interactive-card bg-slate-50 p-5 rounded-2xl border border-slate-200 shadow-sm border-l-4 border-l-indigo-500 flex flex-col justify-center">
+                    <div class="flex items-center space-x-3 mb-2">
+                        <div class="w-4 h-4 rounded-full bg-indigo-500 shadow-inner"></div>
+                        <h4 class="font-bold text-slate-800 text-base">4. Drug Core / Maintenance</h4>
+                        <span class="ml-auto text-xs font-semibold text-indigo-600 bg-indigo-100 px-2 py-1 rounded">12 - 24 Hours</span>
+                    </div>
+                    <p class="text-sm text-slate-600 leading-relaxed">
+                        The dense innermost core holds the final maintenance dose. Sometimes designed as an insoluble "ghost matrix" that is eventually excreted after the entire drug load has been depleted.
+                    </p>
+                </div>
+
+            </div>
+        </div>
+    </div>
+
+    <!-- Interactivity Logic -->
+    <script>
+        document.addEventListener('DOMContentLoaded', () => {
+            const layers = ['immediate', 'enteric', 'extended', 'core'];
+            let pinnedLayer = null;
+
+            function updateUI(activeId) {
+                if (pinnedLayer && pinnedLayer !== activeId && activeId !== null) return;
+                const targetId = activeId || pinnedLayer;
+
+                layers.forEach(id => {
+                    const svgEl = document.getElementById(`svg-${id}`);
+                    const cardEl = document.getElementById(`card-${id}`);
+
+                    if (targetId) {
+                        if (id === targetId) {
+                            svgEl.classList.remove('dimmed');
+                            svgEl.classList.add('layer-active');
+                            cardEl.classList.add('card-highlighted');
+                        } else {
+                            svgEl.classList.add('dimmed');
+                            svgEl.classList.remove('layer-active');
+                            cardEl.classList.remove('card-highlighted');
+                        }
+                    } else {
+                        // Reset all
+                        svgEl.classList.remove('dimmed', 'layer-active');
+                        cardEl.classList.remove('card-highlighted');
+                    }
+                });
+            }
+
+            layers.forEach(id => {
+                const svgEl = document.getElementById(`svg-${id}`);
+                const cardEl = document.getElementById(`card-${id}`);
+
+                const handleEnter = () => updateUI(id);
+                const handleLeave = () => updateUI(null);
+                const handleClick = (e) => {
+                    e.stopPropagation();
+                    pinnedLayer = (pinnedLayer === id) ? null : id;
+                    updateUI(null); // Forces refresh based on new pinned state
+                };
+
+                // Add to SVG
+                svgEl.addEventListener('mouseenter', handleEnter);
+                svgEl.addEventListener('mouseleave', handleLeave);
+                svgEl.addEventListener('click', handleClick);
+
+                // Add to Cards
+                cardEl.addEventListener('mouseenter', handleEnter);
+                cardEl.addEventListener('mouseleave', handleLeave);
+                cardEl.addEventListener('click', handleClick);
+            });
+
+            // Click background to unpin
+            document.addEventListener('click', () => {
+                if (pinnedLayer) {
+                    pinnedLayer = null;
+                    updateUI(null);
+                }
+            });
+        });
+    </script>
+</body>
+</html>

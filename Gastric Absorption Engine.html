@@ -1,0 +1,185 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Gastric Absorption Engine</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        /* Custom slider styles */
+        input[type=range] {
+            -webkit-appearance: none;
+            width: 100%;
+            background: transparent;
+        }
+        input[type=range]::-webkit-slider-thumb {
+            -webkit-appearance: none;
+            height: 24px;
+            width: 24px;
+            border-radius: 50%;
+            background: #10b981; 
+            cursor: pointer;
+            margin-top: -10px;
+            transition: transform 0.1s;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+        input[type=range]::-webkit-slider-thumb:active {
+            transform: scale(1.1);
+        }
+        input[type=range]::-webkit-slider-runnable-track {
+            width: 100%;
+            height: 6px;
+            cursor: pointer;
+            background: #e5e7eb;
+            border-radius: 3px;
+        }
+        #dose-input::-webkit-slider-thumb { background: #3b82f6; }
+        #halflife-input::-webkit-slider-thumb { background: #10b981; }
+
+        /* Custom Animations for Absorption Phase */
+        @keyframes swallow-dissolve {
+            /* Start exactly at the top-right esophagus hole */
+            0% { transform: translate(35px, -160px) rotate(80deg) scale(1); opacity: 0; }
+            10% { transform: translate(35px, -160px) rotate(80deg) scale(1); opacity: 1; }
+            
+            /* Slide straight down the throat/esophagus */
+            30% { transform: translate(35px, -30px) rotate(40deg) scale(1); opacity: 1; }
+            
+            /* Plop and settle into the bottom of the stomach */
+            50% { transform: translate(0px, 45px) rotate(0deg) scale(1); opacity: 1; }
+            
+            /* Dissolve away */
+            80% { transform: translate(-10px, 55px) rotate(0deg) scale(0); opacity: 0; }
+            100% { transform: translate(-10px, 55px) rotate(0deg) scale(0); opacity: 0; }
+        }
+        
+        @keyframes stomach-absorb {
+            0%, 55% { transform: scale(1); filter: drop-shadow(0 0 0 rgba(0,0,0,0)); }
+            65% { transform: scale(1.03); filter: drop-shadow(0 10px 25px rgba(16, 185, 129, 0.2)); }
+            100% { transform: scale(1); filter: drop-shadow(0 0 0 rgba(0,0,0,0)); }
+        }
+        
+        .anim-pill { animation: swallow-dissolve 4s infinite cubic-bezier(0.4, 0, 0.2, 1); }
+        .anim-stomach { animation: stomach-absorb 4s infinite cubic-bezier(0.4, 0, 0.2, 1); }
+    </style>
+</head>
+<body class="bg-gray-50 text-gray-900 min-h-screen font-sans flex flex-col selection:bg-emerald-100 selection:text-emerald-900">
+
+    <!-- Header -->
+    <header class="bg-white border-b border-gray-200 p-6 flex-none">
+        <div class="max-w-6xl mx-auto flex items-center justify-between">
+            <div class="flex items-center gap-3">
+                <svg xmlns="http://www.w3.org/2000/svg" width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="#10b981" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                    <path d="M12 2v20"/><path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/>
+                </svg>
+                <h1 class="text-2xl font-bold tracking-tight text-gray-900">Absorption <span class="text-emerald-600">Visualizer</span></h1>
+            </div>
+            <div class="text-sm text-gray-500 hidden sm:block">Gastric Dissolution Phase</div>
+        </div>
+    </header>
+
+    <!-- Main Content -->
+    <main class="max-w-5xl mx-auto w-full flex-grow flex items-center justify-center p-6">
+        
+        <div class="flex flex-col md:flex-row gap-12 items-center w-full">
+            
+            <!-- HUGE Animated Absorption Visualizer (Main Focus) -->
+            <div class="flex-1 w-full bg-white rounded-[3rem] p-10 border border-gray-200 shadow-sm flex flex-col items-center justify-center relative overflow-hidden min-h-[500px]">
+                <span class="absolute top-8 text-sm font-bold text-gray-400 uppercase tracking-widest">Gastric Absorption</span>
+                
+                <div class="relative flex items-center justify-center w-full h-full mt-12">
+                    <!-- Pill (Animated, Full Color, Smaller Size) -->
+                    <img src="https://res.cloudinary.com/ds93qby5a/image/upload/v1776954858/6f624abe-6409-4fe4-9098-c396b3715e92-Photoroom_isslbp.png" 
+                         alt="Pill" 
+                         class="w-6 h-6 md:w-8 md:h-8 object-contain absolute z-10 anim-pill drop-shadow-md" />
+                    
+                    <!-- Stomach (Animated, Full Color) -->
+                    <img src="https://res.cloudinary.com/ds93qby5a/image/upload/v1776954314/993d1716-7a95-4f32-b50a-3e3b1bfa47d5-Photoroom_sdc9dr.png" 
+                         alt="Stomach" 
+                         class="w-72 h-72 md:w-96 md:h-96 object-contain absolute z-0 anim-stomach drop-shadow-xl" />
+                </div>
+            </div>
+
+            <!-- Minimal Controls -->
+            <div class="w-full md:w-96 space-y-8 bg-white p-8 rounded-3xl border border-gray-200 shadow-sm">
+                
+                <h2 class="text-xl font-semibold mb-8 flex items-center gap-2 text-gray-900 border-b border-gray-100 pb-4">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="text-emerald-500"><rect x="2" y="6" width="20" height="12" rx="2"/><path d="M12 12h.01"/></svg>
+                    Medication Controls
+                </h2>
+
+                <!-- Initial Dosage -->
+                <div>
+                    <div class="flex justify-between items-end mb-4">
+                        <label class="text-base font-medium text-gray-700">Dosage</label>
+                        <span class="text-2xl font-bold text-blue-600"><span id="dose-val">500</span> <span class="text-sm text-gray-500 font-normal">mg</span></span>
+                    </div>
+                    <input type="range" id="dose-input" min="10" max="2000" value="500" step="10">
+                    <div class="flex justify-between text-sm text-gray-400 mt-2">
+                        <span>Light</span>
+                        <span>Heavy</span>
+                    </div>
+                </div>
+
+                <!-- Half-Life (Controls Animation Speed) -->
+                <div class="pt-4">
+                    <div class="flex justify-between items-end mb-4">
+                        <label class="text-base font-medium text-gray-700">Absorption Rate</label>
+                        <span class="text-2xl font-bold text-emerald-600"><span id="halflife-val">6.0</span> <span class="text-sm text-gray-500 font-normal">hrs</span></span>
+                    </div>
+                    <input type="range" id="halflife-input" min="0.5" max="24" value="6.0" step="0.5">
+                    <div class="flex justify-between text-sm text-gray-400 mt-2">
+                        <span>Fast (0.5h)</span>
+                        <span>Slow (24h)</span>
+                    </div>
+                </div>
+
+            </div>
+
+        </div>
+    </main>
+
+    <script>
+        // --- GASTRIC ENGINE ---
+        
+        const elDose = document.getElementById('dose-input');
+        const elHalfLife = document.getElementById('halflife-input');
+        const valDose = document.getElementById('dose-val');
+        const valHalfLife = document.getElementById('halflife-val');
+
+        function updateEngine() {
+            // Get Values
+            const dose = parseFloat(elDose.value);
+            const tHalf = parseFloat(elHalfLife.value);
+
+            // Update UI Labels
+            valDose.innerText = dose;
+            valHalfLife.innerText = tHalf.toFixed(1);
+
+            // Adjust animation speed based on the "rate" (half-life)
+            // Faster half-life = faster dissolving animation
+            const baseSpeed = 3; // base 3 seconds
+            const speedAdjust = baseSpeed * (tHalf / 4); 
+            
+            const animPill = document.querySelector('.anim-pill');
+            const animStomach = document.querySelector('.anim-stomach');
+            
+            if(animPill && animStomach) {
+                // Keep animation between 1.5s (fast) and 8s (very slow)
+                const finalSpeed = Math.min(8, Math.max(1.5, speedAdjust));
+                animPill.style.animationDuration = `${finalSpeed}s`;
+                animStomach.style.animationDuration = `${finalSpeed}s`;
+            }
+        }
+
+        // Attach Event Listeners
+        [elDose, elHalfLife].forEach(input => {
+            if(input) input.addEventListener('input', updateEngine);
+        });
+
+        // Initialize on load
+        window.addEventListener('load', updateEngine);
+
+    </script>
+</body>
+</html>

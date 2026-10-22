@@ -1,0 +1,737 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Math Lab - Sequences & Statistics</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Fira+Code:wght@400;500&display=swap" rel="stylesheet">
+    <style>
+        body, html {
+            margin: 0; padding: 0; width: 100%; height: 100%; overflow: hidden;
+            background-color: #020617; font-family: 'Inter', sans-serif;
+            touch-action: none; user-select: none;
+        }
+
+        .main-shell { display: flex; width: 100%; height: 100%; }
+        
+        .workspace { 
+            flex-grow: 1; 
+            position: relative; 
+            overflow: hidden; 
+            background: radial-gradient(circle at center, #0f172a 0%, #020617 100%);
+        }
+        
+        #sim-canvas {
+            display: block; width: 100%; height: 100%; cursor: default;
+        }
+
+        .glass-panel {
+            background: linear-gradient(145deg, rgba(15, 23, 42, 0.9) 0%, rgba(2, 6, 23, 0.98) 100%);
+            backdrop-filter: blur(40px); -webkit-backdrop-filter: blur(40px);
+            border-right: 1px solid rgba(255, 255, 255, 0.1);
+            box-shadow: 20px 0 50px rgba(0, 0, 0, 0.5);
+            display: flex; flex-direction: column; padding: 2rem; z-index: 100; width: 380px;
+        }
+
+        @media (max-width: 1024px) {
+            .glass-panel { width: 100%; height: 42%; border-right: none; border-bottom: 1px solid rgba(255,255,255,0.1); padding: 1rem; }
+            .main-shell { flex-direction: column; }
+        }
+
+        .tab-btn { transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1); }
+        .tab-btn.active { background-color: #ffffff; color: #020617; box-shadow: 0 4px 12px rgba(0,0,0,0.4); }
+
+        input[type=range] { -webkit-appearance: none; width: 100%; background: transparent; }
+        input[type=range]::-webkit-slider-thumb {
+            -webkit-appearance: none; height: 20px; width: 20px; border-radius: 50%;
+            background: #ffffff; cursor: pointer; margin-top: -8px;
+            box-shadow: 0 4px 10px rgba(0,0,0,0.5); border: 1px solid rgba(255,255,255,0.2);
+            transition: transform 0.2s cubic-bezier(0.2, 0.8, 0.2, 1);
+        }
+        input[type=range]::-webkit-slider-thumb:hover { transform: scale(1.15); }
+        input[type=range]::-webkit-slider-runnable-track {
+            width: 100%; height: 4px; cursor: pointer; background: rgba(255, 255, 255, 0.15); border-radius: 2px;
+        }
+
+        .formula-box { font-family: 'Fira Code', monospace; }
+        .scroll-area::-webkit-scrollbar { width: 4px; }
+        .scroll-area::-webkit-scrollbar-thumb { background: rgba(255, 255, 255, 0.2); border-radius: 4px; }
+
+        #loading-screen {
+            position: absolute; inset: 0; background: #020617; display: flex; flex-direction: column;
+            align-items: center; justify-content: center; color: white; z-index: 150; transition: opacity 0.6s ease;
+        }
+    </style>
+</head>
+<body>
+
+    <div id="loading-screen">
+        <div class="flex flex-col items-center gap-5">
+            <svg class="animate-spin h-10 w-10 text-emerald-500" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="3"></circle><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path></svg>
+            <span class="text-xs font-bold tracking-widest text-gray-400 uppercase italic text-center">Centering Workspace Engine...</span>
+        </div>
+    </div>
+
+    <div class="main-shell">
+        <!-- UI Panel -->
+        <div class="glass-panel shrink-0">
+            <div class="mb-6 border-b border-white/10 pb-6 shrink-0 flex items-center justify-between">
+                <div>
+                    <h1 class="text-2xl font-bold tracking-tight text-white mb-1">Math Lab</h1>
+                    <p class="text-[11px] font-medium text-emerald-400 uppercase tracking-widest">Sequences & Stats</p>
+                </div>
+                <div class="w-10 h-10 rounded-full bg-emerald-500/20 flex items-center justify-center text-emerald-400 shadow-[0_0_15px_rgba(16,185,129,0.3)]">
+                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 12l3-3 3 3 4-4M8 21l4-4 4 4M3 4h18M4 4h16v12a1 1 0 01-1 1H5a1 1 0 01-1-1V4z"></path></svg>
+                </div>
+            </div>
+
+            <!-- Tab Navigation (2x2 Grid) -->
+            <div class="grid grid-cols-2 p-1 bg-black/40 rounded-xl shadow-inner gap-1 mb-6 shrink-0 border border-white/5">
+                <button data-tab="ap" class="tab-btn active py-2 text-[10px] font-bold uppercase tracking-wider rounded-lg text-gray-400">Arithmetic (AP)</button>
+                <button data-tab="gp" class="tab-btn py-2 text-[10px] font-bold uppercase tracking-wider rounded-lg text-gray-400">Geometric (GP)</button>
+                <button data-tab="congruency" class="tab-btn py-2 text-[10px] font-bold uppercase tracking-wider rounded-lg text-gray-400">Congruency</button>
+                <button data-tab="stats" class="tab-btn py-2 text-[10px] font-bold uppercase tracking-wider rounded-lg text-gray-400">Statistics</button>
+            </div>
+
+            <div class="scroll-area overflow-y-auto pr-2 pb-2 flex-1 space-y-7">
+                
+                <!-- Dynamic Info Box -->
+                <div class="bg-black/30 p-4 rounded-xl border border-white/5 shadow-inner">
+                    <h2 id="info-title" class="text-sm font-bold text-white mb-2 italic">Arithmetic Progressions (AP)</h2>
+                    <div id="formula-display" class="formula-box bg-white/5 p-2 rounded text-[11px] text-emerald-300 mb-3 border border-white/10 text-center">
+                        a_n = a + (n - 1)d
+                    </div>
+                    <p id="info-desc" class="text-xs text-gray-400 leading-relaxed">
+                        A sequence where the difference between consecutive terms is constant. Visualized as a staircase where every step increases by the exact same height increment ($d$).
+                    </p>
+                </div>
+
+                <!-- 1. ARITHMETIC PROGRESSION CONTROLS -->
+                <div id="controls-ap" class="space-y-6">
+                    <div class="space-y-4">
+                        <div class="space-y-2">
+                            <div class="flex justify-between items-end">
+                                <label class="text-[11px] font-semibold text-blue-400 uppercase tracking-widest">Starting Height ($a$)</label>
+                                <span id="ap-a-disp" class="text-[11px] font-mono bg-blue-500/10 px-2 py-1 rounded text-blue-300">20</span>
+                            </div>
+                            <input type="range" id="ap-a" min="10" max="100" step="5" value="20" style="accent-color: #3b82f6;">
+                        </div>
+                        <div class="space-y-2">
+                            <div class="flex justify-between items-end">
+                                <label class="text-[11px] font-semibold text-purple-400 uppercase tracking-widest">Common Difference ($d$)</label>
+                                <span id="ap-d-disp" class="text-[11px] font-mono bg-purple-500/10 px-2 py-1 rounded text-purple-300">15</span>
+                            </div>
+                            <input type="range" id="ap-d" min="-20" max="50" step="5" value="15" style="accent-color: #c084fc;">
+                        </div>
+                        <div class="space-y-2">
+                            <div class="flex justify-between items-end">
+                                <label class="text-[11px] font-semibold text-orange-400 uppercase tracking-widest">Number of Steps ($n$)</label>
+                                <span id="ap-n-disp" class="text-[11px] font-mono bg-orange-500/10 px-2 py-1 rounded text-orange-300">8</span>
+                            </div>
+                            <input type="range" id="ap-n" min="2" max="20" step="1" value="8" style="accent-color: #f97316;">
+                        </div>
+                    </div>
+                </div>
+
+                <!-- 2. GEOMETRIC PROGRESSION CONTROLS -->
+                <div id="controls-gp" class="space-y-6 hidden">
+                    <div class="space-y-4">
+                        <div class="space-y-2">
+                            <div class="flex justify-between items-end">
+                                <label class="text-[11px] font-semibold text-blue-400 uppercase tracking-widest">Initial Branch ($a$)</label>
+                                <span id="gp-a-disp" class="text-[11px] font-mono bg-blue-500/10 px-2 py-1 rounded text-blue-300">100px</span>
+                            </div>
+                            <input type="range" id="gp-a" min="50" max="200" step="10" value="100" style="accent-color: #3b82f6;">
+                        </div>
+                        <div class="space-y-2">
+                            <div class="flex justify-between items-end">
+                                <label class="text-[11px] font-semibold text-purple-400 uppercase tracking-widest">Common Ratio ($r$)</label>
+                                <span id="gp-r-disp" class="text-[11px] font-mono bg-purple-500/10 px-2 py-1 rounded text-purple-300">0.70</span>
+                            </div>
+                            <input type="range" id="gp-r" min="0.4" max="0.85" step="0.05" value="0.7" style="accent-color: #c084fc;">
+                        </div>
+                        <div class="space-y-2">
+                            <div class="flex justify-between items-end">
+                                <label class="text-[11px] font-semibold text-orange-400 uppercase tracking-widest">Fractal Depth ($n$)</label>
+                                <span id="gp-n-disp" class="text-[11px] font-mono bg-orange-500/10 px-2 py-1 rounded text-orange-300">5</span>
+                            </div>
+                            <input type="range" id="gp-n" min="1" max="9" step="1" value="5" style="accent-color: #f97316;">
+                        </div>
+                    </div>
+                </div>
+
+                <!-- 3. CONGRUENCY VS SIMILARITY CONTROLS -->
+                <div id="controls-congruency" class="space-y-6 hidden">
+                    <div class="space-y-4">
+                        <div class="space-y-2">
+                            <div class="flex justify-between items-end">
+                                <label class="text-[11px] font-semibold text-cyan-400 uppercase tracking-widest">Translate Shape</label>
+                            </div>
+                            <input type="range" id="geom-tx" min="-300" max="300" step="10" value="0" class="mb-2" style="accent-color: #22d3ee;">
+                            <input type="range" id="geom-ty" min="-300" max="300" step="10" value="-100" style="accent-color: #22d3ee;">
+                        </div>
+                        <div class="space-y-2">
+                            <div class="flex justify-between items-end">
+                                <label class="text-[11px] font-semibold text-pink-400 uppercase tracking-widest">Rotate</label>
+                                <span id="geom-rot-disp" class="text-[11px] font-mono bg-pink-500/10 px-2 py-1 rounded text-pink-300">0°</span>
+                            </div>
+                            <input type="range" id="geom-rot" min="0" max="360" step="15" value="0" style="accent-color: #f472b6;">
+                        </div>
+                        <div class="space-y-2">
+                            <div class="flex justify-between items-end">
+                                <label class="text-[11px] font-semibold text-emerald-400 uppercase tracking-widest">Dilate (Scale Factor)</label>
+                                <span id="geom-scale-disp" class="text-[11px] font-mono bg-emerald-500/10 px-2 py-1 rounded text-emerald-300">1.0x</span>
+                            </div>
+                            <input type="range" id="geom-scale" min="0.5" max="2.5" step="0.1" value="1.0" style="accent-color: #10b981;">
+                        </div>
+                    </div>
+                </div>
+
+                <!-- 4. STATISTICS CONTROLS -->
+                <div id="controls-stats" class="space-y-6 hidden">
+                    <div class="space-y-4">
+                        <div class="space-y-2">
+                            <div class="flex justify-between items-end">
+                                <label class="text-[11px] font-semibold text-blue-400 uppercase tracking-widest">Dataset Mean (μ)</label>
+                                <span id="stat-mean-disp" class="text-[11px] font-mono bg-blue-500/10 px-2 py-1 rounded text-blue-300">50</span>
+                            </div>
+                            <input type="range" id="stat-mean" min="20" max="80" step="5" value="50" style="accent-color: #3b82f6;">
+                        </div>
+                        <div class="space-y-2">
+                            <div class="flex justify-between items-end">
+                                <label class="text-[11px] font-semibold text-purple-400 uppercase tracking-widest">Standard Deviation (σ)</label>
+                                <span id="stat-sd-disp" class="text-[11px] font-mono bg-purple-500/10 px-2 py-1 rounded text-purple-300">10</span>
+                            </div>
+                            <input type="range" id="stat-sd" min="5" max="25" step="1" value="10" style="accent-color: #c084fc;">
+                        </div>
+                        <div class="pt-2">
+                            <button id="btn-regen-data" class="w-full py-2.5 bg-indigo-600 hover:bg-indigo-500 text-white text-xs font-bold uppercase tracking-widest rounded-xl transition-all shadow-lg shadow-indigo-900/40">Regenerate Dataset</button>
+                        </div>
+                    </div>
+                </div>
+
+            </div>
+            
+            <div class="pt-6 border-t border-white/5 text-[10px] text-gray-600 font-medium text-center shrink-0 mt-4 uppercase tracking-widest">
+                Perfect 1:1 Workspace Centering
+            </div>
+        </div>
+
+        <!-- Simulation Workspace -->
+        <div class="workspace" id="workspace">
+            <canvas id="sim-canvas"></canvas>
+            
+            <!-- Contextual HUD -->
+            <div id="hud" class="absolute bottom-8 right-8 z-10 glass-panel !w-[280px] !p-5 !border !rounded-2xl pointer-events-none shadow-2xl transition-opacity duration-300">
+                <div class="text-[10px] font-bold uppercase tracking-widest text-gray-500 mb-3 border-b border-white/5 pb-1">Mathematical Result</div>
+                <div class="space-y-3">
+                    <div class="flex justify-between items-center">
+                        <span class="text-[12px] text-gray-400 font-medium" id="hud-label-1">Data 1</span>
+                        <span id="hud-val-1" class="text-base font-mono font-bold text-white">---</span>
+                    </div>
+                    <div class="flex justify-between items-center">
+                        <span class="text-[12px] text-gray-400 font-medium" id="hud-label-2">Data 2</span>
+                        <span id="hud-val-2" class="text-base font-mono font-bold text-white">---</span>
+                    </div>
+                    <div id="hud-status" class="pt-2 text-center text-[12px] font-bold tracking-widest text-emerald-400 hidden border-t border-white/5 font-mono">
+                        RESULT
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const canvas = document.getElementById('sim-canvas');
+        const ctx = canvas.getContext('2d');
+        const workspace = document.getElementById('workspace');
+
+        // --- GLOBAL STATE ---
+        let currentMode = 'ap'; 
+        let cx, cy, wsWidth, wsHeight;
+
+        const M = {
+            ap:   { a: 20, d: 15, n: 8 },
+            gp:   { a: 100, r: 0.7, n: 5 },
+            geom: { tx: 0, ty: -100, rot: 0, scale: 1.0 },
+            stat: { mean: 50, sd: 10, data: [], bins: [], maxFreq: 0, cumulative: [] }
+        };
+
+        function resize() {
+            // CRITICAL FIX: Base canvas dimensions purely on the flex workspace size
+            canvas.width = workspace.clientWidth;
+            canvas.height = workspace.clientHeight;
+            wsWidth = canvas.width;
+            wsHeight = canvas.height;
+            
+            // EXACT CENTER OF THE WORKSPACE CANVAS
+            cx = wsWidth / 2;
+            cy = wsHeight / 2;
+        }
+        window.addEventListener('resize', resize);
+        resize(); // Initial sizing
+
+        // --- UI BINDINGS ---
+        const bindSlider = (id, obj, key, displayId, suffix="", callback=null) => {
+            const el = document.getElementById(id);
+            if(!el) return;
+            el.addEventListener('input', (e) => {
+                obj[key] = parseFloat(e.target.value);
+                document.getElementById(displayId).innerText = obj[key].toFixed(el.step.includes('.') ? 2 : 0).replace('.00', '') + suffix;
+                if(callback) callback();
+            });
+        };
+
+        // AP Bindings
+        bindSlider('ap-a', M.ap, 'a', 'ap-a-disp');
+        bindSlider('ap-d', M.ap, 'd', 'ap-d-disp');
+        bindSlider('ap-n', M.ap, 'n', 'ap-n-disp');
+
+        // GP Bindings
+        bindSlider('gp-a', M.gp, 'a', 'gp-a-disp', 'px');
+        bindSlider('gp-r', M.gp, 'r', 'gp-r-disp');
+        bindSlider('gp-n', M.gp, 'n', 'gp-n-disp');
+
+        // Geometry Bindings
+        bindSlider('geom-tx', M.geom, 'tx', null);
+        bindSlider('geom-ty', M.geom, 'ty', null);
+        bindSlider('geom-rot', M.geom, 'rot', 'geom-rot-disp', '°');
+        bindSlider('geom-scale', M.geom, 'scale', 'geom-scale-disp', 'x');
+
+        // Stats Bindings
+        bindSlider('stat-mean', M.stat, 'mean', 'stat-mean-disp', '', generateStatData);
+        bindSlider('stat-sd', M.stat, 'sd', 'stat-sd-disp', '', generateStatData);
+        document.getElementById('btn-regen-data').addEventListener('click', generateStatData);
+
+        // --- MATH HELPERS ---
+        // Box-Muller transform for normal distribution
+        function randomNormal(mean, stdDev) {
+            let u1 = Math.random();
+            let u2 = Math.random();
+            let z0 = Math.sqrt(-2.0 * Math.log(u1)) * Math.cos(2.0 * Math.PI * u2);
+            return z0 * stdDev + mean;
+        }
+
+        function generateStatData() {
+            M.stat.data = [];
+            const numPoints = 1000;
+            for(let i=0; i<numPoints; i++) {
+                let val = randomNormal(M.stat.mean, M.stat.sd);
+                // Clamp 0 to 100
+                if (val < 0) val = 0; if (val > 100) val = 100;
+                M.stat.data.push(val);
+            }
+            M.stat.data.sort((a,b) => a - b);
+
+            // Create Bins (0-10, 10-20, ... 90-100)
+            M.stat.bins = Array(10).fill(0);
+            M.stat.data.forEach(val => {
+                let binIdx = Math.floor(val / 10);
+                if(binIdx >= 10) binIdx = 9;
+                M.stat.bins[binIdx]++;
+            });
+
+            M.stat.maxFreq = Math.max(...M.stat.bins);
+
+            // Cumulative Frequencies (Ogive)
+            M.stat.cumulative = [];
+            let runningTotal = 0;
+            M.stat.bins.forEach(freq => {
+                runningTotal += freq;
+                M.stat.cumulative.push(runningTotal);
+            });
+        }
+        generateStatData(); // Init
+
+
+        // --- 2D RENDER FUNCTIONS ---
+
+        // 1. ARITHMETIC PROGRESSION
+        function drawAP() {
+            const n = M.ap.n;
+            const a = M.ap.a;
+            const d = M.ap.d;
+            
+            // Calculate nth term and sum
+            const nthTerm = a + (n - 1) * d;
+            const totalSum = (n / 2) * (2 * a + (n - 1) * d);
+
+            const maxH = Math.max(a, nthTerm);
+            const blockW = Math.min(wsWidth * 0.8 / n, 60);
+            const totalW = n * blockW;
+            const startX = cx - totalW / 2;
+            const groundY = cy + Math.max(100, maxH/2);
+
+            ctx.save();
+            
+            // Ground line
+            ctx.strokeStyle = '#334155'; ctx.lineWidth = 4;
+            ctx.beginPath(); ctx.moveTo(0, groundY); ctx.lineTo(wsWidth, groundY); ctx.stroke();
+
+            // Draw Blocks
+            for (let i = 0; i < n; i++) {
+                const h = a + i * d;
+                const bx = startX + i * blockW;
+                
+                // If height is negative, draw it going down
+                const drawH = Math.abs(h);
+                const by = h >= 0 ? groundY - drawH : groundY;
+
+                const grad = ctx.createLinearGradient(0, groundY, 0, groundY - maxH);
+                grad.addColorStop(0, '#3b82f6');
+                grad.addColorStop(1, '#60a5fa');
+                
+                ctx.fillStyle = h >= 0 ? grad : 'rgba(239, 68, 68, 0.6)';
+                ctx.strokeStyle = '#0f172a'; ctx.lineWidth = 2;
+                
+                ctx.beginPath(); ctx.rect(bx, by, blockW, drawH);
+                ctx.fill(); ctx.stroke();
+
+                // Draw formula connection (dotted line on top)
+                if (i > 0) {
+                    ctx.strokeStyle = 'rgba(255,255,255,0.4)'; ctx.setLineDash([5, 5]);
+                    ctx.beginPath();
+                    const prevH = a + (i-1)*d;
+                    const prevY = prevH >= 0 ? groundY - prevH : groundY + Math.abs(prevH);
+                    const currY = h >= 0 ? groundY - h : groundY + Math.abs(h);
+                    
+                    ctx.moveTo(bx - blockW/2, prevY);
+                    ctx.lineTo(bx + blockW/2, currY);
+                    ctx.stroke();
+                    ctx.setLineDash([]);
+                }
+
+                // Values inside blocks
+                if (blockW > 30) {
+                    ctx.fillStyle = '#ffffff'; ctx.font = '12px Inter'; ctx.textAlign = 'center';
+                    const textY = h >= 0 ? by + 20 : by + drawH - 10;
+                    if (drawH > 25) ctx.fillText(h, bx + blockW/2, textY);
+                }
+            }
+
+            ctx.restore();
+
+            // HUD
+            document.getElementById('hud-label-1').innerText = `Term (a_${n})`;
+            document.getElementById('hud-val-1').innerText = nthTerm;
+            document.getElementById('hud-val-1').style.color = "#3b82f6";
+            
+            document.getElementById('hud-label-2').innerText = `Sum of ${n} terms`;
+            document.getElementById('hud-val-2').innerText = totalSum;
+            document.getElementById('hud-val-2').style.color = "#facc15";
+            
+            const st = document.getElementById('hud-status');
+            st.innerText = "S_n = (n/2)(2a + (n-1)d)";
+            st.style.color = "#ffffff";
+            st.classList.remove('hidden');
+        }
+
+        // 2. GEOMETRIC PROGRESSION (Fractal Tree)
+        function drawGP() {
+            const a = M.gp.a;
+            const r = M.gp.r;
+            const maxDepth = M.gp.n;
+
+            ctx.save();
+            ctx.translate(cx, cy + a * 1.5); // Start at bottom
+            
+            ctx.strokeStyle = '#a855f7';
+            ctx.lineCap = 'round';
+            ctx.shadowBlur = 10;
+            ctx.shadowColor = '#a855f7';
+
+            let totalBranches = 0;
+            let smallestBranch = a;
+
+            function drawBranch(len, depth) {
+                totalBranches++;
+                smallestBranch = len;
+
+                ctx.lineWidth = Math.max(1, depth);
+                ctx.beginPath();
+                ctx.moveTo(0, 0);
+                ctx.lineTo(0, -len);
+                ctx.stroke();
+
+                if (depth > 1) {
+                    // Right branch
+                    ctx.save();
+                    ctx.translate(0, -len);
+                    ctx.rotate(Math.PI / 6); // 30 degrees
+                    drawBranch(len * r, depth - 1);
+                    ctx.restore();
+
+                    // Left branch
+                    ctx.save();
+                    ctx.translate(0, -len);
+                    ctx.rotate(-Math.PI / 6);
+                    drawBranch(len * r, depth - 1);
+                    ctx.restore();
+                }
+            }
+
+            drawBranch(a, maxDepth);
+
+            ctx.restore();
+
+            // HUD
+            document.getElementById('hud-label-1').innerText = `Total Branches`;
+            document.getElementById('hud-val-1').innerText = totalBranches;
+            document.getElementById('hud-val-1').style.color = "#c084fc";
+            
+            document.getElementById('hud-label-2').innerText = `Smallest Branch`;
+            document.getElementById('hud-val-2').innerText = smallestBranch.toFixed(1) + "px";
+            document.getElementById('hud-val-2').style.color = "#f472b6";
+            
+            const st = document.getElementById('hud-status');
+            st.innerText = `Term: a_n = a * r^(n-1)`;
+            st.style.color = "#ffffff";
+            st.classList.remove('hidden');
+        }
+
+        // 3. CONGRUENCY VS SIMILARITY
+        function drawCongruency() {
+            // Draw Cartesian Grid
+            const gridScale = 50;
+            ctx.strokeStyle = 'rgba(255,255,255,0.04)'; ctx.lineWidth = 1;
+            ctx.beginPath();
+            for(let x = cx; x < wsWidth; x += gridScale) { ctx.moveTo(x, 0); ctx.lineTo(x, wsHeight); }
+            for(let x = cx; x > 0; x -= gridScale) { ctx.moveTo(x, 0); ctx.lineTo(x, wsHeight); }
+            for(let y = cy; y < wsHeight; y += gridScale) { ctx.moveTo(0, y); ctx.lineTo(wsWidth, y); }
+            for(let y = cy; y > 0; y -= gridScale) { ctx.moveTo(0, y); ctx.lineTo(wsWidth, y); }
+            ctx.stroke();
+
+            // Main Axes
+            ctx.strokeStyle = 'rgba(255,255,255,0.2)'; ctx.lineWidth = 2;
+            ctx.beginPath(); ctx.moveTo(cx, 0); ctx.lineTo(cx, wsHeight); ctx.moveTo(0, cy); ctx.lineTo(wsWidth, cy); ctx.stroke();
+
+            const drawTriangle = (isTarget) => {
+                ctx.beginPath();
+                ctx.moveTo(0, -100);
+                ctx.lineTo(86.6, 50);
+                ctx.lineTo(-86.6, 50);
+                ctx.closePath();
+                
+                if (isTarget) {
+                    ctx.strokeStyle = 'rgba(255,255,255,0.8)';
+                    ctx.setLineDash([10, 10]);
+                    ctx.lineWidth = 4;
+                    ctx.stroke();
+                    ctx.setLineDash([]);
+                } else {
+                    ctx.fillStyle = 'rgba(16, 185, 129, 0.6)';
+                    ctx.strokeStyle = '#10b981';
+                    ctx.lineWidth = 3;
+                    ctx.fill(); ctx.stroke();
+                }
+            };
+
+            ctx.save();
+            ctx.translate(cx, cy);
+
+            // 1. Static Target Shape
+            drawTriangle(true);
+
+            // 2. Manipulated Shape
+            ctx.save();
+            ctx.translate(M.geom.tx, M.geom.ty);
+            ctx.rotate(M.geom.rot * Math.PI / 180);
+            ctx.scale(M.geom.scale, M.geom.scale);
+            
+            ctx.shadowColor = '#10b981'; ctx.shadowBlur = 20;
+            drawTriangle(false);
+            ctx.restore();
+
+            ctx.restore();
+
+            // HUD
+            const isScaleOne = Math.abs(M.geom.scale - 1.0) < 0.05;
+            const isOverlay = isScaleOne && Math.abs(M.geom.tx) < 5 && Math.abs(M.geom.ty) < 5 && (M.geom.rot % 360) === 0;
+
+            document.getElementById('hud-label-1').innerText = "Scale Factor";
+            document.getElementById('hud-val-1').innerText = M.geom.scale.toFixed(1) + "x";
+            document.getElementById('hud-val-1').style.color = isScaleOne ? "#10b981" : "#facc15";
+            
+            document.getElementById('hud-label-2').innerText = "Classification";
+            if (isScaleOne) {
+                document.getElementById('hud-val-2').innerText = "CONGRUENT";
+                document.getElementById('hud-val-2').style.color = "#10b981";
+            } else {
+                document.getElementById('hud-val-2').innerText = "SIMILAR";
+                document.getElementById('hud-val-2').style.color = "#facc15";
+            }
+            
+            const st = document.getElementById('hud-status');
+            if (isOverlay) {
+                st.innerText = "Perfectly Mapped!";
+                st.style.color = "#38bdf8";
+                st.classList.remove('hidden');
+            } else {
+                st.classList.add('hidden');
+            }
+        }
+
+        // 4. STATISTICS (Histograms & Ogive)
+        function drawStats() {
+            const chartW = Math.min(wsWidth * 0.8, 800);
+            const chartH = Math.min(wsHeight * 0.5, 400);
+            const startX = cx - chartW / 2;
+            const startY = cy + chartH / 2;
+
+            ctx.save();
+
+            // Axes
+            ctx.strokeStyle = '#475569'; ctx.lineWidth = 3;
+            ctx.beginPath(); ctx.moveTo(startX, startY - chartH); ctx.lineTo(startX, startY); ctx.lineTo(startX + chartW, startY); ctx.stroke();
+
+            const numBins = 10;
+            const binW = chartW / numBins;
+            
+            // 1. Draw Histogram (Frequency)
+            ctx.shadowBlur = 10; ctx.shadowColor = 'rgba(59, 130, 246, 0.5)';
+            for (let i = 0; i < numBins; i++) {
+                const freq = M.stat.bins[i];
+                // Scale bar height so maxFreq takes 80% of chart
+                const barH = (freq / M.stat.maxFreq) * (chartH * 0.8);
+                
+                ctx.fillStyle = 'rgba(59, 130, 246, 0.7)';
+                ctx.strokeStyle = '#60a5fa'; ctx.lineWidth = 2;
+                ctx.beginPath(); ctx.roundRect(startX + i*binW, startY - barH, binW, barH, [4,4,0,0]);
+                ctx.fill(); ctx.stroke();
+            }
+            ctx.shadowBlur = 0;
+
+            // 2. Draw Ogive (Cumulative Frequency Curve)
+            const totalN = 1000;
+            ctx.strokeStyle = '#facc15'; // Yellow
+            ctx.lineWidth = 4;
+            ctx.lineJoin = 'round';
+            ctx.beginPath();
+            ctx.moveTo(startX, startY); // Start at 0,0
+            
+            let ogivePts = [{x: startX, y: startY}];
+            for (let i = 0; i < numBins; i++) {
+                const cumFreq = M.stat.cumulative[i];
+                // Scale Y so 100% takes full chart height
+                const y = startY - (cumFreq / totalN) * chartH;
+                const x = startX + (i + 1) * binW; // Plot at upper boundary of class
+                ctx.lineTo(x, y);
+                ogivePts.push({x, y});
+            }
+            ctx.stroke();
+
+            // Points on Ogive
+            ctx.fillStyle = '#fef08a';
+            ogivePts.forEach(pt => {
+                ctx.beginPath(); ctx.arc(pt.x, pt.y, 5, 0, Math.PI*2); ctx.fill();
+            });
+
+            // 3. Find Median Visually (N/2 Line)
+            const medianY = startY - (0.5 * chartH); // 50% height
+            
+            // Interpolate to find X where Ogive crosses medianY
+            let medianX = startX;
+            for (let i = 0; i < ogivePts.length - 1; i++) {
+                const p1 = ogivePts[i];
+                const p2 = ogivePts[i+1];
+                if (medianY <= p1.y && medianY >= p2.y) {
+                    const t = (medianY - p1.y) / (p2.y - p1.y);
+                    medianX = p1.x + t * (p2.x - p1.x);
+                    break;
+                }
+            }
+
+            // Draw Median Laser
+            ctx.strokeStyle = '#ef4444'; ctx.lineWidth = 2; ctx.setLineDash([5, 5]);
+            ctx.beginPath();
+            ctx.moveTo(startX, medianY); ctx.lineTo(medianX, medianY); // Horizontal
+            ctx.lineTo(medianX, startY); // Vertical drop
+            ctx.stroke(); ctx.setLineDash([]);
+
+            // Label Median
+            ctx.fillStyle = '#ef4444'; ctx.font = 'bold 12px Inter'; ctx.textAlign = 'center';
+            ctx.fillText(`Median (~${M.stat.mean})`, medianX, startY + 20);
+            ctx.textAlign = 'right';
+            ctx.fillText(`N/2 (500)`, startX - 10, medianY + 4);
+
+            // X-Axis Labels
+            ctx.fillStyle = '#94a3b8'; ctx.textAlign = 'center';
+            for (let i = 0; i <= numBins; i++) {
+                ctx.fillText(i * 10, startX + i * binW, startY + 20);
+            }
+
+            ctx.restore();
+
+            // HUD
+            document.getElementById('hud-label-1').innerText = "Dataset Mean (μ)";
+            document.getElementById('hud-val-1').innerText = M.stat.mean;
+            document.getElementById('hud-val-1').style.color = "#3b82f6";
+            
+            document.getElementById('hud-label-2').innerText = "Visual Median";
+            // Map medianX back to value scale 0-100
+            const visualMedVal = ((medianX - startX) / chartW) * 100;
+            document.getElementById('hud-val-2').innerText = visualMedVal.toFixed(1);
+            document.getElementById('hud-val-2').style.color = "#ef4444";
+            
+            const st = document.getElementById('hud-status');
+            st.innerText = "Ogive maps Cumulative Frequency";
+            st.style.color = "#facc15";
+            st.classList.remove('hidden');
+        }
+
+        // --- MASTER RENDER LOOP ---
+        let lastTime = 0;
+        function renderLoop(timestamp) {
+            const dt = (timestamp - lastTime) / 1000 || 0.016;
+            lastTime = timestamp;
+
+            ctx.clearRect(0, 0, wsWidth, wsHeight);
+
+            if (currentMode === 'ap') drawAP();
+            else if (currentMode === 'gp') drawGP();
+            else if (currentMode === 'congruency') drawCongruency();
+            else if (currentMode === 'stats') drawStats();
+
+            requestAnimationFrame(renderLoop);
+        }
+
+        // --- TAB SWITCHING ---
+        const tabs = document.querySelectorAll('.tab-btn');
+        tabs.forEach(btn => {
+            btn.addEventListener('click', (e) => {
+                tabs.forEach(t => t.classList.remove('active', 'bg-white', 'text-gray-900'));
+                tabs.forEach(t => t.classList.add('text-gray-400'));
+                btn.classList.add('active', 'bg-white', 'text-gray-900');
+                
+                currentMode = btn.dataset.tab;
+
+                const info = {
+                    ap: { title: "Arithmetic Progressions (AP)", formula: "a_n = a + (n - 1)d", desc: "A sequence where the difference between consecutive terms is constant. Visualized as a staircase where every step increases by the exact same height increment ($d$)." },
+                    gp: { title: "Geometric Progressions (GP)", formula: "a_n = a * r^(n-1)", desc: "A sequence where each term is multiplied by a constant ratio. Notice how the fractal branches scale down perfectly by the ratio ($r$) at each depth." },
+                    congruency: { title: "Congruency vs. Similarity", formula: "Transformations", desc: "Two shapes are <b>Congruent</b> if they perfectly match via rotation or translation. If a Scale Factor is applied, they are only <b>Similar</b> (same angles, different size)." },
+                    stats: { title: "Statistics: The Ogive", formula: "Median = N / 2", desc: "The blue bars show the Histogram (frequency of data). The yellow curve is the Ogive (cumulative frequency). Drop a line from 50% to visually find the Median!" }
+                };
+
+                document.getElementById('info-title').innerText = info[currentMode].title;
+                document.getElementById('info-desc').innerHTML = info[currentMode].desc;
+                document.getElementById('formula-display').innerText = info[currentMode].formula;
+                
+                ['ap', 'gp', 'congruency', 'stats'].forEach(id => document.getElementById(`controls-${id}`).classList.add('hidden'));
+                document.getElementById(`controls-${currentMode}`).classList.remove('hidden');
+                
+                document.getElementById('hud').style.opacity = '0'; 
+                setTimeout(() => document.getElementById('hud').style.opacity = '1', 100);
+            });
+        });
+
+        // Start
+        setTimeout(() => {
+            const ls = document.getElementById('loading-screen');
+            if(ls) { ls.style.opacity = '0'; setTimeout(() => ls.style.display = 'none', 600); }
+            requestAnimationFrame(renderLoop);
+        }, 500);
+
+    </script>
+</body>
+</html>

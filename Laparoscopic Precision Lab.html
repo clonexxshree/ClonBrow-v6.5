@@ -1,0 +1,397 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Laparoscopic Precision Lab</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;700;900&family=JetBrains+Mono:wght@500;800&display=swap');
+        
+        :root {
+            --bg-dark: #020617;
+            --abdomen-bg: #450a0a; /* Deep organic red */
+            --tool-color: #94a3b8;
+            --accent: #ef4444;
+            --success: #10b981;
+        }
+
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: var(--bg-dark);
+            color: #f8fafc;
+            overflow: hidden;
+            cursor: crosshair;
+        }
+
+        .sidebar-glass {
+            background: rgba(15, 23, 42, 0.85);
+            backdrop-filter: blur(16px);
+            border-right: 1px solid rgba(255,255,255,0.1);
+        }
+
+        .viewport-container {
+            perspective: 1000px;
+        }
+
+        .abdomen-view {
+            background: radial-gradient(circle at center, #7f1d1d 0%, #450a0a 100%);
+            border: 8px solid #1e293b;
+            box-shadow: inset 0 0 100px rgba(0,0,0,0.8);
+            position: relative;
+            overflow: hidden;
+        }
+
+        .trocar-point {
+            fill: #1e293b;
+            stroke: #475569;
+            stroke-width: 2;
+        }
+
+        .grasper-jaw {
+            transition: transform 0.1s ease-out;
+        }
+
+        .gallstone {
+            filter: drop-shadow(0 0 10px rgba(251, 191, 36, 0.4));
+        }
+
+        .data-card {
+            background: rgba(30, 41, 59, 0.6);
+            border: 1px solid rgba(255,255,255,0.05);
+            backdrop-filter: blur(4px);
+        }
+
+        .instruction-overlay {
+            background: rgba(0, 0, 0, 0.7);
+            backdrop-filter: blur(4px);
+            transition: opacity 0.5s ease;
+        }
+
+        .crosshair-h, .crosshair-v {
+            position: absolute;
+            pointer-events: none;
+            background: rgba(255, 255, 255, 0.1);
+            z-index: 5;
+        }
+        .crosshair-h { width: 100%; height: 1px; }
+        .crosshair-v { width: 1px; height: 100%; }
+
+        @keyframes subtle-throb {
+            0%, 100% { opacity: 0.8; transform: scale(1); }
+            50% { opacity: 1; transform: scale(1.02); }
+        }
+
+        .organ-tissue {
+            animation: subtle-throb 4s ease-in-out infinite;
+            fill: #991b1b;
+            opacity: 0.5;
+        }
+    </style>
+</head>
+<body class="flex h-screen select-none">
+
+    <!-- Sidebar -->
+    <aside class="w-96 sidebar-glass p-8 flex flex-col gap-6 z-30">
+        <div>
+            <h1 class="text-3xl font-black tracking-tighter text-white mb-1 leading-none uppercase">LAPARO<br><span class="text-red-500">PRECISION</span></h1>
+            <p class="text-slate-400 text-sm leading-relaxed mt-4">
+                Master the <strong>Fulcrum Effect</strong>. Minimally invasive tools pivot at the entry point, inverting all movements.
+            </p>
+        </div>
+
+        <div class="space-y-4">
+            <div class="data-card p-4 rounded-2xl border-l-4 border-blue-500">
+                <div class="text-[10px] font-bold text-slate-500 uppercase tracking-widest">Hand-Eye Coordination</div>
+                <div id="coordinationScore" class="text-2xl font-black text-white">0%</div>
+            </div>
+
+            <div class="data-card p-4 rounded-2xl flex justify-between items-center">
+                <div>
+                    <div class="text-[10px] font-bold text-slate-500 uppercase">Grasper Status</div>
+                    <div id="grasperState" class="text-lg font-bold text-slate-300 uppercase tracking-tight">Open</div>
+                </div>
+                <div class="w-10 h-10 rounded-full border-2 border-slate-700 flex items-center justify-center">
+                    <div id="jawIndicator" class="w-4 h-4 bg-slate-500 rounded-sm transform rotate-45 transition-all"></div>
+                </div>
+            </div>
+            
+            <div class="bg-slate-900/50 p-4 rounded-2xl border border-slate-700/50">
+                <h3 class="text-xs font-bold text-slate-500 uppercase mb-3">Controls</h3>
+                <ul class="text-[11px] space-y-2 text-slate-400">
+                    <li class="flex items-center gap-2"><span class="w-12 py-1 bg-slate-800 rounded text-center text-white font-mono">MOUSE</span> Move Handle</li>
+                    <li class="flex items-center gap-2"><span class="w-12 py-1 bg-slate-800 rounded text-center text-white font-mono">CLICK</span> Close Grasper</li>
+                    <li class="flex items-center gap-2"><span class="w-12 py-1 bg-slate-800 rounded text-center text-white font-mono">SPACE</span> Toggle Fulcrum</li>
+                </ul>
+            </div>
+        </div>
+
+        <div id="statusCard" class="mt-auto p-5 rounded-2xl border border-blue-500/20 bg-blue-500/5 transition-all">
+            <h3 id="statusTitle" class="text-blue-400 font-bold mb-1 text-xs uppercase tracking-wider">Status: Ready</h3>
+            <p id="statusText" class="text-xs text-slate-400 leading-normal">
+                Align the grasper tip with the gallstone and click to retrieve.
+            </p>
+        </div>
+
+        <button id="btnReset" class="w-full py-3 bg-slate-800 hover:bg-slate-700 text-slate-400 font-bold rounded-xl transition-all text-[10px] uppercase tracking-widest">
+            Reset Procedure
+        </button>
+    </aside>
+
+    <!-- Main Simulator Area -->
+    <main class="flex-1 relative bg-black flex items-center justify-center p-12">
+        
+        <div id="instructionOverlay" class="absolute inset-0 z-40 flex items-center justify-center instruction-overlay">
+            <div class="text-center max-w-md p-8">
+                <div class="w-20 h-20 bg-red-600 rounded-full mx-auto mb-6 flex items-center justify-center shadow-lg shadow-red-900/40">
+                    <svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="3"><path d="M15 3h6v6M9 21H3v-6M21 3l-7 7M3 21l7-7"/></svg>
+                </div>
+                <h2 class="text-3xl font-black text-white mb-2 italic">THE FULCRUM EFFECT</h2>
+                <p class="text-slate-300 text-sm mb-6">Moving the handle <b class="text-white">RIGHT</b> moves the tip <b class="text-white">LEFT</b>. Moving <b class="text-white">UP</b> moves it <b class="text-white">DOWN</b>. Coordination is key.</p>
+                <button id="btnStart" class="px-8 py-3 bg-white text-black font-black rounded-full uppercase text-xs tracking-widest hover:scale-105 transition-transform">Begin Training</button>
+            </div>
+        </div>
+
+        <!-- Abdomen Viewport -->
+        <div class="abdomen-view w-full max-w-5xl aspect-[4/3] rounded-[40px] relative shadow-2xl" id="simArea">
+            <div class="crosshair-h" style="top: 50%;"></div>
+            <div class="crosshair-v" style="left: 50%;"></div>
+
+            <svg id="mainSvg" viewBox="0 0 800 600" class="w-full h-full">
+                <defs>
+                    <radialGradient id="stoneGrad">
+                        <stop offset="0%" stop-color="#fbbf24" />
+                        <stop offset="100%" stop-color="#b45309" />
+                    </radialGradient>
+                    <filter id="glow">
+                        <feGaussianBlur stdDeviation="3" result="blur" />
+                        <feComposite in="SourceGraphic" in2="blur" operator="over" />
+                    </filter>
+                </defs>
+
+                <!-- Background "Organs" -->
+                <path class="organ-tissue" d="M 500 400 Q 600 350 700 450 Q 750 550 600 580 Q 450 550 500 400" />
+                <path class="organ-tissue" d="M 100 200 Q 200 150 300 250 Q 350 350 200 380 Q 50 350 100 200" style="animation-delay: -1s;" />
+
+                <!-- Trocar Entrance -->
+                <circle cx="400" cy="50" r="15" class="trocar-point" />
+                <text x="400" y="30" text-anchor="middle" font-size="10" font-weight="900" fill="#475569" class="uppercase">Port Alpha</text>
+
+                <!-- Target: Gallstone -->
+                <g id="gallstone" transform="translate(600, 450)">
+                    <path class="gallstone" d="M -10 -5 Q 0 -15 10 -5 Q 15 5 5 15 Q -5 15 -12 5 Z" fill="url(#stoneGrad)" />
+                    <circle r="4" fill="white" opacity="0.3" cx="-3" cy="-3" />
+                </g>
+
+                <!-- The Tool (Grasper) -->
+                <g id="toolGroup">
+                    <!-- Tool Shaft -->
+                    <line id="toolShaft" x1="400" y1="50" x2="400" y2="200" stroke="#94a3b8" stroke-width="6" stroke-linecap="round" />
+                    
+                    <!-- Grasper Head -->
+                    <g id="grasperTip" transform="translate(400, 200)">
+                        <!-- Jaws -->
+                        <path id="jawUpper" class="grasper-jaw" d="M 0 0 L 20 -8 L 25 -5 L 5 2 Z" fill="#64748b" />
+                        <path id="jawLower" class="grasper-jaw" d="M 0 0 L 20 8 L 25 5 L 5 -2 Z" fill="#64748b" />
+                        <circle r="3" fill="#475569" />
+                    </g>
+                </g>
+
+                <!-- Interaction Hint -->
+                <circle id="targetHint" cx="600" cy="450" r="30" fill="none" stroke="var(--success)" stroke-width="2" stroke-dasharray="4 4" opacity="0.3" />
+            </svg>
+
+            <!-- On-screen UI -->
+            <div class="absolute top-6 left-6 flex flex-col gap-1">
+                <div class="flex items-center gap-2 text-[10px] font-bold text-white/40 uppercase tracking-widest">
+                    <div class="w-2 h-2 rounded-full bg-red-500"></div> REC
+                </div>
+                <div class="font-mono text-xl font-bold text-white/80" id="timer">00:00:00</div>
+            </div>
+        </div>
+    </main>
+
+    <script>
+        const simArea = document.getElementById('simArea');
+        const mainSvg = document.getElementById('mainSvg');
+        const toolShaft = document.getElementById('toolShaft');
+        const grasperTip = document.getElementById('grasperTip');
+        const jawUpper = document.getElementById('jawUpper');
+        const jawLower = document.getElementById('jawLower');
+        const gallstone = document.getElementById('gallstone');
+        const grasperStateEl = document.getElementById('grasperState');
+        const jawIndicator = document.getElementById('jawIndicator');
+        const coordinationDisplay = document.getElementById('coordinationScore');
+        const timerEl = document.getElementById('timer');
+        const btnStart = document.getElementById('btnStart');
+        const btnReset = document.getElementById('btnReset');
+        const overlay = document.getElementById('instructionOverlay');
+        const statusTitle = document.getElementById('statusTitle');
+        const statusText = document.getElementById('statusText');
+
+        // State
+        let isStarted = false;
+        let isGrasping = false;
+        let hasStone = false;
+        let isFulcrumActive = true;
+        let mouseX = 400;
+        let mouseY = 300;
+        let pivot = { x: 400, y: 50 };
+        let startTime = 0;
+        let stonePos = { x: 600, y: 450 };
+        let tipPos = { x: 400, y: 200 };
+
+        function updateTimer() {
+            if (!isStarted || hasStone) return;
+            const elapsed = Date.now() - startTime;
+            const ms = Math.floor((elapsed % 1000) / 10).toString().padStart(2, '0');
+            const s = Math.floor((elapsed / 1000) % 60).toString().padStart(2, '0');
+            const m = Math.floor(elapsed / 60000).toString().padStart(2, '0');
+            timerEl.textContent = `${m}:${s}:${ms}`;
+            requestAnimationFrame(updateTimer);
+        }
+
+        function handleMouseMove(e) {
+            if (!isStarted) return;
+
+            const rect = simArea.getBoundingClientRect();
+            // Local coordinates within sim area (0-800 range)
+            const localX = (e.clientX - rect.left) * (800 / rect.width);
+            const localY = (e.clientY - rect.top) * (600 / rect.height);
+
+            // Pivot Logic
+            // The "Handle" is represented by the mouse.
+            // The line passes through Port Alpha (400, 50).
+            const dx = localX - pivot.x;
+            const dy = localY - pivot.y;
+
+            if (isFulcrumActive) {
+                // Fulcrum: Tips goes in OPPOSITE direction of mouse relative to pivot
+                tipPos.x = pivot.x - dx;
+                tipPos.y = pivot.y - dy;
+            } else {
+                tipPos.x = localX;
+                tipPos.y = localY;
+            }
+
+            // Boundary constraints (inside body)
+            tipPos.y = Math.max(pivot.y + 20, tipPos.y);
+            tipPos.x = Math.max(50, Math.min(750, tipPos.x));
+            tipPos.y = Math.max(50, Math.min(550, tipPos.y));
+
+            updateVisuals();
+        }
+
+        function updateVisuals() {
+            // Update Grasper Position
+            toolShaft.setAttribute('x2', tipPos.x);
+            toolShaft.setAttribute('y2', tipPos.y);
+            grasperTip.setAttribute('transform', `translate(${tipPos.x}, ${tipPos.y}) rotate(${Math.atan2(tipPos.y - pivot.y, tipPos.x - pivot.x) * 180 / Math.PI})`);
+
+            // If grasping stone
+            if (hasStone) {
+                stonePos.x = tipPos.x;
+                stonePos.y = tipPos.y;
+                gallstone.setAttribute('transform', `translate(${stonePos.x}, ${stonePos.y})`);
+            }
+
+            // Coordination Score calculation (proximity to target)
+            const dist = Math.hypot(tipPos.x - stonePos.x, tipPos.y - stonePos.y);
+            const score = Math.max(0, 100 - Math.floor(dist / 5));
+            coordinationDisplay.textContent = score + "%";
+            
+            if (score > 90 && !isGrasping && !hasStone) {
+                statusTitle.textContent = "Status: Target Locked";
+                statusTitle.className = "text-emerald-400 font-bold mb-1 text-xs uppercase tracking-wider";
+            } else if (!hasStone) {
+                statusTitle.textContent = "Status: Searching";
+                statusTitle.className = "text-blue-400 font-bold mb-1 text-xs uppercase tracking-wider";
+            }
+        }
+
+        function handleMouseDown() {
+            if (!isStarted) return;
+            isGrasping = true;
+            jawUpper.style.transform = "rotate(-20deg)";
+            jawLower.style.transform = "rotate(20deg)";
+            grasperStateEl.textContent = "CLOSED";
+            grasperStateEl.classList.add('text-red-500');
+            jawIndicator.classList.add('bg-red-500');
+            jawIndicator.style.transform = "rotate(45deg) scale(0.8)";
+
+            // Collision check
+            const dist = Math.hypot(tipPos.x - stonePos.x, tipPos.y - stonePos.y);
+            if (dist < 25 && !hasStone) {
+                hasStone = true;
+                statusTitle.textContent = "Status: Stone Retrieved";
+                statusTitle.className = "text-emerald-400 font-bold mb-1 text-xs uppercase tracking-wider";
+                statusText.textContent = "Excellent. Now carefully move the grasper toward the exit point.";
+                gallstone.style.filter = "url(#glow) brightness(1.5)";
+            }
+        }
+
+        function handleMouseUp() {
+            if (!isStarted) return;
+            isGrasping = false;
+            jawUpper.style.transform = "rotate(0deg)";
+            jawLower.style.transform = "rotate(0deg)";
+            grasperStateEl.textContent = "OPEN";
+            grasperStateEl.classList.remove('text-red-500');
+            jawIndicator.classList.remove('bg-red-500');
+            jawIndicator.style.transform = "rotate(45deg) scale(1)";
+            
+            if (hasStone) {
+                // Drop if near the port
+                const distToPort = Math.hypot(tipPos.x - pivot.x, tipPos.y - pivot.y);
+                if (distToPort < 60) {
+                    completeProcedure();
+                } else {
+                    hasStone = false;
+                    gallstone.style.filter = "none";
+                    statusText.textContent = "Stone dropped. Re-attempt retrieval.";
+                }
+            }
+        }
+
+        function completeProcedure() {
+            isStarted = false;
+            hasStone = false;
+            gallstone.style.opacity = "0";
+            statusTitle.textContent = "PROCEDURE COMPLETE";
+            statusTitle.className = "text-emerald-400 font-bold mb-1 text-xs uppercase tracking-wider";
+            statusText.textContent = "Total Time: " + timerEl.textContent + ". Precision score high. Surgeon competency validated.";
+            overlay.innerHTML = `
+                <div class="text-center max-w-md p-8">
+                    <h2 class="text-5xl font-black text-emerald-500 mb-4 italic">SUCCESS</h2>
+                    <p class="text-white text-lg mb-2">Time: ${timerEl.textContent}</p>
+                    <p class="text-slate-400 text-sm mb-8">You successfully bypassed the fulcrum effect to retrieve the specimen.</p>
+                    <button onclick="location.reload()" class="px-8 py-3 bg-white text-black font-black rounded-full uppercase text-xs tracking-widest hover:scale-105 transition-transform">Run New Trial</button>
+                </div>
+            `;
+            overlay.style.opacity = "1";
+            overlay.classList.remove('pointer-events-none');
+        }
+
+        btnStart.addEventListener('click', () => {
+            isStarted = true;
+            startTime = Date.now();
+            overlay.style.opacity = "0";
+            overlay.classList.add('pointer-events-none');
+            updateTimer();
+        });
+
+        window.addEventListener('keydown', (e) => {
+            if (e.code === 'Space') {
+                isFulcrumActive = !isFulcrumActive;
+                statusText.textContent = isFulcrumActive ? "Fulcrum Mode: ON (Inverted)" : "Fulcrum Mode: OFF (Standard)";
+            }
+        });
+
+        simArea.addEventListener('mousemove', handleMouseMove);
+        simArea.addEventListener('mousedown', handleMouseDown);
+        window.addEventListener('mouseup', handleMouseUp);
+        btnReset.addEventListener('click', () => location.reload());
+
+    </script>
+</body>
+</html>

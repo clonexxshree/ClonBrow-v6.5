@@ -1,0 +1,339 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Antivenom Neutralization Lab</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;700&family=Inter:wght@300;400;600;700&display=swap');
+
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: #020617;
+            color: #f1f5f9;
+            overflow: hidden;
+        }
+
+        .font-mono { font-family: 'JetBrains Mono', monospace; }
+
+        /* Glassmorphism Styles */
+        .glass-card {
+            background: rgba(15, 23, 42, 0.7);
+            backdrop-filter: blur(12px);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.5);
+        }
+
+        .digital-readout {
+            background: #061021;
+            color: #22d3ee;
+            text-shadow: 0 0 8px rgba(34, 211, 238, 0.4);
+            border: 1px solid #1e293b;
+        }
+
+        /* Animation Keyframes */
+        @keyframes float {
+            0%, 100% { transform: translate(0, 0) rotate(0deg); }
+            33% { transform: translate(10px, -15px) rotate(2deg); }
+            66% { transform: translate(-5px, 10px) rotate(-1deg); }
+        }
+
+        .animate-float { animation: float 6s infinite ease-in-out; }
+
+        /* Molecule Styling */
+        .antibody {
+            filter: drop-shadow(0 0 10px rgba(34, 211, 238, 0.3));
+            transition: all 0.5s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+            cursor: pointer;
+        }
+
+        .venom {
+            filter: drop-shadow(0 0 10px rgba(244, 63, 94, 0.4));
+            transition: all 0.3s ease;
+        }
+
+        .neutralized {
+            filter: grayscale(0.5) opacity(0.7) !important;
+        }
+
+        /* Scanline effect */
+        .scanline {
+            width: 100%;
+            height: 2px;
+            background: rgba(34, 211, 238, 0.1);
+            position: absolute;
+            z-index: 10;
+            animation: scan 4s linear infinite;
+        }
+
+        @keyframes scan {
+            0% { top: 0%; }
+            100% { top: 100%; }
+        }
+    </style>
+</head>
+<body class="min-h-screen p-4 md:p-8 flex items-center justify-center">
+
+    <div class="max-w-7xl w-full grid grid-cols-1 lg:grid-cols-12 gap-8 items-stretch">
+        
+        <!-- Simulation Stage -->
+        <div class="lg:col-span-8 flex flex-col gap-6">
+            <div id="sim-viewport" class="glass-card rounded-3xl p-8 relative flex-grow min-h-[550px] overflow-hidden border border-slate-800">
+                <div class="scanline"></div>
+                
+                <!-- Status Header -->
+                <div class="absolute top-6 left-8 flex items-center gap-3 z-20">
+                    <div id="status-dot" class="w-2.5 h-2.5 rounded-full bg-emerald-500 shadow-[0_0_10px_#10b981]"></div>
+                    <span id="status-label" class="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Serum Analysis Active</span>
+                </div>
+
+                <!-- Simulation Container -->
+                <div id="collision-space" class="relative w-full h-full">
+                    <!-- Molecules will be injected here via JS -->
+                </div>
+
+                <!-- Environment Tags -->
+                <div class="absolute bottom-6 left-8 flex flex-col gap-1 z-20">
+                    <span class="text-[9px] font-mono text-slate-500 uppercase">Vector: Crotalus Durissus Terificus</span>
+                    <span class="text-[9px] font-mono text-slate-500 uppercase">Treatment: Polyvalent F(ab')2 Antivenom</span>
+                </div>
+
+                <!-- Legend -->
+                <div class="absolute bottom-6 right-8 flex gap-4 z-20">
+                    <div class="flex items-center gap-2">
+                        <div class="w-3 h-3 bg-cyan-500 rounded-sm rotate-45"></div>
+                        <span class="text-[9px] text-slate-400 uppercase">Antibody</span>
+                    </div>
+                    <div class="flex items-center gap-2">
+                        <div class="w-3 h-3 bg-rose-500 rounded-full scale-75" style="clip-path: polygon(50% 0%, 61% 35%, 98% 35%, 68% 57%, 79% 91%, 50% 70%, 21% 91%, 32% 57%, 2% 35%, 39% 35%);"></div>
+                        <span class="text-[9px] text-slate-400 uppercase">Venom Enzyme</span>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Primary Actions -->
+            <div class="flex gap-4">
+                <button id="btn-deploy" class="flex-1 bg-cyan-600 hover:bg-cyan-500 text-white font-bold py-4 rounded-2xl shadow-xl transition-all active:scale-95 flex items-center justify-center gap-2 group">
+                    <svg class="w-5 h-5 group-hover:rotate-12 transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 19l9 2-9-18-9 18 9-2zm0 0v-8"></path></svg>
+                    Inject Antivenom
+                </button>
+                <button id="btn-reset" class="px-8 py-4 bg-slate-800 hover:bg-slate-700 text-slate-300 font-bold rounded-2xl transition-all">
+                    Purge System
+                </button>
+            </div>
+        </div>
+
+        <!-- Sidebar: Analytics -->
+        <div class="lg:col-span-4 flex flex-col gap-6">
+            
+            <!-- Structural Inspector -->
+            <div class="glass-card p-6 rounded-3xl space-y-4">
+                <h3 class="text-xs font-bold text-slate-400 uppercase tracking-widest">Immunoglobulin G Structure</h3>
+                <div class="relative h-48 flex items-center justify-center bg-slate-900/50 rounded-2xl border border-slate-800/50">
+                    <!-- Antibody SVG Mini-Map -->
+                    <svg viewBox="0 0 200 200" class="w-32 h-32">
+                        <!-- Fc Region -->
+                        <rect x="90" y="110" width="20" height="60" rx="4" fill="#1e293b" stroke="#334155" />
+                        <text x="115" y="145" fill="#475569" font-size="8">Fc Domain</text>
+                        <!-- Left Fab -->
+                        <g transform="rotate(-45, 100, 110)">
+                            <rect x="90" y="40" width="20" height="70" rx="4" fill="#0e7490" stroke="#22d3ee" />
+                            <circle cx="100" cy="40" r="6" fill="#22d3ee" />
+                        </g>
+                        <!-- Right Fab -->
+                        <g transform="rotate(45, 100, 110)">
+                            <rect x="90" y="40" width="20" height="70" rx="4" fill="#0e7490" stroke="#22d3ee" />
+                            <circle cx="100" cy="40" r="6" fill="#22d3ee" />
+                        </g>
+                        <text x="5" y="50" fill="#22d3ee" font-size="8" font-weight="bold">Fab (Binding)</text>
+                    </svg>
+                </div>
+                <p class="text-[10px] text-slate-500 leading-relaxed italic">
+                    The Fab region contains variable domains that match specific venom epitopes. Binding prevents the enzyme from interacting with target receptors.
+                </p>
+            </div>
+
+            <!-- Real-time Telemetry -->
+            <div class="digital-readout rounded-3xl p-6 space-y-6">
+                <div class="flex justify-between items-center border-b border-slate-800 pb-3">
+                    <span class="text-[10px] font-bold tracking-tighter opacity-60 uppercase">Neutralization Telemetry</span>
+                    <span class="text-xs font-mono animate-pulse">LIVE</span>
+                </div>
+
+                <div class="space-y-6">
+                    <div class="flex justify-between items-end">
+                        <div class="space-y-1">
+                            <label class="text-[9px] uppercase font-bold opacity-50">Efficacy Rate</label>
+                            <div id="data-neutralized" class="text-4xl font-bold font-mono">0.0%</div>
+                        </div>
+                        <div class="text-right">
+                            <label class="text-[9px] uppercase font-bold opacity-50">Stability</label>
+                            <div id="data-stability" class="text-sm font-bold font-mono">OPTIMAL</div>
+                        </div>
+                    </div>
+
+                    <!-- Progress Bar -->
+                    <div class="h-1.5 w-full bg-slate-800 rounded-full overflow-hidden">
+                        <div id="progress-fill" class="h-full bg-cyan-400 transition-all duration-500" style="width: 0%"></div>
+                    </div>
+
+                    <div class="grid grid-cols-2 gap-4 pt-2">
+                        <div class="space-y-1">
+                            <label class="text-[9px] uppercase font-bold opacity-50">Free Toxin</label>
+                            <div id="data-toxin" class="text-xl font-bold font-mono text-rose-500">20</div>
+                        </div>
+                        <div class="space-y-1">
+                            <label class="text-[9px] uppercase font-bold opacity-50">Complexes</label>
+                            <div id="data-complex" class="text-xl font-bold font-mono text-cyan-400">0</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Alert Card -->
+            <div id="alert-box" class="hidden glass-card p-4 rounded-2xl border-l-4 border-emerald-500 bg-emerald-500/5 animate-bounce">
+                <div class="flex gap-3">
+                    <svg class="w-5 h-5 text-emerald-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
+                    <div class="text-[10px]">
+                        <div class="font-bold text-emerald-400 uppercase">Toxin Neutralized</div>
+                        <div class="text-slate-400">Serum stability reached. Crisis averted.</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', () => {
+            const viewport = document.getElementById('collision-space');
+            const btnDeploy = document.getElementById('btn-deploy');
+            const btnReset = document.getElementById('btn-reset');
+            const dataNeutralized = document.getElementById('data-neutralized');
+            const dataToxinCount = document.getElementById('data-toxin');
+            const dataComplexCount = document.getElementById('data-complex');
+            const progressFill = document.getElementById('progress-fill');
+            const alertBox = document.getElementById('alert-box');
+
+            let toxins = [];
+            let antibodies = [];
+            let neutralizedCount = 0;
+            const TOTAL_TOXINS = 20;
+
+            function createVenomSVG(x, y) {
+                const wrapper = document.createElement('div');
+                wrapper.className = 'venom absolute animate-float';
+                wrapper.style.left = `${x}px`;
+                wrapper.style.top = `${y}px`;
+                wrapper.innerHTML = `
+                    <svg viewBox="0 0 50 50" class="w-8 h-8">
+                        <polygon points="25,5 30,20 45,20 33,30 38,45 25,35 12,45 17,30 5,20 20,20" fill="#f43f5e" />
+                        <circle cx="25" cy="25" r="4" fill="#4c0519" />
+                    </svg>
+                `;
+                return wrapper;
+            }
+
+            function createAntibodySVG(x, y) {
+                const wrapper = document.createElement('div');
+                wrapper.className = 'antibody absolute';
+                wrapper.style.left = `${x}px`;
+                wrapper.style.top = `${y}px`;
+                wrapper.innerHTML = `
+                    <svg viewBox="0 0 60 60" class="w-10 h-10">
+                        <path d="M30 50 L30 30 M30 30 L10 10 M30 30 L50 10" stroke="#22d3ee" stroke-width="6" stroke-linecap="round" fill="none"/>
+                        <circle cx="10" cy="10" r="4" fill="#0891b2" />
+                        <circle cx="50" cy="10" r="4" fill="#0891b2" />
+                    </svg>
+                `;
+                return wrapper;
+            }
+
+            function initSimulation() {
+                viewport.innerHTML = '';
+                toxins = [];
+                antibodies = [];
+                neutralizedCount = 0;
+                
+                const w = viewport.clientWidth;
+                const h = viewport.clientHeight;
+
+                for (let i = 0; i < TOTAL_TOXINS; i++) {
+                    const x = Math.random() * (w - 40);
+                    const y = Math.random() * (h - 40);
+                    const el = createVenomSVG(x, y);
+                    viewport.appendChild(el);
+                    toxins.push({ el, x, y, active: true });
+                }
+
+                updateReadout();
+                alertBox.classList.add('hidden');
+            }
+
+            function deployAntivenom() {
+                const w = viewport.clientWidth;
+                const h = viewport.clientHeight;
+
+                // Create 5 antibodies per click
+                for (let i = 0; i < 5; i++) {
+                    const startX = -50;
+                    const startY = Math.random() * h;
+                    const abEl = createAntibodySVG(startX, startY);
+                    viewport.appendChild(abEl);
+                    
+                    const ab = { el: abEl, x: startX, y: startY };
+                    antibodies.push(ab);
+
+                    // Animation to hunt a toxin
+                    const target = toxins.find(t => t.active);
+                    if (target) {
+                        target.active = false; // Claim this toxin
+                        const destX = target.x - 5;
+                        const destY = target.y - 10;
+                        
+                        setTimeout(() => {
+                            abEl.style.left = `${destX}px`;
+                            abEl.style.top = `${destY}px`;
+                            abEl.style.transform = `rotate(${Math.random() * 360}deg)`;
+                            
+                            setTimeout(() => {
+                                target.el.classList.add('neutralized');
+                                abEl.style.filter = 'grayscale(0.8) opacity(0.5)';
+                                neutralizedCount++;
+                                updateReadout();
+                            }, 500);
+                        }, 10);
+                    } else {
+                        // Just fly across
+                        setTimeout(() => {
+                            abEl.style.left = `${w + 50}px`;
+                            abEl.style.top = `${Math.random() * h}px`;
+                        }, 10);
+                    }
+                }
+            }
+
+            function updateReadout() {
+                const percentage = (neutralizedCount / TOTAL_TOXINS) * 100;
+                dataNeutralized.textContent = `${percentage.toFixed(1)}%`;
+                dataToxinCount.textContent = Math.max(0, TOTAL_TOXINS - neutralizedCount);
+                dataComplexCount.textContent = neutralizedCount;
+                progressFill.style.width = `${percentage}%`;
+
+                if (percentage >= 100) {
+                    alertBox.classList.remove('hidden');
+                }
+            }
+
+            btnDeploy.addEventListener('click', deployAntivenom);
+            btnReset.addEventListener('click', initSimulation);
+
+            // Responsive Re-init
+            window.addEventListener('resize', initSimulation);
+            
+            // Initial call
+            initSimulation();
+        });
+    </script>
+</body>
+</html>

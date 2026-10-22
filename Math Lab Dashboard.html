@@ -1,0 +1,347 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Math Lab | Brutalist UI</title>
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Lucide Icons -->
+    <script src="https://unpkg.com/lucide@latest"></script>
+    <!-- Google Fonts -->
+    <link href="https://fonts.googleapis.com/css2?family=Fredoka+One&family=Nunito:wght@400;700;900&display=swap" rel="stylesheet">
+    
+    <style>
+        :root {
+            --border-width: 4px;
+        }
+
+        body {
+            font-family: 'Nunito', sans-serif;
+            color: #000000;
+            background-color: #0ea5e9; /* Bright Sky Blue */
+            background-image: radial-gradient(circle at 2px 2px, rgba(255,255,255,0.2) 1px, transparent 0);
+            background-size: 40px 40px;
+        }
+        
+        /* Hide scrollbars for cleaner horizontal strips but keep functionality */
+        .no-scrollbar::-webkit-scrollbar {
+            display: none;
+        }
+        .no-scrollbar {
+            -ms-overflow-style: none;
+            scrollbar-width: none;
+        }
+
+        /* --- Brutalist Components --- */
+        .brutalist-panel {
+            background: #ffffff;
+            border: var(--border-width) solid #000000;
+            border-radius: 24px;
+            box-shadow: 8px 8px 0px #000000;
+        }
+
+        .brutalist-button {
+            background: #ffffff;
+            color: #000000;
+            border: var(--border-width) solid #000000;
+            border-radius: 9999px; /* Pill shape */
+            box-shadow: 4px 4px 0px #000000;
+            transition: all 0.15s ease;
+            font-family: 'Fredoka One', cursive;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            cursor: pointer;
+        }
+
+        .brutalist-button:hover {
+            transform: translate(-2px, -2px);
+            box-shadow: 6px 6px 0px #000000;
+            background: #f8fafc;
+        }
+
+        .brutalist-button:active {
+            transform: translate(4px, 4px);
+            box-shadow: 0px 0px 0px #000000;
+        }
+
+        .brutalist-button.active {
+            background: #FBBF24; /* Bold Yellow */
+        }
+
+        .font-fredoka {
+            font-family: 'Fredoka One', cursive;
+        }
+
+        .title-shadow {
+            text-shadow: 3px 3px 0px #0ea5e9;
+        }
+
+        /* Iframe internal rounded corners fix */
+        iframe {
+            border-radius: inherit;
+        }
+    </style>
+</head>
+<body class="h-screen w-full flex flex-col p-4 sm:p-6 gap-5 overflow-hidden relative selection:bg-[#FBBF24] selection:text-black">
+
+    <!-- 1. Header & Categories Bar (Horizontal) -->
+    <header class="brutalist-panel p-3 flex flex-col md:flex-row items-center gap-4 shrink-0 z-20">
+        <!-- Logo -->
+        <div class="flex items-center gap-3 pl-4 pr-6 md:border-r-4 border-black">
+            <div>
+                <h1 class="text-3xl font-fredoka tracking-wide text-black title-shadow uppercase flex items-center gap-2">
+                    <i data-lucide="calculator" class="w-8 h-8 stroke-[3px]"></i>
+                    Math Lab
+                </h1>
+            </div>
+        </div>
+
+        <!-- Categories List -->
+        <div id="categories-container" class="flex-1 flex gap-4 overflow-x-auto no-scrollbar w-full py-2 px-2 items-center">
+            <!-- Categories injected by JS -->
+        </div>
+    </header>
+
+    <!-- 2. Secondary Files Bar (Horizontal) -->
+    <nav class="shrink-0 z-10 transition-all duration-500">
+        <div id="files-container" class="flex gap-4 overflow-x-auto no-scrollbar pb-2 px-2 items-center">
+            <!-- Files injected by JS -->
+        </div>
+    </nav>
+
+    <!-- 3. Main Viewer Area -->
+    <main class="brutalist-panel flex-1 flex flex-col overflow-hidden relative z-20">
+        
+        <!-- Viewer Top Bar -->
+        <div class="h-16 border-b-4 border-black flex items-center justify-between px-6 bg-gray-100">
+            <h2 id="current-file-title" class="text-xl font-fredoka text-black uppercase tracking-wide flex items-center gap-3">
+                <i data-lucide="play-circle" class="w-6 h-6 text-black stroke-[3px]"></i>
+                Select a module to begin
+            </h2>
+            <div class="flex items-center gap-3">
+                <button class="brutalist-button p-2.5 bg-white flex items-center justify-center" title="Reload Frame" onclick="reloadFrame()">
+                    <i data-lucide="rotate-cw" class="w-5 h-5 stroke-[3px]"></i>
+                </button>
+                <button class="brutalist-button p-2.5 bg-white flex items-center justify-center" title="Open in New Tab" onclick="openInNewTab()">
+                    <i data-lucide="external-link" class="w-5 h-5 stroke-[3px]"></i>
+                </button>
+            </div>
+        </div>
+
+        <!-- Iframe / Empty State -->
+        <div class="flex-1 relative bg-white overflow-hidden rounded-b-[20px]">
+            
+            <div id="empty-state" class="absolute inset-0 flex flex-col items-center justify-center text-black z-20 bg-gray-50">
+                <div class="brutalist-button p-6 mb-6 flex items-center justify-center pointer-events-none" style="border-radius: 24px;">
+                    <i data-lucide="calculator" class="w-12 h-12 text-black stroke-[3px] relative z-10"></i>
+                </div>
+                <h3 class="text-4xl font-fredoka text-black mb-3 tracking-tight uppercase">Ready to Explore</h3>
+                <p class="text-gray-600 max-w-sm text-center font-bold text-lg leading-relaxed">Select a math module from the horizontal menu above to load the interactive tool.</p>
+            </div>
+
+            <!-- Frame -->
+            <iframe id="content-frame" class="absolute inset-0 w-full h-full border-none z-10 bg-transparent"></iframe>
+        </div>
+    </main>
+
+    <script>
+        const mathData = [
+            {
+                id: "cat-1",
+                category: "Class 3-5",
+                icon: "shapes",
+                theme: "emerald",
+                files: [
+                    { id: "area-and-perimeter", file: "area-and-perimeter.html", title: "Area & Perimeter", icon: "square" },
+                    { id: "bar-graphs", file: "bar-graphs.html", title: "Bar Graphs", icon: "bar-chart" },
+                    { id: "clock-angles", file: "clock-angles.html", title: "Clock Angles", icon: "clock" },
+                    { id: "fractions", file: "fractions.html", title: "Fractions", icon: "pie-chart" },
+                    { id: "multiplication-arrays", file: "multiplication-arrays.html", title: "Multiplication Arrays", icon: "grid" },
+                    { id: "number-line", file: "number-line.html", title: "Number Line", icon: "move-horizontal" },
+                    { id: "place-values", file: "place-values.html", title: "Place Values", icon: "hash" },
+                    { id: "symmetry", file: "symmetry.html", title: "Symmetry", icon: "columns" }
+                ]
+            },
+            {
+                id: "cat-2",
+                category: "Class 6-8",
+                icon: "compass",
+                theme: "blue",
+                files: [
+                    { id: "3d-nets", file: "3d-nets.html", title: "3D Nets", icon: "box" },
+                    { id: "algebra-scale", file: "algebra-scale.html", title: "Algebra Scale", icon: "scale" },
+                    { id: "angles", file: "angles.html", title: "Angles", icon: "navigation" },
+                    { id: "coordinate-plane", file: "coordinate-plane.html", title: "Coordinate Plane", icon: "map" },
+                    { id: "exponents", file: "exponents.html", title: "Exponents", icon: "chevron-up" },
+                    { id: "probability", file: "probability.html", title: "Probability", icon: "percent" },
+                    { id: "ratios", file: "ratios.html", title: "Ratios", icon: "divide" },
+                    { id: "statistics", file: "statistics.html", title: "Statistics", icon: "bar-chart-2" },
+                    { id: "surface-area", file: "surface-area.html", title: "Surface Area", icon: "maximize" },
+                    { id: "tessellations", file: "tessellations.html", title: "Tessellations", icon: "layout-grid" },
+                    { id: "transformations", file: "transformations.html", title: "Transformations", icon: "move" },
+                    { id: "venn-diagrams", file: "venn-diagrams.html", title: "Venn Diagrams", icon: "focus" },
+                    { id: "visualized-pi", file: "visualized-pi.html", title: "Visualized Pi", icon: "circle-dashed" },
+                    { id: "volume-of-cylinders", file: "volume-of-cylinders.html", title: "Volume of Cylinders", icon: "database" }
+                ]
+            },
+            {
+                id: "cat-3",
+                category: "Class 9-10",
+                icon: "target",
+                theme: "indigo",
+                files: [
+                    { id: "arithmetic-progressions", file: "arithmetic-progressions.html", title: "Arithmetic Progressions", icon: "list-ordered" },
+                    { id: "circle-tangents", file: "circle-tangents.html", title: "Circle Tangents", icon: "circle-dot" },
+                    { id: "circle-theorems", file: "circle-theorems.html", title: "Circle Theorems", icon: "target" },
+                    { id: "congruency-vs-similarity", file: "congruency-vs-similarity.html", title: "Congruency vs Similarity", icon: "copy" },
+                    { id: "galtons-board", file: "galtons-board.html", title: "Galton's Board", icon: "activity" },
+                    { id: "pythagorean-theorem", file: "pythagorean-theorem.html", title: "Pythagorean Theorem", icon: "triangle" },
+                    { id: "quadratic-roots", file: "quadratic-roots.html", title: "Quadratic Roots", icon: "git-commit" },
+                    { id: "trigonometry", file: "trigonometry.html", title: "Trigonometry", icon: "ruler" }
+                ]
+            },
+            {
+                id: "cat-4",
+                category: "Class 11-12",
+                icon: "infinity",
+                theme: "purple",
+                files: [
+                    { id: "2d-vectors", file: "2d-vectors.html", title: "2D Vectors", icon: "arrow-up-right" },
+                    { id: "3d-planes", file: "3d-planes.html", title: "3D Planes", icon: "layers" },
+                    { id: "argand-plane", file: "argand-plane.html", title: "Argand Plane", icon: "radar" },
+                    { id: "conic-sections", file: "conic-sections.html", title: "Conic Sections", icon: "aperture" },
+                    { id: "derivatives", file: "derivatives.html", title: "Derivatives", icon: "trending-up" },
+                    { id: "dot-and-cross-products", file: "dot-and-cross-products.html", title: "Dot & Cross Products", icon: "x" },
+                    { id: "eulers-identity", file: "eulers-identity.html", title: "Euler's Identity", icon: "asterisk" },
+                    { id: "geometric-progressions", file: "geometric-progressions.html", title: "Geometric Progressions", icon: "trending-up" },
+                    { id: "integration", file: "integration.html", title: "Integration", icon: "infinity" },
+                    { id: "limits", file: "limits.html", title: "Limits", icon: "arrow-right" },
+                    { id: "linear-programming", file: "linear-programming.html", title: "Linear Programming", icon: "network" },
+                    { id: "matrices-2d", file: "matrices-2d.html", title: "Matrices (2D)", icon: "grid" },
+                    { id: "parabola-trajectory", file: "parabola-trajectory.html", title: "Parabola Trajectory", icon: "trending-down" },
+                    { id: "parametric-spirograph", file: "parametric-spirograph.html", title: "Parametric Spirograph", icon: "loader" },
+                    { id: "unit-circle", file: "unit-circle.html", title: "Unit Circle", icon: "crosshair" }
+                ]
+            }
+        ];
+
+        // State Management
+        let state = {
+            activeCategoryId: mathData[0].id, // Default first category
+            activeFileId: null
+        };
+
+        // Render Functions
+        function renderCategories() {
+            const container = document.getElementById('categories-container');
+            container.innerHTML = '';
+
+            mathData.forEach(cat => {
+                const isActive = state.activeCategoryId === cat.id;
+                const btn = document.createElement('button');
+                
+                // Brutalist Button Styling
+                btn.className = `brutalist-button px-6 py-3 flex items-center gap-2 whitespace-nowrap min-w-max text-[16px] z-10 ${isActive ? 'active' : ''}`;
+                btn.onclick = () => selectCategory(cat.id);
+                
+                btn.innerHTML = `
+                    <i data-lucide="${cat.icon}" class="w-5 h-5 text-black stroke-[3px] relative z-10"></i>
+                    <span class="relative z-10 pt-1">${cat.category}</span>
+                `;
+                container.appendChild(btn);
+            });
+            
+            lucide.createIcons();
+        }
+
+        function renderFiles() {
+            const container = document.getElementById('files-container');
+            container.innerHTML = '';
+
+            const activeCat = mathData.find(c => c.id === state.activeCategoryId);
+            if (!activeCat) return;
+
+            activeCat.files.forEach(file => {
+                const isActive = state.activeFileId === file.id;
+                const btn = document.createElement('button');
+                
+                // Brutalist Button Styling
+                btn.className = `brutalist-button px-5 py-2.5 flex items-center gap-2 whitespace-nowrap min-w-max text-[14px] z-10 ${isActive ? 'active' : ''}`;
+                btn.onclick = () => selectFile(file.id);
+                
+                btn.innerHTML = `
+                    <i data-lucide="${file.icon}" class="w-4 h-4 text-black stroke-[3px] relative z-10"></i>
+                    <span class="relative z-10 pt-1">${file.title}</span>
+                `;
+                container.appendChild(btn);
+            });
+
+            lucide.createIcons();
+        }
+
+        // Actions
+        function selectCategory(catId) {
+            if (state.activeCategoryId === catId) return; // Ignore if already selected
+            state.activeCategoryId = catId;
+            
+            // Re-render navs based on new state
+            renderCategories();
+            renderFiles();
+        }
+
+        function selectFile(fileId) {
+            state.activeFileId = fileId;
+            
+            // Update UI styling for buttons
+            renderFiles();
+
+            // Find file data
+            const activeCat = mathData.find(c => c.id === state.activeCategoryId);
+            const fileData = activeCat.files.find(f => f.id === fileId);
+
+            if (fileData) {
+                // Hide empty state
+                document.getElementById('empty-state').style.display = 'none';
+
+                // Update Header
+                const titleElement = document.getElementById('current-file-title');
+                titleElement.innerHTML = `
+                    <i data-lucide="${fileData.icon}" class="w-6 h-6 text-black stroke-[3px]"></i>
+                    <span class="font-fredoka uppercase tracking-wide text-black text-xl pt-1">${fileData.title}</span> 
+                    <span class="text-gray-600 text-sm font-black ml-2 tracking-widest font-mono bg-gray-200 px-3 py-1.5 rounded-lg border-2 border-black">/ ${fileData.file}</span>
+                `;
+                lucide.createIcons();
+
+                // Load iframe
+                const iframe = document.getElementById('content-frame');
+                iframe.src = fileData.file; 
+            }
+        }
+
+        // Controls
+        function reloadFrame() {
+            const iframe = document.getElementById('content-frame');
+            if (state.activeFileId && iframe.src) {
+                iframe.src = iframe.src; 
+            }
+        }
+
+        function openInNewTab() {
+            if (state.activeFileId) {
+                const activeCat = mathData.find(c => c.id === state.activeCategoryId);
+                const fileData = activeCat.files.find(f => f.id === state.activeFileId);
+                if (fileData) {
+                    window.open(fileData.file, '_blank');
+                }
+            }
+        }
+
+        // Initialization
+        document.addEventListener('DOMContentLoaded', () => {
+            renderCategories();
+            renderFiles();
+        });
+    </script>
+</body>
+</html>

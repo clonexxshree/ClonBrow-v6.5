@@ -1,0 +1,621 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Synaptic Delay Timer Lab</title>
+    <style>
+        :root {
+            --bg-color: #f8fafc;
+            --panel-bg: #ffffff;
+            --text-main: #0f172a;
+            --text-muted: #64748b;
+            --accent: #3b82f6;
+            --axon-color: #e0f2fe;
+            --dendrite-color: #f3e8ff;
+            --ap-color: #f59e0b; /* Action Potential Yellow/Orange */
+            --nt-color: #ef4444; /* Neurotransmitter Red */
+            --border-color: #e2e8f0;
+            --success: #10b981;
+        }
+
+        * { box-sizing: border-box; margin: 0; padding: 0; }
+
+        body {
+            background-color: #f1f5f9;
+            color: var(--text-main);
+            font-family: 'Inter', -apple-system, system-ui, sans-serif;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            padding: 20px;
+        }
+
+        .app-container {
+            display: flex;
+            background: var(--panel-bg);
+            border-radius: 20px;
+            box-shadow: 0 20px 50px -12px rgba(0, 0, 0, 0.15);
+            width: 100%;
+            max-width: 1200px;
+            height: 800px;
+            overflow: hidden;
+            border: 1px solid var(--border-color);
+        }
+
+        /* Sidebar */
+        .sidebar {
+            width: 380px;
+            padding: 35px;
+            border-right: 1px solid var(--border-color);
+            display: flex;
+            flex-direction: column;
+            gap: 20px;
+            background: #fff;
+            z-index: 10;
+        }
+
+        .sidebar h1 { font-size: 24px; font-weight: 800; color: #1e293b; }
+        .description { font-size: 13px; line-height: 1.5; color: var(--text-muted); }
+
+        /* Digital Timer */
+        .timer-container {
+            background: #0f172a;
+            border-radius: 12px;
+            padding: 20px;
+            text-align: center;
+            border: 2px solid #334155;
+            box-shadow: inset 0 4px 20px rgba(0,0,0,0.5);
+            margin-bottom: 10px;
+        }
+
+        .timer-label {
+            color: #94a3b8;
+            font-size: 11px;
+            text-transform: uppercase;
+            letter-spacing: 2px;
+            margin-bottom: 5px;
+        }
+
+        .digital-clock {
+            font-family: 'Courier New', Courier, monospace;
+            font-size: 42px;
+            font-weight: bold;
+            color: var(--success);
+            text-shadow: 0 0 10px rgba(16, 185, 129, 0.6);
+            font-variant-numeric: tabular-nums;
+        }
+
+        .clock-unit {
+            font-size: 16px;
+            color: #64748b;
+            text-shadow: none;
+        }
+
+        .control-group { display: flex; flex-direction: column; gap: 10px; }
+        label { font-size: 14px; font-weight: 700; display: flex; justify-content: space-between; }
+        
+        input[type="range"] {
+            width: 100%;
+            cursor: pointer;
+            accent-color: var(--accent);
+            margin-bottom: 10px;
+        }
+
+        .main-btn {
+            width: 100%;
+            padding: 16px;
+            background: var(--ap-color);
+            color: #fff;
+            border: none;
+            border-radius: 10px;
+            font-size: 16px;
+            font-weight: 800;
+            cursor: pointer;
+            transition: all 0.2s;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            box-shadow: 0 4px 15px rgba(245, 158, 11, 0.4);
+        }
+        .main-btn:hover:not(:disabled) { background: #d97706; transform: translateY(-2px); }
+        .main-btn:active:not(:disabled) { transform: translateY(0); }
+        .main-btn:disabled { background: #cbd5e1; cursor: not-allowed; box-shadow: none; color: #64748b; }
+
+        /* Checklist / Phases */
+        .phase-list {
+            list-style: none;
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+            margin-top: 10px;
+        }
+
+        .phase-item {
+            display: flex;
+            align-items: center;
+            font-size: 13px;
+            color: var(--text-muted);
+            transition: color 0.3s;
+        }
+
+        .phase-icon {
+            width: 20px;
+            height: 20px;
+            border-radius: 50%;
+            border: 2px solid #cbd5e1;
+            margin-right: 12px;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            transition: all 0.3s;
+        }
+
+        .phase-item.active { color: var(--text-main); font-weight: 600; }
+        .phase-item.active .phase-icon { border-color: var(--ap-color); background: var(--ap-color); box-shadow: 0 0 8px var(--ap-color); }
+        
+        .phase-item.completed { color: var(--success); }
+        .phase-item.completed .phase-icon { border-color: var(--success); background: var(--success); }
+
+        /* Lab Area */
+        .lab-area {
+            flex: 1;
+            background: radial-gradient(circle at center, #ffffff, #f1f5f9);
+            position: relative;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            overflow: hidden;
+        }
+
+        .svg-layer {
+            position: absolute;
+            top: 0; left: 0; width: 100%; height: 100%;
+            z-index: 1;
+        }
+
+        .canvas-layer {
+            position: absolute;
+            top: 0; left: 0; width: 100%; height: 100%;
+            z-index: 2;
+            pointer-events: none;
+        }
+
+        /* SVG Anatomy */
+        .membrane {
+            stroke: #94a3b8;
+            stroke-width: 4;
+            transition: transform 0.5s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+        .pre-synaptic { fill: var(--axon-color); }
+        .post-synaptic { fill: var(--dendrite-color); }
+        
+        .receptor {
+            fill: #c084fc;
+            stroke: #7e22ce;
+            stroke-width: 2;
+            transition: fill 0.2s, filter 0.2s;
+        }
+        .receptor.active {
+            fill: var(--ap-color);
+            filter: drop-shadow(0 0 6px var(--ap-color));
+        }
+
+        /* Action Potential Glow */
+        .ap-glow {
+            fill: var(--ap-color);
+            opacity: 0;
+            filter: blur(20px);
+            transition: opacity 0.1s;
+        }
+
+        @media (max-width: 900px) {
+            .app-container { flex-direction: column; height: auto; }
+            .sidebar { width: 100%; border-right: none; }
+            .lab-area { height: 600px; }
+        }
+    </style>
+</head>
+<body>
+
+    <div class="app-container">
+        <aside class="sidebar">
+            <h1>Synaptic Delay Lab</h1>
+            <p class="description">
+                Chemical synapses introduce a mandatory delay as the electrical signal is converted into a chemical one, diffuses across the gap, and converts back.
+            </p>
+
+            <div class="timer-container">
+                <div class="timer-label">Total Synaptic Delay</div>
+                <div class="digital-clock" id="timerDisplay">0.00<span class="clock-unit">ms</span></div>
+            </div>
+
+            <div class="control-group">
+                <label>
+                    Synaptic Cleft Width
+                    <span id="gapVal">20 nm</span>
+                </label>
+                <input type="range" id="gapSlider" min="20" max="80" value="20" step="5">
+                <span style="font-size: 11px; color: var(--text-muted); text-align: right;">Diffusion time increases quadratically with distance.</span>
+            </div>
+
+            <button class="main-btn" id="btnFire">Trigger Signal</button>
+
+            <ul class="phase-list">
+                <li class="phase-item" id="phase-1">
+                    <div class="phase-icon"></div> Action Potential Arrives
+                </li>
+                <li class="phase-item" id="phase-2">
+                    <div class="phase-icon"></div> Vesicle Fusion & Release
+                </li>
+                <li class="phase-item" id="phase-3">
+                    <div class="phase-icon"></div> Diffusion Across Cleft
+                </li>
+                <li class="phase-item" id="phase-4">
+                    <div class="phase-icon"></div> Receptor Binding
+                </li>
+                <li class="phase-item" id="phase-5">
+                    <div class="phase-icon"></div> Post-Synaptic Activation
+                </li>
+            </ul>
+        </aside>
+
+        <main class="lab-area">
+            <!-- Background Anatomy (SVG) -->
+            <svg class="svg-layer" viewBox="0 0 800 800" id="mainSvg">
+                
+                <!-- Action Potential Glows -->
+                <circle cx="400" cy="150" r="150" class="ap-glow" id="preApGlow" />
+                <circle cx="400" cy="650" r="150" class="ap-glow" id="postApGlow" />
+
+                <!-- Presynaptic Terminal (Axon) -->
+                <!-- Base fixed at top, bulb extends down to Y=350 -->
+                <path class="membrane pre-synaptic" d="
+                    M 300 0 
+                    L 300 150 
+                    C 300 250, 150 250, 150 350 
+                    C 150 400, 300 400, 400 400
+                    C 500 400, 650 400, 650 350
+                    C 650 250, 500 250, 500 150
+                    L 500 0 Z" 
+                />
+                <text x="400" y="50" text-anchor="middle" font-size="14" font-weight="bold" fill="#64748b">PRESYNAPTIC NEURON</text>
+
+                <!-- Postsynaptic Terminal (Dendrite) -->
+                <!-- Moves down based on gap width. Default Y start = 420 (Gap = 20px visual) -->
+                <g id="postSynapticGroup" transform="translate(0, 0)">
+                    <path class="membrane post-synaptic" d="
+                        M 100 800 
+                        L 100 500 
+                        C 100 450, 250 420, 400 420
+                        C 550 420, 700 450, 700 500
+                        L 700 800 Z" 
+                    />
+                    <text x="400" y="750" text-anchor="middle" font-size="14" font-weight="bold" fill="#64748b">POSTSYNAPTIC DENDRITE</text>
+
+                    <!-- Receptors -->
+                    <!-- Positioned perfectly along the top curve (Y=420 to 425) -->
+                    <g id="receptors">
+                        <path class="receptor" id="rec-1" d="M 280 425 Q 300 420 320 425 L 320 435 L 280 435 Z" />
+                        <path class="receptor" id="rec-2" d="M 380 420 Q 400 418 420 420 L 420 430 L 380 430 Z" />
+                        <path class="receptor" id="rec-3" d="M 480 425 Q 500 420 520 425 L 520 435 L 480 435 Z" />
+                    </g>
+                </g>
+            </svg>
+
+            <!-- Dynamic Particles (Canvas) -->
+            <canvas class="canvas-layer" id="particleCanvas"></canvas>
+        </main>
+    </div>
+
+    <script>
+        const gapSlider = document.getElementById('gapSlider');
+        const gapVal = document.getElementById('gapVal');
+        const btnFire = document.getElementById('btnFire');
+        const timerDisplay = document.getElementById('timerDisplay');
+        const postSynapticGroup = document.getElementById('postSynapticGroup');
+        const preApGlow = document.getElementById('preApGlow');
+        const postApGlow = document.getElementById('postApGlow');
+        
+        const canvas = document.getElementById('particleCanvas');
+        const ctx = canvas.getContext('2d');
+
+        // Physics & Timing Constants
+        // 1 biological ms = 1000 real-world ms (Slow-mo 1000x for visualization)
+        const TIME_SCALE = 0.001; 
+        
+        let cleftWidthNm = 20;
+        let simTimeMs = 0;
+        let lastRealTime = 0;
+        let isSimulating = false;
+        let simPhase = 0;
+
+        let vesicles = [];
+        let neurotransmitters = [];
+
+        // UI Phase Management
+        function setPhase(phaseNum) {
+            simPhase = phaseNum;
+            for (let i = 1; i <= 5; i++) {
+                const el = document.getElementById(`phase-${i}`);
+                if (i < phaseNum) {
+                    el.className = 'phase-item completed';
+                } else if (i === phaseNum) {
+                    el.className = 'phase-item active';
+                } else {
+                    el.className = 'phase-item';
+                }
+            }
+        }
+
+        function resetPhases() {
+            simPhase = 0;
+            for (let i = 1; i <= 5; i++) {
+                document.getElementById(`phase-${i}`).className = 'phase-item';
+            }
+            document.querySelectorAll('.receptor').forEach(r => r.classList.remove('active'));
+            postApGlow.style.opacity = 0;
+            preApGlow.style.opacity = 0;
+        }
+
+        // Geometry mapping
+        // 20nm gap = 20px visual translation (Y=400 to Y=420)
+        function getPostSynapseY() {
+            return 420 + (cleftWidthNm - 20) * 1.5; // Visual scaling factor
+        }
+
+        function updateGeometry() {
+            cleftWidthNm = parseInt(gapSlider.value);
+            gapVal.textContent = `${cleftWidthNm} nm`;
+            
+            // Move post-synaptic dendrite down
+            const visualShift = (cleftWidthNm - 20) * 1.5;
+            postSynapticGroup.style.transform = `translate(0px, ${visualShift}px)`;
+        }
+        gapSlider.addEventListener('input', updateGeometry);
+
+        // Canvas Setup
+        function resizeCanvas() {
+            canvas.width = canvas.offsetWidth;
+            canvas.height = canvas.offsetHeight;
+        }
+        window.addEventListener('resize', resizeCanvas);
+        resizeCanvas();
+
+        // Particle Classes
+        class Vesicle {
+            constructor(x, y) {
+                this.x = x;
+                this.y = y;
+                this.radius = 20;
+                this.fused = false;
+                this.opacity = 1;
+                // Target is the pre-synaptic membrane (Y=400)
+                this.targetY = 380; 
+                this.vy = 0;
+            }
+            update(dt) {
+                if (!this.fused) {
+                    // Move down
+                    this.vy += 20 * dt; // Acceleration
+                    this.y += this.vy * dt * 50; // Visual speed multiplier
+                    
+                    if (this.y >= this.targetY) {
+                        this.y = this.targetY;
+                        this.fused = true;
+                        return true; // Trigger fusion event
+                    }
+                } else {
+                    this.opacity -= dt * 3; // Fade out quickly after fusion
+                }
+                return false;
+            }
+            draw() {
+                if (this.opacity <= 0) return;
+                
+                // Scale SVG coords to Canvas coords
+                const cx = (this.x / 800) * canvas.width;
+                const cy = (this.y / 800) * canvas.height;
+                const r = (this.radius / 800) * canvas.height;
+
+                ctx.save();
+                ctx.globalAlpha = this.opacity;
+                ctx.beginPath();
+                ctx.arc(cx, cy, r, 0, Math.PI * 2);
+                ctx.strokeStyle = '#94a3b8';
+                ctx.lineWidth = 2;
+                ctx.fillStyle = '#f1f5f9';
+                ctx.fill();
+                ctx.stroke();
+                
+                // Draw internal neurotransmitters (dots)
+                ctx.fillStyle = '#ef4444';
+                for(let i=0; i<5; i++) {
+                    const ang = (Math.PI * 2 / 5) * i;
+                    ctx.beginPath();
+                    ctx.arc(cx + Math.cos(ang)*r*0.5, cy + Math.sin(ang)*r*0.5, 2, 0, Math.PI*2);
+                    ctx.fill();
+                }
+                ctx.restore();
+            }
+        }
+
+        class Neurotransmitter {
+            constructor(x, y) {
+                this.x = x;
+                this.y = y;
+                this.vx = (Math.random() - 0.5) * 100; // Lateral random drift
+                
+                // Physics: Diffusion time is proportional to distance squared (t = x^2 / 2D).
+                // To simulate this visually while keeping real-time clock mapped to biological clock,
+                // we calculate the required downward velocity so that it arrives exactly at the calculated biological time.
+                
+                // Calculate biological diffusion time based on distance (quadratic)
+                // Base 20nm = 0.2ms. t = 0.2 * (gap/20)^2
+                const expectedDiffTimeMs = 0.2 * Math.pow(cleftWidthNm / 20, 2);
+                
+                // Physical visual distance to cover
+                const startY = 400;
+                const endY = getPostSynapseY();
+                const distancePixels = endY - startY;
+
+                // Required velocity (pixels per biological ms)
+                this.vy = distancePixels / expectedDiffTimeMs;
+                
+                this.radius = 3;
+                this.bound = false;
+                this.targetY = endY;
+            }
+            update(dt) {
+                if (!this.bound) {
+                    this.x += this.vx * dt;
+                    this.y += this.vy * dt;
+
+                    // Brownian motion wobble
+                    this.vx += (Math.random() - 0.5) * 200 * dt;
+                    this.vx *= 0.95; // dampening
+
+                    if (this.y >= this.targetY) {
+                        this.y = this.targetY;
+                        this.bound = true;
+                        return true; // Bound event
+                    }
+                }
+                return false;
+            }
+            draw() {
+                const cx = (this.x / 800) * canvas.width;
+                const cy = (this.y / 800) * canvas.height;
+                const r = (this.radius / 800) * canvas.height;
+
+                ctx.beginPath();
+                ctx.arc(cx, cy, r, 0, Math.PI * 2);
+                ctx.fillStyle = '#ef4444'; // Red NTs
+                ctx.shadowBlur = 5;
+                ctx.shadowColor = '#ef4444';
+                ctx.fill();
+                ctx.shadowBlur = 0;
+            }
+        }
+
+        // Main Simulation Loop
+        function loop(timestamp) {
+            if (!lastRealTime) lastRealTime = timestamp;
+            const deltaRealMs = timestamp - lastRealTime;
+            lastRealTime = timestamp;
+
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+            if (isSimulating) {
+                // Advance biological clock
+                const dtBioMs = deltaRealMs * TIME_SCALE;
+                simTimeMs += dtBioMs;
+                timerDisplay.innerHTML = `${simTimeMs.toFixed(3)}<span class="clock-unit">ms</span>`;
+
+                // Phase 1: AP Arrival (0.00 to 0.20 ms)
+                if (simPhase === 0 && simTimeMs >= 0) {
+                    setPhase(1);
+                    preApGlow.style.opacity = 0.6;
+                }
+
+                // Phase 2: Vesicle Fusion (0.20 ms)
+                if (simPhase === 1 && simTimeMs >= 0.2) {
+                    setPhase(2);
+                    preApGlow.style.opacity = 0;
+                    
+                    // Spawn vesicles falling to membrane
+                    vesicles.push(new Vesicle(300, 280));
+                    vesicles.push(new Vesicle(400, 300));
+                    vesicles.push(new Vesicle(500, 280));
+                }
+
+                // Phase 3: Diffusion (Starts when vesicles hit membrane)
+                let fusionOccurred = false;
+                for (let i = vesicles.length - 1; i >= 0; i--) {
+                    if (vesicles[i].update(dtBioMs)) {
+                        fusionOccurred = true;
+                        // Spawn Neurotransmitters at fusion site
+                        for(let j=0; j<8; j++) {
+                            neurotransmitters.push(new Neurotransmitter(vesicles[i].x + (Math.random()-0.5)*20, 400));
+                        }
+                    }
+                    vesicles[i].draw();
+                    if (vesicles[i].opacity <= 0) vesicles.splice(i, 1);
+                }
+
+                if (fusionOccurred && simPhase === 2) {
+                    setPhase(3);
+                }
+
+                // Phase 4 & 5: Binding & Post AP
+                let bindCount = 0;
+                neurotransmitters.forEach(nt => {
+                    if (nt.update(dtBioMs)) bindCount++;
+                    nt.draw();
+                });
+
+                // Count bound NTs
+                const totalBound = neurotransmitters.filter(nt => nt.bound).length;
+
+                if (totalBound > 0 && simPhase === 3) {
+                    setPhase(4);
+                    // Light up receptors
+                    document.getElementById('rec-1').classList.add('active');
+                    document.getElementById('rec-2').classList.add('active');
+                    document.getElementById('rec-3').classList.add('active');
+                }
+
+                // Threshold reached -> Post AP
+                if (totalBound >= 15 && simPhase === 4) {
+                    setPhase(5);
+                    postApGlow.style.opacity = 0.6;
+                    
+                    // Add standard delay for receptor conformational change & channel opening (~0.2ms)
+                    setTimeout(() => {
+                        isSimulating = false; // Stop timer
+                        btnFire.disabled = false;
+                        btnFire.textContent = "Reset & Retest";
+                        document.getElementById('phase-5').className = 'phase-item completed';
+                        postApGlow.style.opacity = 0;
+                    }, 500); // 500ms real time = visual pause
+                }
+            } else {
+                // Draw idle state if needed
+                vesicles.forEach(v => v.draw());
+                neurotransmitters.forEach(nt => nt.draw());
+            }
+
+            requestAnimationFrame(loop);
+        }
+
+        btnFire.addEventListener('click', () => {
+            if (btnFire.textContent === "Reset & Retest") {
+                // Reset
+                resetPhases();
+                simTimeMs = 0;
+                timerDisplay.innerHTML = `0.000<span class="clock-unit">ms</span>`;
+                vesicles = [];
+                neurotransmitters = [];
+                btnFire.textContent = "Trigger Signal";
+            } else {
+                // Start
+                resetPhases();
+                btnFire.disabled = true;
+                btnFire.textContent = "Signal Propagating...";
+                simTimeMs = 0;
+                vesicles = [];
+                neurotransmitters = [];
+                isSimulating = true;
+                lastRealTime = performance.now();
+            }
+        });
+
+        // Initialize Geometry
+        updateGeometry();
+        
+        // Start loop
+        requestAnimationFrame(loop);
+
+    </script>
+</body>
+</html>

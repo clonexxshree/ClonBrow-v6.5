@@ -1,0 +1,283 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>PPT Maker | ClonBrow OS</title>
+    
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Nunito:wght@400;600;700;800;900&display=swap" rel="stylesheet">
+    
+    <!-- Export Libraries -->
+    <script src="https://cdn.jsdelivr.net/gh/gitbrent/PptxGenJS/libs/jszip.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/gh/gitbrent/PptxGenJS/dist/pptxgen.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
+
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    fontFamily: { sans: ['Nunito', 'sans-serif'] },
+                    colors: {
+                        duo: { dark: '#1e293b', blue: '#1cb0f6', green: '#58cc02', red: '#ff4b4b', yellow: '#ffc800' }
+                    }
+                }
+            }
+        }
+    </script>
+
+    <style>
+        body { font-family: 'Nunito', sans-serif; background-color: #f8fafc; }
+        .slide-container { aspect-ratio: 16/9; }
+        .duo-btn { border: 3px solid #1e293b; border-radius: 12px; font-weight: 800; text-transform: uppercase; transition: all 0.1s; box-shadow: 0px 4px 0px #1e293b; cursor: pointer; }
+        .duo-btn:active { transform: translateY(4px); box-shadow: 0px 0px 0px #1e293b; }
+        [contenteditable]:empty:before { content: attr(placeholder); color: #94a3b8; cursor: text; }
+        [contenteditable]:focus { outline: 2px dashed #1cb0f6; outline-offset: 4px; border-radius: 4px; }
+        
+        /* Templates */
+        .tpl-minimal { background: #ffffff; color: #1e293b; }
+        .tpl-academic { background: #fdfbf7; color: #334155; border-top: 16px solid #2563eb; }
+        .tpl-dark { background: #0f172a; color: #f8fafc; border-bottom: 8px solid #ffc800; }
+        
+        ::-webkit-scrollbar { width: 8px; }
+        ::-webkit-scrollbar-track { background: transparent; }
+        ::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 10px; }
+    </style>
+</head>
+<body class="h-screen flex flex-col overflow-hidden text-duo-dark">
+
+    <header class="bg-white border-b-[3px] border-duo-dark px-6 py-3 flex justify-between items-center z-10 shrink-0">
+        <div class="flex items-center gap-4">
+            <div class="w-10 h-10 bg-orange-500 rounded-xl border-[3px] border-duo-dark flex items-center justify-center text-white text-xl shadow-sm">
+                <i class="fas fa-file-powerpoint"></i>
+            </div>
+            <h1 class="text-2xl font-black tracking-tight">PPT Maker Pro</h1>
+        </div>
+        
+        <div class="flex items-center gap-3 bg-slate-100 p-1.5 rounded-2xl border-[3px] border-duo-dark">
+            <button onclick="addSlide('title')" class="px-4 py-2 font-black text-sm rounded-lg hover:bg-slate-200 transition-colors text-duo-dark"><i class="fas fa-heading mr-2"></i>Title Slide</button>
+            <button onclick="addSlide('content')" class="px-4 py-2 font-black text-sm rounded-lg hover:bg-slate-200 transition-colors text-duo-dark"><i class="fas fa-list mr-2"></i>Content</button>
+            <button onclick="addSlide('image')" class="px-4 py-2 font-black text-sm rounded-lg hover:bg-slate-200 transition-colors text-duo-dark"><i class="fas fa-image mr-2"></i>Image</button>
+            <div class="w-px h-6 bg-slate-300 mx-2"></div>
+            <button onclick="exportPPTX()" class="duo-btn bg-orange-500 text-white px-4 py-2 text-sm"><i class="fas fa-download mr-2"></i>.PPTX</button>
+            <button onclick="exportPDF()" class="duo-btn bg-duo-red text-white px-4 py-2 text-sm"><i class="fas fa-file-pdf mr-2"></i>.PDF</button>
+        </div>
+    </header>
+
+    <div class="flex-1 flex overflow-hidden">
+        <aside class="w-64 bg-slate-50 border-r-[3px] border-duo-dark flex flex-col h-full shrink-0">
+            <div class="p-4 border-b-[3px] border-duo-dark bg-white">
+                <h3 class="font-black text-sm text-slate-500 mb-2 tracking-widest">THEME</h3>
+                <select id="template-select" onchange="changeTemplate()" class="w-full bg-slate-100 border-[3px] border-slate-300 rounded-xl p-2 font-bold outline-none focus:border-duo-blue cursor-pointer">
+                    <option value="tpl-minimal">Minimalist Clean</option>
+                    <option value="tpl-academic">Academic Blue</option>
+                    <option value="tpl-dark">Dark Mode</option>
+                </select>
+            </div>
+            <div class="flex-1 overflow-y-auto p-4 flex flex-col gap-4" id="slide-thumbnails"></div>
+        </aside>
+
+        <main class="flex-1 bg-slate-200 overflow-y-auto p-8 flex items-start justify-center relative">
+            <div id="slide-editor" class="slide-container w-full max-w-4xl bg-white border-[3px] border-duo-dark rounded-2xl shadow-xl flex flex-col p-12 relative overflow-hidden transition-colors duration-300 tpl-minimal">
+                <div id="editor-wrapper" class="flex flex-col h-full w-full">
+                    <!-- Injected by JS based on layout -->
+                </div>
+            </div>
+        </main>
+    </div>
+
+    <div id="export-loading" class="fixed inset-0 bg-duo-dark/80 z-50 hidden flex-col items-center justify-center text-white backdrop-blur-sm">
+        <i class="fas fa-spinner fa-spin text-6xl text-duo-blue mb-4"></i>
+        <h2 class="text-2xl font-black">Generating File...</h2>
+    </div>
+
+    <script>
+        let slides = [
+            { id: 1, type: 'title', title: 'My Awesome Presentation', content: 'Subtitle or Presenter Name' }
+        ];
+        let activeSlideId = 1;
+        let slideCounter = 1;
+
+        const editorWrapper = document.getElementById('editor-wrapper');
+
+        function saveCurrentSlideState() {
+            const slide = slides.find(s => s.id === activeSlideId);
+            if (!slide) return;
+            
+            const titleEl = document.getElementById('active-title');
+            const contentEl = document.getElementById('active-content');
+            const imgEl = document.getElementById('active-image');
+
+            if(titleEl) slide.title = titleEl.innerText;
+            if(contentEl) slide.content = contentEl.innerText;
+            if(imgEl && imgEl.src !== window.location.href) slide.image = imgEl.src;
+        }
+
+        function loadSlideState(id) {
+            saveCurrentSlideState();
+            activeSlideId = id;
+            const slide = slides.find(s => s.id === id);
+            if (!slide) return;
+
+            if (slide.type === 'title') {
+                editorWrapper.innerHTML = `
+                    <div class="flex-1 flex flex-col justify-center items-center text-center">
+                        <h1 contenteditable="true" id="active-title" placeholder="Presentation Title" class="text-6xl font-black mb-6 w-full outline-none">${slide.title || ''}</h1>
+                        <h3 contenteditable="true" id="active-content" placeholder="Subtitle / Author" class="text-2xl font-bold text-slate-400 w-full outline-none">${slide.content || ''}</h3>
+                    </div>
+                `;
+            } else if (slide.type === 'image') {
+                const imgSrc = slide.image ? slide.image : 'https://placehold.co/600x400/e2e8f0/94a3b8?text=Click+to+Upload+Image';
+                editorWrapper.innerHTML = `
+                    <h1 contenteditable="true" id="active-title" placeholder="Slide Title" class="text-4xl font-black mb-6 w-full outline-none">${slide.title || ''}</h1>
+                    <div class="flex-1 w-full bg-slate-100 border-[3px] border-dashed border-slate-300 rounded-xl flex items-center justify-center cursor-pointer overflow-hidden relative hover:bg-slate-200 transition-colors" onclick="document.getElementById('img-upload').click()">
+                        <img id="active-image" src="${imgSrc}" class="w-full h-full object-contain pointer-events-none">
+                        <input type="file" id="img-upload" accept="image/*" class="hidden" onchange="handleImageUpload(event)">
+                    </div>
+                `;
+            } else {
+                editorWrapper.innerHTML = `
+                    <h1 contenteditable="true" id="active-title" placeholder="Slide Title" class="text-4xl font-black mb-6 w-full outline-none border-b-[3px] border-slate-200 pb-4">${slide.title || ''}</h1>
+                    <div contenteditable="true" id="active-content" placeholder="• Add your points here..." class="text-2xl font-semibold leading-relaxed flex-1 whitespace-pre-wrap outline-none">${slide.content || ''}</div>
+                `;
+            }
+            
+            // Re-bind live update listeners
+            ['active-title', 'active-content'].forEach(id => {
+                const el = document.getElementById(id);
+                if(el) el.addEventListener('input', renderThumbnails);
+            });
+            renderThumbnails();
+        }
+
+        function handleImageUpload(event) {
+            const file = event.target.files[0];
+            if (!file) return;
+            const reader = new FileReader();
+            reader.onload = function(e) {
+                document.getElementById('active-image').src = e.target.result;
+                saveCurrentSlideState();
+                renderThumbnails();
+            };
+            reader.readAsDataURL(file);
+        }
+
+        function addSlide(type) {
+            saveCurrentSlideState();
+            slideCounter++;
+            slides.push({ id: slideCounter, type: type, title: '', content: '', image: null });
+            loadSlideState(slideCounter);
+        }
+
+        function deleteSlide(id, event) {
+            event.stopPropagation();
+            if (slides.length <= 1) { alert("Cannot delete the last slide."); return; }
+            slides = slides.filter(s => s.id !== id);
+            if (activeSlideId === id) loadSlideState(slides[0].id);
+            else renderThumbnails();
+        }
+
+        function renderThumbnails() {
+            const container = document.getElementById('slide-thumbnails');
+            container.innerHTML = '';
+            
+            // Force save current typed state before rendering thumbs
+            const currTitle = document.getElementById('active-title');
+            const currContent = document.getElementById('active-content');
+            const activeSlide = slides.find(s => s.id === activeSlideId);
+            if(activeSlide) {
+                if(currTitle) activeSlide.title = currTitle.innerText;
+                if(currContent) activeSlide.content = currContent.innerText;
+            }
+
+            slides.forEach((slide, index) => {
+                const isActive = slide.id === activeSlideId;
+                const borderClass = isActive ? 'border-duo-blue ring-4 ring-duo-blue/30' : 'border-duo-dark hover:border-slate-500';
+                
+                const thumb = document.createElement('div');
+                thumb.className = `w-full aspect-[16/9] bg-white border-[3px] rounded-lg cursor-pointer relative overflow-hidden flex flex-col p-3 transition-all ${borderClass}`;
+                thumb.onclick = () => loadSlideState(slide.id);
+                
+                thumb.innerHTML = `
+                    <div class="absolute top-1 left-2 text-xs font-black text-slate-400">${index + 1}</div>
+                    <button onclick="deleteSlide(${slide.id}, event)" class="absolute top-1 right-1 text-slate-400 hover:text-duo-red bg-white rounded-full w-5 h-5 flex items-center justify-center z-10"><i class="fas fa-times text-[10px]"></i></button>
+                    <div class="mt-4 text-[12px] font-black truncate text-center ${slide.type === 'title' ? 'mt-8' : ''}">${slide.title || 'Untitled'}</div>
+                    ${slide.type === 'image' ? `<div class="flex-1 mt-1 bg-slate-100 border border-dashed border-slate-300 rounded flex items-center justify-center text-[10px] text-slate-400"><i class="fas fa-image"></i></div>` : `<div class="text-[9px] font-bold text-slate-400 truncate mt-1 ${slide.type === 'title' ? 'text-center' : ''}">${slide.content || '...'}</div>`}
+                `;
+                container.appendChild(thumb);
+            });
+        }
+
+        function changeTemplate() {
+            const select = document.getElementById('template-select');
+            document.getElementById('slide-editor').className = `slide-container w-full max-w-4xl bg-white border-[3px] border-duo-dark rounded-2xl shadow-xl flex flex-col p-12 relative overflow-hidden transition-colors duration-300 ${select.value}`;
+        }
+
+        async function exportPPTX() {
+            saveCurrentSlideState();
+            document.getElementById('export-loading').style.display = 'flex';
+            
+            try {
+                let pres = new PptxGenJS();
+                const template = document.getElementById('template-select').value;
+                
+                let bgColor = 'FFFFFF'; let fontColor = '363636'; let accentColor = '1cb0f6';
+                if(template === 'tpl-dark') { bgColor = '0f172a'; fontColor = 'FFFFFF'; accentColor = 'ffc800'; }
+                else if(template === 'tpl-academic') { bgColor = 'fdfbf7'; fontColor = '334155'; accentColor = '2563eb'; }
+
+                pres.defineSlideMaster({
+                    title: "MASTER_CONTENT", background: { color: bgColor },
+                    objects: template === 'tpl-academic' ? [ { rect: { x:0, y:0, w:'100%', h:0.2, fill:{ color: accentColor } } } ] : 
+                             template === 'tpl-dark' ? [ { rect: { x:0, y:'95%', w:'100%', h:0.2, fill:{ color: accentColor } } } ] : []
+                });
+
+                slides.forEach(slide => {
+                    let pptSlide = pres.addSlide({ masterName: "MASTER_CONTENT" });
+                    
+                    if(slide.type === 'title') {
+                        pptSlide.addText(slide.title, { x: 0.5, y: '35%', w: '90%', fontSize: 44, bold: true, color: fontColor, align: 'center' });
+                        pptSlide.addText(slide.content, { x: 0.5, y: '55%', w: '90%', fontSize: 24, color: '94a3b8', align: 'center' });
+                    } 
+                    else if (slide.type === 'image') {
+                        pptSlide.addText(slide.title, { x: 0.5, y: 0.5, w: '90%', h: 0.8, fontSize: 32, bold: true, color: fontColor });
+                        if(slide.image && !slide.image.includes('placehold.co')) {
+                            pptSlide.addImage({ data: slide.image, x: 1, y: 1.5, w: 8, h: 3.5, sizing: { type: 'contain', w: 8, h: 3.5 } });
+                        }
+                    }
+                    else {
+                        pptSlide.addText(slide.title, { x: 0.5, y: 0.5, w: '90%', h: 0.8, fontSize: 32, bold: true, color: fontColor });
+                        pptSlide.addText(slide.content, { x: 0.5, y: 1.5, w: '90%', h: '70%', fontSize: 20, color: fontColor, valign: 'top' });
+                    }
+                });
+                await pres.writeFile({ fileName: "ClonBrow_Presentation.pptx" });
+            } catch (err) { alert("Error exporting PPTX: " + err); }
+            document.getElementById('export-loading').style.display = 'none';
+        }
+
+        async function exportPDF() {
+            saveCurrentSlideState();
+            document.getElementById('export-loading').style.display = 'flex';
+            
+            const slideEditor = document.getElementById('slide-editor');
+            const originalBorder = slideEditor.style.border;
+            const originalShadow = slideEditor.style.boxShadow;
+            slideEditor.style.border = 'none';
+            slideEditor.style.boxShadow = 'none';
+            slideEditor.style.borderRadius = '0';
+
+            var opt = { margin: 0, filename: 'ClonBrow_Presentation.pdf', image: { type: 'jpeg', quality: 0.98 }, html2canvas: { scale: 2, useCORS: true }, jsPDF: { unit: 'in', format: 'letter', orientation: 'landscape' } };
+
+            try { await html2pdf().set(opt).from(slideEditor).save(); } 
+            catch (e) { alert("Error exporting PDF."); }
+
+            slideEditor.style.border = originalBorder;
+            slideEditor.style.boxShadow = originalShadow;
+            slideEditor.style.borderRadius = '';
+            document.getElementById('export-loading').style.display = 'none';
+        }
+
+        loadSlideState(1);
+    </script>
+</body>
+</html>

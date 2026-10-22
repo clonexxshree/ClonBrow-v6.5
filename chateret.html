@@ -1,0 +1,709 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Chatert - ClonMedic Comms</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+    <style>
+        ::-webkit-scrollbar { width: 8px; height: 8px; }
+        ::-webkit-scrollbar-track { background: #f1f5f9; border-left: 2px solid #111827; }
+        ::-webkit-scrollbar-thumb { background: #111827; }
+        
+        /* Neo-Brutalist Styles */
+        .brutal-box {
+            border: 4px solid #111827;
+            background: white;
+            box-shadow: 4px 4px 0px 0px #111827;
+        }
+        .brutal-btn {
+            border: 4px solid #111827;
+            box-shadow: 4px 4px 0px 0px #111827;
+            font-weight: 900;
+            text-transform: uppercase;
+            transition: all 0.1s ease;
+            cursor: pointer;
+        }
+        .brutal-btn:hover {
+            transform: translate(-2px, -2px);
+            box-shadow: 6px 6px 0px 0px #111827;
+        }
+        .brutal-btn:active {
+            transform: translate(4px, 4px);
+            box-shadow: 0px 0px 0px 0px #111827;
+        }
+
+        .brutal-input {
+            border: 4px solid #111827;
+            background: #f8fafc;
+            outline: none;
+            transition: background 0.2s;
+        }
+        .brutal-input:focus {
+            background: #fffbea;
+            border-color: #111827;
+        }
+
+        body { font-family: system-ui, -apple-system, sans-serif; }
+        .font-mono { font-family: 'Courier New', Courier, monospace; }
+        
+        .chat-bubble-received {
+            background: #ffffff;
+            border: 3px solid #111827;
+            border-radius: 12px 12px 12px 0;
+            box-shadow: 3px 3px 0px 0px #111827;
+        }
+        .chat-bubble-sent {
+            background: #2dd4bf; /* Chatert Teal */
+            color: #111827;
+            border: 3px solid #111827;
+            border-radius: 12px 12px 0 12px;
+            box-shadow: 3px 3px 0px 0px #111827;
+        }
+    </style>
+</head>
+<body class="bg-[#2dd4bf] h-screen w-screen overflow-hidden flex text-gray-900 p-2 sm:p-4">
+
+    <div class="w-full h-full max-w-[1600px] mx-auto flex bg-white border-4 border-gray-900 shadow-[8px_8px_0_0_#111827] overflow-hidden relative">
+        
+        <!-- ========================================== -->
+        <!-- LEFT SIDEBAR (Chat List & Controls)        -->
+        <!-- ========================================== -->
+        <aside class="w-full md:w-80 border-r-4 border-gray-900 bg-gray-50 flex flex-col shrink-0 transition-transform duration-300 absolute md:relative z-30 h-full" id="sidebar">
+            
+            <!-- Sidebar Header -->
+            <div class="p-4 border-b-4 border-gray-900 bg-white flex justify-between items-center shrink-0">
+                <div class="flex items-center gap-2">
+                    <i class="fas fa-comments text-2xl text-[#2dd4bf]"></i>
+                    <h1 class="text-2xl font-black uppercase tracking-tighter">Chatert</h1>
+                </div>
+                <button class="md:hidden brutal-btn bg-gray-200 w-8 h-8 flex items-center justify-center" onclick="toggleSidebar()">
+                    <i class="fas fa-times"></i>
+                </button>
+            </div>
+
+            <!-- Global Actions -->
+            <div class="p-4 border-b-4 border-gray-900 grid grid-cols-3 gap-2 bg-[#f8fafc] shrink-0">
+                <button onclick="openModal('add-friend-modal')" class="brutal-btn bg-blue-400 text-white py-2 text-xs flex flex-col items-center justify-center gap-1" title="Add Friend by Username">
+                    <i class="fas fa-user-plus text-lg"></i> Friend
+                </button>
+                <button onclick="openModal('create-group-modal')" class="brutal-btn bg-yellow-400 text-gray-900 py-2 text-xs flex flex-col items-center justify-center gap-1" title="Create a Group">
+                    <i class="fas fa-users text-lg"></i> Group
+                </button>
+                <button onclick="openModal('create-channel-modal')" class="brutal-btn bg-pink-400 text-white py-2 text-xs flex flex-col items-center justify-center gap-1" title="Create a Channel">
+                    <i class="fas fa-bullhorn text-lg"></i> Channel
+                </button>
+            </div>
+
+            <!-- Chat Filters -->
+            <div class="flex border-b-4 border-gray-900 text-sm font-black uppercase bg-gray-200 shrink-0">
+                <button onclick="filterChats('direct')" id="tab-direct" class="flex-1 py-3 hover:bg-white transition-colors border-r-4 border-gray-900 bg-white">DMs</button>
+                <button onclick="filterChats('group')" id="tab-group" class="flex-1 py-3 hover:bg-white transition-colors border-r-4 border-gray-900 text-gray-500">Groups</button>
+                <button onclick="filterChats('channel')" id="tab-channel" class="flex-1 py-3 hover:bg-white transition-colors text-gray-500">Channels</button>
+            </div>
+
+            <!-- Chat List -->
+            <div class="flex-1 overflow-y-auto" id="chat-list">
+                <!-- Populated by JS -->
+            </div>
+            
+            <!-- User Status Footer -->
+            <div class="p-4 border-t-4 border-gray-900 bg-white flex items-center gap-3 shrink-0">
+                <img src="https://api.dicebear.com/7.x/bottts/svg?seed=clonmedic" class="w-10 h-10 border-2 border-gray-900 rounded-full bg-gray-100">
+                <div class="flex-1 min-w-0">
+                    <div class="font-black text-sm truncate" id="current-username">Loading...</div>
+                    <div class="text-[10px] font-bold text-green-600 flex items-center gap-1 uppercase"><div class="w-2 h-2 bg-green-500 rounded-full animate-pulse"></div> Online</div>
+                </div>
+            </div>
+        </aside>
+
+        <!-- ========================================== -->
+        <!-- MAIN CHAT AREA                             -->
+        <!-- ========================================== -->
+        <main class="flex-1 flex flex-col bg-[#f0f9ff] relative h-full min-w-0">
+            
+            <!-- Empty State (Shown before selecting a chat) -->
+            <div id="empty-state" class="absolute inset-0 flex flex-col items-center justify-center bg-white z-20">
+                <i class="fas fa-comments text-6xl text-gray-200 mb-4"></i>
+                <h2 class="text-2xl font-black text-gray-400 uppercase text-center px-4">Select a comms channel</h2>
+                <button class="md:hidden mt-4 brutal-btn bg-[#2dd4bf] text-gray-900 px-6 py-2" onclick="toggleSidebar()">Open Menu</button>
+            </div>
+
+            <!-- Active Chat Header -->
+            <header class="p-4 border-b-4 border-gray-900 bg-white flex justify-between items-center shrink-0 z-10">
+                <div class="flex items-center gap-3 overflow-hidden">
+                    <button class="md:hidden brutal-btn bg-white w-10 h-10 flex items-center justify-center shrink-0" onclick="toggleSidebar()">
+                        <i class="fas fa-bars"></i>
+                    </button>
+                    <div id="active-chat-icon" class="w-10 h-10 md:w-12 md:h-12 border-2 border-gray-900 rounded-full flex items-center justify-center bg-gray-100 text-xl overflow-hidden shrink-0">
+                        <i class="fas fa-hashtag text-gray-500"></i>
+                    </div>
+                    <div class="truncate">
+                        <h2 class="text-lg md:text-xl font-black uppercase truncate" id="active-chat-name">Chat Name</h2>
+                        <p class="text-[10px] md:text-xs font-bold text-gray-500 font-mono truncate" id="active-chat-details">Offline</p>
+                    </div>
+                </div>
+                <div class="flex gap-2 shrink-0 ml-2">
+                    <button onclick="startVoiceCall()" id="btn-voice-call" class="w-10 h-10 md:w-12 md:h-12 brutal-btn bg-[#4ade80] text-gray-900 hover:bg-green-500 flex items-center justify-center hidden" title="Voice Call">
+                        <i class="fas fa-phone-alt"></i>
+                    </button>
+                    <button onclick="startVideoCall()" id="btn-video-call" class="w-10 h-10 md:w-12 md:h-12 brutal-btn bg-[#3b82f6] text-white hover:bg-blue-600 flex items-center justify-center hidden" title="Video Call">
+                        <i class="fas fa-video"></i>
+                    </button>
+                    <button onclick="toggleInfoPanel()" class="w-10 h-10 md:w-12 md:h-12 brutal-btn bg-white hover:bg-gray-100 flex items-center justify-center" title="Chat Info / Members">
+                        <i class="fas fa-info-circle"></i>
+                    </button>
+                </div>
+            </header>
+
+            <!-- Messages Area -->
+            <div class="flex-1 overflow-y-auto p-4 sm:p-6 space-y-6" id="messages-container">
+                <!-- Messages populated by JS -->
+            </div>
+
+            <!-- Message Input Area -->
+            <div class="p-4 border-t-4 border-gray-900 bg-white shrink-0 z-10">
+                <form id="send-message-form" class="flex gap-2" onsubmit="handleSendMessage(event)">
+                    <button type="button" class="w-10 h-10 md:w-12 md:h-12 brutal-btn bg-gray-100 text-gray-600 flex items-center justify-center shrink-0" title="Attach File">
+                        <i class="fas fa-paperclip"></i>
+                    </button>
+                    <input type="text" id="message-input" class="flex-1 brutal-input p-2 md:p-3 font-bold text-sm md:text-lg" placeholder="Transmit message..." autocomplete="off">
+                    <button type="submit" class="w-12 h-10 md:w-16 md:h-12 brutal-btn bg-[#2dd4bf] text-gray-900 flex items-center justify-center shrink-0">
+                        <i class="fas fa-paper-plane md:text-xl"></i>
+                    </button>
+                </form>
+            </div>
+        </main>
+
+        <!-- ========================================== -->
+        <!-- RIGHT INFO PANEL (Chat Settings/Members)   -->
+        <!-- ========================================== -->
+        <aside id="info-panel" class="w-72 md:w-80 border-l-4 border-gray-900 bg-white flex-col shrink-0 absolute right-0 h-full z-20 transition-transform duration-300 translate-x-full">
+            <div class="p-4 border-b-4 border-gray-900 flex justify-between items-center bg-gray-50 shrink-0">
+                <h3 class="font-black uppercase text-lg"><i class="fas fa-cog mr-2"></i> Chat Info</h3>
+                <button onclick="toggleInfoPanel()" class="brutal-btn w-8 h-8 flex items-center justify-center bg-red-400 text-white hover:bg-red-500"><i class="fas fa-times"></i></button>
+            </div>
+            <div id="info-panel-content" class="p-4 flex-1 overflow-y-auto bg-gray-100">
+                <!-- Populated dynamically based on chat type -->
+            </div>
+        </aside>
+
+    </div>
+
+    <!-- ========================================== -->
+    <!-- MODALS                                     -->
+    <!-- ========================================== -->
+
+    <!-- Add Friend Modal -->
+    <div id="add-friend-modal" class="fixed inset-0 bg-gray-900/80 backdrop-blur-sm z-50 hidden flex-col items-center justify-center p-4">
+        <div class="brutal-box p-6 max-w-sm w-full relative">
+            <button onclick="closeModal('add-friend-modal')" class="absolute top-4 right-4 w-8 h-8 brutal-btn bg-red-500 text-white flex items-center justify-center"><i class="fas fa-times"></i></button>
+            <h2 class="text-2xl font-black uppercase mb-2"><i class="fas fa-user-plus text-blue-500 mr-2"></i> Add Friend</h2>
+            <p class="text-xs font-bold text-gray-500 mb-6">Enter the exact OS username to request a secure connection.</p>
+            <form onsubmit="handleAddFriend(event)">
+                <input type="text" id="friend-username-input" class="w-full brutal-input p-3 font-bold mb-4" placeholder="Username (e.g., Dr.Smith)" required>
+                <button type="submit" class="w-full brutal-btn bg-blue-400 text-white py-3 text-lg">Send Request</button>
+            </form>
+        </div>
+    </div>
+
+    <!-- Create Group Modal -->
+    <div id="create-group-modal" class="fixed inset-0 bg-gray-900/80 backdrop-blur-sm z-50 hidden flex-col items-center justify-center p-4">
+        <div class="brutal-box p-6 max-w-sm w-full relative">
+            <button onclick="closeModal('create-group-modal')" class="absolute top-4 right-4 w-8 h-8 brutal-btn bg-red-500 text-white flex items-center justify-center"><i class="fas fa-times"></i></button>
+            <h2 class="text-2xl font-black uppercase mb-2"><i class="fas fa-users text-yellow-500 mr-2"></i> New Group</h2>
+            <p class="text-xs font-bold text-gray-500 mb-6">Create a private multi-user group chat. You will be assigned as Admin.</p>
+            <form onsubmit="handleCreateGroup(event)">
+                <input type="text" id="group-name-input" class="w-full brutal-input p-3 font-bold mb-4" placeholder="Group Name" required>
+                <div class="border-4 border-gray-900 p-3 h-40 overflow-y-auto mb-4 bg-gray-50">
+                    <p class="text-xs font-bold text-gray-500 mb-2 uppercase">Select Friends to Add:</p>
+                    <div id="group-friends-list" class="space-y-2">
+                        <!-- Populated by JS based on friends list -->
+                    </div>
+                </div>
+                <button type="submit" class="w-full brutal-btn bg-yellow-400 text-gray-900 py-3 text-lg">Create Group</button>
+            </form>
+        </div>
+    </div>
+
+    <!-- Create Channel Modal -->
+    <div id="create-channel-modal" class="fixed inset-0 bg-gray-900/80 backdrop-blur-sm z-50 hidden flex-col items-center justify-center p-4">
+        <div class="brutal-box p-6 max-w-sm w-full relative">
+            <button onclick="closeModal('create-channel-modal')" class="absolute top-4 right-4 w-8 h-8 brutal-btn bg-red-500 text-white flex items-center justify-center"><i class="fas fa-times"></i></button>
+            <h2 class="text-2xl font-black uppercase mb-2"><i class="fas fa-bullhorn text-pink-500 mr-2"></i> New Channel</h2>
+            <p class="text-xs font-bold text-gray-500 mb-6">Channels are for broadcasting alerts or open topics. Anyone can join.</p>
+            <form onsubmit="handleCreateChannel(event)">
+                <input type="text" id="channel-name-input" class="w-full brutal-input p-3 font-bold mb-4" placeholder="# channel-name" required>
+                <textarea id="channel-desc-input" class="w-full brutal-input p-3 font-bold mb-4 resize-none h-20" placeholder="Channel Description..."></textarea>
+                <button type="submit" class="w-full brutal-btn bg-pink-400 text-white py-3 text-lg">Create Channel</button>
+            </form>
+        </div>
+    </div>
+
+    <!-- Active Call Overlay -->
+    <div id="active-call-overlay" class="absolute inset-0 bg-gray-900/95 z-50 hidden flex-col items-center justify-center p-4">
+        <img id="call-avatar-img" src="" class="w-32 h-32 md:w-40 md:h-40 rounded-full border-4 border-[#2dd4bf] shadow-[0_0_25px_rgba(45,212,191,0.5)] mb-6 animate-pulse object-cover">
+        <h2 id="call-user-name" class="text-3xl md:text-4xl font-black text-white uppercase mb-2 font-sans tracking-tight">User</h2>
+        <p id="call-status-text" class="text-green-400 font-mono font-bold mb-12 uppercase tracking-widest text-sm text-center">Establishing secure connection...</p>
+        
+        <div class="flex gap-6">
+            <button class="w-16 h-16 brutal-btn bg-gray-200 hover:bg-white rounded-full flex items-center justify-center text-2xl text-gray-900" title="Mute Microphone">
+                <i class="fas fa-microphone-slash"></i>
+            </button>
+            <button onclick="endCall()" class="w-16 h-16 brutal-btn bg-red-500 hover:bg-red-600 rounded-full flex items-center justify-center text-2xl text-white" title="End Call">
+                <i class="fas fa-phone-slash"></i>
+            </button>
+        </div>
+    </div>
+
+    <script>
+        // =========================================================================
+        // BACKEND CONNECTION CONFIGURATION (To connect to chateret-backend.py)
+        // =========================================================================
+        const CHATERT_API_URL = 'https://clonexxshree.pythonanywhere.com//api/chat'; 
+        
+        let myUsername = "Dr. Admin"; 
+        
+        // UI State
+        let currentFilter = 'direct'; // 'direct', 'group', 'channel'
+        let activeChatId = null;
+        let chatData = []; 
+        let isInfoPanelOpen = false;
+
+        // =========================================================================
+        // BACKEND FETCH FUNCTIONS (Connected to Python)
+        // =========================================================================
+        
+        async function fetchChatsList() {
+            try {
+                const res = await fetch(`${CHATERT_API_URL}/list`);
+                chatData = await res.json();
+                renderChatList();
+                populateGroupFriendSelector();
+            } catch (err) {
+                console.error("Failed to load chats from backend", err);
+                document.getElementById('chat-list').innerHTML = `<div class="p-6 text-center text-sm font-bold text-red-500 uppercase">SERVER OFFLINE</div>`;
+            }
+        }
+
+        async function fetchChatMessages(chatId) {
+            try {
+                const res = await fetch(`${CHATERT_API_URL}/messages?id=${chatId}`);
+                const msgs = await res.json();
+                // Map the isMe property based on current user
+                return msgs.map(m => ({...m, isMe: m.sender === myUsername}));
+            } catch (err) {
+                console.error("Failed to load messages", err);
+                return [];
+            }
+        }
+
+        async function postMessageToBackend(chatId, text) {
+            try {
+                await fetch(`${CHATERT_API_URL}/send`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ chatId: chatId, sender: myUsername, text: text })
+                });
+            } catch (err) {
+                console.error("Failed to send message", err);
+            }
+        }
+
+        // =========================================================================
+        // UI RENDER FUNCTIONS
+        // =========================================================================
+
+        function filterChats(type) {
+            currentFilter = type;
+            
+            // Tab styling
+            ['direct', 'group', 'channel'].forEach(t => {
+                const tab = document.getElementById(`tab-${t}`);
+                if(t === type) {
+                    tab.classList.remove('text-gray-500');
+                    tab.classList.add('bg-white');
+                } else {
+                    tab.classList.add('text-gray-500');
+                    tab.classList.remove('bg-white');
+                }
+            });
+
+            renderChatList();
+        }
+
+        function renderChatList() {
+            const listEl = document.getElementById('chat-list');
+            listEl.innerHTML = '';
+
+            const filteredChats = chatData.filter(c => c.type === currentFilter);
+
+            if (filteredChats.length === 0) {
+                listEl.innerHTML = `<div class="p-6 text-center text-sm font-bold text-gray-400 uppercase">No ${currentFilter}s found.</div>`;
+                return;
+            }
+
+            filteredChats.forEach(chat => {
+                const isActive = chat.id === activeChatId;
+                const activeClass = isActive ? 'bg-blue-50 border-l-8 border-l-blue-500' : 'bg-white hover:bg-gray-50 border-l-8 border-l-transparent border-b-2 border-b-gray-200';
+                
+                let iconHtml = '';
+                if(chat.type === 'direct') {
+                    iconHtml = `<img src="${chat.avatar}" class="w-10 h-10 border-2 border-gray-900 rounded-full bg-gray-100 shrink-0">`;
+                } else if(chat.type === 'group') {
+                    iconHtml = `<div class="w-10 h-10 border-2 border-gray-900 rounded-full flex items-center justify-center bg-yellow-100 text-yellow-600 shrink-0"><i class="fas fa-users"></i></div>`;
+                } else {
+                    iconHtml = `<div class="w-10 h-10 border-2 border-gray-900 rounded-full flex items-center justify-center bg-pink-100 text-pink-600 shrink-0"><i class="fas fa-hashtag"></i></div>`;
+                }
+
+                const unreadBadge = chat.unread > 0 ? `<div class="bg-red-500 text-white text-[10px] font-black w-5 h-5 rounded-full border-2 border-gray-900 flex items-center justify-center absolute -top-1 -right-1">${chat.unread}</div>` : '';
+
+                listEl.innerHTML += `
+                    <div onclick="openChat('${chat.id}')" class="p-4 cursor-pointer transition-colors flex items-center gap-3 relative ${activeClass}">
+                        <div class="relative">
+                            ${iconHtml}
+                            ${unreadBadge}
+                        </div>
+                        <div class="flex-1 min-w-0">
+                            <div class="flex justify-between items-baseline mb-1">
+                                <h3 class="font-black text-sm uppercase truncate ${isActive ? 'text-blue-600' : 'text-gray-900'}">${chat.name}</h3>
+                                <span class="text-[10px] font-bold text-gray-500 ml-2 whitespace-nowrap">${chat.time}</span>
+                            </div>
+                            <p class="text-xs font-bold text-gray-500 truncate">${chat.lastMessage}</p>
+                        </div>
+                    </div>
+                `;
+            });
+        }
+
+        async function openChat(chatId) {
+            activeChatId = chatId;
+            renderChatList(); 
+            
+            document.getElementById('empty-state').classList.add('hidden');
+            const chat = chatData.find(c => c.id === chatId);
+            
+            // Set Header
+            document.getElementById('active-chat-name').innerText = chat.name;
+            const detailsEl = document.getElementById('active-chat-details');
+            const iconEl = document.getElementById('active-chat-icon');
+            
+            if (chat.type === 'direct') {
+                detailsEl.innerHTML = chat.online ? `<span class="text-green-500">● Online</span>` : `Offline`;
+                iconEl.innerHTML = `<img src="${chat.avatar}" class="w-full h-full object-cover">`;
+                document.getElementById('btn-voice-call').classList.remove('hidden');
+                document.getElementById('btn-video-call').classList.remove('hidden');
+            } else if (chat.type === 'group') {
+                detailsEl.innerHTML = `${chat.membersList.length} Members ${chat.isAdmin ? '· <span class="text-yellow-600">You are Admin</span>' : ''}`;
+                iconEl.innerHTML = `<i class="fas fa-users text-yellow-500"></i>`;
+                document.getElementById('btn-voice-call').classList.remove('hidden');
+                document.getElementById('btn-video-call').classList.remove('hidden');
+            } else {
+                detailsEl.innerHTML = `${chat.subscribers} Subscribers`;
+                iconEl.innerHTML = `<i class="fas fa-hashtag text-pink-500"></i>`;
+                document.getElementById('btn-voice-call').classList.add('hidden');
+                document.getElementById('btn-video-call').classList.add('hidden');
+            }
+
+            // Render right info panel
+            renderInfoPanel(chat);
+
+            // Fetch and render messages
+            const messages = await fetchChatMessages(chatId);
+            renderMessages(messages, chat.type, chat);
+            
+            // On mobile, close sidebar automatically when a chat is opened
+            if(window.innerWidth < 768) {
+                document.getElementById('sidebar').classList.add('-translate-x-full');
+            }
+        }
+
+        function getAvatarForSender(sender) {
+            if(sender === myUsername) return `https://api.dicebear.com/7.x/bottts/svg?seed=${myUsername}`;
+            const dm = chatData.find(c => c.type === 'direct' && c.name === sender);
+            if(dm) return dm.avatar;
+            return `https://api.dicebear.com/7.x/bottts/svg?seed=${sender}`;
+        }
+
+        function renderMessages(messages, chatType, chat) {
+            const container = document.getElementById('messages-container');
+            container.innerHTML = '';
+            
+            if(messages.length === 0) {
+                container.innerHTML = `
+                    <div class="h-full flex flex-col items-center justify-center text-gray-400">
+                        <i class="fas fa-comment-slash text-4xl mb-2"></i>
+                        <p class="font-bold text-sm uppercase">No messages yet. Start transmission.</p>
+                    </div>`;
+                return;
+            }
+
+            messages.forEach(msg => {
+                const alignClass = msg.isMe ? 'justify-end' : 'justify-start';
+                const bubbleClass = msg.isMe ? 'chat-bubble-sent' : 'chat-bubble-received';
+                const showName = !msg.isMe; // Show names for all received msgs to pair with avatar
+                
+                let roleBadge = '';
+                if(showName && msg.role === 'Admin') {
+                    roleBadge = `<span class="bg-yellow-400 text-gray-900 text-[10px] px-1 border border-gray-900 ml-1 rounded-sm uppercase">Admin</span>`;
+                }
+
+                const avatarHtml = !msg.isMe ? `<img src="${getAvatarForSender(msg.sender)}" class="w-8 h-8 md:w-10 md:h-10 rounded-full border-2 border-gray-900 mr-2 shrink-0 self-end mb-5 bg-gray-100">` : '';
+
+                container.innerHTML += `
+                    <div class="flex w-full ${alignClass} mb-2">
+                        ${avatarHtml}
+                        <div class="max-w-[85%] sm:max-w-[70%] flex flex-col ${msg.isMe ? 'items-end' : 'items-start'}">
+                            ${showName ? `<span class="text-xs font-black text-gray-500 mb-1 ml-1">${msg.sender} ${roleBadge}</span>` : ''}
+                            <div class="p-3 sm:p-4 text-sm sm:text-base font-bold ${bubbleClass}">
+                                ${msg.text}
+                            </div>
+                            <span class="text-[10px] font-bold text-gray-400 mt-1 mx-1 font-mono">${msg.time}</span>
+                        </div>
+                    </div>
+                `;
+            });
+
+            container.scrollTop = container.scrollHeight;
+        }
+
+        async function handleSendMessage(e) {
+            e.preventDefault();
+            if(!activeChatId) return alert("Select a chat first.");
+            
+            const input = document.getElementById('message-input');
+            const text = input.value.trim();
+            if(!text) return;
+
+            input.value = ''; 
+            
+            // Send to python backend
+            await postMessageToBackend(activeChatId, text);
+            
+            // Refresh messages
+            const msgs = await fetchChatMessages(activeChatId);
+            renderMessages(msgs, chatData.find(c=>c.id===activeChatId).type);
+            
+            // Refresh list to update "Last Message" status
+            fetchChatsList();
+        }
+
+        // =========================================================================
+        // RIGHT INFO PANEL LOGIC
+        // =========================================================================
+        
+        function toggleInfoPanel() {
+            const panel = document.getElementById('info-panel');
+            isInfoPanelOpen = !isInfoPanelOpen;
+            if(isInfoPanelOpen) {
+                panel.classList.remove('translate-x-full');
+                panel.classList.add('flex');
+            } else {
+                panel.classList.add('translate-x-full');
+            }
+        }
+
+        function renderInfoPanel(chat) {
+            const content = document.getElementById('info-panel-content');
+            let html = '';
+
+            // Header info based on type
+            html += `
+                <div class="bg-white border-4 border-gray-900 p-4 mb-4 text-center">
+                    <h2 class="text-xl font-black uppercase mb-1 truncate" title="${chat.name}">${chat.name}</h2>
+                    <p class="text-xs font-bold text-gray-500">${chat.desc || 'No description available.'}</p>
+                </div>
+            `;
+
+            // Member list for groups
+            if(chat.type === 'group' && chat.membersList) {
+                html += `<h3 class="font-black uppercase text-xs text-gray-500 mb-2">Group Members (${chat.membersList.length})</h3>`;
+                html += `<div class="space-y-2 mb-6">`;
+                chat.membersList.forEach(m => {
+                    const badge = m.role === 'Admin' ? '<span class="bg-yellow-400 text-[10px] px-1 border border-gray-900 ml-auto">ADMIN</span>' : '';
+                    html += `
+                        <div class="bg-white border-2 border-gray-900 p-2 flex items-center gap-2">
+                            <div class="w-6 h-6 bg-gray-200 rounded-full border border-gray-900 shrink-0"></div>
+                            <span class="font-bold text-sm truncate">${m.name}</span>
+                            ${badge}
+                        </div>
+                    `;
+                });
+                html += `</div>`;
+                
+                if(chat.isAdmin) {
+                    html += `
+                        <button class="w-full brutal-btn bg-yellow-400 py-2 text-sm mb-2"><i class="fas fa-user-plus mr-1"></i> Add Member</button>
+                        <button class="w-full brutal-btn bg-gray-200 py-2 text-sm text-red-600"><i class="fas fa-trash mr-1"></i> Delete Group</button>
+                    `;
+                } else {
+                    html += `<button class="w-full brutal-btn bg-gray-200 py-2 text-sm text-red-600"><i class="fas fa-sign-out-alt mr-1"></i> Leave Group</button>`;
+                }
+            }
+
+            // Info for Channels
+            if(chat.type === 'channel') {
+                html += `
+                    <div class="bg-blue-100 border-4 border-blue-400 p-4 mb-4 text-center">
+                        <div class="text-2xl font-black text-blue-600">${chat.subscribers}</div>
+                        <div class="text-xs font-bold text-blue-500 uppercase">Subscribers</div>
+                    </div>
+                    <button class="w-full brutal-btn bg-gray-200 py-2 text-sm text-red-600"><i class="fas fa-volume-mute mr-1"></i> Mute Channel</button>
+                `;
+            }
+
+            // Info for DMs
+            if(chat.type === 'direct') {
+                html += `
+                    <button class="w-full brutal-btn bg-[#4ade80] text-gray-900 py-2 text-sm mb-2" onclick="startVoiceCall()"><i class="fas fa-phone-alt mr-1"></i> Voice Call</button>
+                    <button class="w-full brutal-btn bg-[#3b82f6] text-white py-2 text-sm mb-4" onclick="startVideoCall()"><i class="fas fa-video mr-1"></i> Video Call</button>
+                    <button class="w-full brutal-btn bg-white py-2 text-sm mb-2"><i class="fas fa-user-md mr-1"></i> View OS Profile</button>
+                    <button class="w-full brutal-btn bg-gray-200 py-2 text-sm text-red-600"><i class="fas fa-ban mr-1"></i> Block User</button>
+                `;
+            }
+
+            content.innerHTML = html;
+        }
+
+
+        // =========================================================================
+        // CALL LOGIC (Voice / Video)
+        // =========================================================================
+        function startVoiceCall() {
+            if(!activeChatId) return;
+            const chat = chatData.find(c => c.id === activeChatId);
+            const overlay = document.getElementById('active-call-overlay');
+            
+            document.getElementById('call-user-name').innerText = chat.name;
+            document.getElementById('call-avatar-img').src = chat.type === 'direct' ? chat.avatar : `https://api.dicebear.com/7.x/bottts/svg?seed=${chat.name}`;
+            document.getElementById('call-status-text').innerText = "Initiating Voice Link...";
+            
+            overlay.classList.remove('hidden');
+            overlay.classList.add('flex');
+        }
+
+        function startVideoCall() {
+            if(!activeChatId) return;
+            const chat = chatData.find(c => c.id === activeChatId);
+            const overlay = document.getElementById('active-call-overlay');
+            
+            document.getElementById('call-user-name').innerText = chat.name;
+            document.getElementById('call-avatar-img').src = chat.type === 'direct' ? chat.avatar : `https://api.dicebear.com/7.x/bottts/svg?seed=${chat.name}`;
+            document.getElementById('call-status-text').innerText = "Establishing Secure Video Stream...";
+            
+            overlay.classList.remove('hidden');
+            overlay.classList.add('flex');
+        }
+
+        function endCall() {
+            const overlay = document.getElementById('active-call-overlay');
+            document.getElementById('call-status-text').innerText = "Call Terminated.";
+            
+            setTimeout(() => {
+                overlay.classList.add('hidden');
+                overlay.classList.remove('flex');
+            }, 800);
+        }
+
+        // =========================================================================
+        // ACTIONS & MODALS (Add Friend, Groups, Channels)
+        // =========================================================================
+        
+        function openModal(id) { document.getElementById(id).classList.remove('hidden'); document.getElementById(id).classList.add('flex'); }
+        function closeModal(id) { document.getElementById(id).classList.add('hidden'); document.getElementById(id).classList.remove('flex'); }
+
+        async function handleAddFriend(e) {
+            e.preventDefault();
+            const username = document.getElementById('friend-username-input').value.trim();
+            
+            await fetch(`${CHATERT_API_URL}/add_friend`, { 
+                method: 'POST', 
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({username}) 
+            });
+            
+            alert(`Friend connection established with ${username}.`);
+            closeModal('add-friend-modal');
+            document.getElementById('friend-username-input').value = '';
+            fetchChatsList();
+        }
+
+        async function handleCreateGroup(e) {
+            e.preventDefault();
+            const name = document.getElementById('group-name-input').value.trim();
+            const selected = Array.from(document.querySelectorAll('.group-friend-cb:checked')).map(cb => cb.dataset.name);
+            
+            await fetch(`${CHATERT_API_URL}/create_group`, { 
+                method: 'POST', 
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({name, members: selected}) 
+            });
+            
+            alert(`Group '${name}' created. You are the Admin.`);
+            
+            filterChats('group');
+            closeModal('create-group-modal');
+            fetchChatsList();
+        }
+
+        async function handleCreateChannel(e) {
+            e.preventDefault();
+            let name = document.getElementById('channel-name-input').value.trim();
+            const desc = document.getElementById('channel-desc-input').value.trim();
+            if(!name.startsWith('#')) name = '#' + name;
+
+            await fetch(`${CHATERT_API_URL}/create_channel`, { 
+                method: 'POST', 
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({name, desc}) 
+            });
+            
+            alert(`Channel '${name}' broadcasted.`);
+            
+            filterChats('channel');
+            closeModal('create-channel-modal');
+            fetchChatsList();
+        }
+
+        function populateGroupFriendSelector() {
+            const list = document.getElementById('group-friends-list');
+            const dms = chatData.filter(c => c.type === 'direct');
+            list.innerHTML = '';
+            dms.forEach(dm => {
+                list.innerHTML += `
+                    <label class="flex items-center gap-3 p-2 border-2 border-gray-900 bg-white cursor-pointer hover:bg-yellow-50 transition-colors">
+                        <input type="checkbox" value="${dm.id}" data-name="${dm.name}" class="group-friend-cb w-4 h-4 accent-gray-900">
+                        <img src="${dm.avatar}" class="w-6 h-6 rounded-full border border-gray-900">
+                        <span class="font-bold text-sm uppercase">${dm.name}</span>
+                    </label>
+                `;
+            });
+        }
+
+        function toggleSidebar() {
+            const sidebar = document.getElementById('sidebar');
+            if(sidebar.classList.contains('-translate-x-full')) {
+                sidebar.classList.remove('-translate-x-full');
+            } else {
+                sidebar.classList.add('-translate-x-full');
+            }
+        }
+
+        // =========================================================================
+        // BOOT SEQUENCE
+        // =========================================================================
+        document.addEventListener('DOMContentLoaded', () => {
+            document.getElementById('current-username').innerText = myUsername;
+            
+            // Hide sidebar on mobile load
+            if(window.innerWidth < 768) {
+                document.getElementById('sidebar').classList.add('-translate-x-full');
+            }
+
+            fetchChatsList();
+        });
+
+    </script>
+</body>
+</html>

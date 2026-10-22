@@ -1,0 +1,326 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Physics Lab | Brutalist UI</title>
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Lucide Icons -->
+    <script src="https://unpkg.com/lucide@latest"></script>
+    <!-- Google Fonts -->
+    <link href="https://fonts.googleapis.com/css2?family=Fredoka+One&family=Nunito:wght@400;700;900&display=swap" rel="stylesheet">
+    
+    <style>
+        :root {
+            --border-width: 4px;
+        }
+
+        body {
+            font-family: 'Nunito', sans-serif;
+            color: #000000;
+            background-color: #0ea5e9; /* Bright Sky Blue */
+            background-image: radial-gradient(circle at 2px 2px, rgba(255,255,255,0.2) 1px, transparent 0);
+            background-size: 40px 40px;
+        }
+        
+        /* Hide scrollbars for cleaner horizontal strips but keep functionality */
+        .no-scrollbar::-webkit-scrollbar {
+            display: none;
+        }
+        .no-scrollbar {
+            -ms-overflow-style: none;
+            scrollbar-width: none;
+        }
+
+        /* --- Brutalist Components --- */
+        .brutalist-panel {
+            background: #ffffff;
+            border: var(--border-width) solid #000000;
+            border-radius: 24px;
+            box-shadow: 8px 8px 0px #000000;
+        }
+
+        .brutalist-button {
+            background: #ffffff;
+            color: #000000;
+            border: var(--border-width) solid #000000;
+            border-radius: 9999px; /* Pill shape */
+            box-shadow: 4px 4px 0px #000000;
+            transition: all 0.15s ease;
+            font-family: 'Fredoka One', cursive;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            cursor: pointer;
+        }
+
+        .brutalist-button:hover {
+            transform: translate(-2px, -2px);
+            box-shadow: 6px 6px 0px #000000;
+            background: #f8fafc;
+        }
+
+        .brutalist-button:active {
+            transform: translate(4px, 4px);
+            box-shadow: 0px 0px 0px #000000;
+        }
+
+        .brutalist-button.active {
+            background: #FBBF24; /* Bold Yellow */
+        }
+
+        .text-brutalist-logo {
+            color: #ffffff;
+            -webkit-text-stroke: 2px #000000;
+            text-shadow: 4px 4px 0px #000000;
+        }
+
+        /* Iframe internal rounded corners fix */
+        iframe {
+            border-radius: inherit;
+        }
+    </style>
+</head>
+<body class="h-screen w-full flex flex-col p-4 sm:p-6 gap-5 overflow-hidden relative selection:bg-[#FBBF24] selection:text-black">
+
+    <!-- 1. Header & Categories Bar (Horizontal) -->
+    <header class="brutalist-panel p-3 flex flex-col md:flex-row items-center gap-4 shrink-0 z-20">
+        <!-- Logo -->
+        <div class="flex items-center gap-3 pl-4 pr-6 md:border-r-4 border-black">
+            <div>
+                <h1 class="text-4xl font-['Fredoka_One'] tracking-wide text-brutalist-logo uppercase">Physics Lab</h1>
+            </div>
+        </div>
+
+        <!-- Categories List -->
+        <div id="categories-container" class="flex-1 flex gap-4 overflow-x-auto no-scrollbar w-full py-2 px-2 items-center">
+            <!-- Categories injected by JS -->
+        </div>
+    </header>
+
+    <!-- 2. Secondary Files Bar (Horizontal) -->
+    <nav class="shrink-0 z-10 transition-all duration-500">
+        <div id="files-container" class="flex gap-4 overflow-x-auto no-scrollbar pb-2 px-2 items-center">
+            <!-- Files injected by JS -->
+        </div>
+    </nav>
+
+    <!-- 3. Main Viewer Area -->
+    <main class="brutalist-panel flex-1 flex flex-col overflow-hidden relative z-20">
+        
+        <!-- Viewer Top Bar -->
+        <div class="h-16 border-b-4 border-black flex items-center justify-between px-6 bg-gray-100">
+            <h2 id="current-file-title" class="text-xl font-['Fredoka_One'] text-black uppercase tracking-wide flex items-center gap-3">
+                <i data-lucide="play-circle" class="w-6 h-6 text-black stroke-[3px]"></i>
+                Select a module to begin
+            </h2>
+            <div class="flex items-center gap-3">
+                <button class="brutalist-button p-2.5 bg-white flex items-center justify-center" title="Reload Frame" onclick="reloadFrame()">
+                    <i data-lucide="rotate-cw" class="w-5 h-5 stroke-[3px]"></i>
+                </button>
+                <button class="brutalist-button p-2.5 bg-white flex items-center justify-center" title="Open in New Tab" onclick="openInNewTab()">
+                    <i data-lucide="external-link" class="w-5 h-5 stroke-[3px]"></i>
+                </button>
+            </div>
+        </div>
+
+        <!-- Iframe / Empty State -->
+        <div class="flex-1 relative bg-white overflow-hidden rounded-b-[20px]">
+            
+            <div id="empty-state" class="absolute inset-0 flex flex-col items-center justify-center text-black z-20 bg-gray-50">
+                <div class="brutalist-button p-6 mb-6 flex items-center justify-center pointer-events-none" style="border-radius: 24px;">
+                    <i data-lucide="mouse-pointer-click" class="w-12 h-12 text-black stroke-[3px] relative z-10"></i>
+                </div>
+                <h3 class="text-4xl font-['Fredoka_One'] text-black mb-3 tracking-tight uppercase">Ready to Explore</h3>
+                <p class="text-gray-600 max-w-sm text-center font-bold text-lg leading-relaxed">Select a physics module from the horizontal menu above to load the simulation.</p>
+            </div>
+
+            <!-- Frame -->
+            <iframe id="content-frame" class="absolute inset-0 w-full h-full border-none z-10 bg-transparent"></iframe>
+        </div>
+    </main>
+
+    <script>
+        const physicsData = [
+            {
+                id: "cat-1",
+                category: "Class 3-5",
+                icon: "sparkles",
+                theme: "emerald",
+                files: [
+                    { id: "buoyancy", file: "buoyancy.html", title: "Buoyancy", icon: "waves" },
+                    { id: "magnets", file: "magnets.html", title: "Magnets", icon: "magnet" },
+                    { id: "shadows", file: "shadows.html", title: "Shadows", icon: "sun" },
+                    { id: "simple-machines-levers", file: "simple-machines-levers.html", title: "Simple Machines: Levers", icon: "move-diagonal" },
+                    { id: "simple-machines-pulleys", file: "simple-machines-pulleys.html", title: "Simple Machines: Pulleys", icon: "circle-dashed" },
+                    { id: "solar-system", file: "solar-system.html", title: "Solar System", icon: "globe" },
+                    { id: "states-of-matter", file: "states-of-matter.html", title: "States of Matter", icon: "droplets" }
+                ]
+            },
+            {
+                id: "cat-2",
+                category: "Class 6-8",
+                icon: "compass",
+                theme: "blue",
+                files: [
+                    { id: "basics-of-newtons-laws", file: "basics-of-newtons-laws.html", title: "Newton's Laws Basics", icon: "book-open" },
+                    { id: "density-tower-lab", file: "density-tower-lab.html", title: "Density Tower Lab", icon: "flask-conical" },
+                    { id: "distance-vs-displacement", file: "distance-vs-displacement.html", title: "Distance vs Displacement", icon: "map" },
+                    { id: "energy", file: "energy.html", title: "Energy", icon: "zap" },
+                    { id: "friction", file: "friction.html", title: "Friction", icon: "activity" },
+                    { id: "gravity", file: "gravity.html", title: "Gravity", icon: "arrow-down" },
+                    { id: "heat-basics", file: "heat-basics.html", title: "Heat Basics", icon: "thermometer" },
+                    { id: "human-eye", file: "human-eye.html", title: "Human Eye", icon: "eye" },
+                    { id: "simple-circuits", file: "simple-circuits.html", title: "Simple Circuits", icon: "cpu" }
+                ]
+            },
+            {
+                id: "cat-3",
+                category: "Class 9-10",
+                icon: "microscope",
+                theme: "indigo",
+                files: [
+                    { id: "dynamics", file: "dynamics.html", title: "Dynamics", icon: "box" },
+                    { id: "electromagnetism", file: "electromagnetism.html", title: "Electromagnetism", icon: "zap" },
+                    { id: "light-dispersion", file: "light-dispersion.html", title: "Light Dispersion", icon: "rainbow" },
+                    { id: "light-refraction", file: "light-refraction.html", title: "Light Refraction", icon: "focus" },
+                    { id: "momentum", file: "momentum.html", title: "Momentum", icon: "rocket" },
+                    { id: "total-internal-reflection", file: "total-internal-reflection.html", title: "Total Internal Reflection", icon: "corner-down-right" },
+                    { id: "velocity-vs-time-graph", file: "velocity-vs-time-graph.html", title: "Velocity vs Time Graph", icon: "line-chart" },
+                    { id: "waves-lab", file: "waves-lab.html", title: "Waves Lab", icon: "radio" }
+                ]
+            },
+            {
+                id: "cat-4",
+                category: "Class 11-12",
+                icon: "satellite",
+                theme: "purple",
+                files: [
+                    { id: "bohr-model", file: "bohr-model.html", title: "Bohr Model", icon: "aperture" },
+                    { id: "coulombs-law", file: "coulombs-law.html", title: "Coulomb's Law", icon: "navigation" },
+                    { id: "polarization", file: "polarization.html", title: "Polarization", icon: "layers" },
+                    { id: "projectile-motion", file: "projectile-motion.html", title: "Projectile Motion", icon: "crosshair" },
+                    { id: "radioactive-decay", file: "radioactive-decay.html", title: "Radioactive Decay", icon: "radiation" }
+                ]
+            }
+        ];
+
+        // State Management
+        let state = {
+            activeCategoryId: physicsData[0].id, // Default first category
+            activeFileId: null
+        };
+
+        // Render Functions
+        function renderCategories() {
+            const container = document.getElementById('categories-container');
+            container.innerHTML = '';
+
+            physicsData.forEach(cat => {
+                const isActive = state.activeCategoryId === cat.id;
+                const btn = document.createElement('button');
+                
+                // Brutalist Button Styling
+                btn.className = `brutalist-button px-6 py-3 flex items-center gap-2 whitespace-nowrap min-w-max text-[16px] z-10 ${isActive ? 'active' : ''}`;
+                btn.onclick = () => selectCategory(cat.id);
+                
+                btn.innerHTML = `
+                    <i data-lucide="${cat.icon}" class="w-5 h-5 text-black stroke-[3px] relative z-10"></i>
+                    <span class="relative z-10 pt-1">${cat.category}</span>
+                `;
+                container.appendChild(btn);
+            });
+            
+            lucide.createIcons();
+        }
+
+        function renderFiles() {
+            const container = document.getElementById('files-container');
+            container.innerHTML = '';
+
+            const activeCat = physicsData.find(c => c.id === state.activeCategoryId);
+            if (!activeCat) return;
+
+            activeCat.files.forEach(file => {
+                const isActive = state.activeFileId === file.id;
+                const btn = document.createElement('button');
+                
+                // Brutalist Button Styling
+                btn.className = `brutalist-button px-5 py-2.5 flex items-center gap-2 whitespace-nowrap min-w-max text-[14px] z-10 ${isActive ? 'active' : ''}`;
+                btn.onclick = () => selectFile(file.id);
+                
+                btn.innerHTML = `
+                    <i data-lucide="${file.icon}" class="w-4 h-4 text-black stroke-[3px] relative z-10"></i>
+                    <span class="relative z-10 pt-1">${file.title}</span>
+                `;
+                container.appendChild(btn);
+            });
+
+            lucide.createIcons();
+        }
+
+        // Actions
+        function selectCategory(catId) {
+            if (state.activeCategoryId === catId) return; // Ignore if already selected
+            state.activeCategoryId = catId;
+            
+            // Re-render navs based on new state
+            renderCategories();
+            renderFiles();
+        }
+
+        function selectFile(fileId) {
+            state.activeFileId = fileId;
+            
+            // Update UI styling for buttons
+            renderFiles();
+
+            // Find file data
+            const activeCat = physicsData.find(c => c.id === state.activeCategoryId);
+            const fileData = activeCat.files.find(f => f.id === fileId);
+
+            if (fileData) {
+                // Hide empty state
+                document.getElementById('empty-state').style.display = 'none';
+
+                // Update Header
+                const titleElement = document.getElementById('current-file-title');
+                titleElement.innerHTML = `
+                    <i data-lucide="${fileData.icon}" class="w-6 h-6 text-black stroke-[3px]"></i>
+                    <span class="font-['Fredoka_One'] uppercase tracking-wide text-black text-xl pt-1">${fileData.title}</span> 
+                    <span class="text-gray-600 text-sm font-black ml-2 tracking-widest font-mono bg-gray-200 px-3 py-1.5 rounded-lg border-2 border-black">/ ${fileData.file}</span>
+                `;
+                lucide.createIcons();
+
+                // Load iframe
+                const iframe = document.getElementById('content-frame');
+                iframe.src = fileData.file; 
+            }
+        }
+
+        // Controls
+        function reloadFrame() {
+            const iframe = document.getElementById('content-frame');
+            if (state.activeFileId && iframe.src) {
+                iframe.src = iframe.src; 
+            }
+        }
+
+        function openInNewTab() {
+            if (state.activeFileId) {
+                const activeCat = physicsData.find(c => c.id === state.activeCategoryId);
+                const fileData = activeCat.files.find(f => f.id === state.activeFileId);
+                if (fileData) {
+                    window.open(fileData.file, '_blank');
+                }
+            }
+        }
+
+        // Initialization
+        document.addEventListener('DOMContentLoaded', () => {
+            renderCategories();
+            renderFiles();
+        });
+    </script>
+</body>
+</html>

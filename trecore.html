@@ -1,0 +1,469 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Trecore Hub | ClonBrow OS</title>
+    
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Nunito:wght@400;700;900&display=swap" rel="stylesheet">
+    
+    <!-- Three.js for 3D Trophy -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    fontFamily: { sans: ['Nunito', 'sans-serif'] },
+                    colors: {
+                        duo: {
+                            dark: '#1e293b', blue: '#1cb0f6', green: '#58cc02', 
+                            red: '#ff4b4b', yellow: '#ffc800', purple: '#ce82ff', bg: '#f8f9fa'
+                        }
+                    }
+                }
+            }
+        }
+    </script>
+    
+    <style>
+        body { font-family: 'Nunito', sans-serif; background-color: #f8f9fa; }
+        .bg-dots {
+            background-color: #f8f9fa;
+            background-image: radial-gradient(#cbd5e1 2px, transparent 2px);
+            background-size: 24px 24px;
+        }
+        .duo-card {
+            background-color: white; border: 3px solid #1e293b; border-radius: 20px;
+            box-shadow: 6px 6px 0px #1e293b; transition: all 0.2s ease;
+        }
+        .duo-btn {
+            border: 3px solid #1e293b; border-radius: 16px; font-weight: 800;
+            text-transform: uppercase; transition: all 0.1s; cursor: pointer;
+            box-shadow: 0px 4px 0px #1e293b; text-align: center;
+        }
+        .duo-btn:active { transform: translateY(4px); box-shadow: 0px 0px 0px #1e293b; }
+        
+        .progress-bar-inner { transition: width 1s cubic-bezier(0.34, 1.56, 0.64, 1); }
+
+        ::-webkit-scrollbar { width: 8px; }
+        ::-webkit-scrollbar-track { background: transparent; }
+        ::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 10px; }
+    </style>
+</head>
+<body class="bg-dots min-h-screen flex flex-col text-duo-dark selection:bg-duo-blue selection:text-white">
+
+    <!-- Auth Modal (Child Friendly) -->
+    <div id="auth-modal" class="fixed inset-0 bg-duo-dark/90 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+        <div class="duo-card p-8 max-w-sm w-full text-center">
+            <div class="text-6xl mb-4 animate-bounce">🏆</div>
+            <h2 class="text-3xl font-black mb-2">Trecore Hub</h2>
+            <p class="font-bold text-slate-500 mb-6">Enter your Hero Name to see your awards!</p>
+            <input type="text" id="username-input" class="w-full bg-slate-100 border-3 border-slate-300 rounded-xl p-4 font-bold text-lg mb-4 outline-none focus:border-duo-blue" placeholder="Hero Name">
+            <button onclick="loginAndSync()" class="w-full duo-btn bg-duo-green text-white py-4 text-xl">Let's Go!</button>
+            <p id="auth-error" class="text-duo-red font-bold text-sm mt-4 hidden">Waking up the cloud magic...</p>
+        </div>
+    </div>
+
+    <!-- Top Navigation -->
+    <header class="h-20 bg-white border-b-4 border-duo-dark flex items-center justify-between px-6 shrink-0 sticky top-0 z-40 shadow-sm">
+        <div class="flex items-center gap-4">
+            <button onclick="window.history.back()" class="w-12 h-12 rounded-xl border-3 border-duo-dark flex items-center justify-center text-slate-500 hover:bg-slate-100 transition-colors">
+                <i class="fas fa-arrow-left"></i>
+            </button>
+            <div>
+                <h1 class="text-2xl font-black tracking-tight flex items-center gap-2"><i class="fas fa-cubes text-duo-purple"></i> Trecore Hub</h1>
+                <p class="text-xs font-bold text-slate-400 uppercase tracking-widest">Awards & Progress</p>
+            </div>
+        </div>
+        <div class="flex items-center gap-4">
+            <div class="text-right hidden sm:block">
+                <div class="font-black text-lg" id="profile-name">Explorer</div>
+                <div class="text-xs font-bold text-duo-blue uppercase tracking-widest" id="profile-title">Novice</div>
+            </div>
+            <img id="profile-avatar" src="https://api.dicebear.com/7.x/bottts/svg?seed=Explorer" class="w-12 h-12 rounded-xl border-3 border-duo-dark bg-slate-100">
+        </div>
+    </header>
+
+    <main class="flex-1 w-full max-w-6xl mx-auto p-6 flex flex-col gap-8 pb-20">
+        
+        <!-- Level & 3D Trophy Section -->
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-8">
+            
+            <!-- Stats Card -->
+            <div class="duo-card p-8 flex flex-col justify-center">
+                <div class="flex justify-between items-end mb-2">
+                    <h2 class="text-5xl font-black text-duo-dark">Level <span id="level-display" class="text-duo-blue">1</span></h2>
+                    <span class="font-bold text-slate-500 text-lg"><span id="xp-display">0</span> XP</span>
+                </div>
+                
+                <!-- Progress Bar -->
+                <div class="w-full h-6 bg-slate-200 rounded-full border-3 border-duo-dark overflow-hidden mb-6 relative">
+                    <div id="level-progress" class="h-full bg-duo-yellow progress-bar-inner w-0 relative">
+                        <div class="absolute inset-0 bg-white/30 w-full h-1/2"></div>
+                    </div>
+                </div>
+
+                <div class="grid grid-cols-2 gap-4">
+                    <div class="bg-slate-50 border-3 border-slate-200 rounded-xl p-4 text-center">
+                        <div class="text-3xl font-black text-duo-purple mb-1" id="stat-created">0</div>
+                        <div class="text-xs font-bold text-slate-500 uppercase">Items Created</div>
+                    </div>
+                    <div class="bg-slate-50 border-3 border-slate-200 rounded-xl p-4 text-center">
+                        <div class="text-3xl font-black text-duo-green mb-1" id="stat-mastery">None</div>
+                        <div class="text-xs font-bold text-slate-500 uppercase">Top Skill</div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 3D Trophy Card -->
+            <div class="duo-card relative overflow-hidden flex flex-col items-center justify-center bg-slate-900 h-80 md:h-auto">
+                <div class="absolute top-4 left-4 z-10 bg-black/50 backdrop-blur border-2 border-white/20 px-3 py-1 rounded-lg text-white font-bold text-xs uppercase tracking-widest" id="trophy-tier">
+                    Bronze Tier
+                </div>
+                <!-- ThreeJS Canvas goes here -->
+                <canvas id="trophy-canvas" class="w-full h-full absolute inset-0"></canvas>
+            </div>
+        </div>
+
+        <!-- Badges & Rewards -->
+        <div>
+            <h3 class="text-xl font-black mb-4 flex items-center gap-2"><i class="fas fa-medal text-duo-yellow"></i> Achievements</h3>
+            <div class="grid grid-cols-2 md:grid-cols-4 gap-4">
+                
+                <div class="duo-card p-4 text-center flex flex-col items-center bg-orange-50 border-orange-200">
+                    <div class="w-16 h-16 rounded-full bg-orange-100 border-4 border-orange-400 flex items-center justify-center text-3xl mb-2">🔥</div>
+                    <h4 class="font-black text-orange-900">Starter</h4>
+                    <p class="text-xs font-bold text-orange-700">Joined the adventure!</p>
+                </div>
+
+                <div class="duo-card p-4 text-center flex flex-col items-center opacity-50 grayscale transition-all duration-500" id="badge-lvl10">
+                    <div class="w-16 h-16 rounded-full bg-slate-100 border-4 border-slate-400 flex items-center justify-center text-3xl mb-2">🥈</div>
+                    <h4 class="font-black text-slate-900">Scholar</h4>
+                    <p class="text-xs font-bold text-slate-600">Reach Level 10.</p>
+                </div>
+
+                <div class="duo-card p-4 text-center flex flex-col items-center opacity-50 grayscale transition-all duration-500" id="badge-lvl25">
+                    <div class="w-16 h-16 rounded-full bg-slate-100 border-4 border-slate-400 flex items-center justify-center text-3xl mb-2">👑</div>
+                    <h4 class="font-black text-slate-900">Master</h4>
+                    <p class="text-xs font-bold text-slate-600">Reach Level 25.</p>
+                </div>
+
+                <div class="duo-card p-4 text-center flex flex-col items-center opacity-50 grayscale transition-all duration-500" id="badge-lvl50">
+                    <div class="w-16 h-16 rounded-full bg-slate-100 border-4 border-slate-400 flex items-center justify-center text-3xl mb-2">🌌</div>
+                    <h4 class="font-black text-slate-900">Legend</h4>
+                    <p class="text-xs font-bold text-slate-600">Max Level 50!</p>
+                </div>
+            </div>
+        </div>
+
+        <!-- NEW: Pet Companion & Magic Crystal -->
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <!-- Companion Evolution -->
+            <div class="duo-card bg-gradient-to-br from-indigo-500 to-purple-600 p-6 flex items-center justify-between text-white relative overflow-hidden">
+                <div class="absolute -right-4 -top-4 text-8xl opacity-10">🐾</div>
+                <div class="relative z-10">
+                    <h3 class="text-2xl font-black mb-1">Hero Companion</h3>
+                    <p class="font-bold text-indigo-100 text-sm" id="companion-desc">Reach Level 5 to hatch!</p>
+                </div>
+                <div class="text-6xl animate-bounce relative z-10 transition-all duration-500" id="companion-emoji">🥚</div>
+            </div>
+
+            <!-- Magic Motivation Crystal -->
+            <div class="duo-card bg-gradient-to-br from-pink-500 to-rose-500 p-6 flex flex-col justify-center items-center text-white cursor-pointer hover:scale-[1.02] transition-transform shadow-[4px_4px_0_#1e293b]" onclick="shakeCrystal()">
+                <div class="text-4xl mb-2 transition-transform duration-150" id="crystal-emoji">🔮</div>
+                <h3 class="text-lg font-black text-center px-4" id="crystal-text">Tap the Magic Crystal!</h3>
+            </div>
+        </div>
+
+        <!-- Knowledge Vault -->
+        <div>
+            <h3 class="text-xl font-black mb-4 flex items-center gap-2"><i class="fas fa-archive text-duo-dark"></i> Knowledge Vault</h3>
+            <div class="duo-card bg-white p-6">
+                <div id="vault-list" class="space-y-4 max-h-96 overflow-y-auto pr-2">
+                    <div class="text-center font-bold text-slate-400 py-8">Sync your profile to view your vault.</div>
+                </div>
+            </div>
+        </div>
+
+    </main>
+
+    <script>
+        const PYTHON_API = 'https://clonexxshree.pythonanywhere.com/api';
+        let currentUser = '';
+        let userData = {
+            flashcards: [], quizzes: [], bites: [], formulas: [], tasks: []
+        };
+        let currentLevel = 1;
+
+        // --- 3D TROPHY SETUP ---
+        let scene, camera, renderer, trophyMesh, trophyMaterial, pointLight;
+        
+        function initTrophy() {
+            const canvas = document.getElementById('trophy-canvas');
+            scene = new THREE.Scene();
+            camera = new THREE.PerspectiveCamera(45, canvas.clientWidth / canvas.clientHeight, 0.1, 100);
+            camera.position.z = 6;
+            camera.position.y = 2;
+            camera.lookAt(0, 0.5, 0);
+
+            renderer = new THREE.WebGLRenderer({ canvas: canvas, alpha: true, antialias: true });
+            renderer.setSize(canvas.clientWidth, canvas.clientHeight);
+
+            const ambientLight = new THREE.AmbientLight(0xffffff, 0.6);
+            scene.add(ambientLight);
+
+            pointLight = new THREE.PointLight(0xffffff, 1.5);
+            pointLight.position.set(5, 5, 5);
+            scene.add(pointLight);
+
+            trophyMaterial = new THREE.MeshStandardMaterial({
+                color: 0xcd7f32, roughness: 0.3, metalness: 0.8
+            });
+
+            const group = new THREE.Group();
+            
+            const baseGeo = new THREE.CylinderGeometry(1, 1.2, 0.5, 32);
+            const base = new THREE.Mesh(baseGeo, trophyMaterial);
+            base.position.y = -1;
+            group.add(base);
+
+            const stemGeo = new THREE.CylinderGeometry(0.2, 0.4, 1.5, 32);
+            const stem = new THREE.Mesh(stemGeo, trophyMaterial);
+            stem.position.y = 0;
+            group.add(stem);
+
+            const cupGeo = new THREE.SphereGeometry(1.2, 32, 32, 0, Math.PI * 2, 0, Math.PI / 2);
+            const cup = new THREE.Mesh(cupGeo, trophyMaterial);
+            cup.position.y = 0.75;
+            cup.rotation.x = Math.PI;
+            group.add(cup);
+
+            trophyMesh = group;
+            scene.add(trophyMesh);
+
+            function animate() {
+                requestAnimationFrame(animate);
+                trophyMesh.rotation.y += 0.01;
+                renderer.render(scene, camera);
+            }
+            animate();
+
+            window.addEventListener('resize', () => {
+                camera.aspect = canvas.clientWidth / canvas.clientHeight;
+                camera.updateProjectionMatrix();
+                renderer.setSize(canvas.clientWidth, canvas.clientHeight);
+            });
+        }
+
+        function updateTrophyMaterial(level) {
+            if(!trophyMaterial) return;
+            const tierEl = document.getElementById('trophy-tier');
+            pointLight.color.setHex(0xffffff);
+            
+            if (level >= 50) {
+                trophyMaterial.color.setHex(0x1a1a1a); trophyMaterial.metalness = 0.9; trophyMaterial.roughness = 0.1;
+                trophyMaterial.emissive.setHex(0xff0000); trophyMaterial.emissiveIntensity = 0.5;
+                tierEl.innerText = "Obsidian Tier (MAX)"; tierEl.style.color = "#ff4b4b";
+            } else if (level >= 40) {
+                trophyMaterial.color.setHex(0xb9f2ff); trophyMaterial.metalness = 1.0; trophyMaterial.roughness = 0.0;
+                trophyMaterial.emissive.setHex(0xce82ff); trophyMaterial.emissiveIntensity = 0.3;
+                tierEl.innerText = "Diamond Tier"; tierEl.style.color = "#ce82ff";
+            } else if (level >= 30) {
+                trophyMaterial.color.setHex(0xe5e4e2); trophyMaterial.metalness = 1.0; trophyMaterial.roughness = 0.2;
+                trophyMaterial.emissive.setHex(0x1cb0f6); trophyMaterial.emissiveIntensity = 0.2;
+                tierEl.innerText = "Platinum Tier"; tierEl.style.color = "#1cb0f6";
+            } else if (level >= 20) {
+                trophyMaterial.color.setHex(0xffd700); trophyMaterial.metalness = 1.0; trophyMaterial.roughness = 0.2;
+                trophyMaterial.emissive.setHex(0x000000);
+                tierEl.innerText = "Gold Tier"; tierEl.style.color = "#ffc800";
+            } else if (level >= 10) {
+                trophyMaterial.color.setHex(0xc0c0c0); trophyMaterial.metalness = 0.9; trophyMaterial.roughness = 0.3;
+                trophyMaterial.emissive.setHex(0x000000);
+                tierEl.innerText = "Silver Tier"; tierEl.style.color = "#e5e7eb";
+            } else {
+                trophyMaterial.color.setHex(0xcd7f32); trophyMaterial.metalness = 0.8; trophyMaterial.roughness = 0.4;
+                trophyMaterial.emissive.setHex(0x000000);
+                tierEl.innerText = "Bronze Tier"; tierEl.style.color = "#fb923c";
+            }
+        }
+
+        // --- NEW: COMPANION & CRYSTAL LOGIC ---
+        function updateCompanion(level) {
+            const emojiEl = document.getElementById('companion-emoji');
+            const descEl = document.getElementById('companion-desc');
+            
+            if (level >= 50) { emojiEl.innerText = '🐉'; descEl.innerText = 'Galactic Dragon (Max Form!)'; }
+            else if (level >= 25) { emojiEl.innerText = '🦖'; descEl.innerText = 'Fierce Dino (Evolution 3)'; }
+            else if (level >= 10) { emojiEl.innerText = '🦎'; descEl.innerText = 'Baby Reptile (Evolution 2)'; }
+            else if (level >= 5) { emojiEl.innerText = '🐣'; descEl.innerText = 'Hatching... (Evolution 1)'; }
+            else { emojiEl.innerText = '🥚'; descEl.innerText = 'Mysterious Egg. Reach Lvl 5 to hatch!'; }
+        }
+
+        const quotes = [
+            "You're doing amazing! Keep going! 🌟",
+            "Every mistake is a step towards mastery! 🧠",
+            "Your brain is getting stronger every minute! 💪",
+            "A true hero never gives up! 🦸‍♂️",
+            "Knowledge is your greatest superpower! ⚡",
+            "Level up your mind, level up your life! 🚀",
+            "You are a learning machine! ⚙️",
+            "Believe in yourself! You got this! ✨"
+        ];
+
+        function shakeCrystal() {
+            const crystal = document.getElementById('crystal-emoji');
+            const text = document.getElementById('crystal-text');
+            
+            crystal.classList.add('scale-125', 'rotate-12');
+            setTimeout(() => crystal.classList.remove('scale-125', 'rotate-12'), 150);
+            
+            text.innerText = quotes[Math.floor(Math.random() * quotes.length)];
+        }
+
+        // --- AUTH & DATA FETCHING ---
+        async function loginAndSync() {
+            const input = document.getElementById('username-input').value.trim();
+            if(!input) return;
+            currentUser = input;
+            
+            const errEl = document.getElementById('auth-error');
+            errEl.classList.remove('hidden');
+            errEl.innerText = "Waking up the cloud magic...";
+            errEl.className = "font-bold text-sm mt-4 text-duo-blue";
+
+            try {
+                // Ensure profile exists
+                await fetch(`${PYTHON_API}/login`, {
+                    method: 'POST', headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ username: currentUser })
+                });
+
+                // Fetch all data safely using encodeURIComponent for spaces
+                const safeUser = encodeURIComponent(currentUser);
+                
+                // We fetch one by one so if one fails, it doesn't break the whole app
+                const fetchSafe = async (url) => {
+                    try {
+                        const res = await fetch(url);
+                        return res.ok ? await res.json() : [];
+                    } catch(e) { return []; }
+                };
+
+                userData.flashcards = await fetchSafe(`${PYTHON_API}/flashcards?user=${safeUser}`);
+                userData.quizzes = await fetchSafe(`${PYTHON_API}/quizzes?user=${safeUser}`);
+                userData.bites = await fetchSafe(`${PYTHON_API}/bites?user=${safeUser}`);
+                userData.formulas = await fetchSafe(`${PYTHON_API}/formulas?user=${safeUser}`);
+                userData.tasks = await fetchSafe(`${PYTHON_API}/tasks?user=${safeUser}`);
+
+                document.getElementById('auth-modal').style.display = 'none';
+                
+                updateDashboard();
+
+            } catch (e) {
+                console.error(e);
+                errEl.innerText = "Oops! The cloud is asleep. Try again later.";
+                errEl.className = "font-bold text-sm mt-4 text-duo-red";
+            }
+        }
+
+        function updateDashboard() {
+            document.getElementById('profile-name').innerText = currentUser;
+            document.getElementById('profile-avatar').src = `https://api.dicebear.com/7.x/bottts/svg?seed=${encodeURIComponent(currentUser)}`;
+
+            // Calculate XP
+            const xp = (userData.flashcards.length * 10) + 
+                       (userData.quizzes.length * 20) + 
+                       (userData.bites.length * 15) + 
+                       (userData.formulas.length * 5);
+            
+            document.getElementById('xp-display').innerText = xp;
+
+            // Calculate Level (Max 50)
+            currentLevel = Math.min(50, 1 + Math.floor(xp / 100));
+            document.getElementById('level-display').innerText = currentLevel;
+
+            // Progress Bar
+            const xpIntoCurrentLevel = xp % 100;
+            const progressPercent = currentLevel === 50 ? 100 : xpIntoCurrentLevel;
+            document.getElementById('level-progress').style.width = `${progressPercent}%`;
+
+            // Top Skill
+            let topSkill = "Starter";
+            const counts = [
+                {name: "Quizzes", c: userData.quizzes.length},
+                {name: "Flashcards", c: userData.flashcards.length},
+                {name: "Bites", c: userData.bites.length},
+                {name: "Formulas", c: userData.formulas.length}
+            ];
+            counts.sort((a,b) => b.c - a.c);
+            if(counts[0].c > 0) topSkill = counts[0].name;
+            document.getElementById('stat-mastery').innerText = topSkill;
+            document.getElementById('profile-title').innerText = topSkill + " Master";
+
+            // Total Items
+            document.getElementById('stat-created').innerText = userData.flashcards.length + userData.quizzes.length + userData.bites.length + userData.formulas.length;
+
+            // Update Badges
+            if (currentLevel >= 10) {
+                document.getElementById('badge-lvl10').classList.replace('opacity-50', 'opacity-100');
+                document.getElementById('badge-lvl10').classList.remove('grayscale');
+            }
+            if (currentLevel >= 25) {
+                document.getElementById('badge-lvl25').classList.replace('opacity-50', 'opacity-100');
+                document.getElementById('badge-lvl25').classList.remove('grayscale');
+            }
+            if (currentLevel >= 50) {
+                document.getElementById('badge-lvl50').classList.replace('opacity-50', 'opacity-100');
+                document.getElementById('badge-lvl50').classList.remove('grayscale');
+            }
+
+            updateTrophyMaterial(currentLevel);
+            updateCompanion(currentLevel);
+            renderKnowledgeVault();
+        }
+
+        function renderKnowledgeVault() {
+            const list = document.getElementById('vault-list');
+            list.innerHTML = '';
+            let hasItems = false;
+
+            if (userData.bites.length > 0) {
+                hasItems = true;
+                userData.bites.forEach(b => {
+                    list.innerHTML += `<div class="bg-slate-50 border-2 border-slate-200 p-3 rounded-lg break-words"><div class="font-black text-duo-dark mb-1"><i class="fas fa-lightbulb text-duo-yellow mr-2"></i> ${b.topic}</div><div class="text-sm font-bold text-slate-500 whitespace-pre-wrap">${b.points.join(' • ')}</div></div>`;
+                });
+            }
+            if (userData.quizzes.length > 0) {
+                hasItems = true;
+                userData.quizzes.forEach(q => {
+                    list.innerHTML += `<div class="bg-slate-50 border-2 border-slate-200 p-3 rounded-lg break-words"><div class="font-black text-duo-dark mb-1"><i class="fas fa-check-double text-duo-green mr-2"></i> Quiz Question</div><div class="text-sm font-bold text-slate-500 whitespace-pre-wrap">${q.q}</div></div>`;
+                });
+            }
+            if (userData.flashcards.length > 0) {
+                hasItems = true;
+                userData.flashcards.forEach(f => {
+                    list.innerHTML += `<div class="bg-slate-50 border-2 border-slate-200 p-3 rounded-lg break-words"><div class="font-black text-duo-dark mb-1"><i class="fas fa-clone text-duo-pink mr-2"></i> Flashcard</div><div class="text-sm font-bold text-slate-500 whitespace-pre-wrap">Q: ${f.q}<br/>A: ${f.a}</div></div>`;
+                });
+            }
+            if (userData.formulas.length > 0) {
+                hasItems = true;
+                userData.formulas.forEach(f => {
+                    list.innerHTML += `<div class="bg-slate-50 border-2 border-slate-200 p-3 rounded-lg break-words"><div class="font-black text-duo-dark mb-1"><i class="fas fa-square-root-variable text-duo-purple mr-2"></i> ${f.name}</div><div class="text-sm font-bold text-slate-500 font-mono">${f.expr}</div></div>`;
+                });
+            }
+
+            if(!hasItems) {
+                list.innerHTML = '<div class="text-center font-bold text-slate-400 py-8">Your vault is empty! Go play and learn to fill it up.</div>';
+            }
+        }
+
+        window.onload = () => {
+            initTrophy();
+        };
+
+    </script>
+</body>
+</html>

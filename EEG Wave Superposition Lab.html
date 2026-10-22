@@ -1,0 +1,471 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>EEG Wave Analysis: Superposition</title>
+    <style>
+        :root {
+            --bg-color: #f8fafc;
+            --panel-bg: #ffffff;
+            --text-main: #0f172a;
+            --text-muted: #64748b;
+            --alpha-color: #10b981; /* Emerald Green */
+            --beta-color: #3b82f6;  /* Bright Blue */
+            --combo-color: #f59e0b; /* Amber */
+            --grid-color: #1e293b;
+            --scope-bg: #020617;
+            --border-color: #e2e8f0;
+        }
+
+        * { box-sizing: border-box; margin: 0; padding: 0; }
+
+        body {
+            background-color: #f1f5f9;
+            color: var(--text-main);
+            font-family: 'Inter', -apple-system, system-ui, sans-serif;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            padding: 20px;
+        }
+
+        .app-container {
+            display: flex;
+            background: var(--panel-bg);
+            border-radius: 20px;
+            box-shadow: 0 20px 50px -12px rgba(0, 0, 0, 0.15);
+            width: 100%;
+            max-width: 1300px;
+            height: 850px;
+            overflow: hidden;
+            border: 1px solid var(--border-color);
+        }
+
+        /* Sidebar UI */
+        .sidebar {
+            width: 400px;
+            padding: 30px;
+            border-right: 1px solid var(--border-color);
+            display: flex;
+            flex-direction: column;
+            background: #fff;
+            z-index: 10;
+            overflow-y: auto;
+        }
+
+        .sidebar h1 { font-size: 24px; font-weight: 800; color: #1e293b; margin-bottom: 5px; }
+        .description { font-size: 13px; line-height: 1.5; color: var(--text-muted); margin-bottom: 20px; }
+
+        .math-box {
+            background: #f8fafc;
+            padding: 15px;
+            border-radius: 12px;
+            font-family: 'serif';
+            font-size: 15px;
+            border: 1px solid var(--border-color);
+            line-height: 1.6;
+            margin-bottom: 20px;
+        }
+
+        .math-box code {
+            font-family: 'Courier New', Courier, monospace;
+            font-weight: bold;
+            color: #b91c1c;
+            display: block;
+            margin-top: 5px;
+            font-size: 16px;
+        }
+
+        .control-panel {
+            background: #f8fafc;
+            border: 1px solid var(--border-color);
+            border-radius: 12px;
+            padding: 20px;
+            margin-bottom: 20px;
+        }
+
+        .control-panel h3 {
+            font-size: 14px;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            margin-bottom: 15px;
+            display: flex;
+            align-items: center;
+        }
+
+        .control-panel.alpha-panel h3 { color: var(--alpha-color); }
+        .control-panel.beta-panel h3 { color: var(--beta-color); }
+
+        .control-group { display: flex; flex-direction: column; gap: 8px; margin-bottom: 15px; }
+        .control-group:last-child { margin-bottom: 0; }
+        
+        label { font-size: 13px; font-weight: 700; display: flex; justify-content: space-between; color: #334155;}
+        .val-display { font-family: monospace; font-size: 14px; color: #0f172a; }
+        
+        input[type="range"] {
+            width: 100%;
+            cursor: pointer;
+        }
+        .alpha-slider { accent-color: var(--alpha-color); }
+        .beta-slider { accent-color: var(--beta-color); }
+
+        .preset-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 10px;
+            margin-bottom: 20px;
+        }
+
+        .preset-btn {
+            padding: 10px;
+            background: #e2e8f0;
+            color: #0f172a;
+            border: none;
+            border-radius: 8px;
+            font-size: 13px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+        .preset-btn:hover { background: #cbd5e1; transform: translateY(-1px); }
+        .preset-btn:active { transform: translateY(0); }
+
+        .status-card {
+            margin-top: auto;
+            background: #fffbeb;
+            padding: 15px;
+            border-radius: 12px;
+            font-size: 13px;
+            line-height: 1.5;
+            color: #92400e;
+            border-left: 4px solid #f59e0b;
+        }
+
+        /* Oscilloscope Display Area */
+        .scope-area {
+            flex: 1;
+            background: var(--scope-bg);
+            position: relative;
+            display: flex;
+            flex-direction: column;
+        }
+
+        .canvas-container {
+            flex: 1;
+            position: relative;
+            width: 100%;
+            height: 100%;
+        }
+
+        canvas {
+            position: absolute;
+            top: 0; left: 0;
+            width: 100%; height: 100%;
+        }
+
+        .scope-overlay {
+            position: absolute;
+            top: 0; left: 0; width: 100%; height: 100%;
+            pointer-events: none;
+            z-index: 10;
+        }
+
+        .scope-label {
+            position: absolute;
+            color: #fff;
+            font-family: monospace;
+            font-size: 12px;
+            font-weight: bold;
+            background: rgba(0,0,0,0.6);
+            padding: 4px 8px;
+            border-radius: 4px;
+            border: 1px solid rgba(255,255,255,0.2);
+        }
+
+        @media (max-width: 900px) {
+            .app-container { flex-direction: column; height: auto; }
+            .sidebar { width: 100%; border-right: none; border-bottom: 1px solid var(--border-color); }
+            .scope-area { height: 600px; }
+        }
+    </style>
+</head>
+<body>
+
+    <div class="app-container">
+        <aside class="sidebar">
+            <h1>EEG Superposition Lab</h1>
+            <p class="description">
+                Raw Electroencephalogram (EEG) signals are complex because they are the <strong>superposition</strong> (sum) of multiple simple sine waves generated by millions of neurons.
+            </p>
+
+            <div class="math-box">
+                <strong>Superposition Principle:</strong><br>
+                When two waves occupy the same space, their net amplitude is the sum of their individual amplitudes.
+                <code>Y(t) = A·sin(2πf₁t) + B·sin(2πf₂t)</code>
+            </div>
+
+            <div class="preset-grid">
+                <button class="preset-btn" onclick="setPreset('awake')">Awake (Active)</button>
+                <button class="preset-btn" onclick="setPreset('relax')">Relaxed (Eyes Closed)</button>
+                <button class="preset-btn" onclick="setPreset('sleep')">Sleep Onset</button>
+                <button class="preset-btn" onclick="setPreset('deep')">Deep Sleep (Delta)</button>
+            </div>
+
+            <!-- Alpha Controls -->
+            <div class="control-panel alpha-panel">
+                <h3>Alpha / Theta Wave (Slow)</h3>
+                <div class="control-group">
+                    <label>Frequency (f₁) <span class="val-display" id="alphaFreqVal">10 Hz</span></label>
+                    <input type="range" class="alpha-slider" id="alphaFreq" min="2" max="12" value="10" step="0.5">
+                </div>
+                <div class="control-group">
+                    <label>Amplitude (A) <span class="val-display" id="alphaAmpVal">40 µV</span></label>
+                    <input type="range" class="alpha-slider" id="alphaAmp" min="0" max="80" value="40">
+                </div>
+            </div>
+
+            <!-- Beta Controls -->
+            <div class="control-panel beta-panel">
+                <h3>Beta Wave (Fast)</h3>
+                <div class="control-group">
+                    <label>Frequency (f₂) <span class="val-display" id="betaFreqVal">20 Hz</span></label>
+                    <input type="range" class="beta-slider" id="betaFreq" min="13" max="35" value="20" step="0.5">
+                </div>
+                <div class="control-group">
+                    <label>Amplitude (B) <span class="val-display" id="betaAmpVal">20 µV</span></label>
+                    <input type="range" class="beta-slider" id="betaAmp" min="0" max="80" value="20">
+                </div>
+            </div>
+
+            <div class="status-card">
+                <strong>Biological Context:</strong><br>
+                <span id="bioContext">In an awake state, fast, low-amplitude Beta waves dominate. As you close your eyes to sleep, slower, higher-amplitude Alpha waves begin to synchronize and summate across the cortex.</span>
+            </div>
+        </aside>
+
+        <main class="scope-area">
+            <div class="canvas-container" id="canvasContainer">
+                <canvas id="eegCanvas"></canvas>
+                
+                <!-- Dynamic Scope Labels -->
+                <div class="scope-overlay" id="labels">
+                    <div class="scope-label" style="top: 20px; left: 20px; color: var(--alpha-color); border-color: var(--alpha-color);">CH 1: SLOW WAVE COMPONENT</div>
+                    <div class="scope-label" style="top: 33%; margin-top: 20px; left: 20px; color: var(--beta-color); border-color: var(--beta-color);">CH 2: FAST WAVE COMPONENT</div>
+                    <div class="scope-label" style="top: 66%; margin-top: 20px; left: 20px; color: var(--combo-color); border-color: var(--combo-color);">CH 3: RAW EEG (SUPERPOSITION CH1 + CH2)</div>
+                    
+                    <div class="scope-label" style="bottom: 10px; right: 20px; border: none; background: transparent;">TIME GRID: 1 SECOND / SCREEN</div>
+                </div>
+            </div>
+        </main>
+    </div>
+
+    <script>
+        // DOM Elements
+        const canvas = document.getElementById('eegCanvas');
+        const ctx = canvas.getContext('2d');
+        const container = document.getElementById('canvasContainer');
+
+        const alphaFreqSlider = document.getElementById('alphaFreq');
+        const alphaAmpSlider = document.getElementById('alphaAmp');
+        const betaFreqSlider = document.getElementById('betaFreq');
+        const betaAmpSlider = document.getElementById('betaAmp');
+
+        const alphaFreqVal = document.getElementById('alphaFreqVal');
+        const alphaAmpVal = document.getElementById('alphaAmpVal');
+        const betaFreqVal = document.getElementById('betaFreqVal');
+        const betaAmpVal = document.getElementById('betaAmpVal');
+        
+        const bioContext = document.getElementById('bioContext');
+
+        // State Variables
+        let timeOffset = 0;
+        let lastTime = performance.now();
+        
+        // Colors
+        const COLOR_GRID = '#1e293b';
+        const COLOR_ALPHA = '#10b981';
+        const COLOR_BETA = '#3b82f6';
+        const COLOR_COMBO = '#f59e0b';
+
+        // Resize Handling
+        function resize() {
+            // Setup for High-DPI displays
+            const dpr = window.devicePixelRatio || 1;
+            const rect = container.getBoundingClientRect();
+            
+            canvas.width = rect.width * dpr;
+            canvas.height = rect.height * dpr;
+            
+            ctx.scale(dpr, dpr);
+            canvas.style.width = `${rect.width}px`;
+            canvas.style.height = `${rect.height}px`;
+        }
+        window.addEventListener('resize', resize);
+
+        // Grid Drawing
+        function drawGrid(width, height) {
+            ctx.strokeStyle = COLOR_GRID;
+            ctx.lineWidth = 1;
+            
+            // Draw horizontal and vertical grid lines
+            const gridSize = 50;
+            ctx.beginPath();
+            
+            for (let x = 0; x <= width; x += gridSize) {
+                ctx.moveTo(x, 0);
+                ctx.lineTo(x, height);
+            }
+            
+            for (let y = 0; y <= height; y += gridSize) {
+                ctx.moveTo(0, y);
+                ctx.lineTo(width, y);
+            }
+            ctx.stroke();
+
+            // Draw centerlines for the 3 tracks
+            const trackHeight = height / 3;
+            ctx.strokeStyle = '#334155'; // Slightly brighter for axis
+            ctx.lineWidth = 2;
+            ctx.beginPath();
+            ctx.moveTo(0, trackHeight / 2); ctx.lineTo(width, trackHeight / 2);
+            ctx.moveTo(0, trackHeight + trackHeight / 2); ctx.lineTo(width, trackHeight + trackHeight / 2);
+            ctx.moveTo(0, trackHeight * 2 + trackHeight / 2); ctx.lineTo(width, trackHeight * 2 + trackHeight / 2);
+            ctx.stroke();
+            
+            // Track dividers
+            ctx.strokeStyle = '#0f172a';
+            ctx.lineWidth = 4;
+            ctx.beginPath();
+            ctx.moveTo(0, trackHeight); ctx.lineTo(width, trackHeight);
+            ctx.moveTo(0, trackHeight * 2); ctx.lineTo(width, trackHeight * 2);
+            ctx.stroke();
+        }
+
+        // Wave Drawing Function
+        function drawWave(yCenter, color, isCombined = false) {
+            const width = canvas.offsetWidth;
+            
+            // Get current slider values
+            const aFreq = parseFloat(alphaFreqSlider.value);
+            const aAmp = parseFloat(alphaAmpSlider.value);
+            const bFreq = parseFloat(betaFreqSlider.value);
+            const bAmp = parseFloat(betaAmpSlider.value);
+
+            ctx.beginPath();
+            ctx.strokeStyle = color;
+            ctx.lineWidth = 2;
+            
+            // Add a nice neon glow
+            ctx.shadowBlur = 8;
+            ctx.shadowColor = color;
+
+            // We want the entire width of the canvas to represent 1 second of time.
+            // So if freq is 10Hz, we should see 10 full cycles across the screen.
+            for (let x = 0; x < width; x++) {
+                // Determine the biological time at this pixel X
+                // timeOffset makes the wave scroll left continuously
+                const t = (x / width) + timeOffset; 
+                
+                let y = 0;
+                
+                if (isCombined) {
+                    // Superposition: Simply add the Y values together
+                    const y1 = Math.sin(t * aFreq * Math.PI * 2) * aAmp;
+                    const y2 = Math.sin(t * bFreq * Math.PI * 2) * bAmp;
+                    y = y1 + y2;
+                } else if (color === COLOR_ALPHA) {
+                    y = Math.sin(t * aFreq * Math.PI * 2) * aAmp;
+                } else if (color === COLOR_BETA) {
+                    y = Math.sin(t * bFreq * Math.PI * 2) * bAmp;
+                }
+
+                if (x === 0) ctx.moveTo(x, yCenter - y);
+                else ctx.lineTo(x, yCenter - y);
+            }
+            ctx.stroke();
+            ctx.shadowBlur = 0; // Reset glow for performance
+        }
+
+        // Animation Loop
+        function animate(time) {
+            const dt = (time - lastTime) / 1000; // Delta time in seconds
+            lastTime = time;
+            
+            // Scroll the wave left. 
+            // 0.2 means it takes 5 seconds for a peak to scroll fully across the screen
+            timeOffset += dt * 0.4; 
+
+            const width = canvas.offsetWidth;
+            const height = canvas.offsetHeight;
+
+            // Clear canvas
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+            // Draw Background
+            drawGrid(width, height);
+
+            // Calculate Centers
+            const trackHeight = height / 3;
+            const center1 = trackHeight / 2;
+            const center2 = trackHeight + (trackHeight / 2);
+            const center3 = trackHeight * 2 + (trackHeight / 2);
+
+            // Draw Waves
+            drawWave(center1, COLOR_ALPHA, false);
+            drawWave(center2, COLOR_BETA, false);
+            drawWave(center3, COLOR_COMBO, true);
+
+            requestAnimationFrame(animate);
+        }
+
+        // UI Event Listeners
+        function updateUI() {
+            alphaFreqVal.textContent = `${parseFloat(alphaFreqSlider.value).toFixed(1)} Hz`;
+            alphaAmpVal.textContent = `${alphaAmpSlider.value} µV`;
+            betaFreqVal.textContent = `${parseFloat(betaFreqSlider.value).toFixed(1)} Hz`;
+            betaAmpVal.textContent = `${betaAmpSlider.value} µV`;
+        }
+
+        alphaFreqSlider.addEventListener('input', updateUI);
+        alphaAmpSlider.addEventListener('input', updateUI);
+        betaFreqSlider.addEventListener('input', updateUI);
+        betaAmpSlider.addEventListener('input', updateUI);
+
+        // Presets Logic
+        function setPreset(state) {
+            let target = {};
+            
+            if (state === 'awake') {
+                target = { aF: 10, aA: 10, bF: 22, bA: 40, 
+                    text: "AWAKE: High frequency Beta waves dominate, indicating active thought, alertness, or anxiety. Alpha waves are desynchronized and small."};
+            } else if (state === 'relax') {
+                target = { aF: 10, aA: 60, bF: 18, bA: 10, 
+                    text: "RELAXED: Eyes closed, resting. Alpha waves (8-12 Hz) become highly synchronized and dominate the EEG. Notice the clear sinusoidal pattern emerging in the Raw EEG."};
+            } else if (state === 'sleep') {
+                target = { aF: 6, aA: 50, bF: 14, bA: 5, 
+                    text: "SLEEP ONSET (Stage 1): As you fall asleep, Alpha waves slow down into the Theta range (4-7 Hz). Beta activity almost entirely disappears."};
+            } else if (state === 'deep') {
+                target = { aF: 2, aA: 80, bF: 13, bA: 0, 
+                    text: "DEEP SLEEP (Delta): In Stage 3/4 sleep, massive, very slow Delta waves (0.5-4 Hz) dominate. The brain is highly synchronized in deep restorative rest."};
+            }
+
+            // Animate Sliders (Simple transition)
+            alphaFreqSlider.value = target.aF;
+            alphaAmpSlider.value = target.aA;
+            betaFreqSlider.value = target.bF;
+            betaAmpSlider.value = target.bA;
+            
+            bioContext.textContent = target.text;
+            updateUI();
+        }
+
+        // Init
+        resize();
+        updateUI();
+        requestAnimationFrame(animate);
+
+    </script>
+</body>
+</html>

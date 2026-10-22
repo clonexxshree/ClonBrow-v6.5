@@ -1,0 +1,508 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Phagocytosis Simulation Lab</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;700&family=Inter:wght@300;400;600;700&display=swap');
+
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: #020617; /* Slate 950 */
+            color: #f8fafc;
+            overflow: hidden;
+            user-select: none;
+            touch-action: none;
+        }
+
+        .font-mono { font-family: 'JetBrains Mono', monospace; }
+
+        /* UI Panels */
+        .glass-card {
+            background: rgba(15, 23, 42, 0.75);
+            backdrop-filter: blur(16px);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.5);
+        }
+
+        .digital-readout {
+            background: #061021;
+            color: #22d3ee; /* Cyan 400 */
+            text-shadow: 0 0 10px rgba(34, 211, 238, 0.4);
+            border: 1px solid #1e293b;
+            transition: all 0.3s ease;
+        }
+
+        .alert-active {
+            color: #f43f5e !important;
+            text-shadow: 0 0 12px rgba(244, 63, 94, 0.6) !important;
+            border-color: rgba(244, 63, 94, 0.3) !important;
+            background: rgba(244, 63, 94, 0.05) !important;
+        }
+
+        /* SVG Anatomy Styles */
+        #macrophage {
+            cursor: grab;
+            filter: drop-shadow(0 0 15px rgba(34, 211, 238, 0.2));
+            transition: transform 0.1s ease-out;
+        }
+        
+        #macrophage:active { cursor: grabbing; }
+
+        .cell-body {
+            fill: #083344;
+            stroke: #22d3ee;
+            stroke-width: 3;
+            transition: d 0.3s ease-out;
+        }
+
+        .organelle {
+            fill: #164e63;
+            opacity: 0.6;
+        }
+
+        .bacterium {
+            fill: #9f1239;
+            stroke: #f43f5e;
+            stroke-width: 2;
+            filter: drop-shadow(0 0 8px #f43f5e);
+            transition: opacity 0.5s ease, transform 0.5s ease;
+        }
+
+        /* Physics Grid */
+        .bio-grid {
+            background-size: 60px 60px;
+            background-image: 
+                linear-gradient(to right, rgba(34, 211, 238, 0.03) 1px, transparent 1px),
+                linear-gradient(to bottom, rgba(34, 211, 238, 0.03) 1px, transparent 1px);
+        }
+
+        /* Scanline */
+        .scanline {
+            width: 100%;
+            height: 2px;
+            background: rgba(34, 211, 238, 0.05);
+            position: absolute;
+            z-index: 10;
+            animation: scan 8s linear infinite;
+        }
+        @keyframes scan { 0% { top: 0%; } 100% { top: 100%; } }
+
+        .engulfed {
+            animation: dissolve 0.8s forwards ease-in;
+        }
+
+        @keyframes dissolve {
+            0% { transform: scale(1); opacity: 1; filter: hue-rotate(0deg) blur(0px); }
+            100% { transform: scale(0.2); opacity: 0; filter: hue-rotate(90deg) blur(5px); }
+        }
+    </style>
+</head>
+<body class="min-h-screen p-4 md:p-8 flex items-center justify-center">
+
+    <div class="max-w-7xl w-full grid grid-cols-1 lg:grid-cols-12 gap-8 items-stretch">
+        
+        <!-- Simulation Viewport -->
+        <div class="lg:col-span-8 flex flex-col gap-6">
+            <div id="sim-viewport" class="glass-card rounded-3xl p-0 relative flex-grow min-h-[550px] flex flex-col overflow-hidden border border-slate-800 bio-grid">
+                <div class="scanline"></div>
+                
+                <!-- HUD Header -->
+                <div class="absolute top-6 left-8 flex items-center gap-3 z-30">
+                    <div id="status-dot" class="w-2.5 h-2.5 rounded-full bg-cyan-500 shadow-[0_0_10px_#22d3ee]"></div>
+                    <span id="status-text" class="text-[10px] font-bold text-slate-400 uppercase tracking-widest font-mono">Immune Response: <span id="hud-status" class="text-cyan-400">Patrolling</span></span>
+                </div>
+
+                <!-- Environment Tags -->
+                <div class="absolute bottom-6 left-8 flex flex-col gap-1 z-30">
+                    <span class="text-[9px] font-mono text-slate-500 uppercase">System: Innate Immune Pathway</span>
+                    <span class="text-[9px] font-mono text-slate-500 uppercase">Cell: Tissue-resident Macrophage</span>
+                </div>
+
+                <!-- Simulation SVG Area -->
+                <svg id="sim-svg" class="w-full h-full absolute inset-0 z-10">
+                    <defs>
+                        <filter id="goo">
+                            <feGaussianBlur in="SourceGraphic" stdDeviation="8" result="blur" />
+                            <feColorMatrix in="blur" mode="matrix" values="1 0 0 0 0  0 1 0 0 0  0 0 1 0 0  0 0 0 18 -7" result="goo" />
+                        </filter>
+                    </defs>
+
+                    <!-- Background Fluid Particles -->
+                    <g id="bg-particles"></g>
+
+                    <!-- Bacteria Group -->
+                    <g id="bacteria-layer"></g>
+
+                    <!-- Macrophage Draggable Group -->
+                    <g id="macrophage" transform="translate(400, 275)">
+                        <!-- Gooey body for pseudopodia effect -->
+                        <g filter="url(#goo)">
+                            <path id="cell-path" class="cell-body" d="M -80,0 C -80,-44 -44,-80 0,-80 C 44,-80 80,-44 80,0 C 80,44 44,80 0,80 C -44,80 -80,44 -80,0 Z" />
+                            <!-- Nucleus & Lysosomes -->
+                            <circle class="organelle" cx="0" cy="0" r="30" />
+                            <circle class="organelle" cx="-20" cy="-15" r="8" />
+                            <circle class="organelle" cx="25" cy="10" r="6" />
+                        </g>
+                        <text y="5" font-size="10" fill="#22d3ee" font-weight="bold" text-anchor="middle" class="pointer-events-none opacity-40">APC CORE</text>
+                    </g>
+                </svg>
+
+                <div class="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 text-center pointer-events-none opacity-20">
+                    <div class="text-4xl font-bold tracking-[1em] text-slate-500">PHAGOS</div>
+                </div>
+            </div>
+
+            <!-- Interaction Help -->
+            <div class="glass-card p-4 rounded-2xl flex items-center justify-between">
+                <div class="flex items-center gap-4">
+                    <div class="w-10 h-10 rounded-full bg-slate-800 border border-slate-700 flex items-center justify-center">
+                        <svg class="w-5 h-5 text-cyan-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 11.5V14m0-2.5v-6a1.5 1.5 0 113 0V12m-3-2.5l3 1m0-5.5V14m0-7.5l3 1m0-1.5V14m0-4.5l3 1M3 14h18M3 14l1-1h16l1 1M3 14l3 3h12l3-3"></path></svg>
+                    </div>
+                    <div>
+                        <div class="text-xs font-bold text-slate-200 uppercase">Interactive Manual Control</div>
+                        <div class="text-[10px] text-slate-500 font-mono">Drag the cell to pathogenic clusters to initiate phagocytosis.</div>
+                    </div>
+                </div>
+                <button id="btn-spawn" class="px-6 py-2 bg-rose-900/40 hover:bg-rose-900/60 text-rose-400 border border-rose-800 rounded-lg text-[10px] font-bold uppercase transition-all">
+                    Infuse Bacteria
+                </button>
+            </div>
+        </div>
+
+        <!-- Sidebar: Analytics & Data -->
+        <div class="lg:col-span-4 flex flex-col gap-6">
+            
+            <!-- Digital Readout -->
+            <div id="telemetry-panel" class="digital-readout rounded-3xl p-6 space-y-6">
+                <div class="flex justify-between items-center border-b border-current pb-3 opacity-60">
+                    <span class="text-[10px] font-bold tracking-tighter uppercase">Innate Defense Telemetry</span>
+                    <span class="text-xs font-mono animate-pulse">LIVE</span>
+                </div>
+
+                <div class="space-y-6">
+                    
+                    <!-- Kill Count -->
+                    <div class="space-y-1">
+                        <label class="text-[10px] uppercase font-bold opacity-60">Pathogens Neutralized</label>
+                        <div class="flex items-baseline gap-2">
+                            <div id="data-count" class="text-6xl font-bold font-mono">0</div>
+                            <span class="text-xl font-mono font-bold opacity-60">U</span>
+                        </div>
+                    </div>
+
+                    <div class="grid grid-cols-2 gap-4 pt-4 border-t border-current opacity-80">
+                        <div class="space-y-1">
+                            <label class="text-[9px] uppercase font-bold text-current">MHC-II Expression</label>
+                            <div id="data-mhc" class="text-xl font-bold font-mono">STABLE</div>
+                        </div>
+                        <div class="space-y-1 text-right">
+                            <label class="text-[9px] uppercase font-bold text-current">Cytokines</label>
+                            <div id="data-cyto" class="text-xl font-bold font-mono">LOW</div>
+                        </div>
+                    </div>
+
+                    <!-- Process Visualizer -->
+                    <div class="p-4 bg-black/30 rounded-xl border border-current space-y-3">
+                        <div class="flex justify-between items-center">
+                            <label class="text-[9px] uppercase font-bold text-current">Lysosomal Digestion</label>
+                            <span id="data-digest-pct" class="text-[10px] font-mono">0%</span>
+                        </div>
+                        <div class="h-2 w-full bg-slate-900 rounded-full overflow-hidden">
+                            <div id="digest-bar" class="h-full bg-cyan-400 transition-all duration-300" style="width: 0%"></div>
+                        </div>
+                        <p class="text-[8px] opacity-60 leading-tight italic">
+                            Phagosome-lysosome fusion creates an acidic environment to dissolve peptidoglycan walls.
+                        </p>
+                    </div>
+
+                </div>
+            </div>
+
+            <!-- Pathophysiology Card -->
+            <div class="glass-card p-6 rounded-3xl space-y-4 flex-grow flex flex-col">
+                <h3 class="text-xs font-bold text-slate-400 uppercase tracking-widest">Molecular Steps</h3>
+                
+                <div class="space-y-4">
+                    <div class="flex gap-3">
+                        <div class="text-cyan-500 font-bold font-mono text-sm">01</div>
+                        <div>
+                            <div class="text-[11px] font-bold text-slate-200">Taxis & Adhesion</div>
+                            <p class="text-[10px] text-slate-500 leading-snug">Cell surface receptors recognize PAMPs (Pathogen-Associated Molecular Patterns) on the bacteria.</p>
+                        </div>
+                    </div>
+                    <div class="flex gap-3">
+                        <div class="text-cyan-500 font-bold font-mono text-sm">02</div>
+                        <div>
+                            <div class="text-[11px] font-bold text-slate-200">Pseudopodia Formation</div>
+                            <p class="text-[10px] text-slate-500 leading-snug">Actin polymerization pushes the membrane outward to wrap around the pathogen.</p>
+                        </div>
+                    </div>
+                    <div class="flex gap-3">
+                        <div class="text-cyan-500 font-bold font-mono text-sm">03</div>
+                        <div>
+                            <div class="text-[11px] font-bold text-slate-200">Antigen Presentation</div>
+                            <p class="text-[10px] text-slate-500 leading-snug">Digested bacterial fragments are loaded onto MHC-II molecules to alert the T-cells.</p>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="mt-auto p-3 bg-cyan-500/5 border border-cyan-500/20 rounded-xl">
+                    <div class="text-[10px] font-bold text-cyan-400 uppercase mb-1">Clinical Insight</div>
+                    <p class="text-[9px] text-slate-400">Certain pathogens like M. Tuberculosis can survive inside the phagosome by preventing lysosomal fusion.</p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', () => {
+            const viewport = document.getElementById('sim-viewport');
+            const simSvg = document.getElementById('sim-svg');
+            const macrophage = document.getElementById('macrophage');
+            const cellPath = document.getElementById('cell-path');
+            const bacteriaLayer = document.getElementById('bacteria-layer');
+            const bgParticles = document.getElementById('bg-particles');
+            const btnSpawn = document.getElementById('btn-spawn');
+            
+            const dataCount = document.getElementById('data-count');
+            const dataCyto = document.getElementById('data-cyto');
+            const dataMhc = document.getElementById('data-mhc');
+            const dataDigestPct = document.getElementById('data-digest-pct');
+            const digestBar = document.getElementById('digest-bar');
+            const hudStatus = document.getElementById('hud-status');
+            const statusDot = document.getElementById('status-dot');
+            const telePanel = document.getElementById('telemetry-panel');
+
+            // --- State ---
+            let killCount = 0;
+            let bacteria = [];
+            let isDragging = false;
+            let dragOffset = { x: 0, y: 0 };
+            let currentPos = { x: 400, y: 275 };
+            let mousePos = { x: 400, y: 275 };
+            let digestProgress = 0;
+
+            // --- Initialization ---
+
+            function initBackground() {
+                for(let i=0; i<30; i++) {
+                    const c = document.createElementNS('http://www.w3.org/2000/svg', 'circle');
+                    c.setAttribute('cx', Math.random() * 800);
+                    c.setAttribute('cy', Math.random() * 600);
+                    c.setAttribute('r', Math.random() * 3 + 1);
+                    c.setAttribute('fill', '#22d3ee');
+                    c.setAttribute('opacity', Math.random() * 0.1);
+                    bgParticles.appendChild(c);
+                }
+            }
+
+            function spawnBacteria() {
+                for(let i=0; i<8; i++) {
+                    const id = Math.random().toString(36).substr(2, 9);
+                    const x = Math.random() * 700 + 50;
+                    const y = Math.random() * 500 + 50;
+                    
+                    const g = document.createElementNS('http://www.w3.org/2000/svg', 'g');
+                    g.setAttribute('transform', `translate(${x}, ${y})`);
+                    g.id = id;
+
+                    const b = document.createElementNS('http://www.w3.org/2000/svg', 'ellipse');
+                    b.setAttribute('rx', 12);
+                    b.setAttribute('ry', 6);
+                    b.setAttribute('class', 'bacterium');
+                    
+                    // Add some pill details
+                    const detail = document.createElementNS('http://www.w3.org/2000/svg', 'path');
+                    detail.setAttribute('d', 'M -5,0 L 5,0');
+                    detail.setAttribute('stroke', '#fff');
+                    detail.setAttribute('stroke-width', '1');
+                    detail.setAttribute('opacity', '0.3');
+
+                    g.appendChild(b);
+                    g.appendChild(detail);
+                    bacteriaLayer.appendChild(g);
+
+                    bacteria.push({
+                        id,
+                        el: g,
+                        x, y,
+                        vx: (Math.random() - 0.5) * 0.5,
+                        vy: (Math.random() - 0.5) * 0.5,
+                        active: true
+                    });
+                }
+                updateHUDStatus();
+            }
+
+            // --- Interaction Logic ---
+
+            const handleStart = (e) => {
+                isDragging = true;
+                const clientX = e.touches ? e.touches[0].clientX : e.clientX;
+                const clientY = e.touches ? e.touches[0].clientY : e.clientY;
+                const rect = viewport.getBoundingClientRect();
+                
+                // Calculate local SVG coords
+                const localX = (clientX - rect.left) * (800 / rect.width);
+                const localY = (clientY - rect.top) * (600 / rect.height);
+                
+                dragOffset.x = localX - currentPos.x;
+                dragOffset.y = localY - currentPos.y;
+            };
+
+            const handleMove = (e) => {
+                const clientX = e.touches ? e.touches[0].clientX : e.clientX;
+                const clientY = e.touches ? e.touches[0].clientY : e.clientY;
+                const rect = viewport.getBoundingClientRect();
+                
+                mousePos.x = (clientX - rect.left) * (800 / rect.width);
+                mousePos.y = (clientY - rect.top) * (600 / rect.height);
+
+                if (isDragging) {
+                    currentPos.x = mousePos.x - dragOffset.x;
+                    currentPos.y = mousePos.y - dragOffset.y;
+                    
+                    // Clamp
+                    currentPos.x = Math.max(0, Math.min(800, currentPos.x));
+                    currentPos.y = Math.max(0, Math.min(600, currentPos.y));
+                }
+            };
+
+            const handleEnd = () => {
+                isDragging = false;
+            };
+
+            viewport.addEventListener('mousedown', handleStart);
+            window.addEventListener('mousemove', handleMove);
+            window.addEventListener('mouseup', handleEnd);
+            
+            viewport.addEventListener('touchstart', handleStart);
+            window.addEventListener('touchmove', handleMove);
+            window.addEventListener('touchend', handleEnd);
+
+            // --- Animation & Physics ---
+
+            function updatePath() {
+                // Morph the macrophage path based on movement velocity to simulate oozing
+                const dx = currentPos.x - 400; // relative for movement, but we just want the delta
+                // Actually let's use jitter for "pseudopodia"
+                const t = performance.now() / 1000;
+                
+                let d = "M ";
+                const points = 12;
+                const baseRadius = 80;
+
+                for (let i = 0; i < points; i++) {
+                    const angle = (i / points) * Math.PI * 2;
+                    // Add oscillation based on time and index
+                    const wobble = Math.sin(t * 2 + i) * 8;
+                    const r = baseRadius + wobble;
+                    
+                    const x = Math.cos(angle) * r;
+                    const y = Math.sin(angle) * r;
+                    
+                    if (i === 0) d += `${x},${y}`;
+                    else d += ` L ${x},${y}`;
+                }
+                d += " Z";
+                cellPath.setAttribute('d', d);
+                macrophage.setAttribute('transform', `translate(${currentPos.x}, ${currentPos.y})`);
+            }
+
+            function checkCollisions() {
+                bacteria.forEach(b => {
+                    if (!b.active) return;
+
+                    const dist = Math.hypot(b.x - currentPos.x, b.y - currentPos.y);
+                    if (dist < 90) { // Macrophage radius approx 80-90
+                        b.active = false;
+                        engulfPathogen(b);
+                    }
+                });
+            }
+
+            function engulfPathogen(b) {
+                b.el.classList.add('engulfed');
+                
+                // Visual feedback in HUD
+                killCount++;
+                dataCount.textContent = killCount;
+                
+                // Trigger "Digestion" bar
+                digestProgress = 0;
+                const digestInterval = setInterval(() => {
+                    digestProgress += 2;
+                    digestBar.style.width = `${digestProgress}%`;
+                    dataDigestPct.textContent = `${digestProgress}%`;
+                    
+                    if (digestProgress >= 100) {
+                        clearInterval(digestInterval);
+                        digestProgress = 0;
+                        setTimeout(() => {
+                            digestBar.style.width = '0%';
+                            dataDigestPct.textContent = '0%';
+                        }, 1000);
+                    }
+                }, 20);
+
+                // Secondary signals
+                if (killCount > 3) {
+                    dataCyto.textContent = "HIGH";
+                    dataCyto.classList.add('text-rose-500');
+                    dataMhc.textContent = "UPREGULATED";
+                    dataMhc.classList.add('text-cyan-400');
+                    telePanel.classList.add('alert-active');
+                    hudStatus.textContent = "ACTIVATED";
+                    hudStatus.className = "text-rose-500";
+                    statusDot.className = "w-2.5 h-2.5 rounded-full bg-rose-500 animate-ping";
+                }
+
+                // Remove element after animation
+                setTimeout(() => {
+                    b.el.remove();
+                }, 800);
+            }
+
+            function updateHUDStatus() {
+                const activeCount = bacteria.filter(b => b.active).length;
+                if (activeCount > 0 && killCount < 4) {
+                    hudStatus.textContent = "Pathogens Detected";
+                    hudStatus.className = "text-amber-400";
+                    statusDot.className = "w-2.5 h-2.5 rounded-full bg-amber-500 animate-pulse";
+                }
+            }
+
+            function loop() {
+                updatePath();
+                
+                // Move bacteria
+                bacteria.forEach(b => {
+                    if (!b.active) return;
+                    b.x += b.vx;
+                    b.y += b.vy;
+                    
+                    // Bounce off walls
+                    if (b.x < 50 || b.x > 750) b.vx *= -1;
+                    if (b.y < 50 || b.y > 550) b.vy *= -1;
+                    
+                    b.el.setAttribute('transform', `translate(${b.x}, ${b.y}) rotate(${Math.atan2(b.vy, b.vx) * 180 / Math.PI})`);
+                });
+
+                checkCollisions();
+                requestAnimationFrame(loop);
+            }
+
+            // Events
+            btnSpawn.addEventListener('click', spawnBacteria);
+
+            // Init
+            initBackground();
+            spawnBacteria();
+            loop();
+        });
+    </script>
+</body>
+</html>

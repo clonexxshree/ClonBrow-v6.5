@@ -1,0 +1,434 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Draggable Antioxidant Simulation</title>
+    <style>
+        :root {
+            --bg-color: #f8fafc;
+            --panel-bg: #ffffff;
+            --text-main: #0f172a;
+            --text-muted: #64748b;
+            --radical-color: #ef4444;
+            --antioxidant-color: #10b981;
+            --electron-color: #fbbf24;
+            --border-color: #e2e8f0;
+        }
+
+        * { box-sizing: border-box; margin: 0; padding: 0; }
+
+        body {
+            background-color: #f1f5f9;
+            color: var(--text-main);
+            font-family: 'Inter', -apple-system, system-ui, sans-serif;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            padding: 20px;
+            overflow: hidden;
+        }
+
+        .app-container {
+            display: flex;
+            background: var(--panel-bg);
+            border-radius: 20px;
+            box-shadow: 0 20px 50px -12px rgba(0, 0, 0, 0.15);
+            width: 100%;
+            max-width: 1200px;
+            height: 800px;
+            overflow: hidden;
+            border: 1px solid var(--border-color);
+        }
+
+        /* Sidebar */
+        .sidebar {
+            width: 320px;
+            padding: 30px;
+            border-right: 1px solid var(--border-color);
+            display: flex;
+            flex-direction: column;
+            gap: 20px;
+            z-index: 50;
+            background: white;
+        }
+
+        .sidebar h1 { font-size: 22px; font-weight: 800; color: #1e293b; }
+        .description { font-size: 13px; line-height: 1.6; color: var(--text-muted); }
+
+        .control-group { display: flex; flex-direction: column; gap: 10px; }
+
+        .main-btn {
+            width: 100%;
+            padding: 12px;
+            background: #1e293b;
+            color: white;
+            border: none;
+            border-radius: 10px;
+            font-size: 14px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.2s;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            gap: 8px;
+        }
+        .main-btn:hover { background: #334155; transform: translateY(-1px); }
+        .main-btn:active { transform: translateY(0); }
+        .main-btn:disabled { background: #cbd5e1; cursor: not-allowed; }
+
+        .status-card {
+            background: #f8fafc;
+            padding: 15px;
+            border-radius: 10px;
+            font-size: 13px;
+            line-height: 1.5;
+            color: var(--text-main);
+            border-left: 4px solid var(--radical-color);
+            transition: all 0.3s;
+        }
+
+        /* Simulation Area */
+        .simulation-area {
+            flex: 1;
+            background: radial-gradient(circle at center, #ffffff, #f1f5f9);
+            position: relative;
+            cursor: default;
+            overflow: hidden;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .svg-overlay {
+            width: 100%;
+            height: 100%;
+            display: block;
+            touch-action: none;
+        }
+
+        /* Interaction Classes */
+        .draggable { 
+            cursor: grab; 
+            pointer-events: all;
+        }
+        .draggable:active { cursor: grabbing; }
+        
+        /* Ensure shapes capture pointer events */
+        .radical-path, .antioxidant-circle {
+            pointer-events: visiblePainted;
+        }
+
+        .radical-path {
+            fill: var(--radical-color);
+            stroke: #991b1b;
+            stroke-width: 2;
+            transition: fill 1s ease;
+        }
+
+        .antioxidant-circle {
+            fill: var(--antioxidant-color);
+            stroke: #065f46;
+            stroke-width: 2;
+            filter: drop-shadow(0 4px 10px rgba(16, 185, 129, 0.3));
+        }
+
+        .electron {
+            fill: var(--electron-color);
+            filter: drop-shadow(0 0 10px var(--electron-color));
+            pointer-events: none;
+        }
+
+        .label-text {
+            font-size: 12px;
+            font-weight: 800;
+            fill: #64748b;
+            text-anchor: middle;
+            pointer-events: none;
+            user-select: none;
+        }
+
+        @keyframes vibrate {
+            0% { transform: translate(0, 0); }
+            25% { transform: translate(-1.5px, 1.5px); }
+            50% { transform: translate(1.5px, -1.5px); }
+            75% { transform: translate(-1.5px, -1.5px); }
+            100% { transform: translate(0, 0); }
+        }
+
+        .vibrating-inner { animation: vibrate 0.1s infinite linear; }
+
+        .instruction-toast {
+            position: absolute;
+            bottom: 20px;
+            left: 50%;
+            transform: translateX(-50%);
+            background: rgba(30, 41, 59, 0.85);
+            color: white;
+            padding: 10px 20px;
+            border-radius: 30px;
+            font-size: 13px;
+            pointer-events: none;
+            z-index: 100;
+            backdrop-filter: blur(4px);
+        }
+
+        @media (max-width: 900px) {
+            .app-container { flex-direction: column; height: auto; }
+            .sidebar { width: 100%; border-right: none; }
+            .simulation-area { height: 60vh; }
+        }
+    </style>
+</head>
+<body>
+
+    <div class="app-container">
+        <aside class="sidebar">
+            <h1>Antioxidant Lab</h1>
+            <p class="description">
+                Free radicals are unstable because they have an unpaired electron.
+                <br><br>
+                <strong>Interact:</strong> Drag the Radical and Antioxidant around the space. Click "Donate" to see the transfer.
+            </p>
+
+            <div class="control-group">
+                <button class="main-btn" id="btnNeutralize">
+                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 2v20M2 12h20"/></svg>
+                    Donate Electron
+                </button>
+                <button class="main-btn" style="background: #64748b;" id="btnReset">
+                    Reset Positions
+                </button>
+            </div>
+
+            <div class="status-card" id="statusCard">
+                <strong id="statusTitle">Status: Active Radical</strong><br>
+                <span id="statusText">The radical is vibrating due to its high reactivity. Drag it closer to the green antioxidant.</span>
+            </div>
+        </aside>
+
+        <main class="simulation-area" id="simArea">
+            <div class="instruction-toast">Drag the molecules to move them</div>
+            
+            <svg class="svg-overlay" id="mainSvg" viewBox="0 0 800 800">
+                <!-- Environment particles -->
+                <g id="bg-particles"></g>
+
+                <!-- Free Radical Group -->
+                <g id="radical-group" class="draggable" transform="translate(300, 400)">
+                    <g class="vibrating-inner" id="radical-vibrator">
+                        <path id="radical-shape" class="radical-path" d="" />
+                        <circle id="gap" cx="35" cy="0" r="12" fill="white" stroke="#991b1b" stroke-dasharray="3" />
+                    </g>
+                    <text y="90" class="label-text">FREE RADICAL</text>
+                </g>
+
+                <!-- Antioxidant Group -->
+                <g id="antioxidant-group" class="draggable" transform="translate(500, 400)">
+                    <circle class="antioxidant-circle" r="60" />
+                    <circle id="electron" class="electron" cx="-40" cy="0" r="10" fill="#fbbf24" />
+                    <text y="95" class="label-text">ANTIOXIDANT</text>
+                </g>
+            </svg>
+        </main>
+    </div>
+
+    <script>
+        const mainSvg = document.getElementById('mainSvg');
+        const radicalGroup = document.getElementById('radical-group');
+        const antioxidantGroup = document.getElementById('antioxidant-group');
+        const radicalShape = document.getElementById('radical-shape');
+        const radicalVibrator = document.getElementById('radical-vibrator');
+        const electron = document.getElementById('electron');
+        const gap = document.getElementById('gap');
+        const btnNeutralize = document.getElementById('btnNeutralize');
+        const btnReset = document.getElementById('btnReset');
+        const statusTitle = document.getElementById('statusTitle');
+        const statusText = document.getElementById('statusText');
+        const statusCard = document.getElementById('statusCard');
+
+        let simulationState = 'oxidative'; 
+        let spikes = 16;
+        let spikeAmplitude = 18;
+        
+        let posRadical = { x: 300, y: 400 };
+        let posAntioxidant = { x: 500, y: 400 };
+
+        // --- IMPROVED DRAGGING ---
+        let selectedElement = null;
+        let offset = { x: 0, y: 0 };
+
+        function getMousePos(evt) {
+            const CTM = mainSvg.getScreenCTM();
+            if (evt.touches && evt.touches.length > 0) {
+                evt = evt.touches[0];
+            }
+            return {
+                x: (evt.clientX - CTM.e) / CTM.a,
+                y: (evt.clientY - CTM.f) / CTM.d
+            };
+        }
+
+        function startDrag(evt) {
+            if (simulationState === 'transferring') return;
+            
+            // Find the closest parent with class 'draggable'
+            const target = evt.target.closest('.draggable');
+            if (target) {
+                selectedElement = target;
+                const mousePos = getMousePos(evt);
+                const transform = selectedElement.getAttribute('transform');
+                const match = /translate\(([^, ]+)[, ]+([^)]+)\)/.exec(transform);
+                
+                if (match) {
+                    offset.x = mousePos.x - parseFloat(match[1]);
+                    offset.y = mousePos.y - parseFloat(match[2]);
+                }
+            }
+        }
+
+        function drag(evt) {
+            if (selectedElement) {
+                if (evt.type === 'touchmove') evt.preventDefault();
+                const mousePos = getMousePos(evt);
+                const nx = mousePos.x - offset.x;
+                const ny = mousePos.y - offset.y;
+                
+                // Boundaries to keep in view
+                const bx = Math.max(80, Math.min(720, nx));
+                const by = Math.max(80, Math.min(720, ny));
+                
+                selectedElement.setAttribute('transform', `translate(${bx}, ${by})`);
+                
+                if (selectedElement === radicalGroup) {
+                    posRadical = { x: bx, y: by };
+                } else {
+                    posAntioxidant = { x: bx, y: by };
+                }
+            }
+        }
+
+        function endDrag() {
+            selectedElement = null;
+        }
+
+        mainSvg.addEventListener('mousedown', startDrag);
+        mainSvg.addEventListener('mousemove', drag);
+        window.addEventListener('mouseup', endDrag);
+
+        mainSvg.addEventListener('touchstart', startDrag, {passive: false});
+        mainSvg.addEventListener('touchmove', drag, {passive: false});
+        window.addEventListener('touchend', endDrag);
+
+        // --- SHAPE ANIMATION ---
+        function getSpikyPath(r, numSpikes, amplitude) {
+            let path = "";
+            for (let i = 0; i <= numSpikes * 2; i++) {
+                const angle = (Math.PI * i) / numSpikes;
+                const dist = r + (i % 2 === 0 ? amplitude : -amplitude);
+                const x = Math.cos(angle) * dist;
+                const y = Math.sin(angle) * dist;
+                path += (i === 0 ? "M " : "L ") + x + " " + y;
+            }
+            path += " Z";
+            return path;
+        }
+
+        function frame() {
+            if (simulationState === 'oxidative') {
+                const currentAmp = spikeAmplitude + Math.sin(Date.now() / 120) * 5;
+                radicalShape.setAttribute('d', getSpikyPath(50, spikes, currentAmp));
+            } else if (simulationState === 'neutral') {
+                if (spikeAmplitude > 0) {
+                    spikeAmplitude -= 1;
+                    radicalShape.setAttribute('d', getSpikyPath(55, spikes, spikeAmplitude));
+                } else {
+                    radicalShape.setAttribute('d', getSpikyPath(58, spikes, 0));
+                }
+            }
+            requestAnimationFrame(frame);
+        }
+
+        // --- ACTIONS ---
+        async function neutralize() {
+            if (simulationState !== 'oxidative') return;
+            simulationState = 'transferring';
+            btnNeutralize.disabled = true;
+
+            statusTitle.textContent = "Status: Neutralizing";
+            statusText.textContent = "Transferring the electron to stabilize the molecular structure...";
+
+            // Calculate jump path
+            const startX = posAntioxidant.x - 40;
+            const startY = posAntioxidant.y;
+            const endX = posRadical.x + 35;
+            const endY = posRadical.y;
+
+            const dx = endX - startX;
+            const dy = endY - startY;
+
+            electron.style.transition = "transform 0.6s cubic-bezier(0.34, 1.56, 0.64, 1), opacity 0.4s";
+            electron.style.transform = `translate(${dx}px, ${dy}px)`;
+            
+            setTimeout(() => {
+                simulationState = 'neutral';
+                electron.style.opacity = '0';
+                gap.style.opacity = '0';
+                radicalVibrator.style.animation = 'none';
+                radicalShape.style.fill = "#10b981";
+                radicalShape.style.stroke = "#064e3b";
+
+                statusTitle.textContent = "Status: Stable";
+                statusText.textContent = "The radical has been neutralized. It is now a stable molecule.";
+                statusCard.style.borderLeftColor = "#10b981";
+                statusCard.style.backgroundColor = "#ecfdf5";
+            }, 600);
+        }
+
+        function reset() {
+            simulationState = 'oxidative';
+            btnNeutralize.disabled = false;
+            spikeAmplitude = 18;
+            
+            posRadical = { x: 300, y: 400 };
+            posAntioxidant = { x: 500, y: 400 };
+            
+            radicalGroup.setAttribute('transform', `translate(${posRadical.x}, ${posRadical.y})`);
+            antioxidantGroup.setAttribute('transform', `translate(${posAntioxidant.x}, ${posAntioxidant.y})`);
+            
+            electron.style.transition = "none";
+            electron.style.transform = "translate(0, 0)";
+            electron.style.opacity = '1';
+            
+            gap.style.opacity = '1';
+            radicalVibrator.style.animation = 'vibrate 0.1s infinite linear';
+            radicalShape.style.fill = "var(--radical-color)";
+            radicalShape.style.stroke = "#991b1b";
+            
+            statusTitle.textContent = "Status: Active Radical";
+            statusText.textContent = "The radical is missing an electron. It is vibrating with instability.";
+            statusCard.style.borderLeftColor = "var(--radical-color)";
+            statusCard.style.backgroundColor = "#f8fafc";
+        }
+
+        btnNeutralize.onclick = neutralize;
+        btnReset.onclick = reset;
+
+        // Bg elements
+        const bgGroup = document.getElementById('bg-particles');
+        for (let i = 0; i < 50; i++) {
+            const c = document.createElementNS("http://www.w3.org/2000/svg", "circle");
+            c.setAttribute("cx", Math.random() * 800);
+            c.setAttribute("cy", Math.random() * 800);
+            c.setAttribute("r", 0.5 + Math.random() * 2.5);
+            c.setAttribute("fill", "#94a3b8");
+            c.setAttribute("opacity", 0.15);
+            bgGroup.appendChild(c);
+        }
+
+        frame();
+    </script>
+</body>
+</html>

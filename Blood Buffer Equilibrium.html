@@ -1,0 +1,580 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Blood Buffer System: Acid-Base Equilibrium</title>
+    <style>
+        :root {
+            --bg-color: #f8fafc;
+            --panel-bg: #ffffff;
+            --text-main: #0f172a;
+            --text-muted: #475569;
+            --accent: #0ea5e9;
+            --border-color: #e2e8f0;
+            --acid-color: #ef4444; /* Red */
+            --base-color: #3b82f6; /* Blue */
+            --buffer-color: #10b981; /* Green */
+            --neutral-color: #f59e0b; /* Yellow */
+        }
+
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+
+        body {
+            background-color: var(--bg-color);
+            color: var(--text-main);
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            padding: 20px;
+        }
+
+        .app-container {
+            display: flex;
+            flex-direction: row;
+            background: var(--panel-bg);
+            border-radius: 16px;
+            box-shadow: 0 10px 40px -10px rgba(0, 0, 0, 0.1);
+            overflow: hidden;
+            width: 100%;
+            max-width: 1200px;
+            border: 1px solid var(--border-color);
+        }
+
+        /* Sidebar & UI */
+        .sidebar {
+            width: 380px;
+            padding: 32px;
+            background: #ffffff;
+            border-right: 1px solid var(--border-color);
+            display: flex;
+            flex-direction: column;
+            z-index: 10;
+        }
+
+        .sidebar h1 {
+            font-size: 24px;
+            font-weight: 700;
+            margin-bottom: 12px;
+            color: #1e293b;
+        }
+
+        .description {
+            font-size: 14px;
+            line-height: 1.6;
+            color: var(--text-muted);
+            margin-bottom: 24px;
+        }
+
+        .controls {
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+            margin-bottom: 24px;
+        }
+
+        button {
+            width: 100%;
+            padding: 12px 16px;
+            color: white;
+            border: none;
+            border-radius: 8px;
+            font-size: 15px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.2s;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            gap: 8px;
+        }
+
+        button:active:not(:disabled) {
+            transform: scale(0.98);
+        }
+
+        button:disabled {
+            background-color: #cbd5e1 !important;
+            cursor: not-allowed;
+            color: #64748b;
+            transform: none;
+        }
+
+        #btnAcid {
+            background-color: var(--acid-color);
+        }
+        #btnAcid:hover:not(:disabled) { background-color: #dc2626; }
+
+        #btnBase {
+            background-color: var(--base-color);
+        }
+        #btnBase:hover:not(:disabled) { background-color: #2563eb; }
+
+        .status-card {
+            background: #f1f5f9;
+            border-left: 4px solid var(--accent);
+            padding: 16px;
+            border-radius: 0 8px 8px 0;
+            margin-bottom: 24px;
+            min-height: 130px;
+            transition: all 0.3s ease;
+        }
+
+        .status-card h3 {
+            font-size: 14px;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            color: var(--accent);
+            margin-bottom: 8px;
+        }
+
+        .status-card p {
+            font-size: 14px;
+            line-height: 1.5;
+            color: #334155;
+            margin: 0;
+        }
+
+        .legend {
+            margin-top: auto;
+            border-top: 1px solid var(--border-color);
+            padding-top: 20px;
+        }
+
+        .legend h4 {
+            font-size: 12px;
+            text-transform: uppercase;
+            color: var(--text-muted);
+            margin-bottom: 12px;
+            letter-spacing: 0.5px;
+        }
+
+        .legend-item {
+            display: flex;
+            align-items: center;
+            margin-bottom: 10px;
+            font-size: 13px;
+            color: #334155;
+            font-weight: 500;
+        }
+
+        .legend-color {
+            width: 16px;
+            height: 16px;
+            border-radius: 50%;
+            margin-right: 12px;
+        }
+
+        /* Canvas Area */
+        .canvas-area {
+            flex: 1;
+            position: relative;
+            background: radial-gradient(circle at 50% 50%, #ffffff 0%, #f1f5f9 100%);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            overflow: hidden;
+            min-height: 600px;
+        }
+
+        .svg-container {
+            width: 100%;
+            height: 100%;
+            max-width: 800px;
+            max-height: 800px;
+        }
+
+        /* SVG Animations */
+        .smooth-transform {
+            transition: transform 1.5s cubic-bezier(0.4, 0, 0.2, 1), opacity 0.5s ease;
+        }
+        
+        .fast-transform {
+            transition: transform 0.8s ease-in-out, opacity 0.4s ease;
+        }
+
+        /* Responsive */
+        @media (max-width: 900px) {
+            .app-container {
+                flex-direction: column;
+            }
+            .sidebar {
+                width: 100%;
+                border-right: none;
+                border-bottom: 1px solid var(--border-color);
+            }
+            .canvas-area {
+                min-height: 500px;
+            }
+        }
+    </style>
+</head>
+<body>
+
+    <div class="app-container">
+        
+        <!-- Sidebar Controls & Info -->
+        <aside class="sidebar">
+            <h1>Blood Buffer System</h1>
+            <p class="description">
+                The body maintains blood pH tightly around <strong>7.4</strong>. A buffer system (like Carbonic Acid & Bicarbonate) acts like a chemical seesaw, absorbing excess acids or bases to prevent dangerous pH shifts.
+            </p>
+
+            <div class="controls">
+                <button id="btnAcid">
+                    Add Acid (H⁺)
+                </button>
+                <button id="btnBase">
+                    Add Base (OH⁻)
+                </button>
+            </div>
+
+            <div class="status-card" id="statusCard">
+                <h3 id="statusTitle">Status: Homeostasis</h3>
+                <p id="statusDesc">Blood pH is perfectly balanced at 7.4. The scale is level. Select an action above to disrupt the equilibrium.</p>
+            </div>
+
+            <div class="legend">
+                <h4>Legend</h4>
+                <div class="legend-item">
+                    <div class="legend-color" style="background: var(--acid-color);"></div>
+                    <span>Acid (H⁺)</span>
+                </div>
+                <div class="legend-item">
+                    <div class="legend-color" style="background: var(--base-color);"></div>
+                    <span>Base (OH⁻)</span>
+                </div>
+                <div class="legend-item">
+                    <div class="legend-color" style="background: var(--buffer-color);"></div>
+                    <span>Buffer Molecule (HCO₃⁻ / H₂CO₃)</span>
+                </div>
+                <div class="legend-item">
+                    <div class="legend-color" style="background: #e2e8f0; border: 1px solid #94a3b8;"></div>
+                    <span>Neutralized Product (H₂O + CO₂)</span>
+                </div>
+            </div>
+        </aside>
+
+        <!-- Animation Canvas -->
+        <main class="canvas-area">
+            <svg class="svg-container" viewBox="0 0 800 600" preserveAspectRatio="xMidYMid meet">
+                <defs>
+                    <!-- Dropshadow for depth -->
+                    <filter id="shadow" x="-20%" y="-20%" width="140%" height="140%">
+                        <feDropShadow dx="0" dy="8" stdDeviation="6" flood-color="#0f172a" flood-opacity="0.15"/>
+                    </filter>
+                    
+                    <filter id="glow" x="-20%" y="-20%" width="140%" height="140%">
+                        <feGaussianBlur stdDeviation="3" result="blur" />
+                        <feComposite in="SourceGraphic" in2="blur" operator="over" />
+                    </filter>
+
+                    <!-- Gradients -->
+                    <linearGradient id="metalGrad" x1="0%" y1="0%" x2="0%" y2="100%">
+                        <stop offset="0%" stop-color="#f8fafc"/>
+                        <stop offset="50%" stop-color="#cbd5e1"/>
+                        <stop offset="100%" stop-color="#94a3b8"/>
+                    </linearGradient>
+
+                    <linearGradient id="phGrad" x1="0%" y1="0%" x2="100%" y2="0%">
+                        <stop offset="0%" stop-color="#ef4444"/> <!-- Acidic Red -->
+                        <stop offset="20%" stop-color="#f59e0b"/> <!-- Orange -->
+                        <stop offset="50%" stop-color="#10b981"/> <!-- Neutral Green -->
+                        <stop offset="80%" stop-color="#0ea5e9"/> <!-- Light Blue -->
+                        <stop offset="100%" stop-color="#3b82f6"/> <!-- Basic Blue -->
+                    </linearGradient>
+                </defs>
+
+                <!-- ================= pH METER ================= -->
+                <g id="meter-group" transform="translate(400, 120)">
+                    <!-- Meter Background -->
+                    <path d="M -150 0 A 150 150 0 0 1 150 0 L 120 0 A 120 120 0 0 0 -120 0 Z" fill="url(#phGrad)" filter="url(#shadow)"/>
+                    
+                    <!-- Tick Marks & Labels -->
+                    <g fill="#475569" font-size="14" font-weight="bold" font-family="sans-serif" text-anchor="middle">
+                        <!-- Acidic side -->
+                        <text x="-135" y="-15" transform="rotate(-60, -135, -15)">7.0</text>
+                        <text x="-85" y="-90" transform="rotate(-30, -85, -90)">7.2</text>
+                        
+                        <!-- Neutral -->
+                        <text x="0" y="-135" fill="#1e293b" font-size="18">7.4</text>
+                        
+                        <!-- Basic side -->
+                        <text x="85" y="-90" transform="rotate(30, 85, -90)">7.6</text>
+                        <text x="135" y="-15" transform="rotate(60, 135, -15)">7.8</text>
+                    </g>
+                    
+                    <text x="0" y="30" font-size="18" font-weight="700" fill="#334155" text-anchor="middle">Blood pH</text>
+                    <text x="-150" y="30" font-size="12" font-weight="600" fill="#ef4444" text-anchor="middle">ACIDOSIS</text>
+                    <text x="150" y="30" font-size="12" font-weight="600" fill="#3b82f6" text-anchor="middle">ALKALOSIS</text>
+
+                    <!-- Meter Needle -->
+                    <g id="ph-needle" class="smooth-transform" style="transform-origin: 0px 0px; transform: rotate(0deg);">
+                        <polygon points="-4,0 4,0 0,-130" fill="#1e293b" filter="url(#shadow)"/>
+                        <circle cx="0" cy="0" r="10" fill="#334155"/>
+                        <circle cx="0" cy="0" r="4" fill="#ffffff"/>
+                    </g>
+                </g>
+
+                <!-- ================= SEESAW SYSTEM ================= -->
+                
+                <!-- Fulcrum Base -->
+                <g id="fulcrum" transform="translate(400, 480)" filter="url(#shadow)">
+                    <polygon points="-30,60 0,0 30,60" fill="url(#metalGrad)"/>
+                    <rect x="-40" y="60" width="80" height="15" fill="#64748b" rx="4"/>
+                    <circle cx="0" cy="0" r="12" fill="#334155"/>
+                    <circle cx="0" cy="0" r="4" fill="#ffffff"/>
+                </g>
+
+                <!-- Rotating Beam Group -->
+                <!-- transform-origin at 400, 480 -->
+                <g id="seesaw-beam" class="smooth-transform" style="transform-origin: 400px 480px; transform: rotate(0deg);">
+                    
+                    <!-- The Beam -->
+                    <rect x="150" y="470" width="500" height="20" fill="url(#metalGrad)" rx="10" filter="url(#shadow)"/>
+                    
+                    <!-- Left Scale Platform (Acid Side) -->
+                    <g transform="translate(200, 470)">
+                        <!-- Support wires/brackets -->
+                        <line x1="-30" y1="-50" x2="0" y2="0" stroke="#94a3b8" stroke-width="4"/>
+                        <line x1="30" y1="-50" x2="0" y2="0" stroke="#94a3b8" stroke-width="4"/>
+                        <!-- Pan -->
+                        <path d="M -40 -50 L 40 -50 L 30 -70 L -30 -70 Z" fill="#e2e8f0" stroke="#94a3b8" stroke-width="2"/>
+                        <!-- Existing Acid Molecules (Normal resting state) -->
+                        <circle cx="-15" cy="-60" r="8" fill="var(--acid-color)" opacity="0.6"/>
+                        <circle cx="5" cy="-60" r="8" fill="var(--acid-color)" opacity="0.6"/>
+                        <text x="0" y="-80" font-weight="bold" fill="#475569" text-anchor="middle" font-size="14">Acid (H⁺)</text>
+                    </g>
+
+                    <!-- Right Scale Platform (Base Side) -->
+                    <g transform="translate(600, 470)">
+                        <!-- Support wires/brackets -->
+                        <line x1="-30" y1="-50" x2="0" y2="0" stroke="#94a3b8" stroke-width="4"/>
+                        <line x1="30" y1="-50" x2="0" y2="0" stroke="#94a3b8" stroke-width="4"/>
+                        <!-- Pan -->
+                        <path d="M -40 -50 L 40 -50 L 30 -70 L -30 -70 Z" fill="#e2e8f0" stroke="#94a3b8" stroke-width="2"/>
+                        <!-- Existing Base Molecules (Normal resting state) -->
+                        <circle cx="-5" cy="-60" r="8" fill="var(--base-color)" opacity="0.6"/>
+                        <circle cx="15" cy="-60" r="8" fill="var(--base-color)" opacity="0.6"/>
+                        <text x="0" y="-80" font-weight="bold" fill="#475569" text-anchor="middle" font-size="14">Base (OH⁻)</text>
+                    </g>
+
+                    <!-- DYNAMIC PARTICLES (Attached to beam so they tip with it) -->
+                    
+                    <!-- Added Acid Particle -->
+                    <g id="anim-acid" class="fast-transform" style="transform: translate(200px, -100px); opacity: 0;">
+                        <circle cx="0" cy="0" r="16" fill="var(--acid-color)" filter="url(#glow)"/>
+                        <text x="0" y="5" font-family="sans-serif" font-weight="bold" font-size="14" fill="#ffffff" text-anchor="middle">H⁺</text>
+                    </g>
+
+                    <!-- Added Base Particle -->
+                    <g id="anim-base" class="fast-transform" style="transform: translate(600px, -100px); opacity: 0;">
+                        <circle cx="0" cy="0" r="16" fill="var(--base-color)" filter="url(#glow)"/>
+                        <text x="0" y="5" font-family="sans-serif" font-weight="bold" font-size="14" fill="#ffffff" text-anchor="middle">OH⁻</text>
+                    </g>
+
+                    <!-- Buffer Particle (Bicarbonate reacting with Acid) -->
+                    <g id="anim-buffer-base" class="fast-transform" style="transform: translate(0px, 350px); opacity: 0;">
+                        <circle cx="0" cy="0" r="22" fill="var(--buffer-color)" filter="url(#glow)"/>
+                        <text x="0" y="4" font-family="sans-serif" font-weight="bold" font-size="11" fill="#ffffff" text-anchor="middle">HCO₃⁻</text>
+                    </g>
+
+                    <!-- Buffer Particle (Carbonic Acid reacting with Base) -->
+                    <g id="anim-buffer-acid" class="fast-transform" style="transform: translate(800px, 350px); opacity: 0;">
+                        <circle cx="0" cy="0" r="22" fill="var(--buffer-color)" filter="url(#glow)"/>
+                        <text x="0" y="4" font-family="sans-serif" font-weight="bold" font-size="11" fill="#ffffff" text-anchor="middle">H₂CO₃</text>
+                    </g>
+
+                    <!-- Neutralized Cloud (Bubble effect) -->
+                    <g id="anim-neutral" class="fast-transform" style="transform: translate(400px, 350px) scale(0); opacity: 0;">
+                        <circle cx="-10" cy="0" r="15" fill="#f1f5f9" stroke="#94a3b8" stroke-width="2"/>
+                        <circle cx="15" cy="-5" r="12" fill="#f1f5f9" stroke="#94a3b8" stroke-width="2"/>
+                        <circle cx="5" cy="10" r="10" fill="#f1f5f9" stroke="#94a3b8" stroke-width="2"/>
+                        <text x="0" y="4" font-family="sans-serif" font-weight="bold" font-size="10" fill="#475569" text-anchor="middle">H₂O+CO₂</text>
+                    </g>
+                </g>
+            </svg>
+        </main>
+    </div>
+
+    <script>
+        const btnAcid = document.getElementById('btnAcid');
+        const btnBase = document.getElementById('btnBase');
+        const statusTitle = document.getElementById('statusTitle');
+        const statusDesc = document.getElementById('statusDesc');
+        const statusCard = document.getElementById('statusCard');
+
+        // SVG Elements
+        const beam = document.getElementById('seesaw-beam');
+        const needle = document.getElementById('ph-needle');
+        
+        // Dynamic Particles
+        const partAcid = document.getElementById('anim-acid');
+        const partBase = document.getElementById('anim-base');
+        const bufferBase = document.getElementById('anim-buffer-base'); // HCO3-
+        const bufferAcid = document.getElementById('anim-buffer-acid'); // H2CO3
+        const partNeutral = document.getElementById('anim-neutral');
+
+        let isAnimating = false;
+
+        const wait = (ms) => new Promise(resolve => setTimeout(resolve, ms));
+
+        function setButtonsDisabled(disabled) {
+            btnAcid.disabled = disabled;
+            btnBase.disabled = disabled;
+        }
+
+        function updateInfo(title, desc, colorVar = 'var(--accent)') {
+            statusTitle.textContent = title;
+            statusDesc.textContent = desc;
+            statusTitle.style.color = colorVar;
+            statusCard.style.borderLeftColor = colorVar;
+            
+            if (colorVar !== 'var(--accent)') {
+                statusCard.style.backgroundColor = colorVar === 'var(--acid-color)' ? '#fef2f2' : 
+                                                   colorVar === 'var(--base-color)' ? '#eff6ff' : '#ecfdf5';
+            } else {
+                statusCard.style.backgroundColor = '#f1f5f9';
+            }
+        }
+
+        // --- ACID SEQUENCE ---
+        btnAcid.addEventListener('click', async () => {
+            if (isAnimating) return;
+            isAnimating = true;
+            setButtonsDisabled(true);
+
+            // 1. Add Acid
+            updateInfo("Step 1: Acid Imbalance", "Excess Hydrogen ions (H⁺), such as lactic acid from exercise, enter the bloodstream. The scale tips.", 'var(--acid-color)');
+            
+            // Drop acid into left pan (coordinates are relative to the beam group)
+            partAcid.style.transform = "translate(200px, 390px)";
+            partAcid.style.opacity = '1';
+            await wait(500);
+
+            // 2. Seesaw tips, pH drops
+            beam.style.transform = "rotate(-12deg)";
+            needle.style.transform = "rotate(-45deg)"; // pH ~7.1
+            await wait(1200);
+
+            // 3. Buffer System Activates
+            updateInfo("Step 2: Buffer Action", "Bicarbonate (HCO₃⁻), a weak base naturally present in blood, binds to the dangerous H⁺ ion to neutralize it.", 'var(--buffer-color)');
+            bufferBase.style.transform = "translate(150px, 390px)";
+            bufferBase.style.opacity = '1';
+            await wait(1200);
+
+            // 4. Neutralization reaction
+            updateInfo("Step 3: Neutralization", "They react to form Carbonic Acid, which quickly breaks down into Water (H₂O) and Carbon Dioxide (CO₂), which is exhaled.", '#64748b');
+            
+            // Hide H+ and HCO3-
+            partAcid.style.opacity = '0';
+            bufferBase.style.opacity = '0';
+            
+            // Show neutral cloud at the reaction spot
+            partNeutral.style.transform = "translate(180px, 370px) scale(1)";
+            partNeutral.style.opacity = '1';
+            
+            // 5. Restore Balance
+            beam.style.transform = "rotate(0deg)";
+            needle.style.transform = "rotate(0deg)";
+            await wait(1200);
+
+            // Cloud dissipates (exhaled)
+            partNeutral.style.transform = "translate(180px, 250px) scale(1.5)";
+            partNeutral.style.opacity = '0';
+            await wait(800);
+
+            // Reset invisible states
+            resetPositions();
+            updateInfo("Status: Homeostasis", "Blood pH is perfectly balanced at 7.4. The buffer system successfully neutralized the acid.", 'var(--accent)');
+            
+            isAnimating = false;
+            setButtonsDisabled(false);
+        });
+
+        // --- BASE SEQUENCE ---
+        btnBase.addEventListener('click', async () => {
+            if (isAnimating) return;
+            isAnimating = true;
+            setButtonsDisabled(true);
+
+            // 1. Add Base
+            updateInfo("Step 1: Alkaline Imbalance", "Excess base (OH⁻) enters the blood, removing H⁺ ions and making the blood too alkaline. The scale tips.", 'var(--base-color)');
+            
+            // Drop base into right pan
+            partBase.style.transform = "translate(600px, 390px)";
+            partBase.style.opacity = '1';
+            await wait(500);
+
+            // 2. Seesaw tips, pH rises
+            beam.style.transform = "rotate(12deg)";
+            needle.style.transform = "rotate(45deg)"; // pH ~7.7
+            await wait(1200);
+
+            // 3. Buffer System Activates
+            updateInfo("Step 2: Buffer Action", "Carbonic Acid (H₂CO₃), a weak acid in the blood, donates a Hydrogen ion (H⁺) to neutralize the strong base.", 'var(--buffer-color)');
+            bufferAcid.style.transform = "translate(650px, 390px)";
+            bufferAcid.style.opacity = '1';
+            await wait(1200);
+
+            // 4. Neutralization reaction
+            updateInfo("Step 3: Neutralization", "The OH⁻ is converted into harmless Water (H₂O), and the Carbonic acid becomes Bicarbonate. Balance is restored.", '#64748b');
+            
+            // Hide OH- and H2CO3
+            partBase.style.opacity = '0';
+            bufferAcid.style.opacity = '0';
+            
+            // Show neutral cloud at the reaction spot
+            partNeutral.style.transform = "translate(620px, 370px) scale(1)";
+            partNeutral.style.opacity = '1';
+            
+            // 5. Restore Balance
+            beam.style.transform = "rotate(0deg)";
+            needle.style.transform = "rotate(0deg)";
+            await wait(1200);
+
+            // Cloud dissipates
+            partNeutral.style.transform = "translate(620px, 250px) scale(1.5)";
+            partNeutral.style.opacity = '0';
+            await wait(800);
+
+            // Reset invisible states
+            resetPositions();
+            updateInfo("Status: Homeostasis", "Blood pH is perfectly balanced at 7.4. The buffer system successfully neutralized the base.", 'var(--accent)');
+            
+            isAnimating = false;
+            setButtonsDisabled(false);
+        });
+
+        // Function to snap particles back to start invisibly
+        function resetPositions() {
+            // Remove animation classes temporarily
+            const elements = [partAcid, partBase, bufferBase, bufferAcid, partNeutral];
+            elements.forEach(el => el.classList.remove('fast-transform'));
+            
+            // Force reflow
+            void partAcid.offsetWidth; 
+
+            // Snap back
+            partAcid.style.transform = "translate(200px, 100px)";
+            partBase.style.transform = "translate(600px, 100px)";
+            bufferBase.style.transform = "translate(0px, 350px)";
+            bufferAcid.style.transform = "translate(800px, 350px)";
+            partNeutral.style.transform = "translate(400px, 350px) scale(0)";
+
+            // Force reflow again
+            void partAcid.offsetWidth;
+
+            // Add classes back
+            elements.forEach(el => el.classList.add('fast-transform'));
+        }
+    </script>
+
+</body>
+</html>

@@ -1,0 +1,621 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Physics Lab - Buoyancy & Displacement</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        body, html {
+            margin: 0;
+            padding: 0;
+            width: 100%;
+            height: 100%;
+            overflow: hidden;
+            background-color: #09090b; /* Ultra-dark, professional background */
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+            touch-action: none;
+            user-select: none;
+        }
+        
+        #sim-canvas {
+            display: block;
+            width: 100%;
+            height: 100%;
+            cursor: grab;
+        }
+        #sim-canvas:active {
+            cursor: grabbing;
+        }
+
+        /* Minimalist Professional Slider */
+        input[type=range] {
+            -webkit-appearance: none;
+            width: 100%;
+            background: transparent;
+        }
+        input[type=range]::-webkit-slider-thumb {
+            -webkit-appearance: none;
+            height: 18px;
+            width: 18px;
+            border-radius: 50%;
+            background: #ffffff;
+            cursor: pointer;
+            margin-top: -7px;
+            box-shadow: 0 2px 6px rgba(0,0,0,0.5);
+            transition: transform 0.1s ease;
+        }
+        input[type=range]::-webkit-slider-thumb:hover {
+            transform: scale(1.2);
+        }
+        input[type=range]::-webkit-slider-runnable-track {
+            width: 100%;
+            height: 4px;
+            cursor: pointer;
+            background: rgba(255, 255, 255, 0.2);
+            border-radius: 2px;
+        }
+        
+        /* Premium Frosted Glass Panel */
+        .glass-panel {
+            background: linear-gradient(135deg, rgba(30, 41, 59, 0.7) 0%, rgba(15, 23, 42, 0.8) 100%);
+            backdrop-filter: blur(40px);
+            -webkit-backdrop-filter: blur(40px);
+            border: 1px solid rgba(255, 255, 255, 0.08);
+            border-top: 1px solid rgba(255, 255, 255, 0.15); 
+            box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.6), inset 0 0 30px rgba(0, 0, 0, 0.2);
+        }
+
+        .scroll-area::-webkit-scrollbar { width: 3px; }
+        .scroll-area::-webkit-scrollbar-thumb { background: rgba(255, 255, 255, 0.2); border-radius: 4px; }
+        
+        .action-btn {
+            background: rgba(255, 255, 255, 0.05);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            transition: all 0.2s ease;
+        }
+        .action-btn:hover {
+            background: rgba(255, 255, 255, 0.15);
+            border-color: rgba(255, 255, 255, 0.3);
+            transform: translateY(-1px);
+        }
+    </style>
+</head>
+<body>
+
+    <!-- Main UI Overlay -->
+    <div class="absolute top-5 left-5 md:top-8 md:left-8 z-10 w-[350px] glass-panel p-6 rounded-2xl pointer-events-auto flex flex-col select-none max-h-[90vh]">
+        
+        <!-- Header -->
+        <div class="mb-6 border-b border-white/5 pb-5 shrink-0 flex items-center justify-between">
+            <div>
+                <h1 class="text-xl font-semibold tracking-tight text-gray-100 mb-1">Fluid Dynamics</h1>
+                <p class="text-[11px] font-medium text-blue-400 uppercase tracking-widest">Buoyancy & Displacement</p>
+            </div>
+            <div class="w-8 h-8 rounded-full bg-blue-500/10 flex items-center justify-center text-blue-400">
+                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M19.428 15.428a2 2 0 00-1.022-.547l-2.387-.477a6 6 0 00-3.86.517l-.318.158a6 6 0 01-3.86.517L6.05 15.21a2 2 0 00-1.806.547M8 4h8l-1 1v5.172a2 2 0 00.586 1.414l5 5c1.26 1.26.367 3.414-1.415 3.414H4.828c-1.782 0-2.674-2.154-1.414-3.414l5-5A2 2 0 009 10.172V5L8 4z"></path></svg>
+            </div>
+        </div>
+
+        <div class="space-y-7 scroll-area overflow-y-auto pr-2 pb-2">
+            
+            <div class="bg-black/20 p-3.5 rounded-xl border border-white/5">
+                <p class="text-[12px] text-gray-400 leading-relaxed">
+                    <strong class="text-gray-200">Archimedes' Principle:</strong> The buoyant force pushing up is equal to the weight of the water displaced. 
+                    <br><br>The ship and the block weigh the exact same (<span class="text-white">1000 kg</span>), but the ship's massive volume gives it a lower density, allowing it to float!
+                </p>
+            </div>
+
+            <!-- Environment Controls -->
+            <div class="space-y-4">
+                <div class="flex justify-between items-end">
+                    <label class="text-[11px] font-bold uppercase tracking-wider text-blue-400">Fluid Density</label>
+                    <span id="fluid-display" class="text-[11px] font-mono bg-blue-500/10 px-2 py-1 rounded text-blue-300">Water (1000 kg/m³)</span>
+                </div>
+                <input type="range" id="fluid-slider" min="500" max="1500" step="50" value="1000" class="w-full" style="accent-color: #38bdf8;">
+                <div class="flex justify-between text-[10px] text-gray-500 font-bold px-1">
+                    <span>Oil</span>
+                    <span>Water</span>
+                    <span>Honey</span>
+                </div>
+            </div>
+
+            <!-- Object Spawn Buttons -->
+            <div class="pt-4 border-t border-white/5 space-y-3">
+                <label class="text-[11px] font-bold uppercase tracking-wider text-gray-400">Spawn Objects</label>
+                <div class="grid grid-cols-2 gap-2">
+                    <button id="btn-spawn-block" class="action-btn py-2 rounded-lg text-xs font-semibold text-gray-300">Solid Steel Block</button>
+                    <button id="btn-spawn-ship" class="action-btn py-2 rounded-lg text-xs font-semibold text-gray-300">Hollow Steel Ship</button>
+                    <button id="btn-spawn-wood" class="action-btn py-2 rounded-lg text-xs font-semibold text-gray-300 col-span-2">Wooden Log</button>
+                </div>
+            </div>
+
+            <!-- Visual Toggles -->
+            <div class="pt-5 border-t border-white/5 space-y-4">
+                <label class="flex items-center justify-between cursor-pointer group">
+                    <div>
+                        <div class="text-[13px] font-semibold text-gray-200 mb-1">Show Forces & Math</div>
+                        <div class="text-[11px] text-gray-500 font-medium">Display Buoyancy vectors</div>
+                    </div>
+                    <div class="relative">
+                        <input type="checkbox" id="toggle-math" class="sr-only peer" checked>
+                        <div class="w-10 h-5 bg-gray-800 rounded-full shadow-inner transition-colors peer-checked:bg-blue-500"></div>
+                        <div class="dot absolute left-1 top-1 bg-gray-400 w-3 h-3 rounded-full transition-all peer-checked:translate-x-5 peer-checked:bg-white shadow-sm"></div>
+                    </div>
+                </label>
+            </div>
+
+        </div>
+    </div>
+
+    <!-- Displacement HUD -->
+    <div class="absolute top-8 right-8 z-10 pointer-events-none">
+        <div class="glass-panel px-6 py-4 rounded-2xl border border-white/10 flex flex-col items-end gap-1">
+            <span class="text-[10px] font-bold tracking-widest uppercase text-blue-400">Water Displaced</span>
+            <span id="displacement-display" class="text-2xl font-mono font-bold text-white">0.00 L</span>
+            <span id="level-display" class="text-xs text-gray-400 mt-1">Level Rise: +0.0 cm</span>
+        </div>
+    </div>
+
+    <!-- Instruction Overlay -->
+    <div class="absolute bottom-8 left-1/2 -translate-x-1/2 z-10 pointer-events-none opacity-50">
+        <span class="text-xs font-bold tracking-widest uppercase text-white drop-shadow-md">Drag and drop objects into the tank</span>
+    </div>
+
+    <!-- 2D Canvas Container -->
+    <canvas id="sim-canvas"></canvas>
+
+    <script>
+        const canvas = document.getElementById('sim-canvas');
+        const ctx = canvas.getContext('2d');
+
+        // Physics Constants & Scale
+        // Let 100 pixels = 1 meter
+        const METER = 100;
+        const g = 9.8; // Gravity m/s^2
+
+        let cx = 0; 
+        let floorY = 0;
+        let baseWaterY = 0;
+
+        function resize() {
+            canvas.width = window.innerWidth;
+            canvas.height = window.innerHeight;
+            floorY = canvas.height - 40; 
+            baseWaterY = canvas.height * 0.45; // Water takes up bottom half
+            cx = window.innerWidth >= 768 ? (window.innerWidth + 340) / 2 : window.innerWidth / 2;
+        }
+        window.addEventListener('resize', resize);
+        resize();
+
+        // --- STATE ---
+        let fluidDensity = 1000; // kg/m^3 (Water)
+        let objects = [];
+        let totalDisplacedVolume = 0; // m^3
+        let waterRiseMeters = 0; // m
+        let time = 0;
+
+        // UI Binding
+        const fluidSlider = document.getElementById('fluid-slider');
+        const fluidDisplay = document.getElementById('fluid-display');
+        const toggleMath = document.getElementById('toggle-math');
+        const displacementDisplay = document.getElementById('displacement-display');
+        const levelDisplay = document.getElementById('level-display');
+
+        fluidSlider.addEventListener('input', (e) => {
+            fluidDensity = parseInt(e.target.value);
+            let name = "Custom Fluid";
+            if (fluidDensity === 1000) name = "Water";
+            else if (fluidDensity === 500) name = "Light Oil";
+            else if (fluidDensity === 1500) name = "Heavy Syrup";
+            
+            fluidDisplay.innerText = `${name} (${fluidDensity} kg/m³)`;
+        });
+
+        // --- OBJECT CLASSES ---
+        class PhysicsObject {
+            constructor(name, type, mass, widthM, heightM, color, strokeColor, startY) {
+                this.name = name;
+                this.type = type;
+                this.mass = mass; // kg
+                this.w = widthM * METER; // Convert m to px
+                this.h = heightM * METER;
+                this.volume = widthM * heightM * 1.0; // Assume 1m depth for 2D volume
+                this.density = this.mass / this.volume; // kg/m^3
+                
+                this.x = cx + (Math.random() * 100 - 50);
+                this.y = startY;
+                this.vx = 0;
+                this.vy = 0;
+                
+                this.color = color;
+                this.strokeColor = strokeColor;
+                this.isDragging = false;
+                
+                // Track how much is underwater
+                this.submergedVolume = 0;
+            }
+
+            update(dt, currentWaterY) {
+                if (this.isDragging) {
+                    this.vx = 0;
+                    this.vy = 0;
+                    return;
+                }
+
+                // 1. Calculate Submerged Volume
+                const topEdge = this.y - this.h/2;
+                const bottomEdge = this.y + this.h/2;
+                
+                let submergedHeightPx = 0;
+                if (bottomEdge > currentWaterY) {
+                    if (topEdge >= currentWaterY) {
+                        // Fully submerged
+                        submergedHeightPx = this.h;
+                    } else {
+                        // Partially submerged
+                        submergedHeightPx = bottomEdge - currentWaterY;
+                    }
+                }
+
+                const submergedHeightM = submergedHeightPx / METER;
+                const widthM = this.w / METER;
+                this.submergedVolume = widthM * submergedHeightM * 1.0; // Depth = 1m
+
+                // 2. Forces
+                const forceGravity = this.mass * g; // Downwards
+                const forceBuoyancy = fluidDensity * this.submergedVolume * g; // Upwards Archimedes!
+                
+                // Drag forces (Water is thick, air is thin)
+                const inWater = bottomEdge > currentWaterY;
+                const dragCoef = inWater ? 0.8 : 0.02; // Massive drag in water
+                
+                const speed = Math.sqrt(this.vx*this.vx + this.vy*this.vy);
+                let dragForceY = 0;
+                if (speed > 0) {
+                    const dragMag = 0.5 * (inWater ? fluidDensity : 1.2) * dragCoef * (widthM) * (this.vy/METER * this.vy/METER);
+                    dragForceY = -Math.sign(this.vy) * dragMag;
+                }
+
+                // 3. Acceleration & Integration
+                const netForceY = forceGravity - forceBuoyancy + dragForceY;
+                const ay = netForceY / this.mass;
+
+                this.vy += ay * dt * METER; // Convert m/s^2 back to px/s^2 for rendering
+                this.y += this.vy * dt;
+
+                // Simple X-axis friction
+                this.x += this.vx * dt;
+                this.vx *= (inWater ? 0.9 : 0.99);
+
+                // 4. Floor/Wall Collisions
+                if (this.y + this.h/2 > floorY) {
+                    this.y = floorY - this.h/2;
+                    this.vy *= -0.3; // Thud
+                    this.vx *= 0.8;
+                }
+                
+                // Boundaries (Tank walls)
+                const tankLeft = window.innerWidth >= 768 ? 380 : 20;
+                const tankRight = canvas.width - 20;
+                
+                if (this.x - this.w/2 < tankLeft) {
+                    this.x = tankLeft + this.w/2;
+                    this.vx *= -0.5;
+                }
+                if (this.x + this.w/2 > tankRight) {
+                    this.x = tankRight - this.w/2;
+                    this.vx *= -0.5;
+                }
+            }
+
+            draw(ctx, currentWaterY) {
+                ctx.save();
+                ctx.translate(this.x, this.y);
+
+                if (this.isDragging) {
+                    ctx.shadowColor = 'rgba(255,255,255,0.4)';
+                    ctx.shadowBlur = 20;
+                    ctx.scale(1.02, 1.02);
+                }
+
+                // Main body
+                ctx.fillStyle = this.color;
+                ctx.beginPath();
+                ctx.roundRect(-this.w/2, -this.h/2, this.w, this.h, 6);
+                ctx.fill();
+
+                // Inner gradient/shading
+                const grad = ctx.createLinearGradient(0, -this.h/2, 0, this.h/2);
+                grad.addColorStop(0, 'rgba(255,255,255,0.15)');
+                grad.addColorStop(1, 'rgba(0,0,0,0.3)');
+                ctx.fillStyle = grad;
+                ctx.fill();
+
+                ctx.lineWidth = 2;
+                ctx.strokeStyle = this.strokeColor;
+                ctx.stroke();
+
+                // If it's the hollow ship, draw a hollow inner section
+                if (this.type === 'ship') {
+                    ctx.fillStyle = 'rgba(0,0,0,0.4)';
+                    ctx.beginPath();
+                    ctx.roundRect(-this.w/2 + 10, -this.h/2 - 2, this.w - 20, this.h - 15, 4);
+                    ctx.fill();
+                }
+
+                // Text Labels
+                ctx.shadowBlur = 0;
+                ctx.fillStyle = '#ffffff';
+                ctx.textAlign = 'center';
+                ctx.textBaseline = 'middle';
+                
+                // Label background pill
+                ctx.fillStyle = 'rgba(0,0,0,0.6)';
+                ctx.beginPath(); ctx.roundRect(-45, -20, 90, 40, 8); ctx.fill();
+
+                ctx.fillStyle = '#ffffff';
+                ctx.font = 'bold 11px Inter';
+                ctx.fillText(this.name, 0, -6);
+                
+                ctx.fillStyle = '#94a3b8';
+                ctx.font = '10px Inter';
+                ctx.fillText(`${this.mass}kg | ${this.volume.toFixed(2)}m³`, 0, 8);
+
+                ctx.restore();
+
+                // Draw Forces HUD
+                if (toggleMath.checked && !this.isDragging) {
+                    const fG = this.mass * g;
+                    const fB = fluidDensity * this.submergedVolume * g;
+
+                    ctx.save();
+                    ctx.translate(this.x, this.y);
+
+                    function drawArrow(isUp, force, color, labelX, labelAlign) {
+                        if (force < 1) return; // Don't draw negligible forces
+                        
+                        const dir = isUp ? -1 : 1;
+                        // Logarithmic scale so huge forces don't fill the whole screen
+                        const len = Math.max(20, Math.log10(force + 1) * 20); 
+
+                        ctx.strokeStyle = color;
+                        ctx.fillStyle = color;
+                        ctx.lineWidth = 3;
+                        
+                        ctx.beginPath();
+                        ctx.moveTo(0, dir * (this.h/2));
+                        ctx.lineTo(0, dir * (this.h/2 + len));
+                        ctx.stroke();
+                        
+                        ctx.beginPath();
+                        ctx.moveTo(0, dir * (this.h/2 + len + 6));
+                        ctx.lineTo(-6, dir * (this.h/2 + len - 4));
+                        ctx.lineTo(6, dir * (this.h/2 + len - 4));
+                        ctx.fill();
+
+                        ctx.textAlign = labelAlign;
+                        ctx.font = 'bold 11px Inter';
+                        ctx.fillText(`${Math.round(force)} N`, labelX, dir * (this.h/2 + len + 15));
+                    }
+
+                    // Gravity (Red)
+                    drawArrow.call(this, false, fG, '#ef4444', 15, 'left');
+                    // Buoyancy (Blue)
+                    drawArrow.call(this, true, fB, '#38bdf8', -15, 'right');
+
+                    ctx.restore();
+                }
+            }
+        }
+
+        // Spawn Buttons
+        document.getElementById('btn-spawn-block').addEventListener('click', () => {
+            // Mass: 1000kg, Vol: 0.125m^3 (50x50px). Extremely dense steel.
+            objects.push(new PhysicsObject("Solid Steel", "block", 1000, 0.5, 0.5, '#475569', '#94a3b8', 100));
+        });
+
+        document.getElementById('btn-spawn-ship').addEventListener('click', () => {
+            // Mass: 1000kg, Vol: 2.0m^3 (200x100px). Hollow steel, same weight, huge volume.
+            objects.push(new PhysicsObject("Hollow Ship", "ship", 1000, 2.0, 1.0, '#334155', '#cbd5e1', 100));
+        });
+
+        document.getElementById('btn-spawn-wood').addEventListener('click', () => {
+            // Mass: 400kg, Vol: 0.8m^3 (100x80px). Density 500kg/m^3. Floats in water.
+            objects.push(new PhysicsObject("Wood Log", "wood", 400, 1.0, 0.8, '#b45309', '#fcd34d', 100));
+        });
+
+        // Add initial objects
+        objects.push(new PhysicsObject("Solid Steel", "block", 1000, 0.5, 0.5, '#475569', '#94a3b8', 150));
+        objects.push(new PhysicsObject("Hollow Ship", "ship", 1000, 2.0, 1.0, '#334155', '#cbd5e1', 150));
+
+        // --- RENDER LOOP ---
+        let lastTime = 0;
+
+        function render(timestamp) {
+            if (!lastTime) lastTime = timestamp;
+            let dt = (timestamp - lastTime) / 1000;
+            if (dt > 0.05) dt = 0.05; // Cap lag
+            lastTime = timestamp;
+            time += dt;
+
+            // Background
+            const bgGrad = ctx.createRadialGradient(canvas.width/2, canvas.height/3, 10, canvas.width/2, canvas.height/2, canvas.width);
+            bgGrad.addColorStop(0, '#1e293b'); 
+            bgGrad.addColorStop(1, '#020617'); 
+            ctx.fillStyle = bgGrad;
+            ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+            // Grid
+            ctx.strokeStyle = 'rgba(255, 255, 255, 0.02)';
+            ctx.lineWidth = 1;
+            ctx.beginPath();
+            for(let y = 0; y < canvas.height; y += METER) { ctx.moveTo(0, y); ctx.lineTo(canvas.width, y); }
+            for(let x = 0; x < canvas.width; x += METER) { ctx.moveTo(x, 0); ctx.lineTo(x, canvas.height); }
+            ctx.stroke();
+
+            // Calculate total displacement
+            totalDisplacedVolume = 0;
+            
+            // We use the "target" water level for physics to prevent jitter, but draw it rising.
+            // Tank width assumed to be visible area in meters
+            const tankWidthPx = canvas.width - (window.innerWidth >= 768 ? 380 : 20);
+            const tankWidthM = tankWidthPx / METER;
+            
+            for (let obj of objects) {
+                // Pass current visual water level so physics responds to rising water
+                obj.update(dt, baseWaterY - waterRiseMeters * METER);
+                totalDisplacedVolume += obj.submergedVolume;
+            }
+
+            // Calculate water rise: Volume = Area * Height -> Height = Volume / Area
+            // Area = tankWidthM * depth(1m)
+            const targetRiseM = totalDisplacedVolume / tankWidthM;
+            // Smooth the visual rise
+            waterRiseMeters += (targetRiseM - waterRiseMeters) * dt * 5.0;
+
+            const visualWaterY = baseWaterY - waterRiseMeters * METER;
+
+            // Update Displacement HUD
+            // Convert m^3 to Liters (1 m^3 = 1000 L)
+            displacementDisplay.innerText = `${(totalDisplacedVolume * 1000).toFixed(0)} L`;
+            levelDisplay.innerText = `Level Rise: +${(waterRiseMeters * 100).toFixed(1)} cm`;
+
+            // Draw Water Background
+            ctx.fillStyle = 'rgba(14, 165, 233, 0.15)'; // Deep water tint
+            ctx.fillRect(0, visualWaterY, canvas.width, floorY - visualWaterY);
+
+            // Draw Water Surface Waves
+            ctx.beginPath();
+            ctx.moveTo(0, visualWaterY);
+            for(let x = 0; x <= canvas.width; x += 10) {
+                // Procedural sine waves combining multiple frequencies
+                const wave1 = Math.sin(x * 0.02 + time * 2) * 4;
+                const wave2 = Math.cos(x * 0.05 - time * 3) * 2;
+                ctx.lineTo(x, visualWaterY + wave1 + wave2);
+            }
+            ctx.lineTo(canvas.width, floorY);
+            ctx.lineTo(0, floorY);
+            ctx.closePath();
+            
+            const waterGrad = ctx.createLinearGradient(0, visualWaterY, 0, floorY);
+            waterGrad.addColorStop(0, 'rgba(56, 189, 248, 0.4)'); // Sky blue surface
+            waterGrad.addColorStop(1, 'rgba(3, 105, 161, 0.8)'); // Deep ocean bottom
+            ctx.fillStyle = waterGrad;
+            ctx.fill();
+
+            // Water surface highlight line
+            ctx.strokeStyle = 'rgba(125, 211, 252, 0.8)';
+            ctx.lineWidth = 3;
+            ctx.beginPath();
+            ctx.moveTo(0, visualWaterY);
+            for(let x = 0; x <= canvas.width; x += 10) {
+                const wave1 = Math.sin(x * 0.02 + time * 2) * 4;
+                const wave2 = Math.cos(x * 0.05 - time * 3) * 2;
+                ctx.lineTo(x, visualWaterY + wave1 + wave2);
+            }
+            ctx.stroke();
+
+            // Draw Floor
+            ctx.fillStyle = '#0f172a';
+            ctx.fillRect(0, floorY, canvas.width, canvas.height - floorY);
+            ctx.strokeStyle = 'rgba(255,255,255, 0.2)'; 
+            ctx.lineWidth = 2;
+            ctx.beginPath();
+            ctx.moveTo(0, floorY); ctx.lineTo(canvas.width, floorY);
+            ctx.stroke();
+
+            // Draw Objects
+            for (let obj of objects) {
+                obj.draw(ctx, visualWaterY);
+            }
+
+            requestAnimationFrame(render);
+        }
+
+        requestAnimationFrame(render);
+
+        // --- INTERACTION LOGIC ---
+        let dragTarget = null;
+        let dragOffsetX = 0;
+        let dragOffsetY = 0;
+        let lastMousePos = { x:0, y:0 };
+        let mouseVel = { x:0, y:0 };
+
+        function getMousePos(e) {
+            const rect = canvas.getBoundingClientRect();
+            const clientX = e.touches ? e.touches[0].clientX : e.clientX;
+            const clientY = e.touches ? e.touches[0].clientY : e.clientY;
+            return { x: clientX - rect.left, y: clientY - rect.top };
+        }
+
+        function onPointerDown(e) {
+            if(e.target !== canvas) return; 
+            const pos = getMousePos(e);
+            
+            // Check objects in reverse order (top first)
+            for(let i = objects.length - 1; i >= 0; i--) {
+                const obj = objects[i];
+                if (pos.x > obj.x - obj.w/2 && pos.x < obj.x + obj.w/2 &&
+                    pos.y > obj.y - obj.h/2 && pos.y < obj.y + obj.h/2) {
+                    
+                    obj.isDragging = true;
+                    dragTarget = obj;
+                    dragOffsetX = obj.x - pos.x;
+                    dragOffsetY = obj.y - pos.y;
+                    
+                    obj.vx = 0;
+                    obj.vy = 0;
+                    lastMousePos = pos;
+                    canvas.style.cursor = 'grabbing';
+                    return;
+                }
+            }
+        }
+
+        function onPointerMove(e) {
+            if(!dragTarget) return;
+            const pos = getMousePos(e);
+            
+            mouseVel.x = pos.x - lastMousePos.x;
+            mouseVel.y = pos.y - lastMousePos.y;
+            lastMousePos = pos;
+
+            let newX = pos.x + dragOffsetX;
+            let newY = pos.y + dragOffsetY;
+
+            // Boundaries
+            const tankLeft = window.innerWidth >= 768 ? 380 : 20;
+            const tankRight = canvas.width - 20;
+            
+            if (newX - dragTarget.w/2 < tankLeft) newX = tankLeft + dragTarget.w/2;
+            if (newX + dragTarget.w/2 > tankRight) newX = tankRight - dragTarget.w/2;
+            if (newY - dragTarget.h/2 < 0) newY = dragTarget.h/2;
+            if (newY + dragTarget.h/2 > floorY) newY = floorY - dragTarget.h/2;
+
+            dragTarget.x = newX;
+            dragTarget.y = newY;
+        }
+
+        function onPointerUp() {
+            if (dragTarget) {
+                dragTarget.isDragging = false;
+                // Add throw velocity
+                dragTarget.vx = mouseVel.x * 5; 
+                dragTarget.vy = mouseVel.y * 5;
+                dragTarget = null;
+                canvas.style.cursor = 'grab';
+            }
+        }
+
+        canvas.addEventListener('mousedown', onPointerDown);
+        canvas.addEventListener('mousemove', onPointerMove);
+        window.addEventListener('mouseup', onPointerUp);
+        canvas.addEventListener('touchstart', (e) => { e.preventDefault(); onPointerDown(e); }, {passive: false});
+        canvas.addEventListener('touchmove', (e) => { e.preventDefault(); onPointerMove(e); }, {passive: false});
+        window.addEventListener('touchend', onPointerUp);
+
+    </script>
+</body>
+</html>

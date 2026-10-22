@@ -1,0 +1,424 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Color Vision Deficiency Laboratory</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;700&family=Inter:wght@300;400;600;700&display=swap');
+
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: #020617;
+            color: #f8fafc;
+            overflow-x: hidden;
+        }
+
+        .font-mono { font-family: 'JetBrains Mono', monospace; }
+
+        /* UI Panels */
+        .glass-card {
+            background: rgba(15, 23, 42, 0.7);
+            backdrop-filter: blur(12px);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.5);
+        }
+
+        .lcd-screen {
+            background: #061021;
+            color: #a78bfa; /* Rose/Purple accent */
+            text-shadow: 0 0 8px rgba(167, 139, 250, 0.4);
+            border: 1px solid #1e293b;
+        }
+
+        .status-ok { color: #34d399; text-shadow: 0 0 8px rgba(52, 211, 153, 0.5); }
+        .status-fail { color: #f43f5e; text-shadow: 0 0 8px rgba(244, 63, 94, 0.5); }
+
+        /* Optical Elements */
+        .prism-glass {
+            fill: rgba(255, 255, 255, 0.05);
+            stroke: rgba(255, 255, 255, 0.3);
+            stroke-width: 2;
+            stroke-linejoin: round;
+            filter: drop-shadow(0 0 15px rgba(255,255,255,0.1));
+        }
+
+        .light-beam {
+            stroke-linecap: round;
+            filter: drop-shadow(0 0 8px currentColor);
+        }
+
+        .white-beam {
+            stroke: #ffffff;
+            stroke-width: 4;
+            filter: drop-shadow(0 0 12px rgba(255, 255, 255, 0.8));
+            animation: pulse-beam 2s infinite alternate;
+        }
+
+        @keyframes pulse-beam {
+            0% { opacity: 0.8; }
+            100% { opacity: 1; }
+        }
+
+        /* Buttons */
+        .btn-profile {
+            transition: all 0.3s ease;
+            border: 1px solid #334155;
+            background: rgba(30, 41, 59, 0.5);
+        }
+        
+        .btn-profile:hover {
+            border-color: #64748b;
+            background: rgba(51, 65, 85, 0.5);
+        }
+
+        .btn-profile.active {
+            background: #4c1d95;
+            border-color: #8b5cf6;
+            color: white;
+            box-shadow: 0 0 20px rgba(139, 92, 246, 0.3);
+        }
+
+        /* Grid Background */
+        .optics-grid {
+            background-size: 40px 40px;
+            background-image: 
+                linear-gradient(to right, rgba(255, 255, 255, 0.03) 1px, transparent 1px),
+                linear-gradient(to bottom, rgba(255, 255, 255, 0.03) 1px, transparent 1px);
+        }
+
+        /* The filtered container */
+        .cvd-filter-target {
+            transition: filter 0.5s ease;
+        }
+    </style>
+</head>
+<body class="min-h-screen p-4 md:p-8 flex items-center justify-center">
+
+    <!-- SVG Filters for Color Blindness Simulation -->
+    <!-- These matrices approximate the physiological loss of specific cone types -->
+    <svg style="width:0;height:0;position:absolute;" aria-hidden="true" focusable="false">
+        <defs>
+            <filter id="protanopia">
+                <feColorMatrix type="matrix" values="
+                    0.567, 0.433, 0, 0, 0
+                    0.558, 0.442, 0, 0, 0
+                    0, 0.242, 0.758, 0, 0
+                    0, 0, 0, 1, 0" />
+            </filter>
+            <filter id="deuteranopia">
+                <feColorMatrix type="matrix" values="
+                    0.625, 0.375, 0, 0, 0
+                    0.7, 0.3, 0, 0, 0
+                    0, 0.3, 0.7, 0, 0
+                    0, 0, 0, 1, 0" />
+            </filter>
+            <filter id="tritanopia">
+                <feColorMatrix type="matrix" values="
+                    0.95, 0.05, 0, 0, 0
+                    0, 0.433, 0.567, 0, 0
+                    0, 0.475, 0.525, 0, 0
+                    0, 0, 0, 1, 0" />
+            </filter>
+            <filter id="achromatopsia">
+                <feColorMatrix type="matrix" values="
+                    0.299, 0.587, 0.114, 0, 0
+                    0.299, 0.587, 0.114, 0, 0
+                    0.299, 0.587, 0.114, 0, 0
+                    0, 0, 0, 1, 0" />
+            </filter>
+        </defs>
+    </svg>
+
+    <div class="max-w-7xl w-full grid grid-cols-1 lg:grid-cols-12 gap-8 items-stretch">
+        
+        <!-- Simulation Viewport -->
+        <div class="lg:col-span-8 flex flex-col gap-6">
+            <div class="glass-card rounded-3xl p-0 relative flex-grow min-h-[450px] flex items-center justify-center overflow-hidden border border-slate-800 optics-grid">
+                
+                <!-- HUD Header -->
+                <div class="absolute top-6 left-8 flex items-center gap-3 z-20">
+                    <div id="status-dot" class="w-2.5 h-2.5 rounded-full bg-emerald-500 shadow-[0_0_10px_#10b981]"></div>
+                    <span id="status-text" class="text-[10px] font-bold text-slate-400 uppercase tracking-widest font-mono">Spectrometer Output: <span id="hud-mode" class="text-emerald-400">Normal Vision</span></span>
+                </div>
+
+                <!-- SVG Layer: Prism & Spectrum -->
+                <svg id="prism-svg" viewBox="0 0 800 500" class="w-full h-full relative z-10">
+                    
+                    <!-- Emitter Source -->
+                    <rect x="0" y="220" width="40" height="60" fill="#0f172a" stroke="#334155" stroke-width="2" />
+                    <line x1="40" y1="250" x2="60" y2="250" stroke="#475569" stroke-width="6" />
+
+                    <!-- Input White Beam -->
+                    <line x1="60" y1="250" x2="270" y2="250" class="white-beam" />
+
+                    <!-- The Prism -->
+                    <polygon points="320,130 250,300 390,300" class="prism-glass" />
+
+                    <!-- Spectrum Output (Grouped for filtering) -->
+                    <g id="spectrum-output" class="cvd-filter-target">
+                        <!-- Violet / Indigo -->
+                        <line x1="330" y1="260" x2="650" y2="100" stroke="#8b5cf6" stroke-width="12" class="light-ray" />
+                        <!-- Blue -->
+                        <line x1="335" y1="255" x2="650" y2="140" stroke="#3b82f6" stroke-width="12" class="light-ray" />
+                        <!-- Cyan / Light Blue -->
+                        <line x1="340" y1="250" x2="650" y2="180" stroke="#06b6d4" stroke-width="12" class="light-ray" />
+                        <!-- Green -->
+                        <line x1="345" y1="245" x2="650" y2="220" stroke="#10b981" stroke-width="12" class="light-ray" />
+                        <!-- Yellow -->
+                        <line x1="350" y1="240" x2="650" y2="260" stroke="#eab308" stroke-width="12" class="light-ray" />
+                        <!-- Orange -->
+                        <line x1="355" y1="235" x2="650" y2="300" stroke="#f97316" stroke-width="12" class="light-ray" />
+                        <!-- Red -->
+                        <line x1="360" y1="230" x2="650" y2="340" stroke="#ef4444" stroke-width="12" class="light-ray" />
+
+                        <!-- Projection Screen / Sensor Array -->
+                        <rect x="650" y="80" width="15" height="280" fill="#1e293b" stroke="#475569" stroke-width="2" rx="4" />
+                        
+                        <!-- Simulated Test Plate (Ishihara style dots) -->
+                        <g id="ishihara-plate" transform="translate(680, 210)">
+                            <text x="50" y="-80" fill="#64748b" font-size="10" font-family="monospace" text-anchor="middle" letter-spacing="1">DIAGNOSTIC PLATE</text>
+                            <!-- Circle bounds -->
+                            <circle cx="50" cy="0" r="55" fill="#f8fafc" stroke="#cbd5e1" />
+                            
+                            <!-- Randomly packed colorful dots -->
+                            <!-- Background (Greens/Yellows) -->
+                            <circle cx="20" cy="-20" r="8" fill="#10b981" />
+                            <circle cx="45" cy="-35" r="10" fill="#34d399" />
+                            <circle cx="70" cy="-15" r="7" fill="#6ee7b7" />
+                            <circle cx="30" cy="5" r="9" fill="#059669" />
+                            <circle cx="15" cy="15" r="6" fill="#eab308" />
+                            <circle cx="75" cy="10" r="11" fill="#fcd34d" />
+                            <circle cx="60" cy="30" r="8" fill="#10b981" />
+                            <circle cx="35" cy="35" r="10" fill="#34d399" />
+                            
+                            <!-- The "Hidden" Shape (Number or Letter in Reds/Oranges) -->
+                            <circle cx="50" cy="-15" r="8" fill="#ef4444" />
+                            <circle cx="55" cy="5" r="9" fill="#f43f5e" />
+                            <circle cx="45" cy="20" r="8" fill="#f97316" />
+                            <circle cx="25" cy="-5" r="7" fill="#fb923c" />
+                            <circle cx="80" cy="-30" r="6" fill="#38bdf8" /> <!-- Distractor blue -->
+                        </g>
+                    </g>
+                </svg>
+
+                <!-- Tags -->
+                <div class="absolute bottom-6 left-8 flex flex-col gap-1">
+                    <span class="text-[9px] font-mono text-slate-500 uppercase">Light Source: Full Spectrum (White)</span>
+                    <span class="text-[9px] font-mono text-slate-500 uppercase">Wavelength Range: 380nm - 700nm</span>
+                </div>
+            </div>
+
+            <!-- Profile Controls -->
+            <div class="glass-card p-6 rounded-2xl">
+                <div class="flex justify-between items-center mb-4">
+                    <h3 class="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Select Patient Profile</h3>
+                </div>
+                <div class="grid grid-cols-2 md:grid-cols-5 gap-3">
+                    <button class="btn-profile active py-3 px-2 rounded-xl text-xs font-bold" data-filter="none">
+                        Normal<br><span class="text-[9px] font-normal opacity-70">Trichromacy</span>
+                    </button>
+                    <button class="btn-profile py-3 px-2 rounded-xl text-xs font-bold" data-filter="protanopia">
+                        Protanopia<br><span class="text-[9px] font-normal opacity-70">Red-Blind</span>
+                    </button>
+                    <button class="btn-profile py-3 px-2 rounded-xl text-xs font-bold" data-filter="deuteranopia">
+                        Deuteranopia<br><span class="text-[9px] font-normal opacity-70">Green-Blind</span>
+                    </button>
+                    <button class="btn-profile py-3 px-2 rounded-xl text-xs font-bold" data-filter="tritanopia">
+                        Tritanopia<br><span class="text-[9px] font-normal opacity-70">Blue-Blind</span>
+                    </button>
+                    <button class="btn-profile py-3 px-2 rounded-xl text-xs font-bold col-span-2 md:col-span-1" data-filter="achromatopsia">
+                        Monochromacy<br><span class="text-[9px] font-normal opacity-70">Total Loss</span>
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Sidebar: Analytics & Data -->
+        <div class="lg:col-span-4 flex flex-col gap-6">
+            
+            <!-- Digital Readout: Photoreceptors -->
+            <div class="lcd-screen rounded-3xl p-6 space-y-6">
+                <div class="flex justify-between items-center border-b border-indigo-900/50 pb-3">
+                    <span class="text-[10px] font-bold tracking-tighter uppercase opacity-70">Retinal Photoreceptors</span>
+                    <span class="text-xs font-mono text-indigo-400 animate-pulse">SCANNING</span>
+                </div>
+
+                <div class="space-y-5">
+                    <!-- L-Cones -->
+                    <div class="flex justify-between items-center bg-black/40 p-3 rounded-lg border border-slate-800">
+                        <div class="flex items-center gap-3">
+                            <div class="w-3 h-3 rounded-full bg-rose-500 shadow-[0_0_8px_#f43f5e]"></div>
+                            <div>
+                                <div class="text-[10px] font-bold uppercase">L-Cones (Long)</div>
+                                <div class="text-[9px] text-slate-500 font-mono">~560 nm (Red)</div>
+                            </div>
+                        </div>
+                        <div id="stat-l" class="text-sm font-bold font-mono status-ok">ACTIVE</div>
+                    </div>
+
+                    <!-- M-Cones -->
+                    <div class="flex justify-between items-center bg-black/40 p-3 rounded-lg border border-slate-800">
+                        <div class="flex items-center gap-3">
+                            <div class="w-3 h-3 rounded-full bg-emerald-500 shadow-[0_0_8px_#10b981]"></div>
+                            <div>
+                                <div class="text-[10px] font-bold uppercase">M-Cones (Medium)</div>
+                                <div class="text-[9px] text-slate-500 font-mono">~530 nm (Green)</div>
+                            </div>
+                        </div>
+                        <div id="stat-m" class="text-sm font-bold font-mono status-ok">ACTIVE</div>
+                    </div>
+
+                    <!-- S-Cones -->
+                    <div class="flex justify-between items-center bg-black/40 p-3 rounded-lg border border-slate-800">
+                        <div class="flex items-center gap-3">
+                            <div class="w-3 h-3 rounded-full bg-blue-500 shadow-[0_0_8px_#3b82f6]"></div>
+                            <div>
+                                <div class="text-[10px] font-bold uppercase">S-Cones (Short)</div>
+                                <div class="text-[9px] text-slate-500 font-mono">~420 nm (Blue)</div>
+                            </div>
+                        </div>
+                        <div id="stat-s" class="text-sm font-bold font-mono status-ok">ACTIVE</div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Clinical Explanation Card -->
+            <div class="glass-card p-6 rounded-3xl space-y-4 flex-grow">
+                <h3 class="text-xs font-bold text-slate-400 uppercase tracking-widest flex items-center gap-2">
+                    <svg class="w-4 h-4 text-purple-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"></path><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"></path></svg>
+                    Clinical Notes
+                </h3>
+                
+                <div id="clinical-notes" class="space-y-3">
+                    <div class="bg-indigo-900/20 p-4 rounded-xl border border-indigo-900/50">
+                        <div class="text-[11px] font-bold text-indigo-400 mb-1">Trichromacy (Normal Vision)</div>
+                        <p class="text-[10px] text-slate-300 leading-snug">
+                            All three cone types are functioning correctly. The brain combines signals from L, M, and S cones to perceive millions of distinct colors across the visible spectrum.
+                        </p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', () => {
+            const profileBtns = document.querySelectorAll('.btn-profile');
+            const targetGroup = document.getElementById('spectrum-output');
+            
+            const statL = document.getElementById('stat-l');
+            const statM = document.getElementById('stat-m');
+            const statS = document.getElementById('stat-s');
+            
+            const hudMode = document.getElementById('hud-mode');
+            const statusDot = document.getElementById('status-dot');
+            const clinicalNotes = document.getElementById('clinical-notes');
+
+            // Data models for the different conditions
+            const cvdData = {
+                'none': {
+                    name: 'Normal Vision',
+                    color: 'text-emerald-400',
+                    dot: 'bg-emerald-500 shadow-[0_0_10px_#10b981]',
+                    l: true, m: true, s: true,
+                    title: 'Trichromacy (Normal Vision)',
+                    desc: 'All three cone types are functioning correctly. The brain combines signals from L, M, and S cones to perceive millions of distinct colors across the visible spectrum.'
+                },
+                'protanopia': {
+                    name: 'Protanopia',
+                    color: 'text-rose-400',
+                    dot: 'bg-rose-500 shadow-[0_0_10px_#f43f5e]',
+                    l: false, m: true, s: true,
+                    title: 'Protanopia (Red-Blindness)',
+                    desc: 'Missing the L-cones. The spectrum is severely contracted. Red light is not absorbed properly, causing reds to appear dark or brownish, and making it difficult to distinguish red from green.'
+                },
+                'deuteranopia': {
+                    name: 'Deuteranopia',
+                    color: 'text-emerald-400',
+                    dot: 'bg-emerald-500 shadow-[0_0_10px_#10b981]',
+                    l: true, m: false, s: true,
+                    title: 'Deuteranopia (Green-Blindness)',
+                    desc: 'Missing the M-cones. The most common type of color blindness. Reds and greens become largely indistinguishable, appearing as muddy yellowish-brown hues.'
+                },
+                'tritanopia': {
+                    name: 'Tritanopia',
+                    color: 'text-blue-400',
+                    dot: 'bg-blue-500 shadow-[0_0_10px_#3b82f6]',
+                    l: true, m: true, s: false,
+                    title: 'Tritanopia (Blue-Blindness)',
+                    desc: 'Missing the S-cones. A rare condition. Short-wavelength light (blue) cannot be detected, causing blues to appear green, and yellows to appear pink or light red.'
+                },
+                'achromatopsia': {
+                    name: 'Achromatopsia',
+                    color: 'text-slate-400',
+                    dot: 'bg-slate-400 shadow-[0_0_10px_#94a3b8]',
+                    l: false, m: false, s: false,
+                    title: 'Achromatopsia (Monochromacy)',
+                    desc: 'Complete absence of functional cones. Vision relies entirely on rods, resulting in total grayscale vision (black, white, and gray), often accompanied by severe light sensitivity.'
+                }
+            };
+
+            function setStatus(element, isActive) {
+                if (isActive) {
+                    element.textContent = "ACTIVE";
+                    element.className = "text-sm font-bold font-mono status-ok";
+                } else {
+                    element.textContent = "ABSENT";
+                    element.className = "text-sm font-bold font-mono status-fail";
+                }
+            }
+
+            function applyFilter(filterId) {
+                // Update CSS Filter on the SVG group
+                if (filterId === 'none') {
+                    targetGroup.style.filter = 'none';
+                } else {
+                    targetGroup.style.filter = `url(#${filterId})`;
+                }
+
+                // Get Data
+                const data = cvdData[filterId];
+
+                // Update HUD
+                hudMode.textContent = data.name;
+                hudMode.className = data.color;
+                statusDot.className = `w-2.5 h-2.5 rounded-full ${data.dot}`;
+
+                // Update Telemetry
+                setStatus(statL, data.l);
+                setStatus(statM, data.m);
+                setStatus(statS, data.s);
+
+                // Update Educational Card
+                clinicalNotes.innerHTML = `
+                    <div class="bg-indigo-900/20 p-4 rounded-xl border border-indigo-900/50">
+                        <div class="text-[11px] font-bold text-indigo-400 mb-1">${data.title}</div>
+                        <p class="text-[10px] text-slate-300 leading-snug">
+                            ${data.desc}
+                        </p>
+                    </div>
+                `;
+            }
+
+            // Event Listeners for buttons
+            profileBtns.forEach(btn => {
+                btn.addEventListener('click', (e) => {
+                    // Update active button styling
+                    profileBtns.forEach(b => b.classList.remove('active'));
+                    const target = e.currentTarget;
+                    target.classList.add('active');
+
+                    // Apply filter
+                    const filterId = target.dataset.filter;
+                    applyFilter(filterId);
+                });
+            });
+
+            // Initialize to normal
+            applyFilter('none');
+        });
+    </script>
+</body>
+</html>

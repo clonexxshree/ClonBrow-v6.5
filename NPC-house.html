@@ -1,0 +1,254 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Clonbrow saver - Data Node</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Nunito:wght@600;700;800;900&display=swap" rel="stylesheet">
+    <script src="https://unpkg.com/lucide@latest"></script>
+    
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/loaders/GLTFLoader.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/controls/OrbitControls.js"></script>
+
+    <style>
+        body { font-family: 'Nunito', sans-serif; background-color: #ffffff; margin: 0; overflow: hidden; color: #1e293b; }
+        #webgl-container { position: absolute; top: 0; left: 0; width: 100vw; height: 100vh; z-index: 1; }
+        
+        .game-panel { background: rgba(255, 255, 255, 0.95); backdrop-filter: blur(10px); border: 4px solid #1e293b; border-radius: 24px; box-shadow: 0 10px 0px #1e293b; }
+        
+        .btn-back { position: absolute; top: 20px; left: 20px; background: white; color: #1e293b; border: 4px solid #1e293b; border-radius: 16px; padding: 10px 20px; font-weight: 900; text-transform: uppercase; cursor: pointer; box-shadow: 0 6px 0 #1e293b; z-index: 50;}
+        .btn-back:active { transform: translateY(6px); box-shadow: 0 0px 0 #1e293b; }
+
+        .tool-btn { background: #e0f2fe; color: #0369a1; border: 3px solid #0284c7; padding: 8px 16px; border-radius: 12px; font-weight: 800; cursor: pointer; transition: all 0.1s; box-shadow: 0 4px 0 #0284c7; display: inline-flex; items-center; gap: 6px; }
+        .tool-btn:active { transform: translateY(4px); box-shadow: 0 0 0 #0284c7; }
+
+        #info-box {
+            position: absolute; right: 40px; top: 50%; transform: translateY(-50%);
+            width: 450px; max-height: 90vh; z-index: 20; opacity: 0; transition: opacity 0.5s;
+            display: flex; flex-direction: column;
+        }
+
+        #toolModal { display: none; position: fixed; inset: 0; z-index: 100; background: rgba(15, 23, 42, 0.9); backdrop-filter: blur(8px); padding: 40px; align-items: center; justify-content: center;}
+        #toolModal.active { display: flex; }
+        .modal-content { background: white; border: 4px solid #1e293b; border-radius: 32px; width: 100%; height: 100%; position: relative; box-shadow: 0 20px 0 #1e293b; overflow: hidden; display: flex; flex-direction: column; }
+
+        .custom-scrollbar::-webkit-scrollbar { width: 8px; }
+        .custom-scrollbar::-webkit-scrollbar-track { background: #f8fafc; border-radius: 10px; }
+        .custom-scrollbar::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 10px; }
+    </style>
+</head>
+<body>
+
+    <button id="backBtn" class="btn-back flex items-center gap-2">
+        <i data-lucide="arrow-left" class="w-5 h-5 font-black"></i> Leave House
+    </button>
+
+    <div id="webgl-container"></div>
+
+    <div id="info-box" class="game-panel p-8">
+        <div class="flex items-center gap-4 mb-6 border-b-4 border-slate-200 pb-4">
+            <div class="w-16 h-16 bg-sky-100 rounded-2xl border-4 border-sky-300 flex items-center justify-center">
+                <i data-lucide="bot" class="w-10 h-10 text-sky-500"></i>
+            </div>
+            <div>
+                <h2 id="houseTitle" class="text-3xl font-black text-slate-800 tracking-tight">Accessing Node...</h2>
+                <p class="text-slate-500 font-bold text-sm uppercase">Robot Attendant</p>
+            </div>
+        </div>
+        
+        <div id="notesContainer" class="space-y-6 overflow-y-auto custom-scrollbar pr-2 flex-1">
+            <p class="text-slate-400 font-bold">Downloading data packets...</p>
+        </div>
+    </div>
+
+    <!-- TOOL PLAYER MODAL -->
+    <div id="toolModal">
+        <div class="modal-content">
+            <div class="flex justify-between items-center bg-slate-100 p-6 border-b-4 border-slate-900">
+                <h2 id="toolTitle" class="text-3xl font-black text-slate-800">Playing Tool</h2>
+                <button onclick="closeTool()" class="bg-rose-500 text-white p-3 rounded-xl border-4 border-slate-900 shadow-[0_4px_0_#0f172a] hover:translate-y-1 hover:shadow-[0_0_0_#0f172a]">
+                    <i data-lucide="x" class="w-6 h-6"></i>
+                </button>
+            </div>
+            <iframe id="toolIframe" src="" class="w-full flex-1 border-none bg-slate-50"></iframe>
+        </div>
+    </div>
+
+    <script>
+        lucide.createIcons();
+        const urlParams = new URLSearchParams(window.location.search);
+        let userId = urlParams.get('userId') || 1;
+        let houseId = urlParams.get('houseId');
+        const API_BASE = 'https://shreeClonexx.pythonanywhere.com'; 
+        
+        document.getElementById('backBtn').onclick = () => window.location.href = `../frontend/map.html?userId=${userId}`;
+
+        // --- 3D ENVIRONMENT ---
+        const container = document.getElementById('webgl-container');
+        const scene = new THREE.Scene();
+        scene.background = new THREE.Color(0xe0f2fe); 
+
+        const camera = new THREE.PerspectiveCamera(45, window.innerWidth / window.innerHeight, 0.1, 1000);
+        camera.position.set(0, 7, 20);
+
+        const renderer = new THREE.WebGLRenderer({ antialias: true });
+        renderer.setSize(window.innerWidth, window.innerHeight);
+        renderer.setPixelRatio(window.devicePixelRatio);
+        renderer.shadowMap.enabled = true;
+        renderer.shadowMap.type = THREE.PCFSoftShadowMap; 
+        container.appendChild(renderer.domElement);
+
+        const controls = new THREE.OrbitControls(camera, renderer.domElement);
+        controls.enableDamping = true; controls.dampingFactor = 0.05;
+        controls.target.set(-2, 4, 0); 
+        controls.maxPolarAngle = Math.PI / 2;
+
+        const ambientLight = new THREE.AmbientLight(0xffffff, 0.6);
+        scene.add(ambientLight);
+        
+        const spotLight = new THREE.SpotLight(0xffffff, 1.2);
+        spotLight.position.set(10, 20, 15);
+        spotLight.castShadow = true;
+        spotLight.shadow.mapSize.width = 2048;
+        spotLight.shadow.mapSize.height = 2048;
+        scene.add(spotLight);
+
+        // Shop Floor
+        const floorGeo = new THREE.PlaneGeometry(100, 100);
+        const floorMat = new THREE.MeshStandardMaterial({ color: 0x38bdf8, roughness: 0.8 });
+        const floor = new THREE.Mesh(floorGeo, floorMat);
+        floor.rotation.x = -Math.PI / 2;
+        floor.receiveShadow = true;
+        scene.add(floor);
+
+        // Polished Mahogany Desk
+        const deskGroup = new THREE.Group();
+        
+        const deskTopGeo = new THREE.BoxGeometry(12, 0.5, 4);
+        const deskTopMat = new THREE.MeshPhysicalMaterial({ color: 0x4a2e15, roughness: 0.2, clearcoat: 0.8, clearcoatRoughness: 0.1 });
+        const deskTop = new THREE.Mesh(deskTopGeo, deskTopMat);
+        deskTop.position.set(0, 3, 0);
+        deskTop.castShadow = true; deskTop.receiveShadow = true;
+        deskGroup.add(deskTop);
+
+        const legMat = new THREE.MeshStandardMaterial({ color: 0x1e293b, roughness: 0.8 });
+        const leg1 = new THREE.Mesh(new THREE.BoxGeometry(0.8, 3, 3), legMat);
+        leg1.position.set(-5, 1.5, 0); leg1.castShadow = true; deskGroup.add(leg1);
+        const leg2 = new THREE.Mesh(new THREE.BoxGeometry(0.8, 3, 3), legMat);
+        leg2.position.set(5, 1.5, 0); leg2.castShadow = true; deskGroup.add(leg2);
+
+        deskGroup.position.set(-2, 0, 3);
+        scene.add(deskGroup);
+
+        // Load Robot
+        const gltfLoader = new THREE.GLTFLoader();
+        let mixer;
+
+        gltfLoader.load('https://cdn.jsdelivr.net/gh/mrdoob/three.js@master/examples/models/gltf/RobotExpressive/RobotExpressive.glb', (gltf) => {
+            const robot = gltf.scene;
+            robot.scale.setScalar(1.6);
+            robot.position.set(-2, 0, -1); 
+            robot.traverse(c => { if(c.isMesh) { c.castShadow = true; c.receiveShadow = true; }});
+            scene.add(robot);
+
+            mixer = new THREE.AnimationMixer(robot);
+            const anim = gltf.animations.find(a => a.name === 'Wave') || gltf.animations[0];
+            if(anim) mixer.clipAction(anim).play();
+
+            document.getElementById('info-box').style.opacity = '1';
+        });
+
+        // --- FETCH DATA & RENDER TOOLS ---
+        async function fetchHouseData() {
+            if(!houseId) {
+                document.getElementById('houseTitle').innerText = "Unknown Node";
+                return;
+            }
+            try {
+                const res = await fetch(`${API_BASE}/api/world/${userId}`);
+                const dbState = await res.json();
+                
+                const house = dbState.parents.find(p => p.id == houseId);
+                const children = dbState.children.filter(c => c.parentId == houseId);
+
+                if (house) {
+                    document.getElementById('houseTitle').innerText = house.title.split('|||')[0];
+                }
+
+                const container = document.getElementById('notesContainer');
+                if (children.length === 0) {
+                    container.innerHTML = `<p class="text-slate-500 font-bold">"Hello! There is no knowledge stored here yet. Use the Forge!"</p>`;
+                } else {
+                    container.innerHTML = children.map(c => {
+                        // Generate Clickable Tool Buttons
+                        let toolsHTML = '';
+                        if (c.tools && c.tools.trim() !== '') {
+                            const toolArray = c.tools.split(',');
+                            toolsHTML = `
+                            <div class="mt-4 pt-4 border-t-4 border-slate-200 border-dashed">
+                                <h4 class="text-emerald-500 font-black text-sm uppercase mb-3 flex items-center gap-2"><i data-lucide="wrench" class="w-5 h-5"></i> Interactable Tools</h4>
+                                <div class="flex flex-wrap gap-3">
+                                    ${toolArray.map(tool => `
+                                        <button onclick="playTool('${tool.trim()}')" class="tool-btn">
+                                            <i data-lucide="play-circle" class="w-4 h-4"></i> ${tool.trim()}
+                                        </button>
+                                    `).join('')}
+                                </div>
+                            </div>`;
+                        }
+
+                        return `
+                        <div class="bg-slate-50 p-6 rounded-3xl border-4 border-slate-200 shadow-sm">
+                            <h3 class="text-sky-500 font-black text-2xl mb-3">${c.title}</h3>
+                            <p class="text-slate-700 font-bold text-lg mb-5 whitespace-pre-wrap">${c.content}</p>
+                            
+                            ${c.age_group ? `
+                            <div class="flex gap-3 text-xs font-black text-slate-500 mb-4 uppercase">
+                                <span class="bg-white px-4 py-2 rounded-xl border-2 border-slate-200 shadow-sm">Ages: ${c.age_group}</span>
+                                <span class="bg-amber-100 px-4 py-2 rounded-xl border-2 border-amber-200 text-amber-600 shadow-sm">${c.learning_type === 'learn_by_doing' ? 'Learn by Doing' : 'Standard Text'}</span>
+                            </div>` : ''}
+                            
+                            ${toolsHTML}
+                        </div>`;
+                    }).join('');
+                    lucide.createIcons();
+                }
+
+            } catch(e) {
+                document.getElementById('notesContainer').innerHTML = `<p class="text-rose-500 font-black">API Connection Lost.</p>`;
+            }
+        }
+        fetchHouseData();
+
+        // --- PLAY TOOL LOGIC ---
+        function playTool(toolName) {
+            document.getElementById('toolTitle').innerText = `Running: ${toolName}`;
+            // Construct the file name (e.g., Microscope.html)
+            document.getElementById('toolIframe').src = `${toolName}.html`;
+            document.getElementById('toolModal').classList.add('active');
+        }
+
+        function closeTool() {
+            document.getElementById('toolModal').classList.remove('active');
+            document.getElementById('toolIframe').src = ''; // Stop audio/video
+        }
+
+        window.addEventListener('resize', () => {
+            camera.aspect = window.innerWidth / window.innerHeight;
+            camera.updateProjectionMatrix();
+            renderer.setSize(window.innerWidth, window.innerHeight);
+        });
+
+        const clock = new THREE.Clock();
+        function animate() {
+            requestAnimationFrame(animate);
+            if(mixer) mixer.update(clock.getDelta());
+            controls.update();
+            renderer.render(scene, camera);
+        }
+        animate();
+    </script>
+</body>
+</html>

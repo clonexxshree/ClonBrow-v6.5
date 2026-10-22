@@ -1,0 +1,424 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Reflex Arc Kinematics Lab</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;700&family=Inter:wght@300;400;600;700&display=swap');
+
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: #020617;
+            color: #f8fafc;
+            overflow-x: hidden;
+            user-select: none;
+        }
+
+        .font-mono { font-family: 'JetBrains Mono', monospace; }
+
+        .glass-card {
+            background: rgba(15, 23, 42, 0.75);
+            backdrop-filter: blur(16px);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.5);
+        }
+
+        .digital-readout {
+            background: #061021;
+            color: #10b981; /* Emerald base */
+            text-shadow: 0 0 10px rgba(16, 185, 129, 0.4);
+            border: 1px solid #1e293b;
+            transition: all 0.3s ease;
+        }
+
+        .readout-active {
+            color: #38bdf8 !important; /* Sky Blue */
+            text-shadow: 0 0 12px rgba(56, 189, 248, 0.6) !important;
+            border-color: rgba(56, 189, 248, 0.4) !important;
+        }
+
+        /* Anatomy Styles */
+        .leg-bone { fill: #1e293b; stroke: #334155; stroke-width: 2; }
+        .muscle { fill: #450a0a; stroke: #991b1b; stroke-width: 2; transition: all 0.2s ease; }
+        .muscle-active { fill: #991b1b; stroke: #ef4444; filter: drop-shadow(0 0 8px #ef4444); }
+        
+        .tendon { fill: #94a3b8; stroke: #cbd5e1; stroke-width: 1; }
+        
+        .nerve-path {
+            fill: none;
+            stroke-width: 3;
+            stroke-linecap: round;
+            stroke-linejoin: round;
+            opacity: 0.3;
+            transition: opacity 0.3s;
+        }
+        .sensory-nerve { stroke: #38bdf8; }
+        .motor-nerve { stroke: #fbbf24; }
+        
+        .signal-pulse {
+            fill: white;
+            filter: drop-shadow(0 0 5px white);
+            opacity: 0;
+        }
+
+        .spine-segment { fill: #1e1b4b; stroke: #312e81; stroke-width: 2; }
+
+        /* Hammer Animation */
+        #hammer {
+            transform-origin: 40px 10px;
+            transition: transform 0.1s ease-in;
+            cursor: pointer;
+        }
+
+        /* Leg Kick Animation */
+        #lower-leg {
+            transform-origin: 230px 240px;
+            transition: transform 0.1s cubic-bezier(0, 0.5, 0.5, 1);
+        }
+
+        /* Physics Grid */
+        .bio-grid {
+            background-size: 50px 50px;
+            background-image: 
+                linear-gradient(to right, rgba(16, 185, 129, 0.03) 1px, transparent 1px),
+                linear-gradient(to bottom, rgba(16, 185, 129, 0.03) 1px, transparent 1px);
+        }
+
+        .scanline {
+            width: 100%;
+            height: 2px;
+            background: rgba(16, 185, 129, 0.05);
+            position: absolute;
+            z-index: 10;
+            animation: scan 10s linear infinite;
+        }
+        @keyframes scan { 0% { top: 0%; } 100% { top: 100%; } }
+    </style>
+</head>
+<body class="min-h-screen p-4 md:p-8 flex items-center justify-center">
+
+    <div class="max-w-7xl w-full grid grid-cols-1 lg:grid-cols-12 gap-8 items-stretch">
+        
+        <!-- Simulation Viewport -->
+        <div class="lg:col-span-8 flex flex-col gap-6">
+            <div id="sim-viewport" class="glass-card rounded-3xl p-0 relative flex-grow min-h-[550px] flex flex-col overflow-hidden border border-slate-800 bio-grid">
+                <div class="scanline"></div>
+                
+                <!-- HUD Header -->
+                <div class="absolute top-6 left-8 flex items-center gap-3 z-30">
+                    <div id="status-dot" class="w-2.5 h-2.5 rounded-full bg-emerald-500 shadow-[0_0_10px_#10b981]"></div>
+                    <span id="status-text" class="text-[10px] font-bold text-slate-400 uppercase tracking-widest font-mono">Neural Status: <span id="hud-mode" class="text-emerald-400">Resting Potential</span></span>
+                </div>
+
+                <!-- Simulation Area -->
+                <div class="relative w-full flex-grow flex items-center justify-center">
+                    
+                    <svg id="anatomy-svg" viewBox="0 0 800 500" class="w-full h-full relative z-10">
+                        <!-- Spinal Cord Section -->
+                        <g id="spine" transform="translate(650, 150)">
+                            <path class="spine-segment" d="M 0,0 C 50,-20 100,0 100,50 C 100,100 50,120 0,100 Z" />
+                            <path d="M 10,30 Q 30,50 10,70" fill="none" stroke="#4338ca" stroke-width="4" opacity="0.4" />
+                            <text x="50" y="130" text-anchor="middle" font-size="10" font-weight="bold" fill="#4338ca" font-family="monospace">L3-L4 SEGMENT</text>
+                        </g>
+
+                        <!-- Nerve Pathways -->
+                        <!-- Path 1: Knee to Spine (Sensory) -->
+                        <path id="path-sensory" class="nerve-path sensory-nerve" d="M 235,260 Q 450,260 650,180" />
+                        <!-- Path 2: Spine to Muscle (Motor) -->
+                        <path id="path-motor" class="nerve-path motor-nerve" d="M 650,200 Q 450,220 250,150" />
+
+                        <!-- Signal Pulse -->
+                        <circle id="pulse" r="6" class="signal-pulse" />
+
+                        <!-- Upper Leg (Static) -->
+                        <g id="upper-leg">
+                            <path class="leg-bone" d="M 50,100 L 230,240 L 230,200 L 50,60 Z" />
+                            <path id="quad-muscle" class="muscle" d="M 60,70 L 220,180 Q 180,100 60,70" />
+                            <text x="100" y="50" fill="#991b1b" font-size="10" font-weight="bold" font-family="monospace">QUADRICEPS</text>
+                        </g>
+
+                        <!-- Lower Leg (Rotates) -->
+                        <g id="lower-leg">
+                            <path class="leg-bone" d="M 230,240 L 230,450 L 270,450 L 270,240 Z" />
+                            <!-- Knee Cap / Patella -->
+                            <circle cx="230" cy="240" r="15" fill="#475569" stroke="#94a3b8" />
+                            <rect x="225" y="255" width="10" height="20" class="tendon" id="target-tendon" />
+                        </g>
+
+                        <!-- Hammer (Interacts) -->
+                        <g id="hammer-tool" transform="translate(140, 260) rotate(-30)">
+                            <g id="hammer">
+                                <rect x="35" y="0" width="10" height="80" fill="#475569" rx="2" />
+                                <path d="M 10,0 L 70,0 L 70,20 L 10,20 Z" fill="#991b1b" stroke="#f87171" stroke-width="2" />
+                                <text x="40" y="14" text-anchor="middle" font-size="8" fill="white" font-weight="bold">STRIKE</text>
+                            </g>
+                        </g>
+                    </svg>
+
+                </div>
+
+                <!-- Tags -->
+                <div class="absolute bottom-6 left-8 flex flex-col gap-1 z-30">
+                    <span class="text-[9px] font-mono text-slate-500 uppercase">Input: Rapid Stretch Stimulus</span>
+                    <span class="text-[9px] font-mono text-slate-500 uppercase">Circuit: Monosynaptic Reflex Arc</span>
+                </div>
+            </div>
+
+            <!-- Controls -->
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div class="glass-card p-6 rounded-2xl flex flex-col justify-center gap-4">
+                    <div class="flex justify-between items-center">
+                        <label class="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Diagnostic Mode</label>
+                        <span id="mode-display" class="text-xs font-bold font-mono text-emerald-400">HEALTHY</span>
+                    </div>
+                    <div class="flex gap-2">
+                        <button class="btn-mode active flex-1 py-2 bg-emerald-900/20 text-emerald-400 border border-emerald-800 rounded-lg text-[10px] font-bold uppercase transition-all" data-mode="healthy">Normal</button>
+                        <button class="btn-mode flex-1 py-2 bg-slate-800 text-slate-400 border border-slate-700 rounded-lg text-[10px] font-bold uppercase transition-all" data-mode="compressed">Compression</button>
+                        <button class="btn-mode flex-1 py-2 bg-slate-800 text-slate-400 border border-slate-700 rounded-lg text-[10px] font-bold uppercase transition-all" data-mode="hyper">Hyper</button>
+                    </div>
+                </div>
+                <button id="btn-strike" class="px-8 py-6 bg-rose-600 hover:bg-rose-500 text-white font-bold rounded-2xl transition-all shadow-lg shadow-rose-900/40 flex items-center justify-center gap-3 group">
+                    <svg class="w-6 h-6 transform group-active:rotate-45 transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"></path></svg>
+                    <span class="text-lg uppercase tracking-tighter">Initiate Reflex Test</span>
+                </button>
+            </div>
+        </div>
+
+        <!-- Sidebar: Analytics & Data -->
+        <div class="lg:col-span-4 flex flex-col gap-6">
+            
+            <!-- Digital Readout -->
+            <div id="telemetry-panel" class="digital-readout rounded-3xl p-6 space-y-6">
+                <div class="flex justify-between items-center border-b border-current pb-3 opacity-60">
+                    <span class="text-[10px] font-bold tracking-tighter uppercase">Electrophysiology Trace</span>
+                    <span class="text-xs font-mono animate-pulse" id="sim-state">READY</span>
+                </div>
+
+                <div class="space-y-6">
+                    <!-- Total Latency -->
+                    <div class="space-y-1">
+                        <label class="text-[10px] uppercase font-bold opacity-60">Total Reflex Latency</label>
+                        <div class="flex items-baseline gap-2">
+                            <div id="data-timer" class="text-6xl font-bold font-mono">0.00</div>
+                            <span class="text-xl font-mono font-bold opacity-60">ms</span>
+                        </div>
+                    </div>
+
+                    <div class="grid grid-cols-2 gap-4 pt-4 border-t border-current opacity-80">
+                        <div class="space-y-1">
+                            <label class="text-[9px] uppercase font-bold text-current">Velocity ($v$)</label>
+                            <div id="data-velocity" class="text-xl font-bold font-mono">-- m/s</div>
+                        </div>
+                        <div class="space-y-1 text-right">
+                            <label class="text-[9px] uppercase font-bold text-current">Synaptic Lag</label>
+                            <div id="data-lag" class="text-xl font-bold font-mono">~1.5 ms</div>
+                        </div>
+                    </div>
+
+                    <!-- Integrity Bar -->
+                    <div class="p-4 bg-black/30 rounded-xl border border-current space-y-2">
+                        <div class="flex justify-between items-center">
+                            <label class="text-[9px] uppercase font-bold text-current">Signal Fidelity</label>
+                            <span id="data-fidelity" class="text-[10px] font-mono">100%</span>
+                        </div>
+                        <div class="h-1.5 w-full bg-slate-900 rounded-full overflow-hidden">
+                            <div id="fidelity-bar" class="h-full bg-emerald-500 transition-all duration-300" style="width: 100%"></div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Scientific Background Card -->
+            <div class="glass-card p-6 rounded-3xl space-y-4 flex-grow flex flex-col">
+                <h3 class="text-xs font-bold text-slate-400 uppercase tracking-widest flex items-center gap-2">
+                    <svg class="w-4 h-4 text-sky-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path></svg>
+                    Reflex Mechanics
+                </h3>
+                
+                <div class="space-y-4 text-[11px] text-slate-300 leading-relaxed overflow-y-auto">
+                    <p>The Patellar Reflex tests the integrity of the L3 and L4 spinal levels.</p>
+                    
+                    <div class="p-3 bg-slate-900/50 rounded-xl border border-slate-800">
+                        <strong class="text-sky-400 block mb-1">1. Detection</strong>
+                        Muscle spindles in the quadriceps detect the sudden stretch caused by the hammer strike.
+                    </div>
+
+                    <div class="p-3 bg-slate-900/50 rounded-xl border border-slate-800">
+                        <strong class="text-amber-400 block mb-1">2. Afferent Transfer</strong>
+                        A sensory signal travels at approx. 60 m/s to the dorsal root of the spinal cord.
+                    </div>
+
+                    <div class="p-3 bg-slate-900/50 rounded-xl border border-slate-800">
+                        <strong class="text-rose-400 block mb-1">3. Efferent Response</strong>
+                        The signal synapses directly with a motor neuron, returning to the quad to cause contraction.
+                    </div>
+                </div>
+
+                <button id="btn-reset" class="mt-auto w-full py-3 bg-slate-800 hover:bg-slate-700 text-slate-500 rounded-xl text-[10px] font-bold uppercase tracking-widest border border-slate-700 transition-all">
+                    Reset Diagnostics
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', () => {
+            const btnStrike = document.getElementById('btn-strike');
+            const btnReset = document.getElementById('btn-reset');
+            const btnModes = document.querySelectorAll('.btn-mode');
+            
+            const hammer = document.getElementById('hammer-tool');
+            const lowerLeg = document.getElementById('lower-leg');
+            const quadMuscle = document.getElementById('quad-muscle');
+            
+            const pathSensory = document.getElementById('path-sensory');
+            const pathMotor = document.getElementById('path-motor');
+            const pulse = document.getElementById('pulse');
+            
+            const dataTimer = document.getElementById('data-timer');
+            const dataVelocity = document.getElementById('data-velocity');
+            const dataFidelity = document.getElementById('data-fidelity');
+            const fidelityBar = document.getElementById('fidelity-bar');
+            const simState = document.getElementById('sim-state');
+            const hudMode = document.getElementById('hud-mode');
+            const statusDot = document.getElementById('status-dot');
+            const telemetryPanel = document.getElementById('telemetry-panel');
+
+            // --- Configuration ---
+            let currentMode = 'healthy';
+            let isAnimating = false;
+
+            const MODES = {
+                healthy: { velocity: 60, lag: 1.5, kick: -25, color: '#10b981' },
+                compressed: { velocity: 35, lag: 2.8, kick: -10, color: '#fbbf24' },
+                hyper: { velocity: 65, lag: 1.0, kick: -45, color: '#f43f5e' }
+            };
+
+            // Path lengths (approximated based on SVG curve)
+            const sensoryLen = pathSensory.getTotalLength();
+            const motorLen = pathMotor.getTotalLength();
+
+            function setMode(mode) {
+                currentMode = mode;
+                btnModes.forEach(b => {
+                    b.classList.remove('active', 'bg-emerald-900/20', 'text-emerald-400', 'border-emerald-800');
+                    b.classList.add('bg-slate-800', 'text-slate-400', 'border-slate-700');
+                });
+                const activeBtn = Array.from(btnModes).find(b => b.dataset.mode === mode);
+                activeBtn.classList.add('active', 'bg-emerald-900/20', 'text-emerald-400', 'border-emerald-800');
+                document.getElementById('mode-display').textContent = mode.toUpperCase();
+                document.getElementById('mode-display').style.color = MODES[mode].color;
+            }
+
+            async function runReflexTest() {
+                if (isAnimating) return;
+                isAnimating = true;
+                btnStrike.disabled = true;
+                
+                // 1. Hammer Strike
+                hammer.style.transition = 'transform 0.1s cubic-bezier(0.6, 0, 0.4, 1)';
+                hammer.setAttribute('transform', 'translate(140, 260) rotate(15)');
+                
+                await new Promise(r => setTimeout(r, 100));
+                
+                // Impact
+                hudMode.textContent = "Stimulus Detected";
+                statusDot.className = "w-2.5 h-2.5 rounded-full bg-sky-500 animate-ping";
+                telemetryPanel.classList.add('readout-active');
+                simState.textContent = "SIGNAL TRANSMITTING";
+                
+                // 2. Sensory Pulse (Afferent)
+                const cfg = MODES[currentMode];
+                pathSensory.style.opacity = '1';
+                
+                const startTime = performance.now();
+                const sensoryDuration = 1000 * (sensoryLen / (cfg.velocity * 10)); // Scaled for visual
+
+                await animatePulse(pathSensory, sensoryDuration, 'forward');
+                
+                // 3. Synaptic Gap at Spine
+                hudMode.textContent = "Spinal Synapse (L3-L4)";
+                statusDot.className = "w-2.5 h-2.5 rounded-full bg-amber-500";
+                await new Promise(r => setTimeout(r, cfg.lag * 100)); // Scaled lag
+
+                // 4. Motor Pulse (Efferent)
+                hudMode.textContent = "Motor Command Returning";
+                pathMotor.style.opacity = '1';
+                const motorDuration = 1000 * (motorLen / (cfg.velocity * 10));
+                await animatePulse(pathMotor, motorDuration, 'forward');
+
+                // 5. Contraction & Kick
+                const endTime = performance.now();
+                const totalLatency = (cfg.velocity === 60 ? 32 : (cfg.velocity === 35 ? 58 : 28)); // Simulated real values
+                
+                dataTimer.textContent = totalLatency.toFixed(2);
+                dataVelocity.textContent = `${cfg.velocity} m/s`;
+                
+                quadMuscle.classList.add('muscle-active');
+                lowerLeg.style.transform = `rotate(${cfg.kick}deg)`;
+                
+                hudMode.textContent = "Reflex Complete";
+                statusDot.className = "w-2.5 h-2.5 rounded-full bg-emerald-500";
+                simState.textContent = "DATA LOGGED";
+
+                // Return hammer and leg to rest
+                setTimeout(() => {
+                    hammer.setAttribute('transform', 'translate(140, 260) rotate(-30)');
+                    lowerLeg.style.transform = `rotate(0deg)`;
+                    quadMuscle.classList.remove('muscle-active');
+                    pathSensory.style.opacity = '0.3';
+                    pathMotor.style.opacity = '0.3';
+                    isAnimating = false;
+                    btnStrike.disabled = false;
+                }, 1000);
+            }
+
+            function animatePulse(path, duration, direction) {
+                return new Promise(resolve => {
+                    const start = performance.now();
+                    pulse.style.opacity = '1';
+                    
+                    function frame(now) {
+                        const elapsed = now - start;
+                        const p = Math.min(elapsed / duration, 1);
+                        const progress = direction === 'forward' ? p : 1 - p;
+                        
+                        const point = path.getPointAtLength(progress * path.getTotalLength());
+                        pulse.setAttribute('cx', point.x);
+                        pulse.setAttribute('cy', point.y);
+
+                        if (p < 1) {
+                            requestAnimationFrame(frame);
+                        } else {
+                            pulse.style.opacity = '0';
+                            resolve();
+                        }
+                    }
+                    requestAnimationFrame(frame);
+                });
+            }
+
+            function reset() {
+                dataTimer.textContent = "0.00";
+                dataVelocity.textContent = "-- m/s";
+                telemetryPanel.classList.remove('readout-active');
+                simState.textContent = "READY";
+                hudMode.textContent = "Resting Potential";
+                statusDot.className = "w-2.5 h-2.5 rounded-full bg-emerald-500";
+            }
+
+            // Events
+            btnStrike.addEventListener('click', runReflexTest);
+            btnReset.addEventListener('click', reset);
+            btnModes.forEach(btn => {
+                btn.addEventListener('click', () => setMode(btn.dataset.mode));
+            });
+
+            // Initial State
+            setMode('healthy');
+        });
+    </script>
+</body>
+</html>

@@ -1,0 +1,605 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Clonbrow saver - 1st Person Explore</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Nunito:wght@600;700;800;900&display=swap" rel="stylesheet">
+    <script src="https://unpkg.com/lucide@latest"></script>
+    
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/loaders/GLTFLoader.js"></script>
+
+    <style>
+        body { font-family: 'Nunito', sans-serif; background-color: #e0f2fe; margin: 0; overflow: hidden; user-select: none; -webkit-user-select: none; touch-action: none;}
+        #webgl-container { position: absolute; top: 0; left: 0; width: 100vw; height: 100vh; z-index: 1; }
+        
+        #crosshair {
+            position: absolute; top: 50%; left: 50%; width: 10px; height: 10px;
+            background: white; border: 2px solid #1e293b; border-radius: 50%;
+            transform: translate(-50%, -50%); z-index: 20; pointer-events: none;
+        }
+
+        #blocker {
+            position: absolute; width: 100%; height: 100%; background-color: rgba(15, 23, 42, 0.9);
+            z-index: 50; display: flex; flex-direction: column; align-items: center; justify-content: center;
+        }
+        
+        .btn-game { background: #38bdf8; color: white; border: 4px solid #1e293b; border-radius: 24px; padding: 20px 40px; font-weight: 900; font-size: 2rem; transition: all 0.1s; text-transform: uppercase; cursor: pointer; box-shadow: 0 10px 0 #1e293b; }
+        .btn-game:active { transform: translateY(10px); box-shadow: 0 0px 0 #1e293b; }
+
+        .btn-back { position: absolute; top: 20px; left: 20px; background: white; color: #1e293b; border: 4px solid #1e293b; border-radius: 16px; padding: 12px 24px; font-weight: 900; text-transform: uppercase; cursor: pointer; box-shadow: 0 6px 0 #1e293b; z-index: 60; }
+        .btn-back:active { transform: translateY(6px); box-shadow: 0 0px 0 #1e293b; }
+
+        /* Gamified Inventory */
+        #inventory { position: absolute; bottom: 30px; left: 50%; transform: translateX(-50%); display: flex; gap: 12px; z-index: 30; }
+        .inv-slot { width: 65px; height: 65px; background: rgba(255,255,255,0.95); border: 4px solid #1e293b; border-radius: 16px; box-shadow: 0 6px 0 #1e293b; display: flex; align-items: center; justify-content: center; font-size: 32px; transition: transform 0.1s; }
+        .inv-slot.active { border-color: #f59e0b; background: #fef3c7; transform: translateY(-10px); box-shadow: 0 16px 0 #1e293b; }
+
+        /* Mobile Controls */
+        #mobile-controls { display: none; position: absolute; top: 0; left: 0; width: 100%; height: 100%; z-index: 25; pointer-events: none; }
+        .joystick-zone { position: absolute; bottom: 40px; left: 20px; width: 160px; height: 160px; background: rgba(255,255,255,0.15); border: 4px solid rgba(255,255,255,0.4); border-radius: 50%; pointer-events: auto; touch-action: none; }
+        .joystick-knob { position: absolute; top: 50%; left: 50%; width: 70px; height: 70px; background: rgba(255,255,255,0.8); border: 4px solid #1e293b; border-radius: 50%; transform: translate(-50%, -50%); box-shadow: 0 6px 0 rgba(0,0,0,0.2); }
+        .look-zone { position: absolute; top: 0; right: 0; width: 50%; height: 100%; pointer-events: auto; touch-action: none; }
+        .btn-action { position: absolute; bottom: 60px; right: 30px; width: 90px; height: 90px; background: #38bdf8; border: 4px solid #1e293b; border-radius: 50%; box-shadow: 0 8px 0 #1e293b; pointer-events: auto; display: flex; align-items: center; justify-content: center; color: white; font-weight: 900; font-size: 1.2rem;}
+        .btn-action:active { transform: translateY(8px); box-shadow: 0 0px 0 #1e293b;}
+    </style>
+</head>
+<!-- Tabindex 0 is CRITICAL here so the body can capture keyboard events in an iframe! -->
+<body tabindex="0">
+
+    <button id="backBtn" class="btn-back flex items-center gap-2">
+        <i data-lucide="arrow-left" class="w-5 h-5 font-black"></i> Top-Down View
+    </button>
+
+    <div id="blocker">
+        <h1 class="text-6xl font-black text-white mb-6 tracking-tight drop-shadow-md text-center">Clonbrow saver<br><span class="text-3xl text-sky-300">1st Person Mode</span></h1>
+        <p class="text-xl font-bold text-sky-200 mb-10 bg-slate-900/60 px-8 py-4 rounded-3xl border-2 border-slate-700">W,A,S,D = Move &nbsp;|&nbsp; DRAG MOUSE = Look &nbsp;|&nbsp; CLICK = Enter House</p>
+        <button id="playBtn" class="btn-game flex items-center gap-3">
+            Click to Play <i data-lucide="mouse-pointer-click" class="w-8 h-8"></i>
+        </button>
+    </div>
+
+    <div id="webgl-container"></div>
+    <div id="crosshair"></div>
+
+    <div id="inventory">
+        <div class="inv-slot active">🗺️</div>
+        <div class="inv-slot">🔦</div>
+        <div class="inv-slot">🍎</div>
+    </div>
+
+    <!-- NEW: Foolproof On-Screen WASD Pad (Bypasses all browser keyboard glitches) -->
+    <div id="dpad" style="position: absolute; bottom: 30px; left: 30px; z-index: 100; display: grid; grid-template-columns: 60px 60px 60px; gap: 10px;">
+        <div></div>
+        <button id="btn-w" class="bg-slate-800 text-white font-black text-2xl p-2 rounded-xl border-b-4 border-slate-900 active:border-b-0 active:translate-y-1 select-none flex items-center justify-center">W</button>
+        <div></div>
+        <button id="btn-a" class="bg-slate-800 text-white font-black text-2xl p-2 rounded-xl border-b-4 border-slate-900 active:border-b-0 active:translate-y-1 select-none flex items-center justify-center">A</button>
+        <button id="btn-s" class="bg-slate-800 text-white font-black text-2xl p-2 rounded-xl border-b-4 border-slate-900 active:border-b-0 active:translate-y-1 select-none flex items-center justify-center">S</button>
+        <button id="btn-d" class="bg-slate-800 text-white font-black text-2xl p-2 rounded-xl border-b-4 border-slate-900 active:border-b-0 active:translate-y-1 select-none flex items-center justify-center">D</button>
+    </div>
+
+    <!-- Mobile UI -->
+    <div id="mobile-controls">
+        <div class="look-zone" id="lookZone"></div>
+        <div class="joystick-zone" id="joystickZone"><div class="joystick-knob" id="joystickKnob"></div></div>
+        <div class="btn-action" id="interactBtn">OPEN</div>
+    </div>
+
+    <script>
+        lucide.createIcons();
+        const urlParams = new URLSearchParams(window.location.search);
+        let userId = urlParams.get('userId') || 1;
+        
+        // Connects to your Python server
+        const API_BASE = 'https://shreeClonexx.pythonanywhere.com'; 
+        
+        document.getElementById('backBtn').onclick = () => window.location.href = `map.html?userId=${userId}`;
+
+        let dbState = { parents: [], children: [] };
+        let isGameStarted = false; 
+        
+        // --- DEVICE DETECTOR ---
+        // Safely checks if it's an actual mobile phone, not just a touch laptop
+        const isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent) || window.innerWidth <= 768;
+        
+        if (isMobile) {
+            document.getElementById('mobile-controls').style.display = 'block';
+            document.getElementById('inventory').style.top = '20px';
+            document.getElementById('inventory').style.bottom = 'auto';
+            document.getElementById('inventory').style.left = 'auto';
+            document.getElementById('inventory').style.right = '20px';
+            document.getElementById('inventory').style.transform = 'scale(0.8)';
+            document.getElementById('crosshair').style.display = 'block';
+        }
+
+        // --- THREE.JS SETUP (EXACT MAP.HTML COPY) ---
+        const container = document.getElementById('webgl-container');
+        
+        const scene = new THREE.Scene();
+        scene.background = new THREE.Color(0xe0f2fe); 
+        scene.fog = new THREE.Fog(0xe0f2fe, 80, 250);
+
+        const camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 1000);
+        camera.rotation.order = 'YXZ'; 
+        camera.position.set(0, 6, 0); 
+
+        const renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true });
+        renderer.setSize(window.innerWidth, window.innerHeight);
+        renderer.setPixelRatio(window.devicePixelRatio);
+        renderer.shadowMap.enabled = true;
+        renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+        container.appendChild(renderer.domElement);
+
+        const ambientLight = new THREE.AmbientLight(0xffffff, 0.7);
+        scene.add(ambientLight);
+
+        const dirLight = new THREE.DirectionalLight(0xffffff, 0.9);
+        dirLight.position.set(50, 100, 50);
+        dirLight.castShadow = true;
+        dirLight.shadow.mapSize.width = 2048; dirLight.shadow.mapSize.height = 2048;
+        dirLight.shadow.camera.near = 0.5; dirLight.shadow.camera.far = 250;
+        dirLight.shadow.camera.left = -100; dirLight.shadow.camera.right = 100;
+        dirLight.shadow.camera.top = 100; dirLight.shadow.camera.bottom = -100;
+        scene.add(dirLight);
+
+        // --- ENVIRONMENT (EXACT MAP.HTML COPY) ---
+        const sunGeo = new THREE.SphereGeometry(12, 32, 32);
+        const sunMat = new THREE.MeshBasicMaterial({ color: 0xffd700 });
+        const sun = new THREE.Mesh(sunGeo, sunMat);
+        sun.position.set(60, 80, -80);
+        scene.add(sun);
+
+        const cloudMat = new THREE.MeshStandardMaterial({ color: 0xffffff, flatShading: true });
+        for(let i=0; i<6; i++) {
+            const cloud = new THREE.Group();
+            for(let j=0; j<4; j++) {
+                const puff = new THREE.Mesh(new THREE.DodecahedronGeometry(4 + Math.random()*4, 1), cloudMat);
+                puff.position.set(Math.random()*8, Math.random()*4, Math.random()*8);
+                cloud.add(puff);
+            }
+            cloud.position.set((Math.random()-0.5)*150, 40 + Math.random()*20, (Math.random()-0.5)*150);
+            scene.add(cloud);
+        }
+
+        const islandGroup = new THREE.Group();
+        const baseGeo = new THREE.CylinderGeometry(80, 75, 8, 64);
+        const baseMat = new THREE.MeshStandardMaterial({ color: 0x8b5cf6, roughness: 1 });
+        const base = new THREE.Mesh(baseGeo, baseMat);
+        base.position.y = -4; base.receiveShadow = true;
+        islandGroup.add(base);
+
+        const grassGeo = new THREE.CylinderGeometry(80, 80, 2, 64);
+        const grassMat = new THREE.MeshStandardMaterial({ color: 0x86efac, roughness: 0.9, flatShading: true });
+        const grass = new THREE.Mesh(grassGeo, grassMat);
+        grass.position.y = 1; grass.receiveShadow = true;
+        islandGroup.add(grass);
+
+        // --- MASSIVE GRASS BLADES (4000 Instances exactly like map.html) ---
+        const tuftGeo = new THREE.ConeGeometry(0.4, 2.5, 4);
+        const tuftMat = new THREE.MeshStandardMaterial({ color: 0x22c55e, flatShading: true });
+        const tuftCount = 4000;
+        const grassInstanced = new THREE.InstancedMesh(tuftGeo, tuftMat, tuftCount);
+        grassInstanced.receiveShadow = true;
+        
+        const dummy = new THREE.Object3D();
+        for(let i=0; i<tuftCount; i++) {
+            const angle = Math.random() * Math.PI * 2;
+            const radius = Math.random() * 78; 
+            dummy.position.set(Math.cos(angle)*radius, 2, Math.sin(angle)*radius);
+            dummy.rotation.x = (Math.random() - 0.5) * 0.4;
+            dummy.rotation.z = (Math.random() - 0.5) * 0.4;
+            dummy.rotation.y = Math.random() * Math.PI;
+            dummy.updateMatrix();
+            grassInstanced.setMatrixAt(i, dummy.matrix);
+        }
+        islandGroup.add(grassInstanced);
+
+        // Boulders & Caves (Exactly like map.html)
+        const hillPositions = [{x: -70, z: -70}, {x: 70, z: 70}, {x: -70, z: 70}, {x: 75, z: -20}];
+        hillPositions.forEach(pos => {
+            const hillGeo = new THREE.SphereGeometry(15 + Math.random()*5, 32, 16);
+            const hill = new THREE.Mesh(hillGeo, grassMat);
+            hill.scale.set(1, 0.5, 1);
+            hill.position.set(pos.x, 1, pos.z);
+            hill.receiveShadow = true;
+            islandGroup.add(hill);
+        });
+
+        const caveGroup = new THREE.Group();
+        const rockMat = new THREE.MeshStandardMaterial({ color: 0x94a3b8, roughness: 0.9, flatShading: true });
+        const rock = new THREE.Mesh(new THREE.DodecahedronGeometry(12, 1), rockMat);
+        rock.scale.set(1, 0.8, 1); rock.castShadow = true; rock.receiveShadow = true;
+        caveGroup.add(rock);
+
+        const hole = new THREE.Mesh(new THREE.CircleGeometry(4, 16), new THREE.MeshBasicMaterial({ color: 0x0f172a }));
+        hole.position.set(0, -2, 11);
+        caveGroup.add(hole);
+        caveGroup.position.set(-65, 4, -40); 
+        islandGroup.add(caveGroup);
+        scene.add(islandGroup);
+
+        // --- MODEL LOADING & ORIGINAL TREES ---
+        const gltfLoader = new THREE.GLTFLoader();
+        let loadedModels = { dutch: null, viking: null, pine: null };
+        const hitboxes = []; 
+        const houseGroups = [];
+        
+        function fitToBox(object, targetSize) {
+            const box = new THREE.Box3().setFromObject(object);
+            const size = box.getSize(new THREE.Vector3()).length();
+            const scale = targetSize / size;
+            object.scale.setScalar(scale);
+            const center = box.getCenter(new THREE.Vector3());
+            object.position.y += (object.position.y - center.y) * scale + (targetSize/2);
+            return object;
+        }
+
+        // Wrapper to fix browser preview crashes
+        function safeLoadModel(url, onLoad, onError) {
+            try { gltfLoader.load(url, onLoad, undefined, onError); } 
+            catch(e) { if(onError) onError(e); }
+        }
+
+        // EXACT Original Tree Fallback
+        safeLoadModel('./../graphical-content/pine_tree.glb', (gltf) => {
+            const model = gltf.scene;
+            model.traverse(c => { if(c.isMesh) { c.castShadow = true; c.receiveShadow = true; } });
+            loadedModels.pine = fitToBox(model, 12);
+            scatterTrees();
+        }, () => {
+            console.log("No ../graphical-content/pine_tree.glb. Using fallback.");
+            const tree = new THREE.Group();
+            const trunk = new THREE.Mesh(new THREE.CylinderGeometry(0.5, 0.8, 3, 6), new THREE.MeshStandardMaterial({color: 0x78350f, flatShading: true}));
+            trunk.position.y = 1.5; trunk.castShadow = true; tree.add(trunk);
+            const leafMat = new THREE.MeshStandardMaterial({color: 0x10b981, flatShading: true});
+            for(let i=0; i<3; i++) {
+                const leaf = new THREE.Mesh(new THREE.ConeGeometry(3 - i*0.5, 4, 6), leafMat);
+                leaf.position.y = 3.5 + i*1.5; leaf.castShadow = true; tree.add(leaf);
+            }
+            loadedModels.pine = tree;
+            scatterTrees();
+        });
+
+        function scatterTrees() {
+            for(let i=0; i<45; i++) {
+                const angle = Math.random() * Math.PI * 2;
+                const radius = 50 + Math.random() * 25; 
+                const tx = Math.cos(angle) * radius;
+                const tz = Math.sin(angle) * radius;
+                
+                const tree = loadedModels.pine.clone();
+                tree.position.set(tx, 2, tz);
+                
+                const s = 0.6 + Math.random()*0.6;
+                tree.scale.set(tree.scale.x*s, tree.scale.y*s, tree.scale.z*s); 
+                
+                tree.rotation.y = Math.random() * Math.PI;
+                scene.add(tree);
+            }
+        }
+
+        const tempBoxGeo = new THREE.BoxGeometry(10, 10, 10);
+        loadedModels.dutch = new THREE.Mesh(tempBoxGeo, new THREE.MeshStandardMaterial({color: 0x38bdf8}));
+        loadedModels.viking = new THREE.Mesh(tempBoxGeo, new THREE.MeshStandardMaterial({color: 0xf43f5e}));
+
+        safeLoadModel('./../graphical-content/dutch_house.glb', (gltf) => {
+            const model = gltf.scene;
+            model.traverse(c => { if(c.isMesh) { c.castShadow = true; c.receiveShadow = true; } });
+            loadedModels.dutch = fitToBox(model, 15);
+            refreshModels();
+        }, e => console.log("Missing dutch"));
+
+        safeLoadModel('./../graphical-content/viking_house.glb', (gltf) => {
+            const model = gltf.scene;
+            model.traverse(c => { if(c.isMesh) { c.castShadow = true; c.receiveShadow = true; } });
+            loadedModels.viking = fitToBox(model, 15);
+            refreshModels();
+        }, e => console.log("Missing viking"));
+
+        function refreshModels() {
+            if(!loadedModels.dutch || !loadedModels.viking) return;
+            houseGroups.forEach(obj => {
+                const isViking = obj.userData.dbData.title.includes('house-2');
+                const modelSource = isViking ? loadedModels.viking : loadedModels.dutch;
+                while(obj.group.children.length > 0) { obj.group.remove(obj.group.children[0]); }
+                const newModel = modelSource.clone();
+                newModel.position.set(0,0,0);
+                obj.group.add(newModel);
+            });
+        }
+
+        // --- FETCH DATA ---
+        async function fetchAndRender() {
+            try {
+                const res = await fetch(`${API_BASE}/api/world/${userId}`);
+                if (res.ok) {
+                    const data = await res.json();
+                    dbState.parents = data.parents || [];
+                    dbState.children = data.children || [];
+                }
+            } catch (err) {
+                console.log("DB missing. Using fallback data.");
+                dbState = {
+                    parents: [
+                        { id: 1, title: "Dutch Base|||house-1", x: 300, y: 300 },
+                        { id: 2, title: "Viking Post|||house-2", x: 500, y: 150 }
+                    ],
+                    children: []
+                };
+            }
+            
+            dbState.parents.forEach((p) => {
+                const worldX = (p.x - 400) / 10;
+                const worldZ = (p.y - 300) / 10;
+
+                const houseGroup = new THREE.Group();
+                houseGroup.position.set(worldX, 2, worldZ);
+                scene.add(houseGroup);
+
+                // Invisible hitbox for entering the house
+                const hitboxGeo = new THREE.BoxGeometry(14, 18, 14);
+                const hitboxMat = new THREE.MeshBasicMaterial({ visible: false });
+                const hitbox = new THREE.Mesh(hitboxGeo, hitboxMat);
+                hitbox.position.set(worldX, 10, worldZ);
+                
+                hitbox.userData = { isHouse: true, dbData: p, group: houseGroup };
+                scene.add(hitbox);
+                hitboxes.push(hitbox);
+                houseGroups.push({ group: houseGroup, userData: hitbox.userData });
+            });
+            refreshModels();
+        }
+
+        // --- COMPLETELY FIXED WASD & MOUSE DRAG CONTROLS ---
+        const playBtn = document.getElementById('playBtn');
+        const blocker = document.getElementById('blocker');
+
+        // 1. Fixing the Focus Issue so WASD works
+        playBtn.addEventListener('click', () => {
+            isGameStarted = true; 
+            blocker.style.display = 'none'; 
+            
+            // THESE TWO LINES ARE CRITICAL FOR IFRAMES!
+            // It screams at the browser "Hey! Listen to my keyboard!"
+            document.body.focus();
+            window.focus();
+        });
+
+        // 2. Fixing the Drag-to-Look Issue
+        let isDraggingMouse = false;
+        let lastMousePos = { x: 0, y: 0 };
+        let mousedownPos = { x: 0, y: 0 };
+        
+        document.addEventListener('mousedown', (e) => {
+            if (isGameStarted && e.target.id !== 'backBtn' && e.target.id !== 'playBtn') {
+                isDraggingMouse = true;
+                lastMousePos = { x: e.clientX, y: e.clientY };
+                mousedownPos = { x: e.clientX, y: e.clientY };
+                
+                // If they click the screen, make sure we get keyboard focus back
+                document.body.focus();
+            }
+        });
+        
+        document.addEventListener('mouseup', (e) => {
+            isDraggingMouse = false;
+            
+            // 3. Fixing the Click-to-Enter Issue
+            const dx = e.clientX - mousedownPos.x;
+            const dy = e.clientY - mousedownPos.y;
+            
+            // If the mouse barely moved, it's a click, not a drag!
+            if(Math.sqrt(dx*dx + dy*dy) < 5) {
+                if (isGameStarted && e.target.id !== 'backBtn' && e.target.id !== 'playBtn') {
+                    // Pass exact coordinates where you clicked
+                    handleInteraction(e.clientX, e.clientY); 
+                }
+            }
+        });
+
+        document.addEventListener('mousemove', (e) => {
+            if (isDraggingMouse && isGameStarted) {
+                // Manual delta calculation (works on all browsers and iframes!)
+                const deltaX = e.clientX - lastMousePos.x;
+                const deltaY = e.clientY - lastMousePos.y;
+                
+                camera.rotation.y -= deltaX * 0.005;
+                const newRotX = camera.rotation.x - deltaY * 0.005;
+                camera.rotation.x = Math.max(-Math.PI/2 + 0.1, Math.min(Math.PI/2 - 0.1, newRotX));
+                
+                lastMousePos = { x: e.clientX, y: e.clientY };
+            }
+        });
+
+        const keys = { w: false, a: false, s: false, d: false };
+
+        // Bind keys to DOCUMENT so they catch properly in previews!
+        document.addEventListener('keydown', (event) => {
+            const key = event.key.toLowerCase();
+            const code = event.code; // Reads the physical key even if Caps Lock is on!
+            
+            if(key === 'w' || key === 'arrowup' || code === 'KeyW' || code === 'ArrowUp') keys.w = true;
+            if(key === 's' || key === 'arrowdown' || code === 'KeyS' || code === 'ArrowDown') keys.s = true;
+            if(key === 'a' || key === 'arrowleft' || code === 'KeyA' || code === 'ArrowLeft') keys.a = true;
+            if(key === 'd' || key === 'arrowright' || code === 'KeyD' || code === 'ArrowRight') keys.d = true;
+        });
+
+        document.addEventListener('keyup', (event) => {
+            const key = event.key.toLowerCase();
+            const code = event.code;
+            
+            if(key === 'w' || key === 'arrowup' || code === 'KeyW' || code === 'ArrowUp') keys.w = false;
+            if(key === 's' || key === 'arrowdown' || code === 'KeyS' || code === 'ArrowDown') keys.s = false;
+            if(key === 'a' || key === 'arrowleft' || code === 'KeyA' || code === 'ArrowLeft') keys.a = false;
+            if(key === 'd' || key === 'arrowright' || code === 'KeyD' || code === 'ArrowRight') keys.d = false;
+        });
+
+        // NEW: Bind the On-Screen D-PAD to the movement engine
+        const bindBtn = (id, keyName) => {
+            const btn = document.getElementById(id);
+            if(!btn) return;
+            const press = (e) => { e.preventDefault(); keys[keyName] = true; document.body.focus(); };
+            const release = (e) => { e.preventDefault(); keys[keyName] = false; };
+            btn.addEventListener('mousedown', press);
+            btn.addEventListener('mouseup', release);
+            btn.addEventListener('mouseleave', release);
+            btn.addEventListener('touchstart', press);
+            btn.addEventListener('touchend', release);
+        };
+        bindBtn('btn-w', 'w'); bindBtn('btn-s', 's'); bindBtn('btn-a', 'a'); bindBtn('btn-d', 'd');
+
+        // Mobile Controls
+        const joyZone = document.getElementById('joystickZone');
+        const joyKnob = document.getElementById('joystickKnob');
+        const lookZone = document.getElementById('lookZone');
+        
+        let joyActive = false; let joyCenter = {x:0,y:0}; 
+        let mobileMoveX = 0; let mobileMoveZ = 0;
+        
+        if (isMobile) {
+            joyZone.addEventListener('touchstart', (e) => {
+                joyActive = true;
+                const rect = joyZone.getBoundingClientRect();
+                joyCenter = { x: rect.left + rect.width/2, y: rect.top + rect.height/2 };
+                handleJoy(e.touches[0]);
+            });
+            joyZone.addEventListener('touchmove', (e) => { if(joyActive) handleJoy(e.touches[0]); });
+            joyZone.addEventListener('touchend', () => { 
+                joyActive = false;
+                joyKnob.style.transform = `translate(-50%, -50%)`;
+                mobileMoveX = 0; mobileMoveZ = 0;
+            });
+
+            function handleJoy(touch) {
+                let dx = touch.clientX - joyCenter.x;
+                let dy = touch.clientY - joyCenter.y;
+                const maxDist = 45;
+                const dist = Math.sqrt(dx*dx + dy*dy);
+                if(dist > maxDist) { dx = (dx/dist)*maxDist; dy = (dy/dist)*maxDist; }
+                joyKnob.style.transform = `translate(calc(-50% + ${dx}px), calc(-50% + ${dy}px))`;
+                
+                mobileMoveX = dx / maxDist; 
+                mobileMoveZ = dy / maxDist; 
+            }
+
+            let lookActive = false; let lastLook = {x:0, y:0};
+            lookZone.addEventListener('touchstart', (e) => { lookActive = true; lastLook = {x: e.touches[0].clientX, y: e.touches[0].clientY}; });
+            lookZone.addEventListener('touchmove', (e) => {
+                if(!lookActive) return;
+                const touch = e.touches[0];
+                const deltaX = touch.clientX - lastLook.x;
+                const deltaY = touch.clientY - lastLook.y;
+                lastLook = {x: touch.clientX, y: touch.clientY};
+                
+                camera.rotation.y -= deltaX * 0.005;
+                const newRotX = camera.rotation.x - deltaY * 0.005;
+                camera.rotation.x = Math.max(-Math.PI/2 + 0.1, Math.min(Math.PI/2 - 0.1, newRotX));
+            });
+            lookZone.addEventListener('touchend', () => { lookActive = false; });
+        }
+
+        // --- INTERACTION ---
+        const raycaster = new THREE.Raycaster();
+        
+        function handleInteraction(clientX, clientY) {
+            const mouse = new THREE.Vector2();
+            
+            if (clientX !== undefined && clientY !== undefined) {
+                // Shoot the laser from exactly where your mouse clicked
+                mouse.x = (clientX / window.innerWidth) * 2 - 1;
+                mouse.y = -(clientY / window.innerHeight) * 2 + 1;
+            } else {
+                // Mobile uses the center of the screen
+                mouse.x = 0;
+                mouse.y = 0;
+            }
+
+            raycaster.setFromCamera(mouse, camera);
+            const intersects = raycaster.intersectObjects(hitboxes);
+            if (intersects.length > 0) {
+                // Link directly to NPC house
+                window.location.href = `npc-house.html?userId=${userId}&houseId=${intersects[0].object.userData.dbData.id}`;
+            }
+        }
+
+        // Mobile interact button
+        document.getElementById('interactBtn').addEventListener('touchstart', () => handleInteraction());
+
+        window.addEventListener('resize', () => {
+            camera.aspect = window.innerWidth / window.innerHeight;
+            camera.updateProjectionMatrix();
+            renderer.setSize(window.innerWidth, window.innerHeight);
+        });
+
+        // --- ANIMATION ENGINE ---
+        let prevTime = performance.now();
+
+        function animate() {
+            requestAnimationFrame(animate);
+            const time = performance.now();
+            const delta = Math.min((time - prevTime) / 1000, 0.1); 
+
+            if (isGameStarted || isMobile) {
+                const speed = 25.0 * delta;
+                
+                let moveX = 0;
+                let moveZ = 0;
+
+                // ALWAYS read the keyboard
+                if (keys.w) moveZ -= 1;
+                if (keys.s) moveZ += 1;
+                if (keys.a) moveX -= 1;
+                if (keys.d) moveX += 1;
+
+                // Check mobile joystick
+                if (mobileMoveX !== 0 || mobileMoveZ !== 0) {
+                    moveX = mobileMoveX;
+                    moveZ = mobileMoveZ;
+                }
+
+                if (moveX !== 0 || moveZ !== 0) {
+                    const length = Math.sqrt(moveX*moveX + moveZ*moveZ);
+                    moveX /= length;
+                    moveZ /= length;
+
+                    const yaw = camera.rotation.y;
+                    const dirX = moveX * Math.cos(yaw) + moveZ * Math.sin(yaw);
+                    const dirZ = -moveX * Math.sin(yaw) + moveZ * Math.cos(yaw);
+
+                    const nextX = camera.position.x + (dirX * speed);
+                    const nextZ = camera.position.z + (dirZ * speed);
+
+                    let canMoveX = true;
+                    let canMoveZ = true;
+                    const collisionBuffer = 10; 
+
+                    for(let hitbox of hitboxes) {
+                        const hx = hitbox.position.x;
+                        const hz = hitbox.position.z;
+                        
+                        if (Math.abs(nextX - hx) < collisionBuffer && Math.abs(camera.position.z - hz) < collisionBuffer) {
+                            canMoveX = false; 
+                        }
+                        if (Math.abs(camera.position.x - hx) < collisionBuffer && Math.abs(nextZ - hz) < collisionBuffer) {
+                            canMoveZ = false; 
+                        }
+                    }
+
+                    if(canMoveX) camera.position.x = nextX;
+                    if(canMoveZ) camera.position.z = nextZ;
+                }
+
+                camera.position.y = 6; // Lock player height
+            }
+            
+            prevTime = time;
+            renderer.render(scene, camera);
+        }
+        animate();
+
+        fetchAndRender();
+    </script>
+</body>
+</html>

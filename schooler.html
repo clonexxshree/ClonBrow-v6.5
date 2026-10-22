@@ -1,0 +1,483 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>School Admin Master | ClonBrow Schools</title>
+    
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Nunito:wght@400;600;700;800;900&display=swap" rel="stylesheet">
+    
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    fontFamily: { 
+                        sans: ['Nunito', '-apple-system', 'BlinkMacSystemFont', 'Segoe UI', 'sans-serif']
+                    },
+                    colors: {
+                        duo: {
+                            dark: '#1e293b', blue: '#1cb0f6', green: '#58cc02', 
+                            red: '#ff4b4b', yellow: '#ffc800', purple: '#ce82ff', 
+                            pink: '#ff718d', gray: '#e5e7eb', bg: '#f8f9fa',
+                            teal: '#14b8a6', orange: '#fb923c', indigo: '#6366f1'
+                        }
+                    }
+                }
+            }
+        }
+    </script>
+    
+    <style>
+        body { font-family: 'Nunito', sans-serif; letter-spacing: -0.01em; background-color: #f8f9fa; }
+        
+        .bg-dots {
+            background-image: radial-gradient(#cbd5e1 2px, transparent 2px);
+            background-size: 24px 24px;
+        }
+
+        .duo-card {
+            background-color: white;
+            border: 3px solid #1e293b;
+            border-radius: 20px;
+            box-shadow: 6px 6px 0px #1e293b;
+            transition: all 0.2s ease;
+        }
+        
+        .duo-btn {
+            position: relative;
+            border: 3px solid #1e293b;
+            border-radius: 12px;
+            font-weight: 800;
+            text-transform: uppercase;
+            transition: all 0.1s;
+            cursor: pointer;
+            box-shadow: 0px 4px 0px #1e293b;
+            text-align: center;
+        }
+        .duo-btn:active { transform: translateY(4px); box-shadow: 0px 0px 0px #1e293b; }
+        
+        .duo-input {
+            background-color: #f8fafc;
+            border: 3px solid #cbd5e1;
+            border-radius: 12px;
+            padding: 12px;
+            width: 100%;
+            font-weight: 700;
+            color: #1e293b;
+            transition: all 0.2s;
+            outline: none;
+        }
+        .duo-input:focus { border-color: #1cb0f6; background-color: white; }
+
+        .tool-row {
+            display: flex;
+            align-items: stretch;
+            gap: 1.5rem;
+            padding: 1.5rem;
+            cursor: pointer;
+            border: 3px solid #1e293b;
+            border-radius: 24px;
+            transition: all 0.2s ease;
+            box-shadow: 6px 6px 0px #1e293b;
+            background: white;
+            text-align: left;
+        }
+        .tool-row:hover {
+            transform: translateY(-4px);
+            box-shadow: 8px 8px 0px #1e293b;
+        }
+
+        .icon-box {
+            width: 80px;
+            height: 80px;
+            border-radius: 16px;
+            border: 3px solid #1e293b;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 2.5rem;
+            flex-shrink: 0;
+            background-color: white;
+            transition: transform 0.2s;
+        }
+        .tool-row:hover .icon-box { transform: scale(1.05) rotate(-5deg); }
+
+        .seq-btn {
+            width: 100%; text-align: left; padding: 12px 16px; border-radius: 12px;
+            font-weight: 800; color: #64748b; transition: all 0.2s;
+            border: 3px solid transparent;
+        }
+        .seq-btn:hover { background: #f1f5f9; color: #1e293b; }
+        .seq-btn.active { 
+            background: white; color: #1cb0f6; border-color: #1e293b; 
+            box-shadow: 4px 4px 0px #1e293b; 
+        }
+
+        ::-webkit-scrollbar { width: 8px; }
+        ::-webkit-scrollbar-track { background: transparent; }
+        ::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 10px; border: 2px solid #f8f9fa;}
+    </style>
+</head>
+<body class="bg-dots h-screen w-screen overflow-hidden text-duo-dark flex flex-col">
+
+    <header class="bg-white border-b-[3px] border-duo-dark px-6 py-4 flex items-center justify-between z-30 shadow-sm shrink-0">
+        <div class="flex items-center gap-4">
+            <button onclick="window.location.href='../frontend/school.html'" class="w-12 h-12 duo-btn bg-white flex items-center justify-center text-slate-500 hover:text-duo-dark">
+                <i class="fas fa-arrow-left text-xl"></i>
+            </button>
+            <div class="flex items-center gap-3">
+                <div class="w-12 h-12 bg-duo-dark rounded-xl border-[3px] border-duo-dark flex items-center justify-center text-white text-2xl shadow-[4px_4px_0_#cbd5e1]">
+                    <i class="fas fa-crown"></i>
+                </div>
+                <div>
+                    <h1 class="text-2xl sm:text-3xl font-black leading-none">Master Control</h1>
+                    <p class="text-xs sm:text-sm font-bold text-slate-500 uppercase tracking-widest">School Administrator Dashboard</p>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Multi-Tenant Proof Indicator -->
+        <div class="hidden md:flex items-center gap-4 bg-blue-50 border-2 border-duo-blue px-4 py-2 rounded-xl shadow-sm">
+            <i class="fas fa-database text-duo-blue"></i>
+            <div>
+                <div class="text-[10px] font-black text-slate-500 uppercase tracking-wider leading-none">Cloud Vault Status</div>
+                <div id="active-db-display" class="font-bold text-duo-blue text-sm leading-none mt-1">connected to cloud</div>
+            </div>
+        </div>
+    </header>
+
+    <div class="flex-1 flex overflow-hidden">
+        
+        <aside class="w-72 bg-slate-50 border-r-[3px] border-duo-dark flex flex-col p-6 shrink-0 overflow-y-auto hidden lg:flex">
+            <h3 class="font-black text-slate-400 text-xs uppercase tracking-widest mb-4">Management Sequence</h3>
+            
+            <div class="space-y-3 relative before:absolute before:inset-y-0 before:left-[22px] before:w-[3px] before:bg-slate-300">
+                
+                <button onclick="scrollToSection('sec-profile')" class="seq-btn active relative z-10 flex items-center gap-3 bg-white">
+                    <div class="w-8 h-8 rounded-lg bg-duo-blue text-white flex items-center justify-center shrink-0 border-2 border-duo-dark">1</div>
+                    <span class="truncate">Institution Setup</span>
+                </button>
+
+                <button onclick="scrollToSection('sec-academics')" class="seq-btn relative z-10 flex items-center gap-3 bg-white">
+                    <div class="w-8 h-8 rounded-lg bg-duo-purple text-white flex items-center justify-center shrink-0 border-2 border-duo-dark">2</div>
+                    <span class="truncate">People & Academics</span>
+                </button>
+
+                <button onclick="scrollToSection('sec-operations')" class="seq-btn relative z-10 flex items-center gap-3 bg-white">
+                    <div class="w-8 h-8 rounded-lg bg-duo-green text-white flex items-center justify-center shrink-0 border-2 border-duo-dark">3</div>
+                    <span class="truncate">Finance & Operations</span>
+                </button>
+
+                <button onclick="scrollToSection('sec-culture')" class="seq-btn relative z-10 flex items-center gap-3 bg-white">
+                    <div class="w-8 h-8 rounded-lg bg-duo-pink text-white flex items-center justify-center shrink-0 border-2 border-duo-dark">4</div>
+                    <span class="truncate">Culture & Comms</span>
+                </button>
+
+            </div>
+        </aside>
+
+        <main class="flex-1 overflow-y-auto p-6 md:p-10" id="main-scroll">
+            <div class="max-w-5xl mx-auto space-y-16 pb-20">
+                
+                <!-- SECTION 1: Profile Setup -->
+                <section id="sec-profile" class="scroll-mt-10">
+                    <div class="flex items-center gap-4 mb-6">
+                        <div class="w-12 h-12 bg-duo-blue rounded-xl border-[3px] border-duo-dark flex items-center justify-center text-white font-black text-xl shadow-[4px_4px_0_#1e293b]">1</div>
+                        <h2 class="text-3xl font-black text-duo-dark tracking-tight">Institution Setup</h2>
+                        <div class="h-[3px] flex-1 bg-slate-300 rounded-full ml-4"></div>
+                    </div>
+
+                    <div class="duo-card p-6 sm:p-8 bg-gradient-to-r from-blue-50 to-indigo-50 border-duo-blue shadow-[8px_8px_0px_#1cb0f6]">
+                        <div class="flex flex-col md:flex-row gap-8 items-start">
+                            
+                            <div class="flex flex-col items-center gap-3 shrink-0">
+                                <label class="block text-xs font-black text-slate-500 uppercase tracking-widest">School Logo Preview</label>
+                                <div class="w-40 h-40 rounded-3xl border-[4px] border-duo-dark bg-white shadow-[6px_6px_0px_#1e293b] flex items-center justify-center overflow-hidden">
+                                    <img id="school-logo-preview" src="https://api.dicebear.com/7.x/shapes/svg?seed=School" alt="School Logo" class="w-full h-full object-cover">
+                                </div>
+                            </div>
+
+                            <div class="flex-1 w-full space-y-5">
+                                <div>
+                                    <label class="block text-xs font-black text-slate-500 uppercase tracking-widest mb-1">Official Institution Name</label>
+                                    <input type="text" id="db-school-name" class="duo-input text-xl" placeholder="Loading from cloud...">
+                                </div>
+                                <div class="grid grid-cols-1 md:grid-cols-2 gap-5">
+                                    <div>
+                                        <label class="block text-xs font-black text-slate-500 uppercase tracking-widest mb-1">Principal / Head Name</label>
+                                        <input type="text" id="db-school-principal" class="duo-input" placeholder="e.g. Dr. John Doe">
+                                    </div>
+                                    <div>
+                                        <label class="block text-xs font-black text-slate-500 uppercase tracking-widest mb-1">Contact Phone</label>
+                                        <input type="tel" id="db-school-phone" class="duo-input" placeholder="e.g. +1 234 567 8900">
+                                    </div>
+                                </div>
+                                <div>
+                                    <label class="block text-xs font-black text-slate-500 uppercase tracking-widest mb-1">Website URL</label>
+                                    <input type="url" id="db-school-website" class="duo-input" placeholder="e.g. https://www.ourschool.edu">
+                                </div>
+                                <div>
+                                    <label class="block text-xs font-black text-slate-500 uppercase tracking-widest mb-1">Logo Image URL</label>
+                                    <input type="url" id="db-school-logo-url" class="duo-input" placeholder="Paste image link here to avoid sync issues..." oninput="document.getElementById('school-logo-preview').src = this.value || 'https://api.dicebear.com/7.x/shapes/svg?seed=School'">
+                                </div>
+                                <div>
+                                    <label class="block text-xs font-black text-slate-500 uppercase tracking-widest mb-1">Campus Address / Location</label>
+                                    <textarea id="db-school-address" class="duo-input resize-none h-24 text-lg" placeholder="Enter full school address..."></textarea>
+                                </div>
+                                <div class="flex justify-end pt-4">
+                                    <button onclick="updateSchoolConfig(this)" class="duo-btn bg-duo-green text-white px-8 py-3 text-lg shadow-[4px_4px_0_#1e293b]">Save to Cloud Vault</button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </section>
+
+                <section id="sec-academics" class="scroll-mt-10">
+                    <div class="flex items-center gap-4 mb-6">
+                        <div class="w-12 h-12 bg-duo-purple rounded-xl border-[3px] border-duo-dark flex items-center justify-center text-white font-black text-xl shadow-[4px_4px_0_#1e293b]">2</div>
+                        <h2 class="text-3xl font-black text-duo-dark tracking-tight">People & Academics</h2>
+                        <div class="h-[3px] flex-1 bg-slate-300 rounded-full ml-4"></div>
+                    </div>
+
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                        <!-- Student Data -->
+                        <div class="tool-row hover:bg-blue-50 group border-duo-blue" onclick="window.location.href='derily.html'">
+                            <div class="icon-circle icon-box text-duo-blue shadow-[4px_4px_0_#1cb0f6]"><i class="fas fa-users"></i></div>
+                            <div class="flex-1">
+                                <h3 class="font-black text-2xl text-duo-dark mb-1">Student Data</h3>
+                                <div class="inline-block bg-blue-100 text-blue-700 text-[10px] font-black px-2 py-1 rounded uppercase tracking-widest mb-2 border border-blue-200">Admissions & Profiles</div>
+                                <p class="text-sm font-bold text-slate-500 leading-snug">Manage student enrollment, medical records, daily attendance tracking, and parent contact directories. Centralized database for all learners.</p>
+                            </div>
+                        </div>
+
+                        <!-- Teacher Management -->
+                        <div class="tool-row hover:bg-purple-50 group border-duo-purple" onclick="window.location.href='teachero.html'">
+                            <div class="icon-circle icon-box text-duo-purple shadow-[4px_4px_0_#ce82ff]"><i class="fas fa-chalkboard-teacher"></i></div>
+                            <div class="flex-1">
+                                <h3 class="font-black text-2xl text-duo-dark mb-1">Staff & Teachers</h3>
+                                <div class="inline-block bg-purple-100 text-purple-700 text-[10px] font-black px-2 py-1 rounded uppercase tracking-widest mb-2 border border-purple-200">HR & Assignments</div>
+                                <p class="text-sm font-bold text-slate-500 leading-snug">Control employee records, map teachers to specific subjects and grades, track staff leave, and monitor teaching performance metrics.</p>
+                            </div>
+                        </div>
+
+                        <!-- Timetable AI -->
+                        <div class="tool-row hover:bg-pink-50 group border-duo-pink" onclick="window.location.href='schedulo.html'">
+                            <div class="icon-circle icon-box text-duo-pink shadow-[4px_4px_0_#ff718d]"><i class="fas fa-calendar-alt"></i></div>
+                            <div class="flex-1">
+                                <h3 class="font-black text-2xl text-duo-dark mb-1">Timetable AI</h3>
+                                <div class="inline-block bg-pink-100 text-pink-700 text-[10px] font-black px-2 py-1 rounded uppercase tracking-widest mb-2 border border-pink-200">Scheduling Engine</div>
+                                <p class="text-sm font-bold text-slate-500 leading-snug">Automatically generate conflict-free class schedules, allocate rooms, and instantly assign substitute teachers when staff are absent.</p>
+                            </div>
+                        </div>
+
+                        <!-- Rank Management -->
+                        <div class="tool-row hover:bg-orange-50 group border-duo-orange" onclick="window.location.href='rankie.html'">
+                            <div class="icon-circle icon-box text-duo-orange shadow-[4px_4px_0_#fb923c]"><i class="fas fa-trophy"></i></div>
+                            <div class="flex-1">
+                                <h3 class="font-black text-2xl text-duo-dark mb-1">Rank System</h3>
+                                <div class="inline-block bg-orange-100 text-orange-700 text-[10px] font-black px-2 py-1 rounded uppercase tracking-widest mb-2 border border-orange-200">Exams & Grading</div>
+                                <p class="text-sm font-bold text-slate-500 leading-snug">Input exam scores, automatically calculate class percentiles, generate official report cards, and maintain academic leaderboards.</p>
+                            </div>
+                        </div>
+                    </div>
+                </section>
+
+                <section id="sec-operations" class="scroll-mt-10">
+                    <div class="flex items-center gap-4 mb-6">
+                        <div class="w-12 h-12 bg-duo-green rounded-xl border-[3px] border-duo-dark flex items-center justify-center text-white font-black text-xl shadow-[4px_4px_0_#1e293b]">3</div>
+                        <h2 class="text-3xl font-black text-duo-dark tracking-tight">Finance & Operations</h2>
+                        <div class="h-[3px] flex-1 bg-slate-300 rounded-full ml-4"></div>
+                    </div>
+
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                        <!-- Fees & Salary -->
+                        <div class="tool-row hover:bg-green-50 group border-duo-green" onclick="window.location.href='susty.html'">
+                            <div class="icon-circle icon-box text-duo-green shadow-[4px_4px_0_#58cc02]"><i class="fas fa-money-check-alt"></i></div>
+                            <div class="flex-1">
+                                <h3 class="font-black text-2xl text-duo-dark mb-1">Fees & Salary</h3>
+                                <div class="inline-block bg-green-100 text-green-700 text-[10px] font-black px-2 py-1 rounded uppercase tracking-widest mb-2 border border-green-200">Core Accounting</div>
+                                <p class="text-sm font-bold text-slate-500 leading-snug">Generate student fee vouchers, track late payments, calculate staff payroll with deductions, and view overall financial health dashboards.</p>
+                            </div>
+                        </div>
+
+                        <!-- Credit System -->
+                        <div class="tool-row hover:bg-yellow-50 group border-duo-yellow" onclick="window.location.href='mang.html'">
+                            <div class="icon-circle icon-box text-duo-yellow shadow-[4px_4px_0_#ffc800]"><i class="fas fa-coins text-duo-dark"></i></div>
+                            <div class="flex-1">
+                                <h3 class="font-black text-2xl text-duo-dark mb-1">Credit System</h3>
+                                <div class="inline-block bg-yellow-100 text-yellow-700 text-[10px] font-black px-2 py-1 rounded uppercase tracking-widest mb-2 border border-yellow-300">Digital Wallets</div>
+                                <p class="text-sm font-bold text-slate-500 leading-snug">Issue digital tokens to students for excellent behavior. Students can spend credits in the cafeteria or on school merchandise.</p>
+                            </div>
+                        </div>
+
+                        <!-- Transport/Fleet -->
+                        <div class="tool-row hover:bg-teal-50 group border-duo-teal" onclick="window.location.href='transpo.html'">
+                            <div class="icon-circle icon-box text-duo-teal shadow-[4px_4px_0_#14b8a6]"><i class="fas fa-bus"></i></div>
+                            <div class="flex-1">
+                                <h3 class="font-black text-2xl text-duo-dark mb-1">Fleet & Transport</h3>
+                                <div class="inline-block bg-teal-100 text-teal-700 text-[10px] font-black px-2 py-1 rounded uppercase tracking-widest mb-2 border border-teal-200">Logistics</div>
+                                <p class="text-sm font-bold text-slate-500 leading-snug">Manage school bus routes, assign drivers to vehicles, track fuel expenses, and provide live GPS updates to waiting parents.</p>
+                            </div>
+                        </div>
+
+                        <!-- Library & Assets -->
+                        <div class="tool-row hover:bg-indigo-50 group border-duo-indigo" onclick="window.location.href='booker.html'">
+                            <div class="icon-circle icon-box text-duo-indigo shadow-[4px_4px_0_#6366f1]"><i class="fas fa-book-reader"></i></div>
+                            <div class="flex-1">
+                                <h3 class="font-black text-2xl text-duo-dark mb-1">Library & Assets</h3>
+                                <div class="inline-block bg-indigo-100 text-indigo-700 text-[10px] font-black px-2 py-1 rounded uppercase tracking-widest mb-2 border border-indigo-200">Inventory Management</div>
+                                <p class="text-sm font-bold text-slate-500 leading-snug">Catalog books, issue/return scanning, calculate overdue fines. Also tracks physical school assets like projectors and lab equipment.</p>
+                            </div>
+                        </div>
+                    </div>
+                </section>
+
+                <section id="sec-culture" class="scroll-mt-10">
+                    <div class="flex items-center gap-4 mb-6">
+                        <div class="w-12 h-12 bg-duo-pink rounded-xl border-[3px] border-duo-dark flex items-center justify-center text-white font-black text-xl shadow-[4px_4px_0_#1e293b]">4</div>
+                        <h2 class="text-3xl font-black text-duo-dark tracking-tight">Culture & Comms</h2>
+                        <div class="h-[3px] flex-1 bg-slate-300 rounded-full ml-4"></div>
+                    </div>
+
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                        <!-- Mass Mail -->
+                        <div class="tool-row hover:bg-red-50 group border-duo-red" onclick="window.location.href='../frontend/mailgo.html'">
+                            <div class="icon-circle icon-box text-duo-red shadow-[4px_4px_0_#ff4b4b]"><i class="fas fa-bullhorn"></i></div>
+                            <div class="flex-1">
+                                <h3 class="font-black text-2xl text-duo-dark mb-1">Mass Comms</h3>
+                                <div class="inline-block bg-red-100 text-red-700 text-[10px] font-black px-2 py-1 rounded uppercase tracking-widest mb-2 border border-red-200">Email & SMS Alerts</div>
+                                <p class="text-sm font-bold text-slate-500 leading-snug">Instantly broadcast emergency lockdown alerts, holiday announcements, or personalized fee reminders to all parents via Email/SMS.</p>
+                            </div>
+                        </div>
+
+                        <!-- School Docs -->
+                        <div class="tool-row hover:bg-slate-100 group border-slate-400" onclick="window.location.href='docer.html'">
+                            <div class="icon-circle icon-box text-slate-600 shadow-[4px_4px_0_#94a3b8]"><i class="fas fa-file-signature"></i></div>
+                            <div class="flex-1">
+                                <h3 class="font-black text-2xl text-duo-dark mb-1">Document Center</h3>
+                                <div class="inline-block bg-slate-200 text-slate-700 text-[10px] font-black px-2 py-1 rounded uppercase tracking-widest mb-2 border border-slate-300">Compliance & Policies</div>
+                                <p class="text-sm font-bold text-slate-500 leading-snug">Store official school policies, generate digital permission slips for field trips, and manage digital signatures from staff and parents.</p>
+                            </div>
+                        </div>
+
+                        <!-- Group Management -->
+                        <div class="tool-row hover:bg-teal-50 group border-duo-teal" onclick="window.location.href='groupie.html'">
+                            <div class="icon-circle icon-box text-duo-teal shadow-[4px_4px_0_#14b8a6]"><i class="fas fa-users-cog"></i></div>
+                            <div class="flex-1">
+                                <h3 class="font-black text-2xl text-duo-dark mb-1">Group & House Mgmt</h3>
+                                <div class="inline-block bg-teal-100 text-teal-700 text-[10px] font-black px-2 py-1 rounded uppercase tracking-widest mb-2 border border-teal-200">Extracurriculars</div>
+                                <p class="text-sm font-bold text-slate-500 leading-snug">Sort students into competitive Houses (e.g., Gryffindor), manage sports team rosters, and organize after-school club memberships.</p>
+                            </div>
+                        </div>
+
+                        <!-- School Newspaper -->
+                        <div class="tool-row hover:bg-pink-50 group border-duo-pink" onclick="window.location.href='newsie.html'">
+                            <div class="icon-circle icon-box text-duo-pink shadow-[4px_4px_0_#ff718d]"><i class="fas fa-newspaper"></i></div>
+                            <div class="flex-1">
+                                <h3 class="font-black text-2xl text-duo-dark mb-1">Digital Newspaper</h3>
+                                <div class="inline-block bg-pink-100 text-pink-700 text-[10px] font-black px-2 py-1 rounded uppercase tracking-widest mb-2 border border-pink-200">Publishing Engine</div>
+                                <p class="text-sm font-bold text-slate-500 leading-snug">A CMS for the student journalism team. Write articles, upload event photos, and publish the weekly school digital magazine directly to the portal.</p>
+                            </div>
+                        </div>
+                    </div>
+                </section>
+
+            </div>
+        </main>
+    </div>
+
+    <script>
+        // Force the absolute PythonAnywhere URL. No Localhost allowed.
+        const CLOUD_API = 'https://clonexxshree.pythonanywhere.com/api';
+        
+        const activeUserStr = localStorage.getItem('clonbrow_active_user');
+        let activeUser = {};
+        try { activeUser = JSON.parse(activeUserStr || '{}'); } catch(e){}
+        const adminEmail = activeUser.email || localStorage.getItem('clonbrow_school_email') || 'admin@demo.edu';
+
+        const dbDisplay = document.getElementById('active-db-display');
+        dbDisplay.innerText = adminEmail;
+
+        // Load School Configuration directly from PythonAnywhere Cloud DB
+        async function loadSchoolConfig() {
+            try {
+                const response = await fetch(`${CLOUD_API}/school/config?email=${encodeURIComponent(adminEmail)}`);
+                if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`);
+                
+                const data = await response.json();
+                
+                if (data.settings) {
+                    if (data.settings.school_name) document.getElementById('db-school-name').value = data.settings.school_name;
+                    if (data.settings.address) document.getElementById('db-school-address').value = data.settings.address;
+                    if (data.settings.principal) document.getElementById('db-school-principal').value = data.settings.principal;
+                    if (data.settings.phone) document.getElementById('db-school-phone').value = data.settings.phone;
+                    if (data.settings.website) document.getElementById('db-school-website').value = data.settings.website;
+                    
+                    if (data.settings.logo) {
+                        document.getElementById('school-logo-preview').src = data.settings.logo;
+                        document.getElementById('db-school-logo-url').value = data.settings.logo;
+                    }
+                }
+            } catch(e) {
+                console.warn("Cloud connection error. Retrying or fallback to default.", e);
+            }
+        }
+
+        // Save Configuration Updates directly to PythonAnywhere Cloud DB
+        async function updateSchoolConfig(btn) {
+            const originalText = btn.innerHTML;
+            const newName = document.getElementById('db-school-name').value;
+            const newAddress = document.getElementById('db-school-address').value;
+            const newPrincipal = document.getElementById('db-school-principal').value;
+            const newPhone = document.getElementById('db-school-phone').value;
+            const newWebsite = document.getElementById('db-school-website').value;
+            const logoUrl = document.getElementById('db-school-logo-url').value;
+            
+            btn.innerHTML = `<i class="fas fa-spinner fa-spin mr-2"></i> Saving...`;
+            
+            try {
+                const response = await fetch(`${CLOUD_API}/school/setup`, {
+                    method: 'POST',
+                    headers: {'Content-Type': 'application/json'},
+                    body: JSON.stringify({ 
+                        school_name: newName, 
+                        address: newAddress,
+                        logo: logoUrl,
+                        principal: newPrincipal,
+                        phone: newPhone,
+                        website: newWebsite,
+                        admin_email: adminEmail 
+                    })
+                });
+                
+                if(response.ok) {
+                    btn.innerHTML = `<i class="fas fa-check mr-2"></i> Saved to Cloud`;
+                } else {
+                    throw new Error(`Server returned ${response.status}: Make sure /api/school/setup exists in ../Backend/main_../Backend/server.py!`);
+                }
+                setTimeout(() => { btn.innerHTML = originalText; }, 2000);
+                
+            } catch(e) {
+                console.error("Sync Error:", e);
+                btn.innerHTML = `<i class="fas fa-times mr-2"></i> Cloud Sync Failed`;
+                alert("Cloud Sync Failed: \n\n" + e.message + "\n\nPlease ensure your PythonAnywhere server has the /api/school/setup endpoint configured correctly.");
+                setTimeout(() => { btn.innerHTML = originalText; }, 4000);
+            }
+        }
+
+        loadSchoolConfig();
+
+        function scrollToSection(id) {
+            const el = document.getElementById(id);
+            if(el) {
+                document.getElementById('main-scroll').scrollTo({
+                    top: el.offsetTop - 40,
+                    behavior: 'smooth'
+                });
+            }
+        }
+    </script>
+</body>
+</html>

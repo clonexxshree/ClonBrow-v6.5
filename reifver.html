@@ -1,0 +1,2115 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>ClonBrow OS | The Ultimate Student Browser</title>
+    
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Nunito:wght@400;600;700;800;900&display=swap" rel="stylesheet">
+    
+    <!-- AirTouch MediaPipe AI Dependencies -->
+    <script src="https://cdn.jsdelivr.net/npm/@mediapipe/camera_utils/camera_utils.js" crossorigin="anonymous"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@mediapipe/hands/hands.js" crossorigin="anonymous"></script>
+
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    fontFamily: { 
+                        sans: ['Nunito', '-apple-system', 'BlinkMacSystemFont', 'Segoe UI', 'sans-serif'],
+                        serif: ['ui-serif', 'Georgia', 'Cambria', 'Times New Roman', 'serif']
+                    },
+                    colors: {
+                        duo: {
+                            dark: '#1e293b', blue: '#1cb0f6', green: '#58cc02', 
+                            red: '#ff4b4b', yellow: '#ffc800', purple: '#ce82ff', 
+                            pink: '#ff718d', gray: '#e5e7eb', bg: '#f8f9fa'
+                        }
+                    }
+                }
+            }
+        }
+    </script>
+    
+    <style>
+        body { font-family: 'Nunito', sans-serif; letter-spacing: -0.01em; overscroll-behavior-y: none; }
+        
+        .bg-dots {
+            background-color: #f8f9fa;
+            background-image: radial-gradient(#cbd5e1 2px, transparent 2px);
+            background-size: 24px 24px;
+        }
+
+        .duo-card {
+            background-color: white;
+            border: 3px solid #1e293b;
+            border-radius: 20px;
+            box-shadow: 6px 6px 0px #1e293b;
+            transition: all 0.2s ease;
+        }
+        .duo-card:hover {
+            transform: translateY(-3px);
+            box-shadow: 8px 8px 0px #1e293b;
+        }
+        
+        .duo-input {
+            background-color: #f8fafc;
+            border: 3px solid #cbd5e1;
+            border-radius: 16px;
+            transition: all 0.2s;
+        }
+        .duo-input:focus { border-color: #1cb0f6; background-color: white; outline: none; }
+
+        .duo-btn {
+            position: relative;
+            border: 3px solid #1e293b;
+            border-radius: 16px;
+            font-weight: 800;
+            text-transform: uppercase;
+            transition: all 0.1s;
+            cursor: pointer;
+            box-shadow: 0px 4px 0px #1e293b;
+            text-align: center;
+        }
+        .duo-btn:active { transform: translateY(4px); box-shadow: 0px 0px 0px #1e293b; }
+        
+        .duo-btn-blue { background-color: #1cb0f6; color: white; }
+        .duo-btn-green { background-color: #58cc02; color: white; }
+        .duo-btn-red { background-color: #ff4b4b; color: white; }
+        .duo-btn-yellow { background-color: #ffc800; color: #1e293b; }
+        .duo-btn-purple { background-color: #ce82ff; color: white; }
+        .duo-btn-pink { background-color: #ff718d; color: white; }
+        .duo-btn-white { background-color: white; color: #1e293b; }
+        .duo-btn-dark { background-color: #1e293b; color: white; }
+        .duo-btn-orange { background-color: #fb923c; color: white; }
+        .duo-btn-teal { background-color: #14b8a6; color: white; }
+        .duo-btn-indigo { background-color: #6366f1; color: white; }
+
+        ::-webkit-scrollbar { width: 8px; height: 8px; }
+        ::-webkit-scrollbar-track { background: transparent; }
+        ::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 10px; border: 2px solid #f8f9fa;}
+        ::-webkit-scrollbar-thumb:hover { background: #94a3b8; }
+        .no-scrollbar::-webkit-scrollbar { display: none; }
+        .no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
+
+        @keyframes load-bar { 0% { width: 0%; opacity: 1; } 50% { width: 70%; opacity: 1; } 100% { width: 100%; opacity: 0; } }
+        .loading-active { animation: load-bar 1.5s ease-out forwards; }
+        
+        @keyframes pulse-ring { 0% { transform: scale(0.8); box-shadow: 0 0 0 0 rgba(206, 130, 255, 0.7); } 70% { transform: scale(1); box-shadow: 0 0 0 15px rgba(206, 130, 255, 0); } 100% { transform: scale(0.8); box-shadow: 0 0 0 0 rgba(206, 130, 255, 0); } }
+        .animate-pulse-ring { animation: pulse-ring 2s infinite; }
+
+        .perspective-1000 { perspective: 1000px; }
+        .transform-style-3d { transform-style: preserve-3d; }
+        .backface-hidden { backface-visibility: hidden; }
+        .rotate-y-180 { transform: rotateY(180deg); }
+
+        .glass-hero { background: linear-gradient(135deg, #ffffff 0%, #f0f9ff 50%, #fffbeb 100%); }
+        
+        .calc-btn { height: 60px; font-size: 1.25rem; font-weight: 800; border: 3px solid #1e293b; border-radius: 16px; background: white; box-shadow: 0 4px 0 #1e293b; cursor: pointer; transition: all 0.1s; }
+        .calc-btn:active { transform: translateY(4px); box-shadow: 0 0 0 #1e293b; }
+        .calc-btn-op { background: #1cb0f6; color: white; }
+        .calc-btn-eq { background: #58cc02; color: white; }
+        .calc-btn-ac { background: #ff4b4b; color: white; }
+
+        .element-box { aspect-ratio: 1; border: 2px solid #1e293b; border-radius: 8px; display: flex; flex-direction: column; align-items: center; justify-content: center; cursor: pointer; transition: all 0.15s; font-weight: 800; position: relative; overflow: hidden; }
+        .element-box:hover { transform: scale(1.1); z-index: 10; box-shadow: 4px 4px 0 #1e293b; }
+        .element-alkali { background: #fca5a5; }
+        .element-alkaline { background: #fdba74; }
+        .element-transition { background: #c4b5fd; }
+        .element-halogen { background: #86efac; }
+        .element-noble { background: #93c5fd; }
+        .element-other { background: #e2e8f0; }
+        .element-metalloid { background: #d9f99d; }
+        .element-actinide { background: #fbcfe8; }
+        .element-lanthanide { background: #f9a8d4; }
+        
+        /* AirTouch Styles */
+        #air-cursor {
+            position: fixed; top: 50%; left: 50%; width: 24px; height: 24px;
+            background-color: rgba(28, 176, 246, 0.8); border: 2px solid white;
+            border-radius: 50%; transform: translate(-50%, -50%);
+            pointer-events: none; z-index: 99999; display: none; 
+            transition: width 0.1s, height 0.1s, background-color 0.1s;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.2) !important;
+        }
+        .air-cursor-pinch {
+            width: 16px !important; height: 16px !important;
+            background-color: #ff4b4b !important;
+            box-shadow: 0 0 0 6px rgba(255, 75, 75, 0.3) !important;
+        }
+        
+        .air-hover { 
+            transform: scale(1.02); 
+            transition: all 0.1s; 
+            box-shadow: 0 4px 12px rgba(0,0,0,0.1) !important;
+        }
+        .air-pressed { 
+            transform: scale(0.95) !important; 
+            transition: transform 0.1s !important; 
+        }
+
+        #webcam-container {
+            position: fixed; bottom: 24px; right: 24px; width: 200px; border-radius: 12px;
+            overflow: hidden; border: 3px solid #1e293b; z-index: 99998;
+            box-shadow: 6px 6px 0 rgba(30,41,59,1) !important; display: none;
+            transform: scaleX(-1);
+        }
+    </style>
+</head>
+<body class="bg-duo-bg h-[100dvh] w-screen overflow-hidden relative text-duo-dark selection:bg-duo-blue selection:text-white flex flex-col">
+
+    <div id="os-boot-screen" class="absolute inset-0 z-[100] bg-dots flex flex-col items-center justify-center p-4 transition-transform duration-700">
+        <div class="duo-card max-w-sm w-full relative px-6 py-8 sm:px-8 sm:py-10">
+            <div class="absolute -top-8 left-1/2 transform -translate-x-1/2 w-16 h-16 bg-duo-pink rounded-2xl border-[3px] border-duo-dark shadow-[0px_4px_0px_#1e293b] flex items-center justify-center text-white text-3xl">
+                <i class="fas fa-rocket"></i>
+            </div>
+            
+            <div class="text-center mt-4 mb-6 sm:mb-8">
+                <h1 class="text-3xl sm:text-4xl font-black text-duo-dark mb-1 tracking-tight" id="auth-title">ClonBrow</h1>
+                <p class="font-bold text-slate-500 text-xs sm:text-sm">Your learning adventure begins here!</p>
+            </div>
+            
+            <div class="space-y-4">
+                <div>
+                    <label class="block font-black text-slate-400 text-[10px] sm:text-xs mb-2 tracking-wider">HERO NAME</label>
+                    <input type="text" id="boot-username" placeholder="What should we call you?" class="w-full duo-input p-3 sm:p-4 font-bold text-duo-dark text-base sm:text-lg">
+                </div>
+                <div>
+                    <label class="block font-black text-slate-400 text-[10px] sm:text-xs mb-2 tracking-wider">SECRET EMAIL</label>
+                    <input type="email" id="boot-password" placeholder="your@email.com" class="w-full duo-input p-3 sm:p-4 font-bold text-duo-dark text-base sm:text-lg">
+                </div>
+                <button onclick="handleOSLogin()" id="login-btn" class="w-full duo-btn duo-btn-blue py-3 sm:py-4 text-lg sm:text-xl mt-4 sm:mt-6 flex items-center justify-center gap-2">
+                    Connect & Play <i class="fas fa-play text-sm"></i>
+                </button>
+                <div id="db-status" class="text-center text-xs font-bold text-duo-red hidden">Python DB Offline. Running in local memory mode.</div>
+            </div>
+        </div>
+    </div>
+
+    <div class="w-full h-full flex flex-col overflow-hidden transition-all duration-500 relative">
+        <div id="loading-bar" class="absolute top-0 left-0 h-1.5 sm:h-2 bg-duo-green w-0 z-50 rounded-r-full"></div>
+
+        <div class="bg-slate-200 border-b-[3px] border-duo-dark px-2 sm:px-3 pt-2 flex items-end gap-1 sm:gap-2 z-40 relative">
+            <div class="hidden sm:flex gap-2 mb-2.5 mr-2">
+                <div class="w-4 h-4 bg-duo-red rounded-full border-[2px] border-duo-dark"></div>
+                <div class="w-4 h-4 bg-duo-yellow rounded-full border-[2px] border-duo-dark"></div>
+                <div class="w-4 h-4 bg-duo-green rounded-full border-[2px] border-duo-dark"></div>
+            </div>
+            <div id="tabs-container" class="flex-1 flex overflow-x-auto no-scrollbar gap-1 items-end h-9 sm:h-10 px-1"></div>
+            <button onclick="createNewTab()" class="mb-1 sm:mb-1.5 w-7 h-7 sm:w-8 sm:h-8 rounded-lg bg-white border-[2px] border-duo-dark text-duo-dark font-black flex items-center justify-center hover:bg-slate-100 active:translate-y-1 transition-all shrink-0">
+                <i class="fas fa-plus text-xs sm:text-sm"></i>
+            </button>
+        </div>
+
+        <header class="bg-white border-b-[3px] border-duo-dark px-2 sm:px-3 py-2 sm:py-3 flex items-center gap-2 sm:gap-3 z-30 relative shadow-sm">
+            <div class="flex gap-1 sm:gap-2 shrink-0">
+                <button onclick="goBack()" class="w-8 h-8 sm:w-10 sm:h-10 duo-btn duo-btn-white flex items-center justify-center text-slate-500"><i class="fas fa-chevron-left text-xs sm:text-base"></i></button>
+                <button onclick="goForward()" class="w-8 h-8 sm:w-10 sm:h-10 duo-btn duo-btn-white flex items-center justify-center text-slate-500"><i class="fas fa-chevron-right text-xs sm:text-base"></i></button>
+                <button onclick="reloadPage()" class="hidden md:flex w-10 h-10 duo-btn duo-btn-white items-center justify-center text-slate-500"><i class="fas fa-rotate-right"></i></button>
+                <button onclick="goHome()" class="hidden sm:flex w-10 h-10 duo-btn duo-btn-white items-center justify-center text-duo-blue"><i class="fas fa-home"></i></button>
+            </div>
+
+            <div class="flex-1 max-w-4xl relative">
+                <div class="absolute inset-y-0 left-0 pl-3 sm:pl-4 flex items-center pointer-events-none z-10">
+                    <i class="fas fa-shield-halved text-duo-green text-sm sm:text-lg"></i>
+                </div>
+                <input type="text" id="address-bar" 
+                    class="block w-full pl-8 sm:pl-12 pr-10 sm:pr-12 py-2 sm:py-3 font-bold bg-[#f8fafc] border-[3px] border-slate-300 rounded-xl sm:rounded-2xl focus:border-duo-blue focus:bg-white text-duo-dark placeholder-slate-400 transition-all outline-none text-xs sm:text-lg" 
+                    placeholder="Search safely or enter URL..."
+                    onkeypress="if(event.key === 'Enter') processInput(this.value)">
+                <button onclick="processInput(document.getElementById('address-bar').value)" class="absolute inset-y-0 right-1 sm:right-2 my-auto h-7 w-7 sm:h-9 sm:w-9 bg-duo-blue text-white rounded-lg sm:rounded-xl border-[2px] border-duo-dark flex items-center justify-center active:translate-y-1 transition-all z-10 shadow-[0_2px_0_#1e293b]">
+                    <i class="fas fa-search text-[10px] sm:text-sm"></i>
+                </button>
+            </div>
+
+            <div class="flex items-center shrink-0 ml-1 gap-2 sm:gap-3">
+                <button onclick="toggleAirTouch()" id="btn-airtouch" class="hidden md:flex items-center gap-2 duo-btn duo-btn-white px-3 py-1 sm:px-4 sm:py-2 text-xs sm:text-sm text-duo-blue">
+                    <i class="fas fa-hand-paper"></i> <span class="hidden lg:inline">AirTouch</span>
+                </button>
+                <div class="cursor-pointer hover:scale-105 active:scale-95 transition-transform relative group ml-1" onclick="document.getElementById('local-pfp-upload').click()">
+                    <img id="toolbar-pfp" src="https://api.dicebear.com/7.x/bottts/svg?seed=clonbrow" class="w-8 h-8 sm:w-12 sm:h-12 rounded-xl sm:rounded-2xl border-[2px] sm:border-[3px] border-duo-dark bg-[#f8fafc] object-cover shadow-[0_2px_0_#1e293b]">
+                </div>
+                <input type="file" id="local-pfp-upload" class="hidden" accept="image/*" onchange="updateLocalProfilePic(event)">
+            </div>
+        </header>
+
+        <main class="flex-1 relative flex flex-col md:flex-row overflow-hidden bg-dots">
+            
+            <aside id="os-sidebar" class="w-full md:w-20 h-16 md:h-auto bg-white border-t-[3px] md:border-t-0 md:border-r-[3px] border-duo-dark flex flex-row md:flex-col items-center py-2 md:py-6 px-3 md:px-0 gap-3 md:gap-4 z-40 shrink-0 overflow-x-auto md:overflow-y-auto no-scrollbar order-last md:order-first transition-all">
+                <!-- Populated by JS -->
+            </aside>
+
+            <div class="flex-1 relative overflow-hidden w-full h-full">
+                
+                <div id="home-screen" class="absolute inset-0 z-20 flex flex-col p-4 sm:p-10 overflow-y-auto bg-dots">
+                    <div class="max-w-5xl mx-auto w-full">
+                        
+                        <div class="duo-card glass-hero p-6 sm:p-10 text-center mb-6 sm:mb-8 flex flex-col items-center">
+                            <div class="w-16 h-16 sm:w-24 sm:h-24 bg-duo-blue rounded-[1.5rem] border-[3px] border-duo-dark shadow-[0px_4px_0px_#1e293b] sm:shadow-[0px_6px_0px_#1e293b] flex items-center justify-center overflow-hidden mb-4 sm:mb-6">
+                                <img src="https://res.cloudinary.com/ds93qby5a/image/upload/v1783231986/Untitled_-_05_July_2026_at_11.01.39-removebg-preview_1_lxhinq.png" alt="ClonBrow logo" class="w-full h-full object-contain p-2">
+                            </div>
+                            <h1 class="text-4xl sm:text-7xl font-black text-duo-dark tracking-tighter mb-2 sm:mb-4">ClonBrow</h1>
+                            <p class="text-sm sm:text-xl font-bold text-slate-500 mb-6 sm:mb-8 max-w-lg">The fast, safe, and native educational browser.</p>
+                            
+                            <div class="w-full max-w-xl relative">
+                                <i class="fas fa-search absolute left-4 sm:left-6 top-1/2 transform -translate-y-1/2 text-slate-400 text-lg sm:text-xl z-10"></i>
+                                <input type="text" id="home-search-bar"
+                                    class="w-full pl-12 sm:pl-14 pr-4 sm:pr-6 py-3 sm:py-5 text-sm sm:text-xl font-bold bg-white border-[3px] border-slate-300 focus:border-duo-blue outline-none rounded-xl sm:rounded-2xl shadow-[4px_4px_0px_#1e293b] transition-all"
+                                    placeholder="Search safely using ClonBrow Index..."
+                                    onkeypress="if(event.key === 'Enter') { document.getElementById('address-bar').value = this.value; processInput(this.value); }">
+                            </div>
+                        </div>
+
+                        <!-- 🌟 NEW: The Main Gateways -->
+                        <div class="grid grid-cols-1 md:grid-cols-2 gap-4 sm:gap-6 mb-8">
+                            <!-- New Update / Research Centre -->
+                            <div class="duo-card p-6 sm:p-8 bg-gradient-to-br from-indigo-500 to-purple-600 border-[3px] border-duo-dark flex flex-col items-center justify-center text-center cursor-pointer relative overflow-hidden group" onclick="createNewTab('heril.html')">
+                                <div class="absolute top-3 right-3 bg-yellow-300 text-duo-dark text-[10px] sm:text-xs font-black px-3 py-1 rounded-lg border-2 border-duo-dark shadow-[2px_2px_0px_#1e293b] rotate-12 z-10 animate-pulse">NEW UPDATE</div>
+                                <div class="absolute inset-0 opacity-10 bg-[url('https://www.transparenttextures.com/patterns/cubes.png')] pointer-events-none"></div>
+                                <i class="fas fa-flask text-white text-5xl sm:text-6xl mb-4 group-hover:scale-110 transition-transform relative z-10"></i>
+                                <h2 class="text-2xl sm:text-4xl font-black text-white mb-2 drop-shadow-md relative z-10">Clonexx Research Centre</h2>
+                                <p class="font-bold text-white/90 text-sm sm:text-lg relative z-10">Explore the fully 3D interactive island.</p>
+                            </div>
+
+                            <!-- Digital Labs Centre -->
+                            <div class="duo-card p-6 sm:p-8 bg-gradient-to-br from-emerald-400 to-teal-500 border-[3px] border-duo-dark flex flex-col items-center justify-center text-center cursor-pointer group" onclick="document.getElementById('digital-labs-section').scrollIntoView({behavior: 'smooth'})">
+                                <div class="absolute inset-0 opacity-10 bg-[url('https://www.transparenttextures.com/patterns/cubes.png')] pointer-events-none"></div>
+                                <i class="fas fa-laptop-code text-white text-5xl sm:text-6xl mb-4 group-hover:scale-110 transition-transform relative z-10"></i>
+                                <h2 class="text-2xl sm:text-4xl font-black text-white mb-2 drop-shadow-md relative z-10">Clonexx Digital Labs</h2>
+                                <p class="font-bold text-white/90 text-sm sm:text-lg relative z-10">Your core suite of native learning tools.</p>
+                            </div>
+                        </div>
+
+                        <!-- 🌟 NEW: Existing Tools Wrapper -->
+                        <div id="digital-labs-section">
+                            <div class="flex items-center gap-4 my-6 sm:my-8">
+                                <div class="h-[3px] flex-1 bg-slate-300 rounded-full"></div>
+                                <span class="font-black text-duo-dark text-lg sm:text-xl uppercase tracking-widest shrink-0"><i class="fas fa-laptop-code text-duo-teal mr-2"></i> Clonexx Digital Labs Centre</span>
+                                <div class="h-[3px] flex-1 bg-slate-300 rounded-full"></div>
+                            </div>
+
+                            <div class="grid grid-cols-2 md:grid-cols-4 gap-3 sm:gap-4 pb-10">
+                                <div class="duo-card p-4 sm:p-6 flex flex-col items-center justify-center text-center cursor-pointer" onclick="createNewTab('medicof all.html')">
+                                    <div class="text-2xl sm:text-4xl text-duo-red mb-2 sm:mb-3"><i class="fas fa-microscope"></i></div>
+                                    <span class="font-black text-[10px] sm:text-sm text-duo-dark uppercase">Simulations</span>
+                                </div>
+                                <div class="duo-card p-4 sm:p-6 flex flex-col items-center justify-center text-center cursor-pointer" onclick="createNewTab('clonmedic://mcq')">
+                                    <div class="text-2xl sm:text-4xl text-duo-green mb-2 sm:mb-3"><i class="fas fa-check-double"></i></div>
+                                    <span class="font-black text-[10px] sm:text-sm text-duo-dark uppercase">Practice Quiz</span>
+                                </div>
+                                <div class="duo-card p-4 sm:p-6 flex flex-col items-center justify-center text-center cursor-pointer" onclick="createNewTab('clonmedic://quicklearn')">
+                                    <div class="text-2xl sm:text-4xl text-duo-yellow mb-2 sm:mb-3"><i class="fas fa-lightbulb"></i></div>
+                                    <span class="font-black text-[10px] sm:text-sm text-duo-dark uppercase">Learn Quick</span>
+                                </div>
+                                <div class="duo-card p-4 sm:p-6 flex flex-col items-center justify-center text-center cursor-pointer" onclick="createNewTab('clonmedic://flashcards')">
+                                    <div class="text-2xl sm:text-4xl text-duo-pink mb-2 sm:mb-3"><i class="fas fa-clone"></i></div>
+                                    <span class="font-black text-[10px] sm:text-sm text-duo-dark uppercase">Flashcards</span>
+                                </div>
+                                <div class="duo-card p-4 sm:p-5 flex flex-col items-center justify-center text-center cursor-pointer" onclick="createNewTab('clonmedic://converter')">
+                                    <div class="text-2xl sm:text-3xl text-duo-purple mb-2 sm:mb-3"><i class="fas fa-right-left"></i></div>
+                                    <span class="font-black text-[10px] sm:text-xs text-duo-dark uppercase">Converter</span>
+                                </div>
+                                <div class="duo-card p-4 sm:p-5 flex flex-col items-center justify-center text-center cursor-pointer" onclick="createNewTab('brainboard.html')">
+                                    <div class="text-2xl sm:text-3xl text-duo-yellow mb-2 sm:mb-3"><i class="fas fa-chalkboard"></i></div>
+                                    <span class="font-black text-[10px] sm:text-xs text-duo-dark uppercase">BrainBoard</span>
+                                </div>
+                                <div class="duo-card p-4 sm:p-5 flex flex-col items-center justify-center text-center cursor-pointer" onclick="createNewTab('clonmedic://citations')">
+                                    <div class="text-2xl sm:text-3xl text-duo-indigo mb-2 sm:mb-3"><i class="fas fa-quote-right"></i></div>
+                                    <span class="font-black text-[10px] sm:text-xs text-duo-dark uppercase">Citations</span>
+                                </div>
+                                <div class="duo-card p-4 sm:p-5 flex flex-col items-center justify-center text-center cursor-pointer" onclick="createNewTab('clonmedic://periodic')">
+                                    <div class="text-2xl sm:text-3xl text-duo-teal mb-2 sm:mb-3"><i class="fas fa-atom"></i></div>
+                                    <span class="font-black text-[10px] sm:text-xs text-duo-dark uppercase">Periodic Table</span>
+                                </div>
+                                <div class="duo-card p-4 sm:p-5 flex flex-col items-center justify-center text-center cursor-pointer" onclick="createNewTab('clonmedic://calc')">
+                                    <div class="text-2xl sm:text-3xl text-duo-orange mb-2 sm:mb-3"><i class="fas fa-calculator"></i></div>
+                                    <span class="font-black text-[10px] sm:text-xs text-duo-dark uppercase">Calculator</span>
+                                </div>
+                                <div class="duo-card p-4 sm:p-5 flex flex-col items-center justify-center text-center cursor-pointer" onclick="createNewTab('clonmedic://timer')">
+                                    <div class="text-2xl sm:text-3xl text-duo-blue mb-2 sm:mb-3"><i class="fas fa-hourglass-half"></i></div>
+                                    <span class="font-black text-[10px] sm:text-xs text-duo-dark uppercase">Study Timer</span>
+                                </div>
+                                <div class="duo-card p-4 sm:p-5 flex flex-col items-center justify-center text-center cursor-pointer" onclick="createNewTab('trecore.html')">
+                                    <div class="text-2xl sm:text-3xl text-duo-purple mb-2 sm:mb-3"><i class="fas fa-cubes"></i></div>
+                                    <span class="font-black text-[10px] sm:text-xs text-duo-dark uppercase">Trecore</span>
+                                </div>
+                            </div>
+                        </div>
+
+                    </div>
+                </div>
+
+                <!-- ALL OTHER SCREENS (Search, Notes, Tasks, etc) remain exactly as they were -->
+
+                <div id="search-screen" class="absolute inset-0 z-20 hidden flex-col p-4 sm:p-10 overflow-y-auto bg-slate-50">
+                    <div class="max-w-4xl mx-auto w-full">
+                        <div class="flex items-center gap-3 sm:gap-4 mb-6 sm:mb-8">
+                            <div class="w-10 h-10 sm:w-14 sm:h-14 bg-duo-blue rounded-xl sm:rounded-2xl border-[3px] border-duo-dark shadow-[0px_4px_0px_#1e293b] flex items-center justify-center text-white text-xl sm:text-2xl shrink-0">
+                                <i class="fas fa-search"></i>
+                            </div>
+                            <div>
+                                <h2 class="text-xl sm:text-3xl font-black text-duo-dark" id="search-query-display">Results</h2>
+                                <p class="font-bold text-slate-500 text-xs sm:text-base" id="search-status">Powered by ClonBrow Safe Index</p>
+                            </div>
+                        </div>
+                        
+                        <div id="safe-search-blocked" class="hidden duo-card bg-white p-6 sm:p-8 text-center border-duo-red shadow-[4px_4px_0_#ff4b4b] mb-4">
+                            <i class="fas fa-shield-alt text-4xl sm:text-6xl text-duo-red mb-4"></i>
+                            <h3 class="text-xl sm:text-2xl font-black text-duo-dark mb-2">Safe Search Blocked</h3>
+                            <p class="font-bold text-slate-600 text-sm sm:text-base">The term you searched for is not allowed on educational devices.</p>
+                            <button onclick="goHome()" class="mt-6 duo-btn duo-btn-blue px-6 py-3">Back to Home</button>
+                        </div>
+
+                        <div id="search-results-container" class="space-y-4"></div>
+                    </div>
+                </div>
+
+                <!-- Tasks Screen -->
+                <div id="tasks-screen" class="absolute inset-0 z-20 hidden flex-col items-center p-4 sm:p-10 overflow-y-auto bg-slate-50 bg-dots">
+                    <div class="max-w-2xl mx-auto w-full">
+                        <div class="duo-card bg-white p-6 sm:p-10 flex flex-col">
+                            <div class="flex items-center gap-4 mb-6">
+                                <i class="fas fa-check-square text-4xl text-duo-blue drop-shadow-md"></i>
+                                <div>
+                                    <h2 class="text-2xl sm:text-4xl font-black text-duo-dark leading-none">Homework Tasks</h2>
+                                    <p class="font-bold text-slate-500 text-sm">Synced directly to SQLite DB.</p>
+                                </div>
+                            </div>
+                            
+                            <div class="flex gap-2 mb-6">
+                                <input type="text" id="new-task-input" class="duo-input flex-1 p-3 font-bold" placeholder="Add a new task..." onkeypress="if(event.key === 'Enter') addTaskDB()">
+                                <button onclick="addTaskDB()" class="duo-btn duo-btn-blue px-6 py-2"><i class="fas fa-plus"></i></button>
+                            </div>
+
+                            <div id="tasks-list" class="flex flex-col gap-3 max-h-[50vh] overflow-y-auto no-scrollbar">
+                                <div class="text-center font-bold text-slate-400 py-4">Loading tasks...</div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- QuickLearn Screen -->
+                <div id="quicklearn-screen" class="absolute inset-0 z-20 hidden flex-col items-center p-4 sm:p-10 overflow-y-auto bg-slate-50 bg-dots">
+                    <div class="max-w-2xl mx-auto w-full">
+                        <div class="flex flex-col sm:flex-row justify-between items-center gap-4 mb-6 sm:mb-8">
+                            <div class="text-center sm:text-left">
+                                <h2 class="text-2xl sm:text-3xl font-black text-duo-dark flex items-center gap-2"><i class="fas fa-lightbulb text-duo-yellow"></i> Quick Bites</h2>
+                                <p class="font-bold text-slate-500 text-sm">Create and learn in 30 seconds (DB Synced).</p>
+                            </div>
+                            <div class="flex gap-2 bg-slate-200 p-1 rounded-xl border-[3px] border-duo-dark shadow-sm">
+                                <button onclick="toggleQuickLearnMode('learn')" id="btn-ql-learn" class="px-4 py-2 font-black text-sm rounded-lg bg-white shadow-sm text-duo-dark transition-all">Learn</button>
+                                <button onclick="toggleQuickLearnMode('create')" id="btn-ql-create" class="px-4 py-2 font-black text-sm rounded-lg text-slate-500 hover:text-duo-dark transition-all">Create</button>
+                            </div>
+                        </div>
+
+                        <div id="ql-learn-view" class="duo-card bg-white p-6 sm:p-10 flex flex-col text-center w-full">
+                            <select id="ql-topic-select" onchange="loadSelectedQuickBite()" class="duo-input w-full p-3 font-bold text-duo-dark text-base sm:text-lg mb-6 cursor-pointer"></select>
+                            <div class="bg-slate-100 rounded-2xl border-[3px] border-slate-300 w-full p-6 text-left shadow-inner min-h-[150px]">
+                                <h3 class="font-black text-xl text-duo-blue mb-4" id="ql-title">Select a topic!</h3>
+                                <ul class="list-disc pl-5 font-bold text-slate-700 space-y-2 text-sm sm:text-base" id="ql-points">
+                                    <li>Add topics in Create mode!</li>
+                                </ul>
+                            </div>
+                        </div>
+
+                        <div id="ql-create-view" class="hidden flex-col gap-6 w-full">
+                            <div class="duo-card p-6 bg-white">
+                                <h3 class="font-black text-duo-dark mb-4 text-lg">Create a New Quick Bite</h3>
+                                <input type="text" id="new-ql-title" placeholder="Topic Title (e.g. Gravity)" class="duo-input w-full p-3 font-bold mb-4">
+                                <textarea id="new-ql-points" placeholder="Point 1&#10;Point 2&#10;Point 3..." class="duo-input w-full p-3 font-bold h-32 resize-none mb-4" title="Enter one point per line"></textarea>
+                                <button onclick="addQuickBiteDB()" class="duo-btn duo-btn-yellow py-3 w-full text-lg">Save Topic to Database <i class="fas fa-database ml-2"></i></button>
+                            </div>
+                            <div id="ql-list-admin" class="space-y-3"></div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- MCQ Screen -->
+                <div id="mcq-screen" class="absolute inset-0 z-20 hidden flex-col p-4 sm:p-10 overflow-y-auto bg-slate-50 bg-dots">
+                    <div class="max-w-2xl mx-auto w-full">
+                        <div class="flex flex-col sm:flex-row justify-between items-center gap-4 mb-6 sm:mb-8">
+                            <div class="text-center sm:text-left">
+                                <h2 class="text-2xl sm:text-3xl font-black text-duo-dark flex items-center gap-2"><i class="fas fa-check-double text-duo-green"></i> Practice Quizzes</h2>
+                                <p class="font-bold text-slate-500 text-sm">Build and play your own quizzes (DB Synced).</p>
+                            </div>
+                            <div class="flex gap-2 bg-slate-200 p-1 rounded-xl border-[3px] border-duo-dark shadow-sm">
+                                <button onclick="toggleMcqMode('play')" id="btn-mcq-play" class="px-4 py-2 font-black text-sm rounded-lg bg-white shadow-sm text-duo-dark transition-all">Play</button>
+                                <button onclick="toggleMcqMode('create')" id="btn-mcq-create" class="px-4 py-2 font-black text-sm rounded-lg text-slate-500 hover:text-duo-dark transition-all">Create</button>
+                            </div>
+                        </div>
+                        
+                        <div id="mcq-play-view" class="w-full">
+                            <div class="duo-card mb-6 p-6 sm:p-10 bg-white">
+                                <h3 class="font-black text-xl sm:text-2xl text-duo-dark mb-6 text-center leading-snug" id="mcq-question">No quizzes yet! Go to Create Mode.</h3>
+                                <div class="grid grid-cols-1 gap-3 w-full" id="mcq-options"></div>
+                            </div>
+                            <div class="flex justify-between items-center bg-white duo-card p-4 shadow-sm">
+                                <span class="font-bold text-slate-400" id="mcq-counter">0/0</span>
+                                <div id="mcq-feedback" class="font-black text-xl h-8 flex items-center"></div>
+                                <button onclick="nextMcqQuestion()" class="duo-btn duo-btn-blue py-2 px-6 text-base hidden" id="mcq-next-btn">Next <i class="fas fa-arrow-right ml-2"></i></button>
+                            </div>
+                        </div>
+
+                        <div id="mcq-create-view" class="hidden flex-col gap-6 w-full">
+                            <div class="duo-card p-6 bg-white">
+                                <h3 class="font-black text-duo-dark mb-4 text-lg">Add New Question</h3>
+                                <input type="text" id="new-mcq-q" placeholder="Question..." class="duo-input w-full p-3 font-bold mb-4">
+                                <div class="grid grid-cols-1 sm:grid-cols-2 gap-3 mb-4">
+                                    <input type="text" id="new-mcq-opt0" placeholder="Option A..." class="duo-input p-3 font-bold text-sm">
+                                    <input type="text" id="new-mcq-opt1" placeholder="Option B..." class="duo-input p-3 font-bold text-sm">
+                                    <input type="text" id="new-mcq-opt2" placeholder="Option C..." class="duo-input p-3 font-bold text-sm">
+                                    <input type="text" id="new-mcq-opt3" placeholder="Option D..." class="duo-input p-3 font-bold text-sm">
+                                </div>
+                                <select id="new-mcq-ans" class="duo-input w-full p-3 font-bold text-slate-600 mb-4 cursor-pointer">
+                                    <option value="0">Correct Answer: Option A</option>
+                                    <option value="1">Correct Answer: Option B</option>
+                                    <option value="2">Correct Answer: Option C</option>
+                                    <option value="3">Correct Answer: Option D</option>
+                                </select>
+                                <button onclick="addQuizDB()" class="duo-btn duo-btn-green py-3 w-full text-lg">Save Question to Database <i class="fas fa-database ml-2"></i></button>
+                            </div>
+                            <div id="mcq-list-admin" class="space-y-3 pb-10"></div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Flashcards Screen -->
+                <div id="flashcard-screen" class="absolute inset-0 z-20 hidden flex-col bg-slate-100 bg-dots p-4 sm:p-6 overflow-y-auto">
+                    <div class="max-w-xl mx-auto w-full">
+                        <div class="flex flex-col sm:flex-row justify-between items-center gap-4 mb-6 sm:mb-8">
+                            <div class="text-center sm:text-left">
+                                <h2 class="text-2xl sm:text-3xl font-black text-duo-dark">Flashcards</h2>
+                                <p class="font-bold text-slate-500 text-sm">Create and play your custom flashcards (DB Synced).</p>
+                            </div>
+                            <div class="flex gap-2 bg-slate-200 p-1 rounded-xl border-[3px] border-duo-dark shadow-sm">
+                                <button onclick="toggleFlashcardMode('play')" id="btn-fc-play" class="px-4 py-2 font-black text-sm rounded-lg bg-white shadow-sm text-duo-dark transition-all">Play</button>
+                                <button onclick="toggleFlashcardMode('create')" id="btn-fc-create" class="px-4 py-2 font-black text-sm rounded-lg text-slate-500 hover:text-duo-dark transition-all">Create</button>
+                            </div>
+                        </div>
+
+                        <div id="fc-play-view" class="flex flex-col items-center">
+                            <div class="perspective-1000 w-full max-w-sm h-64 sm:h-80 relative cursor-pointer group mb-8" onclick="flipCard()">
+                                <div id="flashcard-inner" class="w-full h-full relative transition-transform duration-500 transform-style-3d border-[3px] border-duo-dark rounded-3xl shadow-[0_8px_0_#1e293b] bg-white">
+                                    <div class="absolute inset-0 backface-hidden flex flex-col items-center justify-center p-6 sm:p-8 text-center bg-white rounded-3xl">
+                                        <i class="fas fa-question-circle text-3xl sm:text-4xl text-duo-blue mb-4"></i>
+                                        <h3 class="text-xl sm:text-2xl font-black text-duo-dark leading-tight" id="fc-question">Add some cards in Create mode!</h3>
+                                    </div>
+                                    <div class="absolute inset-0 backface-hidden rotate-y-180 flex flex-col items-center justify-center p-6 sm:p-8 text-center bg-duo-blue text-white rounded-3xl">
+                                        <i class="fas fa-check-circle text-3xl sm:text-4xl text-white mb-4 drop-shadow-md"></i>
+                                        <h3 class="text-2xl sm:text-3xl font-black leading-tight" id="fc-answer">Ready to learn!</h3>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="flex items-center gap-4">
+                                <button onclick="prevCard()" class="duo-btn duo-btn-white w-12 h-12 flex items-center justify-center"><i class="fas fa-chevron-left"></i></button>
+                                <span class="font-bold text-slate-500 min-w-[3rem] text-center" id="fc-counter">0/0</span>
+                                <button onclick="nextCard()" class="duo-btn duo-btn-yellow w-12 h-12 flex items-center justify-center"><i class="fas fa-chevron-right"></i></button>
+                            </div>
+                        </div>
+
+                        <div id="fc-create-view" class="hidden flex-col gap-6 w-full">
+                            <div class="duo-card p-4 sm:p-6 bg-white">
+                                <h3 class="font-black text-duo-dark mb-3"><i class="fas fa-plus-circle text-duo-green mr-2"></i>New Flashcard</h3>
+                                <div class="flex flex-col gap-3">
+                                    <input type="text" id="new-fc-q" placeholder="Front (Question)..." class="duo-input w-full p-3 font-bold text-sm sm:text-base">
+                                    <input type="text" id="new-fc-a" placeholder="Back (Answer)..." class="duo-input w-full p-3 font-bold text-sm sm:text-base" onkeypress="if(event.key === 'Enter') addFlashcardDB()">
+                                    <button onclick="addFlashcardDB()" class="duo-btn duo-btn-green py-3 text-sm flex items-center justify-center gap-2 mt-1"><i class="fas fa-database"></i> Save to DB</button>
+                                </div>
+                            </div>
+                            <div class="flex flex-col gap-3">
+                                <h3 class="font-black text-slate-500 text-sm tracking-widest uppercase">Your Deck</h3>
+                                <div id="fc-list" class="space-y-3 max-h-[40vh] overflow-y-auto no-scrollbar pb-10"></div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Word/Notes Screen -->
+                <div id="word-screen" class="absolute inset-0 z-20 hidden flex-col bg-slate-100 p-3 sm:p-6 overflow-hidden">
+                    <div class="max-w-5xl mx-auto w-full flex-1 flex flex-col h-full gap-3 sm:gap-4">
+                        <div class="duo-card p-3 flex flex-wrap gap-2 sm:gap-3 items-center shrink-0 bg-white">
+                            <div class="bg-duo-blue border-[3px] border-duo-dark px-3 py-1.5 sm:px-4 sm:py-2 font-black uppercase text-white rounded-xl shadow-[0_3px_0_#1e293b] mr-1 sm:mr-2 text-xs sm:text-base"><i class="fas fa-file-alt"></i> Notes</div>
+                            <button onclick="document.execCommand('bold',false,null)" class="w-8 h-8 sm:w-10 sm:h-10 rounded-xl bg-slate-100 border-[2px] sm:border-[3px] border-slate-300 hover:border-duo-dark font-black text-duo-dark"><i class="fas fa-bold"></i></button>
+                            <button onclick="document.execCommand('italic',false,null)" class="w-8 h-8 sm:w-10 sm:h-10 rounded-xl bg-slate-100 border-[2px] sm:border-[3px] border-slate-300 hover:border-duo-dark font-black text-duo-dark"><i class="fas fa-italic"></i></button>
+                            <button onclick="document.execCommand('insertOrderedList',false,null)" class="w-8 h-8 sm:w-10 sm:h-10 rounded-xl bg-slate-100 border-[2px] sm:border-[3px] border-slate-300 hover:border-duo-dark font-black text-duo-dark"><i class="fas fa-list-ol"></i></button>
+                        </div>
+                        <div id="word-editor" contenteditable="true" placeholder="Type your class notes here..." class="flex-1 duo-card p-6 sm:p-12 focus:outline-none overflow-y-auto text-base sm:text-lg text-slate-800 leading-relaxed font-bold"></div>
+                    </div>
+                </div>
+
+                <!-- Timetable Screen -->
+                <div id="timetable-screen" class="absolute inset-0 z-20 hidden flex-col bg-slate-100 p-3 sm:p-6 overflow-y-auto">
+                    <div class="max-w-6xl mx-auto w-full mb-4 sm:mb-6 flex justify-between items-center no-print">
+                        <div class="bg-duo-purple border-[3px] border-duo-dark px-4 sm:px-6 py-2 sm:py-3 font-black uppercase text-white rounded-xl shadow-[0_4px_0_#1e293b] text-sm sm:text-xl"><i class="fas fa-calendar-alt sm:mr-2"></i><span class="hidden sm:inline"> Timetable</span></div>
+                        <button onclick="window.addTimetableRow()" class="duo-btn duo-btn-yellow px-4 sm:px-6 py-2 sm:py-3 text-xs sm:text-base flex items-center gap-2"><i class="fas fa-plus"></i> Row</button>
+                    </div>
+                    <div id="timetable-content" class="max-w-6xl mx-auto w-full duo-card p-4 sm:p-8 bg-white">
+                        <input type="text" value="CLASS SCHEDULE" class="font-black text-2xl sm:text-4xl text-duo-dark mb-4 sm:mb-8 border-none outline-none w-full bg-transparent text-center uppercase tracking-widest">
+                        <div class="w-full overflow-x-auto no-scrollbar rounded-xl border-[3px] border-duo-dark">
+                            <table class="w-full border-collapse text-center table-fixed min-w-[700px]">
+                                <thead>
+                                    <tr class="bg-duo-dark text-white font-black uppercase tracking-wider text-xs sm:text-sm">
+                                        <th class="p-2 sm:p-4 border-r-[3px] border-b-[3px] border-slate-700 w-24 sm:w-32 bg-duo-blue">Time</th>
+                                        <th class="p-2 sm:p-4 border-r-[3px] border-b-[3px] border-slate-700">Mon</th>
+                                        <th class="p-2 sm:p-4 border-r-[3px] border-b-[3px] border-slate-700">Tue</th>
+                                        <th class="p-2 sm:p-4 border-r-[3px] border-b-[3px] border-slate-700">Wed</th>
+                                        <th class="p-2 sm:p-4 border-r-[3px] border-b-[3px] border-slate-700">Thu</th>
+                                        <th class="p-2 sm:p-4 border-b-[3px] border-slate-700">Fri</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="timetable-body" class="font-bold text-slate-800 text-xs sm:text-base"></tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Receipt Screen -->
+                <div id="receipt-screen" class="absolute inset-0 z-20 hidden flex-col bg-slate-100 p-3 sm:p-6 overflow-y-auto">
+                    <div class="max-w-4xl mx-auto w-full mb-4 sm:mb-6 flex justify-between items-center no-print">
+                        <div class="bg-duo-green border-[3px] border-duo-dark px-4 sm:px-6 py-2 sm:py-3 font-black uppercase text-white rounded-xl shadow-[0_4px_0_#1e293b] text-sm sm:text-xl"><i class="fas fa-file-invoice-dollar sm:mr-2"></i><span class="hidden sm:inline"> Invoice Maker</span></div>
+                        <button onclick="window.addReceiptItem()" class="duo-btn duo-btn-yellow px-4 sm:px-6 py-2 sm:py-3 text-xs sm:text-base flex items-center gap-2"><i class="fas fa-plus"></i> Item</button>
+                    </div>
+                    <div id="receipt-content" class="max-w-4xl mx-auto w-full duo-card p-4 sm:p-8 bg-white">
+                        <div class="text-2xl sm:text-4xl font-black text-duo-dark mb-4 sm:mb-6">INVOICE</div>
+                        <div class="w-full overflow-x-auto mb-4 sm:mb-6 no-scrollbar">
+                            <table class="w-full border-collapse border-[3px] border-duo-dark min-w-[500px] text-left">
+                                <thead>
+                                    <tr class="bg-duo-dark text-white font-black uppercase text-xs sm:text-sm">
+                                        <th class="p-2 sm:p-4 border-r-[3px] border-duo-dark w-1/2">Item</th>
+                                        <th class="p-2 sm:p-4 border-r-[3px] border-duo-dark text-center w-16 sm:w-20">Qty</th>
+                                        <th class="p-2 sm:p-4 border-r-[3px] border-duo-dark text-right w-24 sm:w-32">Price</th>
+                                        <th class="p-2 sm:p-4 text-right w-24 sm:w-32">Total</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="receipt-items-body" class="font-bold text-slate-800 text-sm sm:text-base"></tbody>
+                            </table>
+                        </div>
+                        <div class="text-right font-black text-xl sm:text-2xl text-duo-dark">Total: <span id="receipt-grand-total">$0.00</span></div>
+                    </div>
+                </div>
+
+                <!-- Citations Screen -->
+                <div id="citations-screen" class="absolute inset-0 z-20 hidden flex-col p-4 sm:p-10 overflow-y-auto bg-slate-50 bg-dots">
+                    <div class="max-w-2xl mx-auto w-full pb-10">
+                        <div class="flex items-center gap-3 sm:gap-4 mb-6 sm:mb-8">
+                            <div class="w-12 h-12 sm:w-16 sm:h-16 bg-duo-indigo rounded-xl sm:rounded-2xl border-[3px] border-duo-dark shadow-[0px_4px_0px_#1e293b] flex items-center justify-center text-white text-2xl sm:text-3xl shrink-0">
+                                <i class="fas fa-quote-right"></i>
+                            </div>
+                            <div>
+                                <h2 class="text-2xl sm:text-4xl font-black text-duo-dark tracking-tight">Citation Generator</h2>
+                                <p class="font-bold text-slate-500 text-sm sm:text-base">Generate APA, MLA & Chicago citations instantly.</p>
+                            </div>
+                        </div>
+
+                        <div class="duo-card bg-white p-6 sm:p-8 mb-6">
+                            <div class="flex gap-2 bg-slate-200 p-1 rounded-xl border-[3px] border-duo-dark shadow-sm mb-6 w-full">
+                                <button onclick="setCitationFormat('apa')" id="btn-cite-apa" class="flex-1 px-2 py-2 font-black text-xs sm:text-sm rounded-lg bg-white shadow-sm text-duo-dark transition-all">APA 7</button>
+                                <button onclick="setCitationFormat('mla')" id="btn-cite-mla" class="flex-1 px-2 py-2 font-black text-xs sm:text-sm rounded-lg text-slate-500 hover:text-duo-dark transition-all">MLA 9</button>
+                                <button onclick="setCitationFormat('chicago')" id="btn-cite-chicago" class="flex-1 px-2 py-2 font-black text-xs sm:text-sm rounded-lg text-slate-500 hover:text-duo-dark transition-all">Chicago</button>
+                            </div>
+
+                            <div class="flex flex-col gap-3 mb-4">
+                                <input type="text" id="cite-author" placeholder="Author Name (e.g. Smith, J.)" class="duo-input w-full p-3 font-bold text-sm sm:text-base">
+                                <input type="text" id="cite-title" placeholder="Title of Work" class="duo-input w-full p-3 font-bold text-sm sm:text-base">
+                                <input type="text" id="cite-publisher" placeholder="Publisher / Website" class="duo-input w-full p-3 font-bold text-sm sm:text-base">
+                                <div class="grid grid-cols-2 gap-3">
+                                    <input type="text" id="cite-year" placeholder="Year" class="duo-input w-full p-3 font-bold text-sm sm:text-base">
+                                    <input type="text" id="cite-url" placeholder="URL (optional)" class="duo-input w-full p-3 font-bold text-sm sm:text-base">
+                                </div>
+                            </div>
+                            <button onclick="generateCitation()" class="duo-btn duo-btn-indigo py-3 w-full text-lg mb-6">Generate Citation</button>
+
+                            <div class="bg-slate-100 rounded-2xl border-[3px] border-slate-300 p-4 sm:p-6 relative">
+                                <div id="cite-output" class="font-bold text-slate-700 text-sm sm:text-base leading-relaxed">Your citation will appear here...</div>
+                                <button onclick="copyCitation()" class="absolute top-2 right-2 w-8 h-8 rounded-lg bg-white border-[2px] border-duo-dark text-duo-dark hover:bg-duo-indigo hover:text-white transition-colors flex items-center justify-center" title="Copy">
+                                    <i class="fas fa-copy text-xs"></i>
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- English Lit Screen -->
+                <div id="english-screen" class="absolute inset-0 z-20 hidden flex-col bg-slate-100 p-4 sm:p-6 overflow-y-auto bg-dots">
+                    <div class="max-w-4xl mx-auto w-full pb-10">
+                        <div class="flex items-center gap-3 sm:gap-4 mb-6 sm:mb-8">
+                            <div class="w-12 h-12 sm:w-16 sm:h-16 bg-duo-dark rounded-xl sm:rounded-2xl border-[3px] border-duo-dark shadow-[0px_4px_0px_#1e293b] flex items-center justify-center text-white text-2xl sm:text-3xl shrink-0">
+                                <i class="fas fa-feather-alt"></i>
+                            </div>
+                            <div>
+                                <h2 class="text-2xl sm:text-4xl font-black text-duo-dark tracking-tight">English Lit Lab</h2>
+                                <p class="font-bold text-slate-500 text-sm sm:text-base">Master the rhythm of words</p>
+                            </div>
+                        </div>
+
+                        <div class="grid grid-cols-1 md:grid-cols-3 gap-4 sm:gap-6 mb-6 sm:mb-8">
+                            <div class="duo-card p-5 sm:p-8 bg-white flex flex-col h-full hover:-translate-y-1 transition-transform">
+                                <h3 class="text-xl sm:text-2xl font-black text-duo-dark mb-2 flex items-center gap-2">
+                                    <i class="fas fa-font text-duo-purple"></i> Assonance
+                                </h3>
+                                <p class="font-bold text-slate-500 text-xs sm:text-sm mb-4">
+                                    The repetition of <span class="text-duo-purple font-black">VOWEL sounds</span> in nearby words to set a mood.
+                                </p>
+                                <div class="bg-[#f8fafc] border-[3px] border-slate-200 rounded-xl p-4 sm:p-6 mb-4 text-center cursor-pointer hover:border-duo-purple transition-colors group">
+                                    <p class="font-black text-xl sm:text-2xl text-duo-dark tracking-wide">
+                                        "G<span class="text-duo-purple group-hover:bg-duo-purple/20 px-1 rounded transition-colors duration-300">o</span> sl<span class="text-duo-purple group-hover:bg-duo-purple/20 px-1 rounded transition-colors duration-300">o</span>w <span class="text-duo-purple group-hover:bg-duo-purple/20 px-1 rounded transition-colors duration-300">o</span>ver the r<span class="text-duo-purple group-hover:bg-duo-purple/20 px-1 rounded transition-colors duration-300">oa</span>d."
+                                    </p>
+                                </div>
+                            </div>
+                            <div class="duo-card p-5 sm:p-8 bg-white flex flex-col h-full hover:-translate-y-1 transition-transform">
+                                <h3 class="text-xl sm:text-2xl font-black text-duo-dark mb-2 flex items-center gap-2">
+                                    <i class="fas fa-bold text-duo-green"></i> Consonance
+                                </h3>
+                                <p class="font-bold text-slate-500 text-xs sm:text-sm mb-4">
+                                    The repetition of <span class="text-duo-green font-black">CONSONANT sounds</span> in nearby words for rhythm.
+                                </p>
+                                <div class="bg-[#f8fafc] border-[3px] border-slate-200 rounded-xl p-4 sm:p-6 mb-4 text-center cursor-pointer hover:border-duo-green transition-colors group">
+                                    <p class="font-black text-xl sm:text-2xl text-duo-dark tracking-wide">
+                                        "Mi<span class="text-duo-green group-hover:bg-duo-green/20 px-1 rounded transition-colors duration-300">k</span>e li<span class="text-duo-green group-hover:bg-duo-green/20 px-1 rounded transition-colors duration-300">k</span>es his new bi<span class="text-duo-green group-hover:bg-duo-green/20 px-1 rounded transition-colors duration-300">k</span>e."
+                                    </p>
+                                </div>
+                            </div>
+                            <div class="duo-card p-5 sm:p-8 bg-white flex flex-col h-full hover:-translate-y-1 transition-transform">
+                                <h3 class="text-xl sm:text-2xl font-black text-duo-dark mb-2 flex items-center gap-2">
+                                    <i class="fas fa-align-left text-duo-blue"></i> Alliteration
+                                </h3>
+                                <p class="font-bold text-slate-500 text-xs sm:text-sm mb-4">
+                                    The repetition of the <span class="text-duo-blue font-black">SAME starting sound</span> in nearby words.
+                                </p>
+                                <div class="bg-[#f8fafc] border-[3px] border-slate-200 rounded-xl p-4 sm:p-6 mb-4 text-center cursor-pointer hover:border-duo-blue transition-colors group">
+                                    <p class="font-black text-xl sm:text-2xl text-duo-dark tracking-wide">
+                                        "<span class="text-duo-blue group-hover:bg-duo-blue/20 px-1 rounded transition-colors duration-300">P</span>eter <span class="text-duo-blue group-hover:bg-duo-blue/20 px-1 rounded transition-colors duration-300">P</span>iper <span class="text-duo-blue group-hover:bg-duo-blue/20 px-1 rounded transition-colors duration-300">p</span>icked a <span class="text-duo-blue group-hover:bg-duo-blue/20 px-1 rounded transition-colors duration-300">p</span>eck."
+                                    </p>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="duo-card p-5 sm:p-8 bg-white shadow-[0_6px_0_#1e293b]">
+                            <h3 class="text-lg sm:text-2xl font-black text-duo-dark mb-4 flex items-center gap-3">
+                                <i class="fas fa-magic text-duo-yellow text-2xl sm:text-3xl drop-shadow-md"></i> The Poetry Analyzer
+                            </h3>
+                            <textarea id="poetry-input" class="w-full duo-input p-4 font-bold text-slate-700 text-sm sm:text-base mb-4 resize-none h-24 shadow-inner" placeholder="Type your own sentence here..."></textarea>
+                            
+                            <div class="flex flex-col sm:flex-row gap-3 sm:gap-4 mb-6">
+                                <button onclick="window.highlightPoetry('vowels')" class="flex-1 duo-btn duo-btn-purple py-3 sm:py-4 text-sm sm:text-base">
+                                    <i class="fas fa-search mr-2"></i> Highlight Assonance
+                                </button>
+                                <button onclick="window.highlightPoetry('consonants')" class="flex-1 duo-btn duo-btn-green py-3 sm:py-4 text-sm sm:text-base">
+                                    <i class="fas fa-search mr-2"></i> Highlight Consonance
+                                </button>
+                                <button onclick="window.highlightPoetry('alliteration')" class="flex-1 duo-btn duo-btn-blue py-3 sm:py-4 text-sm sm:text-base">
+                                    <i class="fas fa-search mr-2"></i> Highlight Alliteration
+                                </button>
+                            </div>
+
+                            <div class="bg-slate-50 border-[3px] border-slate-200 rounded-xl p-4 sm:p-8 min-h-[120px] flex items-center justify-center text-center shadow-inner">
+                                <p id="poetry-display" class="font-black text-lg sm:text-2xl text-duo-dark leading-loose">
+                                    Your highlighted poem will appear here!
+                                </p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Periodic Table Screen -->
+                <div id="periodic-screen" class="absolute inset-0 z-20 hidden flex-col p-4 sm:p-6 overflow-y-auto bg-slate-50 bg-dots">
+                    <div class="max-w-6xl mx-auto w-full pb-10">
+                        <div class="flex items-center gap-3 sm:gap-4 mb-4 sm:mb-6">
+                            <div class="w-12 h-12 sm:w-16 sm:h-16 bg-duo-teal rounded-xl sm:rounded-2xl border-[3px] border-duo-dark shadow-[0px_4px_0px_#1e293b] flex items-center justify-center text-white text-2xl sm:text-3xl shrink-0">
+                                <i class="fas fa-atom"></i>
+                            </div>
+                            <div>
+                                <h2 class="text-2xl sm:text-4xl font-black text-duo-dark tracking-tight">Periodic Table</h2>
+                                <p class="font-bold text-slate-500 text-sm sm:text-base">Click any element to explore all 118 building blocks.</p>
+                            </div>
+                        </div>
+
+                        <div class="flex flex-wrap gap-2 mb-4 text-[10px] sm:text-xs font-bold">
+                            <span class="px-2 py-1 rounded-lg bg-red-300 border-[2px] border-duo-dark">Alkali Metal</span>
+                            <span class="px-2 py-1 rounded-lg bg-orange-300 border-[2px] border-duo-dark">Alkaline Earth</span>
+                            <span class="px-2 py-1 rounded-lg bg-purple-300 border-[2px] border-duo-dark">Transition Metal</span>
+                            <span class="px-2 py-1 rounded-lg bg-lime-200 border-[2px] border-duo-dark">Metalloid</span>
+                            <span class="px-2 py-1 rounded-lg bg-green-300 border-[2px] border-duo-dark">Halogen</span>
+                            <span class="px-2 py-1 rounded-lg bg-blue-300 border-[2px] border-duo-dark">Noble Gas</span>
+                            <span class="px-2 py-1 rounded-lg bg-pink-300 border-[2px] border-duo-dark">Lanthanide</span>
+                            <span class="px-2 py-1 rounded-lg bg-pink-200 border-[2px] border-duo-dark">Actinide</span>
+                            <span class="px-2 py-1 rounded-lg bg-slate-300 border-[2px] border-duo-dark">Other</span>
+                        </div>
+
+                        <div id="periodic-grid" class="grid grid-cols-10 sm:grid-cols-12 md:grid-cols-[repeat(18,minmax(0,1fr))] gap-1 mb-6"></div>
+
+                        <div id="element-detail" class="duo-card bg-white p-4 sm:p-6 hidden">
+                            <div class="flex items-center gap-4">
+                                <div id="detail-symbol" class="w-16 h-16 sm:w-20 sm:h-20 rounded-2xl border-[3px] border-duo-dark flex items-center justify-center text-3xl sm:text-4xl font-black text-white"></div>
+                                <div>
+                                    <h3 id="detail-name" class="text-2xl sm:text-3xl font-black text-duo-dark"></h3>
+                                    <p id="detail-info" class="font-bold text-slate-500 text-sm sm:text-base"></p>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Calculator Screen -->
+                <div id="calc-screen" class="absolute inset-0 z-20 hidden flex-col items-center justify-center p-4 sm:p-6 bg-slate-100 bg-dots">
+                    <div class="duo-card bg-white p-4 sm:p-6 max-w-sm w-full">
+                        <div class="flex items-center gap-3 mb-4">
+                            <div class="w-10 h-10 bg-duo-orange rounded-xl border-[3px] border-duo-dark shadow-[0px_2px_0px_#1e293b] flex items-center justify-center text-white text-lg">
+                                <i class="fas fa-calculator"></i>
+                            </div>
+                            <h2 class="text-xl font-black text-duo-dark">Calculator</h2>
+                        </div>
+                        <div class="bg-slate-100 border-[3px] border-duo-dark rounded-2xl p-4 mb-4 text-right">
+                            <div id="calc-history" class="text-slate-400 text-xs font-bold h-4 mb-1"></div>
+                            <div id="calc-display" class="text-3xl sm:text-4xl font-black text-duo-dark truncate">0</div>
+                        </div>
+                        <div class="grid grid-cols-4 gap-2">
+                            <button onclick="calcClear()" class="calc-btn calc-btn-ac">AC</button>
+                            <button onclick="calcAppend('(')" class="calc-btn">(</button>
+                            <button onclick="calcAppend(')')" class="calc-btn">)</button>
+                            <button onclick="calcAppend('/')" class="calc-btn calc-btn-op">÷</button>
+                            <button onclick="calcAppend('7')" class="calc-btn">7</button>
+                            <button onclick="calcAppend('8')" class="calc-btn">8</button>
+                            <button onclick="calcAppend('9')" class="calc-btn">9</button>
+                            <button onclick="calcAppend('*')" class="calc-btn calc-btn-op">×</button>
+                            <button onclick="calcAppend('4')" class="calc-btn">4</button>
+                            <button onclick="calcAppend('5')" class="calc-btn">5</button>
+                            <button onclick="calcAppend('6')" class="calc-btn">6</button>
+                            <button onclick="calcAppend('-')" class="calc-btn calc-btn-op">−</button>
+                            <button onclick="calcAppend('1')" class="calc-btn">1</button>
+                            <button onclick="calcAppend('2')" class="calc-btn">2</button>
+                            <button onclick="calcAppend('3')" class="calc-btn">3</button>
+                            <button onclick="calcAppend('+')" class="calc-btn calc-btn-op">+</button>
+                            <button onclick="calcAppend('0')" class="calc-btn col-span-2">0</button>
+                            <button onclick="calcAppend('.')" class="calc-btn">.</button>
+                            <button onclick="calcEquals()" class="calc-btn calc-btn-eq">=</button>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Converter Screen -->
+                <div id="converter-screen" class="absolute inset-0 z-20 hidden flex-col p-4 sm:p-10 overflow-y-auto bg-slate-50 bg-dots">
+                    <div class="max-w-2xl mx-auto w-full pb-10">
+                        <div class="flex items-center gap-3 sm:gap-4 mb-6 sm:mb-8">
+                            <div class="w-12 h-12 sm:w-16 sm:h-16 bg-duo-purple rounded-xl sm:rounded-2xl border-[3px] border-duo-dark shadow-[0px_4px_0px_#1e293b] flex items-center justify-center text-white text-2xl sm:text-3xl shrink-0">
+                                <i class="fas fa-right-left"></i>
+                            </div>
+                            <div>
+                                <h2 class="text-2xl sm:text-4xl font-black text-duo-dark tracking-tight">Unit Converter</h2>
+                                <p class="font-bold text-slate-500 text-sm sm:text-base">Length, mass, and temperature made easy.</p>
+                            </div>
+                        </div>
+
+                        <div class="duo-card bg-white p-6 sm:p-10">
+                            <div class="flex gap-2 bg-slate-200 p-1 rounded-xl border-[3px] border-duo-dark shadow-sm mb-6 sm:mb-8 w-full">
+                                <button onclick="setConverterCategory('length')" id="btn-conv-length" class="flex-1 px-2 py-2 font-black text-xs sm:text-sm rounded-lg bg-white shadow-sm text-duo-dark transition-all">Length</button>
+                                <button onclick="setConverterCategory('mass')" id="btn-conv-mass" class="flex-1 px-2 py-2 font-black text-xs sm:text-sm rounded-lg text-slate-500 hover:text-duo-dark transition-all">Mass</button>
+                                <button onclick="setConverterCategory('temp')" id="btn-conv-temp" class="flex-1 px-2 py-2 font-black text-xs sm:text-sm rounded-lg text-slate-500 hover:text-duo-dark transition-all">Temp</button>
+                            </div>
+
+                            <div class="grid grid-cols-1 sm:grid-cols-[1fr_auto_1fr] gap-4 items-center">
+                                <div>
+                                    <label class="block font-black text-slate-400 text-[10px] sm:text-xs mb-2 tracking-wider">FROM</label>
+                                    <input type="number" id="conv-input" value="1" oninput="runConversion()" class="duo-input w-full p-3 sm:p-4 font-bold text-duo-dark text-lg sm:text-xl mb-2">
+                                    <select id="conv-from-unit" onchange="runConversion()" class="duo-input w-full p-3 font-bold text-duo-dark text-sm sm:text-base cursor-pointer"></select>
+                                </div>
+                                <div class="flex justify-center text-duo-purple text-2xl sm:text-3xl py-2 sm:py-0">
+                                    <i class="fas fa-arrow-right hidden sm:block"></i>
+                                    <i class="fas fa-arrow-down sm:hidden"></i>
+                                </div>
+                                <div>
+                                    <label class="block font-black text-slate-400 text-[10px] sm:text-xs mb-2 tracking-wider">TO</label>
+                                    <div id="conv-output" class="duo-input w-full p-3 sm:p-4 font-black text-duo-blue text-lg sm:text-xl mb-2 bg-slate-100">0</div>
+                                    <select id="conv-to-unit" onchange="runConversion()" class="duo-input w-full p-3 font-bold text-duo-dark text-sm sm:text-base cursor-pointer"></select>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- GPA Screen -->
+                <div id="gpa-screen" class="absolute inset-0 z-20 hidden flex-col p-4 sm:p-10 overflow-y-auto bg-slate-50 bg-dots">
+                    <div class="max-w-2xl mx-auto w-full pb-10">
+                        <div class="flex items-center gap-3 sm:gap-4 mb-6 sm:mb-8">
+                            <div class="w-12 h-12 sm:w-16 sm:h-16 bg-duo-blue rounded-xl sm:rounded-2xl border-[3px] border-duo-dark shadow-[0px_4px_0px_#1e293b] flex items-center justify-center text-white text-2xl sm:text-3xl shrink-0">
+                                <i class="fas fa-graduation-cap"></i>
+                            </div>
+                            <div>
+                                <h2 class="text-2xl sm:text-4xl font-black text-duo-dark tracking-tight">GPA Calculator</h2>
+                                <p class="font-bold text-slate-500 text-sm sm:text-base">Add your courses and track your average.</p>
+                            </div>
+                        </div>
+
+                        <div class="duo-card bg-white p-6 sm:p-10 mb-6">
+                            <div class="grid grid-cols-1 sm:grid-cols-[1fr_120px_100px_44px] gap-3 mb-4 items-end" id="gpa-form-row">
+                                <div>
+                                    <label class="block font-black text-slate-400 text-[10px] sm:text-xs mb-2 tracking-wider">COURSE NAME</label>
+                                    <input type="text" id="gpa-course-name" placeholder="e.g. Chemistry" class="duo-input w-full p-3 font-bold text-sm sm:text-base">
+                                </div>
+                                <div>
+                                    <label class="block font-black text-slate-400 text-[10px] sm:text-xs mb-2 tracking-wider">GRADE</label>
+                                    <select id="gpa-course-grade" class="duo-input w-full p-3 font-bold text-sm sm:text-base cursor-pointer">
+                                        <option value="4">A (4.0)</option>
+                                        <option value="3.7">A- (3.7)</option>
+                                        <option value="3.3">B+ (3.3)</option>
+                                        <option value="3">B (3.0)</option>
+                                        <option value="2.7">B- (2.7)</option>
+                                        <option value="2.3">C+ (2.3)</option>
+                                        <option value="2">C (2.0)</option>
+                                        <option value="1">D (1.0)</option>
+                                        <option value="0">F (0.0)</option>
+                                    </select>
+                                </div>
+                                <div>
+                                    <label class="block font-black text-slate-400 text-[10px] sm:text-xs mb-2 tracking-wider">CREDITS</label>
+                                    <input type="number" id="gpa-course-credits" value="3" min="1" class="duo-input w-full p-3 font-bold text-sm sm:text-base">
+                                </div>
+                                <button onclick="addGpaCourse()" class="duo-btn duo-btn-blue h-[52px] flex items-center justify-center text-lg"><i class="fas fa-plus"></i></button>
+                            </div>
+                            <div id="gpa-course-list" class="space-y-2 mb-4"></div>
+                            <div class="border-t-[3px] border-slate-200 pt-4 flex justify-between items-center">
+                                <span class="font-black text-slate-500 uppercase text-xs sm:text-sm">Your GPA</span>
+                                <span class="font-black text-duo-blue text-2xl sm:text-3xl" id="gpa-result">0.00</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Formulas Screen -->
+                <div id="formulas-screen" class="absolute inset-0 z-20 hidden flex-col p-4 sm:p-10 overflow-y-auto bg-slate-50 bg-dots">
+                    <div class="max-w-2xl mx-auto w-full pb-10">
+                        <div class="flex items-center gap-3 sm:gap-4 mb-6 sm:mb-8">
+                            <div class="w-12 h-12 sm:w-16 sm:h-16 bg-duo-yellow rounded-xl sm:rounded-2xl border-[3px] border-duo-dark shadow-[0px_4px_0px_#1e293b] flex items-center justify-center text-duo-dark text-2xl sm:text-3xl shrink-0">
+                                <i class="fas fa-square-root-variable"></i>
+                            </div>
+                            <div>
+                                <h2 class="text-2xl sm:text-4xl font-black text-duo-dark tracking-tight">Formula Sheet</h2>
+                                <p class="font-bold text-slate-500 text-sm sm:text-base">Your personal cheat sheet, always handy.</p>
+                            </div>
+                        </div>
+
+                        <div class="duo-card bg-white p-6 sm:p-8 mb-6">
+                            <h3 class="font-black text-duo-dark mb-4 text-lg">Add a Formula</h3>
+                            <div class="grid grid-cols-1 sm:grid-cols-2 gap-3 mb-3">
+                                <input type="text" id="new-formula-name" placeholder="Name (e.g. Area of Circle)" class="duo-input p-3 font-bold text-sm sm:text-base">
+                                <input type="text" id="new-formula-expr" placeholder="Formula (e.g. π × r²)" class="duo-input p-3 font-bold text-sm sm:text-base" onkeypress="if(event.key==='Enter') addFormula()">
+                            </div>
+                            <button onclick="addFormula()" class="duo-btn duo-btn-yellow py-3 w-full text-lg">Save Formula</button>
+                        </div>
+
+                        <div id="formula-list" class="space-y-3"></div>
+                    </div>
+                </div>
+
+                <!-- Pomodoro Screen -->
+                <div id="pomodoro-screen" class="absolute inset-0 z-20 hidden flex-col items-center justify-center p-4 sm:p-6 bg-slate-50 bg-dots">
+                    <div class="duo-card p-6 sm:p-10 text-center max-w-md w-full bg-white">
+                        <i class="fas fa-stopwatch text-4xl sm:text-6xl text-duo-red mb-2 sm:mb-4 drop-shadow-md"></i>
+                        <h2 class="text-2xl sm:text-3xl font-black text-duo-dark mb-1 sm:mb-2" id="pomo-mode">Focus Time</h2>
+                        <p class="font-bold text-slate-500 text-xs sm:text-base mb-6 sm:mb-8" id="pomo-desc">Stay productive, stay awesome.</p>
+                        
+                        <div class="text-5xl sm:text-7xl font-black text-duo-dark tracking-tighter mb-6 sm:mb-8 font-mono bg-[#f8fafc] rounded-2xl sm:rounded-3xl py-4 sm:py-6 border-[3px] border-duo-dark shadow-inner" id="pomo-display">25:00</div>
+                        
+                        <div class="flex flex-col gap-4">
+                            <div class="flex gap-2 sm:gap-4 justify-center">
+                                <button onclick="startPomodoro()" class="duo-btn duo-btn-green px-4 sm:px-8 py-3 sm:py-4 text-sm sm:text-lg flex-1"><i class="fas fa-play"></i> Start</button>
+                                <button onclick="pausePomodoro()" class="duo-btn duo-btn-yellow px-4 sm:px-6 py-3 sm:py-4 text-sm sm:text-lg"><i class="fas fa-pause"></i></button>
+                                <button onclick="resetPomodoro()" class="duo-btn duo-btn-white px-4 sm:px-6 py-3 sm:py-4 text-sm sm:text-lg"><i class="fas fa-undo"></i></button>
+                            </div>
+                            <div class="flex gap-4 justify-center mt-2 sm:mt-4 text-xs sm:text-sm">
+                                <button onclick="setPomodoroMode('focus')" class="font-bold text-slate-500 hover:text-duo-red underline decoration-2 underline-offset-4">Focus (25m)</button>
+                                <button onclick="setPomodoroMode('break')" class="font-bold text-slate-500 hover:text-duo-blue underline decoration-2 underline-offset-4">Break (5m)</button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Study Timer Screen -->
+                <div id="timer-screen" class="absolute inset-0 z-20 hidden flex-col items-center justify-center p-4 sm:p-6 bg-slate-50 bg-dots">
+                    <div class="duo-card p-6 sm:p-10 text-center max-w-md w-full bg-white">
+                        <i class="fas fa-hourglass-half text-4xl sm:text-6xl text-duo-blue mb-2 sm:mb-4 drop-shadow-md"></i>
+                        <h2 class="text-2xl sm:text-3xl font-black text-duo-dark mb-1 sm:mb-2">Study Timer</h2>
+                        <p class="font-bold text-slate-500 text-xs sm:text-base mb-6 sm:mb-8">Set a custom time and lock in.</p>
+
+                        <div class="text-5xl sm:text-7xl font-black text-duo-dark tracking-tighter mb-4 sm:mb-6 font-mono bg-[#f8fafc] rounded-2xl sm:rounded-3xl py-4 sm:py-6 border-[3px] border-duo-dark shadow-inner" id="timer-display">00:00:00</div>
+
+                        <div class="grid grid-cols-3 gap-2 sm:gap-3 mb-6 sm:mb-8">
+                            <div>
+                                <label class="block font-black text-slate-400 text-[10px] sm:text-xs mb-1 tracking-wider">HRS</label>
+                                <input type="number" id="timer-h" value="0" min="0" class="duo-input w-full p-2 sm:p-3 font-bold text-duo-dark text-center text-base sm:text-lg">
+                            </div>
+                            <div>
+                                <label class="block font-black text-slate-400 text-[10px] sm:text-xs mb-1 tracking-wider">MIN</label>
+                                <input type="number" id="timer-m" value="25" min="0" max="59" class="duo-input w-full p-2 sm:p-3 font-bold text-duo-dark text-center text-base sm:text-lg">
+                            </div>
+                            <div>
+                                <label class="block font-black text-slate-400 text-[10px] sm:text-xs mb-1 tracking-wider">SEC</label>
+                                <input type="number" id="timer-s" value="0" min="0" max="59" class="duo-input w-full p-2 sm:p-3 font-bold text-duo-dark text-center text-base sm:text-lg">
+                            </div>
+                        </div>
+
+                        <div class="flex gap-2 sm:gap-4 justify-center">
+                            <button onclick="startStudyTimer()" id="timer-start-btn" class="duo-btn duo-btn-green px-4 sm:px-8 py-3 sm:py-4 text-sm sm:text-lg flex-1"><i class="fas fa-play"></i> Start</button>
+                            <button onclick="pauseStudyTimer()" class="duo-btn duo-btn-yellow px-4 sm:px-6 py-3 sm:py-4 text-sm sm:text-lg"><i class="fas fa-pause"></i></button>
+                            <button onclick="resetStudyTimer()" class="duo-btn duo-btn-white px-4 sm:px-6 py-3 sm:py-4 text-sm sm:text-lg"><i class="fas fa-undo"></i></button>
+                        </div>
+                    </div>
+                </div>
+
+                <div id="iframe-container" class="w-full h-full relative z-10 bg-white"></div>
+
+            </div>
+        </main>
+    </div>
+
+    <!-- Global AirTouch Elements -->
+    <div id="air-cursor"></div>
+    <video id="webcam-container" autoplay playsinline></video>
+
+    <script>
+        const PYTHON_API = 'https://clonexxshree.pythonanywhere.com/api';
+        const CLONEXXA_API = 'https://clonexxshree.pythonanywhere.com/api/voice';
+        // Compatibility adapter for the deployed PythonAnywhere key/value API.
+        const nativeFetch = window.fetch.bind(window);
+        const dataKeys = {tasks:'clonbrow_tasks',flashcards:'clonbrow_cards',quizzes:'clonbrow_quiz',bites:'clonbrow_bites',formulas:'clonbrow_customF'};
+        async function readRemoteList(kind,user){const r=await nativeFetch(`${PYTHON_API}/data/${encodeURIComponent(dataKeys[kind])}?username=${encodeURIComponent(user)}`);if(!r.ok)throw Error(`HTTP ${r.status}`);const j=await r.json();return Array.isArray(j.value)?j.value:[]}
+        async function writeRemoteList(kind,user,value){const r=await nativeFetch(`${PYTHON_API}/data/${encodeURIComponent(dataKeys[kind])}`,{method:'PUT',headers:{'Content-Type':'application/json'},body:JSON.stringify({username:user,value})});if(!r.ok)throw Error(`HTTP ${r.status}`);return r}
+        window.fetch = async function(input,init={}) {
+            const url=typeof input==='string'?input:input.url;if(!url.startsWith(PYTHON_API+'/'))return nativeFetch(input,init);
+            const u=new URL(url),route=u.pathname.replace(/^\/api\//,'').split('/')[0],method=(init.method||'GET').toUpperCase();
+            if(route==='login'&&method==='POST')return nativeFetch(PYTHON_API+'/session',init);if(!dataKeys[route])return nativeFetch(input,init);
+            const user=u.searchParams.get('user')||currentUser||'Guest';
+            try{let list=await readRemoteList(route,user);if(method==='GET')return new Response(JSON.stringify(list),{status:200,headers:{'Content-Type':'application/json'}});
+                if(method==='POST'){const item=JSON.parse(init.body||'{}');item.id=item.id??Date.now();list.push(item);await writeRemoteList(route,user,list)}
+                else if(method==='PUT'){const item=JSON.parse(init.body||'{}');const found=list.find(x=>String(x.id)===String(item.id));if(found&&route==='tasks')found.done=item.done;await writeRemoteList(route,user,list)}
+                else if(method==='DELETE'){const id=u.searchParams.get('id');list=list.filter(x=>String(x.id)!==String(id));await writeRemoteList(route,user,list)}
+                return new Response(JSON.stringify({ok:true}),{status:200,headers:{'Content-Type':'application/json'}});
+            }catch(e){return new Response(JSON.stringify({error:String(e.message||e)}),{status:502,headers:{'Content-Type':'application/json'}})}
+        };
+        
+        let currentUser = 'Guest';
+        let isServerOnline = false;
+
+        let dbFlashcards = [];
+        let dbQuizzes = [];
+        let dbBites = [];
+        let dbFormulas = [];
+        let currentCard = 0;
+        let isFlipped = false;
+        let currentMcqIndex = 0;
+
+        const appFolders = {
+            learn: {
+                title: 'Learn', icon: 'fa-graduation-cap', color: 'duo-btn-green',
+                apps: [
+                    { url: 'medicof all.html', icon: 'fa-microscope', color: 'duo-btn-red', title: 'Simulations' },
+                    { url: 'clonmedic://quicklearn', icon: 'fa-lightbulb', color: 'duo-btn-yellow', title: 'Quick Bites' },
+                    { url: 'clonmedic://mcq', icon: 'fa-check-double', color: 'duo-btn-green', title: 'Quizzes' },
+                    { url: 'clonmedic://flashcards', icon: 'fa-clone', color: 'duo-btn-pink', title: 'Flashcards' },
+                    { url: 'clonmedic://english', icon: 'fa-book-open', color: 'duo-btn-dark', title: 'English Lit' },
+                    { url: 'clonmedic://citations', icon: 'fa-quote-right', color: 'duo-btn-indigo', title: 'Citations' },
+                    { url: 'clonmedic://periodic', icon: 'fa-atom', color: 'duo-btn-teal', title: 'Periodic' },
+                    { url: 'SansKoder.html', icon: 'fa-code', color: 'duo-btn-orange', title: 'SansKoder' },
+                    { url: 'trecore.html', icon: 'fa-cubes', color: 'duo-btn-purple', title: 'Trecore' }
+                ]
+            },
+            tools: {
+                title: 'Tools', icon: 'fa-toolbox', color: 'duo-btn-purple',
+                apps: [
+                    { url: 'clonmedic://word', icon: 'fa-file-alt', color: 'duo-btn-white text-slate-600', title: 'Word Pro' },
+                    { url: 'clonmedic://receipt', icon: 'fa-file-invoice-dollar', color: 'duo-btn-white text-slate-600', title: 'Invoice' },
+                    { url: 'clonmedic://converter', icon: 'fa-right-left', color: 'duo-btn-purple', title: 'Converter' },
+                    { url: 'clonmedic://gpa', icon: 'fa-graduation-cap', color: 'duo-btn-blue', title: 'GPA Calc' },
+                    { url: 'clonmedic://formulas', icon: 'fa-square-root-variable', color: 'duo-btn-yellow', title: 'Formulas' },
+                    { url: 'clonmedic://calc', icon: 'fa-calculator', color: 'duo-btn-orange', title: 'Calculator' }
+                ]
+            },
+            productivity: {
+                title: 'Focus', icon: 'fa-bolt', color: 'duo-btn-blue',
+                apps: [
+                    { url: 'clonmedic://tasks', icon: 'fa-check-square', color: 'duo-btn-blue', title: 'Tasks' },
+                    { url: 'clonmedic://pomodoro', icon: 'fa-stopwatch', color: 'duo-btn-red', title: 'Pomodoro' },
+                    { url: 'clonmedic://timetable', icon: 'fa-calendar-check', color: 'duo-btn-white text-slate-600', title: 'Timetable' },
+                    { url: 'clonmedic://timer', icon: 'fa-hourglass-half', color: 'duo-btn-blue', title: 'Study Timer' },
+                    { url: 'brainboard.html', icon: 'fa-chalkboard', color: 'duo-btn-yellow', title: 'BrainBoard' }
+                ]
+            },
+            games: {
+                title: 'Play', icon: 'fa-gamepad', color: 'duo-btn-yellow',
+                apps: [
+                    { url: 'arcade.html', icon: 'fa-gamepad', color: 'duo-btn-yellow', title: 'Arcade' },
+                    { url: 'rememberme.html', icon: 'fa-save', color: 'duo-btn-green', title: 'Save Game' }
+                ]
+            }
+        };
+
+        window.renderSidebar = function(activeFolder = null) {
+            const sidebar = document.getElementById('os-sidebar');
+            sidebar.innerHTML = '';
+            if (!activeFolder) {
+                Object.keys(appFolders).forEach(key => {
+                    const f = appFolders[key];
+                    sidebar.innerHTML += `<button onclick="renderSidebar('${key}')" class="w-10 h-10 md:w-11 md:h-11 duo-btn ${f.color} flex items-center justify-center shrink-0 text-lg md:text-xl" title="${f.title}"><i class="fas ${f.icon}"></i></button>`;
+                });
+            } else {
+                sidebar.innerHTML += `<button onclick="renderSidebar(null)" class="w-10 h-10 md:w-11 md:h-11 duo-btn duo-btn-white text-slate-500 flex items-center justify-center shrink-0 text-lg md:text-xl border-dashed" title="Back"><i class="fas fa-arrow-left"></i></button>`;
+                sidebar.innerHTML += `<div class="w-1 h-4 md:w-8 md:h-1 bg-slate-200 rounded-full shrink-0"></div>`;
+                appFolders[activeFolder].apps.forEach(app => {
+                    sidebar.innerHTML += `<button onclick="createNewTab('${app.url}')" class="w-10 h-10 md:w-11 md:h-11 duo-btn ${app.color} flex items-center justify-center shrink-0 text-lg md:text-xl" title="${app.title}"><i class="fas ${app.icon}"></i></button>`;
+                });
+            }
+        };
+
+        async function handleOSLogin() {
+            const username = document.getElementById('boot-username').value.trim();
+            if (!username) { console.log("Please enter your hero name!"); return; }
+            currentUser = username;
+            document.getElementById('toolbar-pfp').src = `https://api.dicebear.com/7.x/bottts/svg?seed=${username}`;
+            
+            const btn = document.getElementById('login-btn');
+            btn.innerHTML = 'Connecting to Python DB... <i class="fas fa-spinner fa-spin"></i>';
+            
+            try {
+                const res = await fetch(`${PYTHON_API}/login`, {
+                    method: 'POST', headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ username: currentUser })
+                });
+                if(res.ok) {
+                    isServerOnline = true;
+                    await fetchAllData();
+                } else {
+                    throw new Error("Server not responding correctly");
+                }
+            } catch(e) {
+                console.warn("Python DB Offline.", e);
+                document.getElementById('db-status').classList.remove('hidden');
+                isServerOnline = false;
+                
+                dbFlashcards = [{q: "What is the powerhouse of the cell?", a: "Mitochondria"}];
+                dbQuizzes = [{id: 'mcq-demo1', q: "What is the capital of France?", opts: ["London", "Berlin", "Paris", "Madrid"], ans: 2}];
+                dbBites = [{id: 'ql-demo1', topic: "Photosynthesis", points: ["Plants take in sunlight, water, and CO2.", "They convert it into glucose (sugar) and oxygen."]}];
+                dbFormulas = [{id: 'formula-demo1', name: 'Area of Circle', expr: 'π × r²'}];
+                
+                updateFlashcardUI(); renderFlashcardList(); renderQuickLearnDropdown(); renderMcqList(); renderFormulaList();
+            }
+
+            const bootScreen = document.getElementById('os-boot-screen');
+            bootScreen.style.transform = 'translateY(-100%)';
+            setTimeout(() => bootScreen.classList.add('hidden'), 700);
+            
+            renderSidebar();
+            window.createNewTab();
+        }
+
+        async function fetchAllData() {
+            if(!isServerOnline) return;
+            try {
+                const [fRes, qRes, bRes, foRes, tRes] = await Promise.all([
+                    fetch(`${PYTHON_API}/flashcards?user=${currentUser}`),
+                    fetch(`${PYTHON_API}/quizzes?user=${currentUser}`),
+                    fetch(`${PYTHON_API}/bites?user=${currentUser}`),
+                    fetch(`${PYTHON_API}/formulas?user=${currentUser}`),
+                    fetch(`${PYTHON_API}/tasks?user=${currentUser}`)
+                ]);
+                dbFlashcards = await fRes.json(); dbQuizzes = await qRes.json();
+                dbBites = await bRes.json(); dbFormulas = await foRes.json();
+                const tasks = await tRes.json();
+                
+                updateFlashcardUI(); renderFlashcardList(); renderQuickLearnDropdown();
+                renderQuickLearnAdminList(); renderMcqList(); renderFormulaList(); renderTasks(tasks);
+            } catch (e) { console.error("Fetch failed", e); }
+        }
+
+        // --- TASKS ---
+        async function addTaskDB() {
+            const input = document.getElementById('new-task-input');
+            const task = input.value.trim();
+            if(!task) return;
+            input.value = '';
+            if(isServerOnline) {
+                await fetch(`${PYTHON_API}/tasks`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ username: currentUser, task: task }) });
+                const tRes = await fetch(`${PYTHON_API}/tasks?user=${currentUser}`); renderTasks(await tRes.json());
+            } else { console.log("Offline mode: Cannot save task to DB."); }
+        }
+        async function toggleTaskDB(id, isDone) {
+            if(isServerOnline) {
+                await fetch(`${PYTHON_API}/tasks`, { method: 'PUT', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ id: id, done: isDone ? 1 : 0 }) });
+                const tRes = await fetch(`${PYTHON_API}/tasks?user=${currentUser}`); renderTasks(await tRes.json());
+            }
+        }
+        async function deleteTaskDB(id) {
+            if(isServerOnline) {
+                await fetch(`${PYTHON_API}/tasks?id=${id}`, { method: 'DELETE' });
+                const tRes = await fetch(`${PYTHON_API}/tasks?user=${currentUser}`); renderTasks(await tRes.json());
+            }
+        }
+        function renderTasks(tasks) {
+            const list = document.getElementById('tasks-list'); list.innerHTML = '';
+            if(tasks.length === 0) { list.innerHTML = `<div class="text-center font-bold text-slate-400 py-4">No tasks found.</div>`; return; }
+            tasks.forEach(t => {
+                const el = document.createElement('div');
+                el.className = `duo-card p-4 flex justify-between items-center bg-white ${t.done ? 'opacity-50' : ''}`;
+                el.innerHTML = `
+                    <div class="flex items-center gap-3">
+                        <input type="checkbox" ${t.done ? 'checked' : ''} onchange="toggleTaskDB(${t.id}, this.checked)" class="w-6 h-6 accent-duo-green cursor-pointer">
+                        <span class="font-black text-duo-dark text-lg ${t.done ? 'line-through' : ''}">${t.task}</span>
+                    </div>
+                    <button onclick="deleteTaskDB(${t.id})" class="text-duo-red hover:scale-110 transition-transform"><i class="fas fa-trash"></i></button>
+                `;
+                list.appendChild(el);
+            });
+        }
+
+        // --- BITES ---
+        window.toggleQuickLearnMode = function(mode) {
+            const btnLearn = document.getElementById('btn-ql-learn'); const btnCreate = document.getElementById('btn-ql-create');
+            const viewLearn = document.getElementById('ql-learn-view'); const viewCreate = document.getElementById('ql-create-view');
+            const activeClass = 'bg-white shadow-sm text-duo-dark'.split(' '); const inactiveClass = 'text-slate-500 hover:text-duo-dark'.split(' ');
+            if(mode === 'learn') {
+                btnLearn.classList.add(...activeClass); btnLearn.classList.remove(...inactiveClass);
+                btnCreate.classList.remove(...activeClass); btnCreate.classList.add(...inactiveClass);
+                viewLearn.classList.remove('hidden'); viewLearn.classList.add('flex'); viewCreate.classList.remove('flex'); viewCreate.classList.add('hidden');
+                renderQuickLearnDropdown();
+            } else {
+                btnCreate.classList.add(...activeClass); btnCreate.classList.remove(...inactiveClass);
+                btnLearn.classList.remove(...activeClass); btnLearn.classList.add(...inactiveClass);
+                viewCreate.classList.remove('hidden'); viewCreate.classList.add('flex'); viewLearn.classList.remove('flex'); viewLearn.classList.add('hidden');
+                renderQuickLearnAdminList();
+            }
+        };
+        window.renderQuickLearnDropdown = function() {
+            const select = document.getElementById('ql-topic-select'); select.innerHTML = '<option value="">-- Choose a Topic --</option>';
+            dbBites.forEach((item, idx) => { const opt = document.createElement('option'); opt.value = idx; opt.innerText = item.topic; select.appendChild(opt); });
+            document.getElementById('ql-title').innerText = "Select a topic!"; document.getElementById('ql-points').innerHTML = "<li>Add topics in Create mode!</li>";
+        };
+        window.loadSelectedQuickBite = function() {
+            const idx = document.getElementById('ql-topic-select').value; if(idx === '') return;
+            const data = dbBites[idx]; if(!data) return;
+            document.getElementById('ql-title').innerText = data.topic; const ul = document.getElementById('ql-points'); ul.innerHTML = '';
+            data.points.forEach(point => { if(point.trim() !== '') { const li = document.createElement('li'); li.innerText = point.trim(); ul.appendChild(li); } });
+        };
+        window.addQuickBiteDB = async function() {
+            const topic = document.getElementById('new-ql-title').value.trim(); const pointsRaw = document.getElementById('new-ql-points').value;
+            if(!topic || !pointsRaw) return; const points = pointsRaw.split('\n').filter(p => p.trim() !== '');
+            if(isServerOnline) {
+                await fetch(`${PYTHON_API}/bites`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ username: currentUser, topic: topic, points: points }) });
+                const bRes = await fetch(`${PYTHON_API}/bites?user=${currentUser}`); dbBites = await bRes.json();
+            } else { dbBites.push({ id: 'ql-' + Date.now(), topic, points }); }
+            document.getElementById('new-ql-title').value = ''; document.getElementById('new-ql-points').value = ''; renderQuickLearnAdminList();
+        };
+        window.deleteQuickBiteDB = async function(id) {
+            if(isServerOnline) { await fetch(`${PYTHON_API}/bites?id=${id}`, { method: 'DELETE' }); const bRes = await fetch(`${PYTHON_API}/bites?user=${currentUser}`); dbBites = await bRes.json(); }
+            else { dbBites = dbBites.filter(q => q.id !== id); }
+            renderQuickLearnAdminList();
+        };
+        window.renderQuickLearnAdminList = function() {
+            const list = document.getElementById('ql-list-admin'); list.innerHTML = '';
+            if(dbBites.length === 0) { list.innerHTML = '<div class="text-center font-bold text-slate-400 py-4">No Quick Bites yet.</div>'; return; }
+            dbBites.forEach(item => {
+                const el = document.createElement('div'); el.className = "duo-card p-3 sm:p-4 bg-white flex justify-between items-center gap-4";
+                el.innerHTML = `<div class="flex-1 overflow-hidden"><div class="font-black text-duo-dark text-sm sm:text-base truncate">${item.topic}</div><div class="font-bold text-slate-500 text-xs sm:text-sm truncate">${item.points.length} points included</div></div><button onclick="deleteQuickBiteDB('${item.id}')" class="w-8 h-8 rounded-xl bg-duo-red/10 text-duo-red hover:bg-duo-red hover:text-white transition-colors flex items-center justify-center shrink-0"><i class="fas fa-trash text-sm"></i></button>`;
+                list.appendChild(el);
+            });
+        };
+
+        // --- QUIZZES ---
+        window.toggleMcqMode = function(mode) {
+            const btnPlay = document.getElementById('btn-mcq-play'); const btnCreate = document.getElementById('btn-mcq-create');
+            const viewPlay = document.getElementById('mcq-play-view'); const viewCreate = document.getElementById('mcq-create-view');
+            const activeClass = 'bg-white shadow-sm text-duo-dark'.split(' '); const inactiveClass = 'text-slate-500 hover:text-duo-dark'.split(' ');
+            if(mode === 'play') {
+                btnPlay.classList.add(...activeClass); btnPlay.classList.remove(...inactiveClass); btnCreate.classList.remove(...activeClass); btnCreate.classList.add(...inactiveClass);
+                viewPlay.classList.remove('hidden'); viewPlay.classList.add('flex'); viewCreate.classList.remove('flex'); viewCreate.classList.add('hidden');
+                currentMcqIndex = 0; loadMcqQuestion();
+            } else {
+                btnCreate.classList.add(...activeClass); btnCreate.classList.remove(...inactiveClass); btnPlay.classList.remove(...activeClass); btnPlay.classList.add(...inactiveClass);
+                viewCreate.classList.remove('hidden'); viewCreate.classList.add('flex'); viewPlay.classList.remove('flex'); viewPlay.classList.add('hidden');
+                renderMcqList();
+            }
+        };
+        window.loadMcqQuestion = function() {
+            const btnNext = document.getElementById('mcq-next-btn'); const feedback = document.getElementById('mcq-feedback');
+            const optsContainer = document.getElementById('mcq-options'); const qEl = document.getElementById('mcq-question'); const counter = document.getElementById('mcq-counter');
+            feedback.innerText = ''; feedback.className = 'flex items-center font-black text-xl h-8'; btnNext.classList.add('hidden');
+            if(dbQuizzes.length === 0) { qEl.innerText = "No quizzes yet! Go to Create Mode."; optsContainer.innerHTML = ''; counter.innerText = '0/0'; return; }
+            if(currentMcqIndex >= dbQuizzes.length) currentMcqIndex = 0;
+            const qData = dbQuizzes[currentMcqIndex]; qEl.innerText = qData.q; counter.innerText = `${currentMcqIndex + 1}/${dbQuizzes.length}`; optsContainer.innerHTML = '';
+            
+            const labels = ['A', 'B', 'C', 'D'];
+            qData.opts.forEach((opt, index) => {
+                const btn = document.createElement('button'); 
+                btn.className = "duo-btn duo-btn-white p-3 sm:p-4 text-sm sm:text-base w-full hover:bg-slate-50 flex items-center gap-3 sm:gap-4 transition-all !text-left";
+                btn.innerHTML = `<span class="bg-slate-200 text-slate-500 rounded-lg w-8 h-8 flex items-center justify-center font-black shrink-0">${labels[index] || '-'}</span> <span class="flex-1 text-left leading-tight whitespace-normal break-words">${opt}</span>`;
+                btn.onclick = () => window.checkMcqAnswer(index, btn); 
+                optsContainer.appendChild(btn);
+            });
+        };
+        window.checkMcqAnswer = function(selectedIndex, btnElement) {
+            const qData = dbQuizzes[currentMcqIndex]; const feedback = document.getElementById('mcq-feedback'); const btnNext = document.getElementById('mcq-next-btn');
+            const buttons = document.getElementById('mcq-options').querySelectorAll('button'); 
+            
+            buttons.forEach(b => {
+                b.onclick = null;
+                b.classList.add('opacity-50');
+            });
+            
+            if(selectedIndex === qData.ans) { 
+                btnElement.classList.replace('duo-btn-white', 'duo-btn-green'); 
+                btnElement.classList.remove('opacity-50');
+                const span = btnElement.querySelector('span.bg-slate-200');
+                if(span) { span.classList.replace('bg-slate-200', 'bg-white'); span.classList.replace('text-slate-500', 'text-duo-green'); }
+                feedback.innerHTML = '<i class="fas fa-check-circle mr-2"></i> Awesome! Correct!'; 
+                feedback.className = 'text-duo-green flex items-center font-black text-xl h-8'; 
+            } else { 
+                btnElement.classList.replace('duo-btn-white', 'duo-btn-red'); 
+                btnElement.classList.remove('opacity-50');
+                const span = btnElement.querySelector('span.bg-slate-200');
+                if(span) { span.classList.replace('bg-slate-200', 'bg-white'); span.classList.replace('text-slate-500', 'text-duo-red'); }
+                
+                const correctBtn = buttons[qData.ans];
+                correctBtn.classList.replace('duo-btn-white', 'duo-btn-green'); 
+                correctBtn.classList.remove('opacity-50');
+                const correctSpan = correctBtn.querySelector('span.bg-slate-200');
+                if(correctSpan) { correctSpan.classList.replace('bg-slate-200', 'bg-white'); correctSpan.classList.replace('text-slate-500', 'text-duo-green'); }
+                
+                feedback.innerHTML = '<i class="fas fa-times-circle mr-2"></i> Oops! Not quite right.'; 
+                feedback.className = 'text-duo-red flex items-center font-black text-xl h-8'; 
+            }
+            btnNext.classList.remove('hidden');
+        };
+        window.nextMcqQuestion = function() {
+            currentMcqIndex++;
+            if(currentMcqIndex >= dbQuizzes.length) { document.getElementById('mcq-question').innerText = "Quiz Complete! Awesome job."; document.getElementById('mcq-options').innerHTML = ''; document.getElementById('mcq-feedback').innerText = ''; document.getElementById('mcq-next-btn').classList.add('hidden'); setTimeout(() => { currentMcqIndex = 0; loadMcqQuestion(); }, 2000); }
+            else { loadMcqQuestion(); }
+        };
+        window.addQuizDB = async function() {
+            const q = document.getElementById('new-mcq-q').value.trim();
+            const opts = [ document.getElementById('new-mcq-opt0').value.trim(), document.getElementById('new-mcq-opt1').value.trim(), document.getElementById('new-mcq-opt2').value.trim(), document.getElementById('new-mcq-opt3').value.trim() ];
+            const ans = parseInt(document.getElementById('new-mcq-ans').value);
+            if(!q || opts.some(o => o === '')) { console.log('Please fill all fields.'); return; }
+            if(isServerOnline) { await fetch(`${PYTHON_API}/quizzes`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ username: currentUser, q: q, opts: opts, ans: ans }) }); const qRes = await fetch(`${PYTHON_API}/quizzes?user=${currentUser}`); dbQuizzes = await qRes.json(); }
+            else { dbQuizzes.push({ id: 'mcq-' + Date.now(), q, opts, ans }); }
+            document.getElementById('new-mcq-q').value = ''; document.getElementById('new-mcq-opt0').value = ''; document.getElementById('new-mcq-opt1').value = ''; document.getElementById('new-mcq-opt2').value = ''; document.getElementById('new-mcq-opt3').value = ''; document.getElementById('new-mcq-ans').value = '0';
+            renderMcqList();
+        };
+        window.deleteMcqQuestionDB = async function(id) {
+            if(isServerOnline) { await fetch(`${PYTHON_API}/quizzes?id=${id}`, { method: 'DELETE' }); const qRes = await fetch(`${PYTHON_API}/quizzes?user=${currentUser}`); dbQuizzes = await qRes.json(); }
+            else { dbQuizzes = dbQuizzes.filter(m => m.id !== id); }
+            renderMcqList();
+        };
+        window.renderMcqList = function() {
+            const list = document.getElementById('mcq-list-admin'); list.innerHTML = '';
+            if(dbQuizzes.length === 0) { list.innerHTML = '<div class="text-center font-bold text-slate-400 py-4">No Quizzes added.</div>'; return; }
+            dbQuizzes.forEach(item => {
+                const el = document.createElement('div'); el.className = "duo-card p-3 sm:p-4 bg-white flex justify-between items-center gap-4";
+                el.innerHTML = `<div class="flex-1 overflow-hidden"><div class="font-black text-duo-dark text-sm sm:text-base truncate">Q: ${item.q}</div><div class="font-bold text-slate-500 text-xs sm:text-sm truncate">Ans: ${item.opts[item.ans]}</div></div><button onclick="deleteMcqQuestionDB('${item.id}')" class="w-8 h-8 rounded-xl bg-duo-red/10 text-duo-red hover:bg-duo-red hover:text-white transition-colors flex items-center justify-center shrink-0"><i class="fas fa-trash text-sm"></i></button>`;
+                list.appendChild(el);
+            });
+        };
+
+        // --- FLASHCARDS ---
+        window.toggleFlashcardMode = function(mode) {
+            const btnPlay = document.getElementById('btn-fc-play'); const btnCreate = document.getElementById('btn-fc-create');
+            const viewPlay = document.getElementById('fc-play-view'); const viewCreate = document.getElementById('fc-create-view');
+            const activeClass = 'bg-white shadow-sm text-duo-dark'.split(' '); const inactiveClass = 'text-slate-500 hover:text-duo-dark'.split(' ');
+            if(mode === 'play') {
+                btnPlay.classList.add(...activeClass); btnPlay.classList.remove(...inactiveClass); btnCreate.classList.remove(...activeClass); btnCreate.classList.add(...inactiveClass);
+                viewPlay.classList.remove('hidden'); viewPlay.classList.add('flex'); viewCreate.classList.remove('flex'); viewCreate.classList.add('hidden');
+                updateFlashcardUI();
+            } else {
+                btnCreate.classList.add(...activeClass); btnCreate.classList.remove(...inactiveClass); btnPlay.classList.remove(...activeClass); btnPlay.classList.add(...inactiveClass);
+                viewCreate.classList.remove('hidden'); viewCreate.classList.add('flex'); viewPlay.classList.remove('flex'); viewPlay.classList.add('hidden');
+                renderFlashcardList();
+            }
+        };
+        window.updateFlashcardUI = function() {
+            const qEl = document.getElementById('fc-question'); const aEl = document.getElementById('fc-answer'); const counter = document.getElementById('fc-counter');
+            isFlipped = false; document.getElementById('flashcard-inner').classList.remove('rotate-y-180');
+            if(dbFlashcards.length === 0) { qEl.innerText = "No cards! Go to Create Mode."; aEl.innerText = "Add cards first."; counter.innerText = "0/0"; return; }
+            if(currentCard >= dbFlashcards.length) currentCard = 0;
+            qEl.innerText = dbFlashcards[currentCard].q; aEl.innerText = dbFlashcards[currentCard].a; counter.innerText = `${currentCard + 1}/${dbFlashcards.length}`;
+        };
+        window.flipCard = function() {
+            if(dbFlashcards.length===0) return; const inner = document.getElementById('flashcard-inner'); isFlipped = !isFlipped;
+            if (isFlipped) inner.classList.add('rotate-y-180'); else inner.classList.remove('rotate-y-180');
+        };
+        window.nextCard = function() { if(dbFlashcards.length===0) return; currentCard = (currentCard + 1) % dbFlashcards.length; document.getElementById('flashcard-inner').classList.remove('rotate-y-180'); setTimeout(window.updateFlashcardUI, 250); };
+        window.prevCard = function() { if(dbFlashcards.length===0) return; currentCard = (currentCard - 1 + dbFlashcards.length) % dbFlashcards.length; document.getElementById('flashcard-inner').classList.remove('rotate-y-180'); setTimeout(window.updateFlashcardUI, 250); };
+        window.addFlashcardDB = async function() {
+            const q = document.getElementById('new-fc-q').value.trim(); const a = document.getElementById('new-fc-a').value.trim(); if(!q || !a) return;
+            if(isServerOnline) { await fetch(`${PYTHON_API}/flashcards`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ username: currentUser, q: q, a: a }) }); const res = await fetch(`${PYTHON_API}/flashcards?user=${currentUser}`); dbFlashcards = await res.json(); }
+            else { dbFlashcards.push({ id: 'fc-' + Date.now(), q, a }); }
+            document.getElementById('new-fc-q').value = ''; document.getElementById('new-fc-a').value = ''; renderFlashcardList(); updateFlashcardUI();
+        };
+        window.deleteFlashcardDB = async function(id) {
+            if(isServerOnline) { await fetch(`${PYTHON_API}/flashcards?id=${id}`, { method: 'DELETE' }); const res = await fetch(`${PYTHON_API}/flashcards?user=${currentUser}`); dbFlashcards = await res.json(); }
+            else { dbFlashcards = dbFlashcards.filter(f => f.id !== id); }
+            if(currentCard >= dbFlashcards.length) currentCard = Math.max(0, dbFlashcards.length-1); renderFlashcardList(); updateFlashcardUI();
+        };
+        window.renderFlashcardList = function() {
+            const list = document.getElementById('fc-list'); list.innerHTML = '';
+            if(dbFlashcards.length === 0) { list.innerHTML = `<div class="text-center font-bold text-slate-400 py-4">Deck is empty.</div>`; return; }
+            dbFlashcards.forEach((fc) => {
+                const el = document.createElement('div'); el.className = "duo-card p-3 sm:p-4 bg-white flex justify-between items-center gap-4";
+                el.innerHTML = `<div class="flex-1 overflow-hidden"><div class="font-black text-duo-dark text-sm sm:text-base truncate">Q: ${fc.q}</div><div class="font-bold text-slate-500 text-xs sm:text-sm truncate">A: ${fc.a}</div></div><button onclick="deleteFlashcardDB('${fc.id}')" class="w-8 h-8 rounded-xl bg-duo-red/10 text-duo-red hover:bg-duo-red hover:text-white transition-colors flex items-center justify-center shrink-0"><i class="fas fa-trash text-sm"></i></button>`;
+                list.appendChild(el);
+            });
+        };
+
+        // --- FORMULAS ---
+        window.addFormula = async function() {
+            const name = document.getElementById('new-formula-name').value.trim(); const expr = document.getElementById('new-formula-expr').value.trim();
+            if(!name || !expr) { return console.log('Please add both a formula name and expression.'); }
+            if(isServerOnline) { await fetch(`${PYTHON_API}/formulas`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ username: currentUser, name, expr }) }); const res = await fetch(`${PYTHON_API}/formulas?user=${currentUser}`); dbFormulas = await res.json(); }
+            else { dbFormulas.push({ id: 'formula-' + Date.now(), name, expr }); }
+            document.getElementById('new-formula-name').value = ''; document.getElementById('new-formula-expr').value = ''; renderFormulaList();
+        };
+        window.deleteFormula = async function(id) {
+            if(isServerOnline) { await fetch(`${PYTHON_API}/formulas?id=${id}`, { method: 'DELETE' }); const res = await fetch(`${PYTHON_API}/formulas?user=${currentUser}`); dbFormulas = await res.json(); }
+            else { dbFormulas = dbFormulas.filter(f => f.id !== id); } renderFormulaList();
+        };
+        window.renderFormulaList = function() {
+            const list = document.getElementById('formula-list'); list.innerHTML = '';
+            if(dbFormulas.length === 0) { list.innerHTML = `<div class="text-center font-bold text-slate-400 py-4">No formulas saved yet.</div>`; return; }
+            dbFormulas.forEach((formula) => {
+                const el = document.createElement('div'); el.className = "duo-card p-4 sm:p-5 bg-white flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3";
+                el.innerHTML = `<div class="flex-1 min-w-0"><div class="font-black text-duo-dark text-base sm:text-lg truncate">${formula.name}</div><div class="font-bold text-slate-500 text-sm sm:text-base truncate">${formula.expr}</div></div><div class="flex gap-2 items-center"><button onclick="navigator.clipboard.writeText('${formula.expr.replace(/'/g, "\\'")}').then(()=>console.log('Formula copied!'))" class="duo-btn duo-btn-white px-3 py-2 text-xs sm:text-sm">Copy</button><button onclick="deleteFormula('${formula.id}')" class="duo-btn duo-btn-red px-3 py-2 text-xs sm:text-sm">Delete</button></div>`;
+                list.appendChild(el);
+            });
+        };
+
+        // --- TIMETABLE LOGIC ---
+        window.addTimetableRow = function() {
+            const tbody = document.getElementById('timetable-body');
+            const tr = document.createElement('tr');
+            tr.innerHTML = `
+                <td class="p-0 border-r-[3px] border-b-[3px] border-slate-700 bg-slate-100"><input type="text" placeholder="00:00" class="w-full p-2 sm:p-4 bg-transparent border-none outline-none text-center font-black text-duo-blue text-xs sm:text-base"></td>
+                <td class="p-0 border-r-[3px] border-b-[3px] border-slate-700"><input type="text" placeholder="-" class="w-full p-2 sm:p-4 bg-transparent border-none outline-none text-center"></td>
+                <td class="p-0 border-r-[3px] border-b-[3px] border-slate-700"><input type="text" placeholder="-" class="w-full p-2 sm:p-4 bg-transparent border-none outline-none text-center"></td>
+                <td class="p-0 border-r-[3px] border-b-[3px] border-slate-700"><input type="text" placeholder="-" class="w-full p-2 sm:p-4 bg-transparent border-none outline-none text-center"></td>
+                <td class="p-0 border-r-[3px] border-b-[3px] border-slate-700"><input type="text" placeholder="-" class="w-full p-2 sm:p-4 bg-transparent border-none outline-none text-center"></td>
+                <td class="p-0 border-b-[3px] border-slate-700"><input type="text" placeholder="-" class="w-full p-2 sm:p-4 bg-transparent border-none outline-none text-center"></td>
+            `;
+            tbody.appendChild(tr);
+        };
+
+        // --- INVOICE LOGIC ---
+        window.addReceiptItem = function() {
+            const tbody = document.getElementById('receipt-items-body');
+            const tr = document.createElement('tr');
+            tr.innerHTML = `
+                <td class="p-0 border-r-[3px] border-duo-dark"><input type="text" placeholder="Description" class="w-full p-2 sm:p-4 bg-transparent border-none outline-none font-bold"></td>
+                <td class="p-0 border-r-[3px] border-duo-dark"><input type="number" value="1" min="1" oninput="window.calcReceiptTotal(this)" class="w-full p-2 sm:p-4 bg-transparent border-none outline-none text-center qty-input"></td>
+                <td class="p-0 border-r-[3px] border-duo-dark"><input type="number" value="0.00" step="0.01" min="0" oninput="window.calcReceiptTotal(this)" class="w-full p-2 sm:p-4 bg-transparent border-none outline-none text-right price-input"></td>
+                <td class="p-2 sm:p-4 text-right font-black text-duo-blue row-total">$0.00</td>
+            `;
+            tbody.appendChild(tr);
+        };
+        
+        window.calcReceiptTotal = function(element) {
+            const row = element.closest('tr');
+            const qty = parseFloat(row.querySelector('.qty-input').value) || 0;
+            const price = parseFloat(row.querySelector('.price-input').value) || 0;
+            const total = qty * price;
+            row.querySelector('.row-total').innerText = '$' + total.toFixed(2);
+            
+            let grandTotal = 0;
+            document.querySelectorAll('.row-total').forEach(el => {
+                grandTotal += parseFloat(el.innerText.replace('$', '')) || 0;
+            });
+            document.getElementById('receipt-grand-total').innerText = '$' + grandTotal.toFixed(2);
+        };
+
+        // --- CITATIONS LOGIC ---
+        let currentCiteFormat = 'apa';
+        window.setCitationFormat = function(format) {
+            currentCiteFormat = format;
+            ['apa', 'mla', 'chicago'].forEach(f => {
+                const btn = document.getElementById('btn-cite-' + f);
+                if (btn) {
+                    if(f === format) {
+                        btn.classList.add('bg-white', 'shadow-sm', 'text-duo-dark');
+                        btn.classList.remove('text-slate-500');
+                    } else {
+                        btn.classList.remove('bg-white', 'shadow-sm', 'text-duo-dark');
+                        btn.classList.add('text-slate-500');
+                    }
+                }
+            });
+        };
+
+        window.generateCitation = function() {
+            const author = document.getElementById('cite-author').value.trim();
+            const title = document.getElementById('cite-title').value.trim();
+            const publisher = document.getElementById('cite-publisher').value.trim();
+            const year = document.getElementById('cite-year').value.trim();
+            const url = document.getElementById('cite-url').value.trim();
+            
+            let result = "";
+            if (!author || !title || !year) {
+                result = "Please fill in at least the Author, Title, and Year.";
+            } else {
+                if (currentCiteFormat === 'apa') {
+                    result = `${author} (${year}). <i>${title}</i>. ${publisher}. ${url}`;
+                } else if (currentCiteFormat === 'mla') {
+                    result = `${author}. <i>${title}</i>. ${publisher}, ${year}. ${url}`;
+                } else if (currentCiteFormat === 'chicago') {
+                    result = `${author}. <i>${title}</i>. ${publisher}, ${year}. ${url}`;
+                }
+            }
+            document.getElementById('cite-output').innerHTML = result;
+        };
+
+        window.copyCitation = function() {
+            const text = document.getElementById('cite-output').innerText;
+            if(text && text !== "Your citation will appear here..." && !text.startsWith("Please fill")) {
+                navigator.clipboard.writeText(text).then(() => console.log('Citation copied!'));
+            }
+        };
+
+        // --- POETRY ANALYZER LOGIC ---
+        window.highlightPoetry = function(type) {
+            const input = document.getElementById('poetry-input').value.trim();
+            const display = document.getElementById('poetry-display');
+            if (!input) { display.innerHTML = "Type a sentence first!"; return; }
+            let result = '';
+            const lowerInput = input.toLowerCase();
+
+            if (type === 'vowels') {
+                const vowels = lowerInput.match(/[aeiou]/g);
+                if (vowels) {
+                    const counts = {};
+                    let maxChar = '', maxCount = 0;
+                    for (const v of vowels) {
+                        counts[v] = (counts[v] || 0) + 1;
+                        if (counts[v] > maxCount) { maxCount = counts[v]; maxChar = v; }
+                    }
+                    if (maxCount > 1) {
+                        const regex = new RegExp(maxChar, 'gi');
+                        result = input.replace(regex, '<span class="bg-duo-purple/30 text-duo-purple px-1 rounded font-black">$&</span>');
+                    } else {
+                        result = input + '<br><span class="text-sm text-slate-500 block mt-4">No strong assonance detected.</span>';
+                    }
+                } else {
+                    result = input + '<br><span class="text-sm text-slate-500 block mt-4">No vowels found.</span>';
+                }
+            } else if (type === 'consonants') {
+                const consonants = lowerInput.match(/[bcdfghjklmnpqrstvwxyz]/g);
+                if (consonants) {
+                    const counts = {};
+                    let maxChar = '', maxCount = 0;
+                    for (const c of consonants) {
+                        counts[c] = (counts[c] || 0) + 1;
+                        if (counts[c] > maxCount) { maxCount = counts[c]; maxChar = c; }
+                    }
+                    if (maxCount > 1) {
+                        const regex = new RegExp(maxChar, 'gi');
+                        result = input.replace(regex, '<span class="bg-duo-green/30 text-duo-green px-1 rounded font-black">$&</span>');
+                    } else {
+                        result = input + '<br><span class="text-sm text-slate-500 block mt-4">No strong consonance detected.</span>';
+                    }
+                } else {
+                    result = input + '<br><span class="text-sm text-slate-500 block mt-4">No consonants found.</span>';
+                }
+            } else if (type === 'alliteration') {
+                const words = input.split(/\s+/);
+                const startChars = {};
+                words.forEach(w => {
+                    const cleanW = w.replace(/[^a-zA-Z]/g, '');
+                    if (cleanW.length > 0) {
+                        const first = cleanW[0].toLowerCase();
+                        startChars[first] = (startChars[first] || 0) + 1;
+                    }
+                });
+
+                const alliterativeChars = Object.keys(startChars).filter(k => startChars[k] > 1);
+
+                if (alliterativeChars.length > 0) {
+                    result = input.replace(/\b([a-zA-Z])/g, (match, p1) => {
+                        if (alliterativeChars.includes(p1.toLowerCase())) {
+                            return `<span class="bg-duo-blue/30 text-duo-blue px-1 rounded font-black">${p1}</span>`;
+                        }
+                        return p1;
+                    });
+                } else {
+                    result = input + '<br><span class="text-sm text-slate-500 block mt-4">No alliteration detected.</span>';
+                }
+            }
+
+            display.innerHTML = result;
+        };
+
+        // --- CONVERTER LOGIC ---
+        let currentConvCat = 'length';
+        const converterData = {
+            length: {
+                units: { m: 'Meters', km: 'Kilometers', cm: 'Centimeters', mi: 'Miles', ft: 'Feet', in: 'Inches' },
+                rates: { m: 1, km: 1000, cm: 0.01, mi: 1609.34, ft: 0.3048, in: 0.0254 }
+            },
+            mass: {
+                units: { kg: 'Kilograms', g: 'Grams', mg: 'Milligrams', lb: 'Pounds', oz: 'Ounces' },
+                rates: { kg: 1, g: 0.001, mg: 0.000001, lb: 0.453592, oz: 0.0283495 }
+            },
+            temp: {
+                units: { c: 'Celsius', f: 'Fahrenheit', k: 'Kelvin' }
+            }
+        };
+
+        window.initConverterUnits = function() {
+            window.setConverterCategory(currentConvCat);
+        };
+
+        window.setConverterCategory = function(cat) {
+            currentConvCat = cat;
+            ['length', 'mass', 'temp'].forEach(c => {
+                const btn = document.getElementById('btn-conv-' + c);
+                if (btn) {
+                    if(c === cat) {
+                        btn.classList.add('bg-white', 'shadow-sm', 'text-duo-dark');
+                        btn.classList.remove('text-slate-500');
+                    } else {
+                        btn.classList.remove('bg-white', 'shadow-sm', 'text-duo-dark');
+                        btn.classList.add('text-slate-500');
+                    }
+                }
+            });
+            
+            const fromSelect = document.getElementById('conv-from-unit');
+            const toSelect = document.getElementById('conv-to-unit');
+            if (!fromSelect || !toSelect) return;
+            
+            fromSelect.innerHTML = '';
+            toSelect.innerHTML = '';
+            
+            Object.entries(converterData[cat].units).forEach(([val, label]) => {
+                fromSelect.innerHTML += `<option value="${val}">${label}</option>`;
+                toSelect.innerHTML += `<option value="${val}">${label}</option>`;
+            });
+            
+            if(cat === 'temp') {
+                fromSelect.value = 'c'; toSelect.value = 'f';
+            } else if(cat === 'length') {
+                fromSelect.value = 'm'; toSelect.value = 'ft';
+            } else {
+                fromSelect.value = 'kg'; toSelect.value = 'lb';
+            }
+            
+            window.runConversion();
+        };
+
+        window.runConversion = function() {
+            const val = parseFloat(document.getElementById('conv-input').value) || 0;
+            const fromUnit = document.getElementById('conv-from-unit').value;
+            const toUnit = document.getElementById('conv-to-unit').value;
+            const outEl = document.getElementById('conv-output');
+            
+            if (!fromUnit || !toUnit) return;
+
+            if (currentConvCat === 'temp') {
+                let celsius = 0;
+                if (fromUnit === 'c') celsius = val;
+                else if (fromUnit === 'f') celsius = (val - 32) * 5/9;
+                else if (fromUnit === 'k') celsius = val - 273.15;
+
+                let result = 0;
+                if (toUnit === 'c') result = celsius;
+                else if (toUnit === 'f') result = (celsius * 9/5) + 32;
+                else if (toUnit === 'k') result = celsius + 273.15;
+                
+                outEl.innerText = result.toFixed(2);
+            } else {
+                const rates = converterData[currentConvCat].rates;
+                const baseValue = val * rates[fromUnit];
+                const result = baseValue / rates[toUnit];
+                outEl.innerText = parseFloat(result.toPrecision(10)).toString();
+            }
+        };
+
+        // --- GPA CALCULATOR LOGIC ---
+        let gpaCourses = [];
+        window.addGpaCourse = function() {
+            const name = document.getElementById('gpa-course-name').value.trim() || 'Course ' + (gpaCourses.length + 1);
+            const grade = parseFloat(document.getElementById('gpa-course-grade').value);
+            const credits = parseFloat(document.getElementById('gpa-course-credits').value) || 3;
+            
+            gpaCourses.push({ id: Date.now(), name, grade, credits });
+            
+            document.getElementById('gpa-course-name').value = '';
+            window.renderGpaList();
+        };
+
+        window.removeGpaCourse = function(id) {
+            gpaCourses = gpaCourses.filter(c => c.id !== id);
+            window.renderGpaList();
+        };
+
+        window.renderGpaList = function() {
+            const list = document.getElementById('gpa-course-list');
+            list.innerHTML = '';
+            let totalPoints = 0;
+            let totalCredits = 0;
+            
+            gpaCourses.forEach(c => {
+                totalPoints += (c.grade * c.credits);
+                totalCredits += c.credits;
+                
+                const el = document.createElement('div');
+                el.className = 'flex justify-between items-center bg-slate-50 border-[2px] border-slate-200 rounded-lg p-3';
+                
+                let letter = 'F';
+                if(c.grade >= 4) letter = 'A';
+                else if(c.grade >= 3.7) letter = 'A-';
+                else if(c.grade >= 3.3) letter = 'B+';
+                else if(c.grade >= 3) letter = 'B';
+                else if(c.grade >= 2.7) letter = 'B-';
+                else if(c.grade >= 2.3) letter = 'C+';
+                else if(c.grade >= 2) letter = 'C';
+                else if(c.grade >= 1) letter = 'D';
+
+                el.innerHTML = `
+                    <div class="font-bold text-duo-dark text-sm sm:text-base">${c.name}</div>
+                    <div class="flex items-center gap-4">
+                        <div class="text-sm font-bold text-slate-500">${letter} (${c.credits} cr)</div>
+                        <button onclick="window.removeGpaCourse(${c.id})" class="text-duo-red hover:scale-110 transition-transform"><i class="fas fa-times"></i></button>
+                    </div>
+                `;
+                list.appendChild(el);
+            });
+            
+            const gpa = totalCredits > 0 ? (totalPoints / totalCredits).toFixed(2) : "0.00";
+            document.getElementById('gpa-result').innerText = gpa;
+        };
+
+        // --- PERIODIC TABLE (All 118 Elements) ---
+        const periodicElements = [
+            {s:'H',n:'Hydrogen',num:1,m:1.008,cat:'other'},{s:'He',n:'Helium',num:2,m:4.003,cat:'noble'},
+            {s:'Li',n:'Lithium',num:3,m:6.941,cat:'alkali'},{s:'Be',n:'Beryllium',num:4,m:9.012,cat:'alkaline'},
+            {s:'B',n:'Boron',num:5,m:10.811,cat:'metalloid'},{s:'C',n:'Carbon',num:6,m:12.011,cat:'other'},
+            {s:'N',n:'Nitrogen',num:7,m:14.007,cat:'other'},{s:'O',n:'Oxygen',num:8,m:15.999,cat:'other'},
+            {s:'F',n:'Fluorine',num:9,m:18.998,cat:'halogen'},{s:'Ne',n:'Neon',num:10,m:20.180,cat:'noble'},
+            {s:'Na',n:'Sodium',num:11,m:22.990,cat:'alkali'},{s:'Mg',n:'Magnesium',num:12,m:24.305,cat:'alkaline'},
+            {s:'Al',n:'Aluminium',num:13,m:26.982,cat:'transition'},{s:'Si',n:'Silicon',num:14,m:28.086,cat:'metalloid'},
+            {s:'P',n:'Phosphorus',num:15,m:30.974,cat:'other'},{s:'S',n:'Sulfur',num:16,m:32.065,cat:'other'},
+            {s:'Cl',n:'Chlorine',num:17,m:35.453,cat:'halogen'},{s:'Ar',n:'Argon',num:18,m:39.948,cat:'noble'},
+            {s:'K',n:'Potassium',num:19,m:39.098,cat:'alkali'},{s:'Ca',n:'Calcium',num:20,m:40.078,cat:'alkaline'},
+            {s:'Sc',n:'Scandium',num:21,m:44.956,cat:'transition'},{s:'Ti',n:'Titanium',num:22,m:47.867,cat:'transition'},
+            {s:'V',n:'Vanadium',num:23,m:50.942,cat:'transition'},{s:'Cr',n:'Chromium',num:24,m:51.996,cat:'transition'},
+            {s:'Mn',n:'Manganese',num:25,m:54.938,cat:'transition'},{s:'Fe',n:'Iron',num:26,m:55.845,cat:'transition'},
+            {s:'Co',n:'Cobalt',num:27,m:58.933,cat:'transition'},{s:'Ni',n:'Nickel',num:28,m:58.693,cat:'transition'},
+            {s:'Cu',n:'Copper',num:29,m:63.546,cat:'transition'},{s:'Zn',n:'Zinc',num:30,m:65.380,cat:'transition'},
+            {s:'Ga',n:'Gallium',num:31,m:69.723,cat:'transition'},{s:'Ge',n:'Germanium',num:32,m:72.640,cat:'metalloid'},
+            {s:'As',n:'Arsenic',num:33,m:74.922,cat:'metalloid'},{s:'Se',n:'Selenium',num:34,m:78.960,cat:'other'},
+            {s:'Br',n:'Bromine',num:35,m:79.904,cat:'halogen'},{s:'Kr',n:'Krypton',num:36,m:83.798,cat:'noble'},
+            {s:'Rb',n:'Rubidium',num:37,m:85.468,cat:'alkali'},{s:'Sr',n:'Strontium',num:38,m:87.62,cat:'alkaline'},
+            {s:'Y',n:'Yttrium',num:39,m:88.906,cat:'transition'},{s:'Zr',n:'Zirconium',num:40,m:91.224,cat:'transition'},
+            {s:'Nb',n:'Niobium',num:41,m:92.906,cat:'transition'},{s:'Mo',n:'Molybdenum',num:42,m:95.95,cat:'transition'},
+            {s:'Tc',n:'Technetium',num:43,m:98,cat:'transition'},{s:'Ru',n:'Ruthenium',num:44,m:101.07,cat:'transition'},
+            {s:'Rh',n:'Rhodium',num:45,m:102.91,cat:'transition'},{s:'Pd',n:'Palladium',num:46,m:106.42,cat:'transition'},
+            {s:'Ag',n:'Silver',num:47,m:107.87,cat:'transition'},{s:'Cd',n:'Cadmium',num:48,m:112.41,cat:'transition'},
+            {s:'In',n:'Indium',num:49,m:114.82,cat:'transition'},{s:'Sn',n:'Tin',num:50,m:118.71,cat:'transition'},
+            {s:'Sb',n:'Antimony',num:51,m:121.76,cat:'metalloid'},{s:'Te',n:'Tellurium',num:52,m:127.60,cat:'metalloid'},
+            {s:'I',n:'Iodine',num:53,m:126.90,cat:'halogen'},{s:'Xe',n:'Xenon',num:54,m:131.29,cat:'noble'},
+            {s:'Cs',n:'Caesium',num:55,m:132.91,cat:'alkali'},{s:'Ba',n:'Barium',num:56,m:137.33,cat:'alkaline'},
+            {s:'La',n:'Lanthanum',num:57,m:138.91,cat:'lanthanide'},{s:'Ce',n:'Cerium',num:58,m:140.12,cat:'lanthanide'},
+            {s:'Pr',n:'Praseodymium',num:59,m:140.91,cat:'lanthanide'},{s:'Nd',n:'Neodymium',num:60,m:144.24,cat:'lanthanide'},
+            {s:'Pm',n:'Promethium',num:61,m:145,cat:'lanthanide'},{s:'Sm',n:'Samarium',num:62,m:150.36,cat:'lanthanide'},
+            {s:'Eu',n:'Europium',num:63,m:151.96,cat:'lanthanide'},{s:'Gd',n:'Gadolinium',num:64,m:157.25,cat:'lanthanide'},
+            {s:'Tb',n:'Terbium',num:65,m:158.93,cat:'lanthanide'},{s:'Dy',n:'Dysprosium',num:66,m:162.50,cat:'lanthanide'},
+            {s:'Ho',n:'Holmium',num:67,m:164.93,cat:'lanthanide'},{s:'Er',n:'Erbium',num:68,m:167.26,cat:'lanthanide'},
+            {s:'Tm',n:'Thulium',num:69,m:168.93,cat:'lanthanide'},{s:'Yb',n:'Ytterbium',num:70,m:173.04,cat:'lanthanide'},
+            {s:'Lu',n:'Lutetium',num:71,m:174.97,cat:'lanthanide'},{s:'Hf',n:'Hafnium',num:72,m:178.49,cat:'transition'},
+            {s:'Ta',n:'Tantalum',num:73,m:180.95,cat:'transition'},{s:'W',n:'Tungsten',num:74,m:183.84,cat:'transition'},
+            {s:'Re',n:'Rhenium',num:75,m:186.21,cat:'transition'},{s:'Os',n:'Osmium',num:76,m:190.23,cat:'transition'},
+            {s:'Ir',n:'Iridium',num:77,m:192.22,cat:'transition'},{s:'Pt',n:'Platinum',num:78,m:195.08,cat:'transition'},
+            {s:'Au',n:'Gold',num:79,m:196.97,cat:'transition'},{s:'Hg',n:'Mercury',num:80,m:200.59,cat:'transition'},
+            {s:'Tl',n:'Thallium',num:81,m:204.38,cat:'transition'},{s:'Pb',n:'Lead',num:82,m:207.2,cat:'transition'},
+            {s:'Bi',n:'Bismuth',num:83,m:208.98,cat:'transition'},{s:'Po',n:'Polonium',num:84,m:209,cat:'metalloid'},
+            {s:'At',n:'Astatine',num:85,m:210,cat:'halogen'},{s:'Rn',n:'Radon',num:86,m:222,cat:'noble'},
+            {s:'Fr',n:'Francium',num:87,m:223,cat:'alkali'},{s:'Ra',n:'Radium',num:88,m:226,cat:'alkaline'},
+            {s:'Ac',n:'Actinium',num:89,m:227,cat:'actinide'},{s:'Th',n:'Thorium',num:90,m:232.04,cat:'actinide'},
+            {s:'Pa',n:'Protactinium',num:91,m:231.04,cat:'actinide'},{s:'U',n:'Uranium',num:92,m:238.03,cat:'actinide'},
+            {s:'Np',n:'Neptunium',num:93,m:237,cat:'actinide'},{s:'Pu',n:'Plutonium',num:94,m:244,cat:'actinide'},
+            {s:'Am',n:'Americium',num:95,m:243,cat:'actinide'},{s:'Cm',n:'Curium',num:96,m:247,cat:'actinide'},
+            {s:'Bk',n:'Berkelium',num:97,m:247,cat:'actinide'},{s:'Cf',n:'Californium',num:98,m:251,cat:'actinide'},
+            {s:'Es',n:'Einsteinium',num:99,m:252,cat:'actinide'},{s:'Fm',n:'Fermium',num:100,m:257,cat:'actinide'},
+            {s:'Md',n:'Mendelevium',num:101,m:258,cat:'actinide'},{s:'No',n:'Nobelium',num:102,m:259,cat:'actinide'},
+            {s:'Lr',n:'Lawrencium',num:103,m:262,cat:'actinide'},{s:'Rf',n:'Rutherfordium',num:104,m:267,cat:'transition'},
+            {s:'Db',n:'Dubnium',num:105,m:268,cat:'transition'},{s:'Sg',n:'Seaborgium',num:106,m:269,cat:'transition'},
+            {s:'Bh',n:'Bohrium',num:107,m:270,cat:'transition'},{s:'Hs',n:'Hassium',num:108,m:277,cat:'transition'},
+            {s:'Mt',n:'Meitnerium',num:109,m:278,cat:'transition'},{s:'Ds',n:'Darmstadtium',num:110,m:281,cat:'transition'},
+            {s:'Rg',n:'Roentgenium',num:111,m:282,cat:'transition'},{s:'Cn',n:'Copernicium',num:112,m:285,cat:'transition'},
+            {s:'Nh',n:'Nihonium',num:113,m:286,cat:'transition'},{s:'Fl',n:'Flerovium',num:114,m:289,cat:'transition'},
+            {s:'Mc',n:'Moscovium',num:115,m:290,cat:'transition'},{s:'Lv',n:'Livermorium',num:116,m:293,cat:'transition'},
+            {s:'Ts',n:'Tennessine',num:117,m:294,cat:'halogen'},{s:'Og',n:'Oganesson',num:118,m:294,cat:'noble'}
+        ];
+
+        window.initPeriodicTable = function() {
+            const grid = document.getElementById('periodic-grid'); 
+            if(!grid || grid.children.length > 0) return;
+            
+            for(let i=1; i<=118; i++) {
+                const el = periodicElements.find(e => e.num === i);
+                if(el) {
+                    const box = document.createElement('div');
+                    box.className = `element-box element-${el.cat}`;
+                    if(i===1) box.style.gridColumn = '1';
+                    if(i===2) box.style.gridColumn = '18';
+                    if(i===5) box.style.gridColumn = '13';
+                    if(i===13) box.style.gridColumn = '13';
+                    if(i>=57 && i<=71) { box.style.gridRow = '8'; box.style.gridColumn = (i-53).toString(); } 
+                    if(i>=89 && i<=103) { box.style.gridRow = '9'; box.style.gridColumn = (i-85).toString(); } 
+                    
+                    box.innerHTML = `<span class="text-[8px] sm:text-[10px] absolute top-0.5 sm:top-1 left-1 sm:left-1.5">${el.num}</span><span class="text-sm sm:text-lg">${el.s}</span>`;
+                    box.onclick = () => showElementDetail(el);
+                    grid.appendChild(box);
+                }
+            }
+        };
+
+        window.showElementDetail = function(el) {
+            const detail = document.getElementById('element-detail');
+            const sym = document.getElementById('detail-symbol');
+            const name = document.getElementById('detail-name');
+            const info = document.getElementById('detail-info');
+            detail.classList.remove('hidden');
+            sym.innerText = el.s;
+            sym.className = `w-16 h-16 sm:w-20 sm:h-20 rounded-2xl border-[3px] border-duo-dark flex items-center justify-center text-3xl sm:text-4xl font-black text-white element-${el.cat}`;
+            name.innerText = el.n;
+            info.innerText = `Atomic Number: ${el.num} | Atomic Mass: ${el.m} u | Category: ${el.cat.toUpperCase()}`;
+        };
+
+        // --- CALC & TIMERS ---
+        let calcExpression = '';
+        window.calcAppend = function(val) {
+            calcExpression += val;
+            document.getElementById('calc-display').innerText = calcExpression || '0';
+        };
+        window.calcClear = function() {
+            calcExpression = '';
+            document.getElementById('calc-display').innerText = '0';
+            document.getElementById('calc-history').innerText = '';
+        };
+        window.calcEquals = function() {
+            try {
+                const result = eval(calcExpression);
+                document.getElementById('calc-history').innerText = calcExpression + ' =';
+                calcExpression = String(result);
+                document.getElementById('calc-display').innerText = calcExpression;
+            } catch {
+                document.getElementById('calc-display').innerText = 'Error';
+                calcExpression = '';
+            }
+        };
+
+        // --- POMODORO TIMER ---
+        let pomoInterval = null;
+        let pomoSeconds = 25 * 60;
+        let pomoRunning = false;
+        let pomoMode = 'focus'; 
+
+        window.updatePomoDisplay = function() {
+            const m = Math.floor(pomoSeconds / 60).toString().padStart(2, '0');
+            const s = (pomoSeconds % 60).toString().padStart(2, '0');
+            const display = document.getElementById('pomo-display');
+            if (display) display.innerText = `${m}:${s}`;
+        };
+
+        window.startPomodoro = function() {
+            if(pomoRunning) return;
+            if(pomoSeconds <= 0) return;
+            pomoRunning = true;
+            pomoInterval = setInterval(() => {
+                pomoSeconds--;
+                window.updatePomoDisplay();
+                if(pomoSeconds <= 0) {
+                    clearInterval(pomoInterval);
+                    pomoRunning = false;
+                    console.log("Pomodoro cycle finished!");
+                    
+                    if(pomoMode === 'focus') {
+                        window.setPomodoroMode('break');
+                    } else {
+                        window.setPomodoroMode('focus');
+                    }
+                }
+            }, 1000);
+        };
+
+        window.pausePomodoro = function() {
+            clearInterval(pomoInterval);
+            pomoRunning = false;
+        };
+
+        window.resetPomodoro = function() {
+            clearInterval(pomoInterval);
+            pomoRunning = false;
+            pomoSeconds = pomoMode === 'focus' ? 25 * 60 : 5 * 60;
+            window.updatePomoDisplay();
+        };
+
+        window.setPomodoroMode = function(mode) {
+            clearInterval(pomoInterval);
+            pomoRunning = false;
+            pomoMode = mode;
+            
+            const modeText = document.getElementById('pomo-mode');
+            const descText = document.getElementById('pomo-desc');
+            
+            if (mode === 'focus') {
+                pomoSeconds = 25 * 60;
+                if(modeText) modeText.innerText = "Focus Time";
+                if(descText) descText.innerText = "Stay productive, stay awesome.";
+            } else {
+                pomoSeconds = 5 * 60;
+                if(modeText) modeText.innerText = "Break Time";
+                if(descText) descText.innerText = "Relax and recharge.";
+            }
+            window.updatePomoDisplay();
+        };
+
+        // --- STUDY TIMER ---
+        let studyTimerInterval = null; let studyTimerSeconds = 0; let studyTimerTotal = 0; let studyTimerRunning = false;
+        window.startStudyTimer = function() {
+            if(studyTimerRunning) return;
+            if(studyTimerSeconds === 0) {
+                const h = parseInt(document.getElementById('timer-h').value) || 0;
+                const m = parseInt(document.getElementById('timer-m').value) || 0;
+                const s = parseInt(document.getElementById('timer-s').value) || 0;
+                studyTimerTotal = studyTimerSeconds = h * 3600 + m * 60 + s;
+            }
+            if(studyTimerSeconds <= 0) return;
+            studyTimerRunning = true; document.getElementById('timer-start-btn').classList.add('opacity-50');
+            studyTimerInterval = setInterval(() => {
+                studyTimerSeconds--; window.updateTimerDisplay();
+                if(studyTimerSeconds <= 0) { clearInterval(studyTimerInterval); studyTimerRunning = false; document.getElementById('timer-start-btn').classList.remove('opacity-50'); console.log('Timer finished!'); }
+            }, 1000);
+        };
+        window.pauseStudyTimer = function() { clearInterval(studyTimerInterval); studyTimerRunning = false; document.getElementById('timer-start-btn').classList.remove('opacity-50'); };
+        window.resetStudyTimer = function() { clearInterval(studyTimerInterval); studyTimerRunning = false; studyTimerSeconds = 0; document.getElementById('timer-start-btn').classList.remove('opacity-50'); window.updateTimerDisplay(); };
+        window.updateTimerDisplay = function() {
+            const h = Math.floor(studyTimerSeconds / 3600).toString().padStart(2,'0'); const m = Math.floor((studyTimerSeconds % 3600) / 60).toString().padStart(2,'0'); const s = (studyTimerSeconds % 60).toString().padStart(2,'0');
+            document.getElementById('timer-display').innerText = `${h}:${m}:${s}`;
+        };
+
+        // --- GLOBAL UI / NAVIGATION ---
+        const addressBar = document.getElementById('address-bar'); const iframeContainer = document.getElementById('iframe-container'); const loadingBar = document.getElementById('loading-bar');
+        const screens = {
+            'home': document.getElementById('home-screen'), 'search': document.getElementById('search-screen'), 'word': document.getElementById('word-screen'),
+            'receipt': document.getElementById('receipt-screen'), 'timetable': document.getElementById('timetable-screen'), 'pomodoro': document.getElementById('pomodoro-screen'),
+            'flashcards': document.getElementById('flashcard-screen'), 'english': document.getElementById('english-screen'), 'quicklearn': document.getElementById('quicklearn-screen'),
+            'mcq': document.getElementById('mcq-screen'), 'converter': document.getElementById('converter-screen'), 'gpa': document.getElementById('gpa-screen'),
+            'formulas': document.getElementById('formulas-screen'), 'tasks': document.getElementById('tasks-screen'), 'citations': document.getElementById('citations-screen'),
+            'periodic': document.getElementById('periodic-screen'), 'calc': document.getElementById('calc-screen'), 'timer': document.getElementById('timer-screen')
+        };
+        const HOME_URL = 'clonmedic://home'; let tabs = []; let activeTabId = null;
+
+        function triggerLoadAnimation() { loadingBar.classList.remove('loading-active'); void loadingBar.offsetWidth; loadingBar.classList.add('loading-active'); }
+        function generateId() { return 'tab-' + Math.random().toString(36).substr(2, 9); }
+        window.createNewTab = function(url = HOME_URL) {
+            const tabTitle = url === HOME_URL ? 'New Tab' : getDomain(url);
+            const tab = { id: generateId(), url: url, title: tabTitle, history: [url], historyIndex: 0, iframe: null };
+            tabs.push(tab); window.switchTab(tab.id);
+        };
+
+        function getDomain(url) {
+            if (url.startsWith('clonmedic://search')) return 'Search Results'; if (url.startsWith('clonmedic://article')) return 'ClonBrow Reader';
+            if (url === 'clonmedic://pomodoro') return 'Pomodoro'; if (url === 'clonmedic://flashcards') return 'Flashcards';
+            if (url === 'clonmedic://word') return 'Notes'; if (url === 'clonmedic://receipt') return 'Invoices';
+            if (url === 'clonmedic://timetable') return 'Timetable'; if (url === 'clonmedic://english') return 'English Lit Lab';
+            if (url === 'clonmedic://quicklearn') return 'Quick Bites'; if (url === 'clonmedic://mcq') return 'Practice Quizzes';
+            if (url === 'clonmedic://converter') return 'Unit Converter'; if (url === 'clonmedic://gpa') return 'GPA Calculator';
+            if (url === 'clonmedic://formulas') return 'Formula Sheet'; if (url === 'clonmedic://tasks') return 'Tasks';
+            if (url === 'clonmedic://citations') return 'Citations'; if (url === 'clonmedic://periodic') return 'Periodic Table';
+            if (url === 'clonmedic://calc') return 'Calculator'; if (url === 'clonmedic://timer') return 'Study Timer';
+            if (url === 'medicof all.html') return 'Simulations'; if (url === 'brainboard.html') return 'BrainBoard';
+            if (url === 'arcade.html') return 'Arcade'; if (url === 'rememberme.html') return 'Save Game';
+            if (url === 'SansKoder.html') return 'SansKoder';
+            if (url === 'trecore.html') return 'Trecore';
+            if (url === 'ovr.html') return 'OVR Portal';
+            if (url === 'heril.html') return 'Research Centre';
+            try { return new URL(url).hostname.replace('www.', ''); } catch (e) { return url.substring(0,15)+'...'; }
+        }
+
+        function getFaviconUrl(url) {
+            if (!url || url.startsWith('clonmedic://') || url === HOME_URL) return null;
+            if (url.endsWith('.html')) return null;
+            try { return `https://www.google.com/s2/favicons?domain=${new URL(url).hostname}&sz=64`; } catch (e) { return null; }
+        }
+
+        window.renderTabs = function() {
+            const container = document.getElementById('tabs-container'); container.innerHTML = '';
+            tabs.forEach(tab => {
+                const isActive = tab.id === activeTabId; const tabEl = document.createElement('div');
+                const activeClasses = 'bg-white border-[3px] border-duo-dark border-b-0 relative z-10 before:absolute before:-bottom-[3px] before:left-0 before:right-0 before:h-[6px] before:bg-white text-duo-dark font-black rounded-t-xl';
+                const inactiveClasses = 'bg-slate-300 border-[3px] border-transparent border-b-duo-dark text-slate-500 hover:bg-slate-400 font-bold rounded-t-xl';
+                tabEl.className = `group flex items-center justify-between px-2 sm:px-3 py-1.5 sm:py-2 min-w-[100px] sm:min-w-[140px] max-w-[160px] sm:max-w-[200px] cursor-pointer transition-colors text-xs sm:text-sm ${isActive ? activeClasses : inactiveClasses}`;
+                tabEl.onclick = () => window.switchTab(tab.id);
+                
+                let iconClass = 'fas fa-globe text-slate-400';
+                if (tab.url === HOME_URL) iconClass = 'fas fa-shield-halved text-duo-blue'; 
+                else if (tab.url.startsWith('clonmedic://search')) iconClass = 'fas fa-search text-duo-purple';
+                else if (tab.url.startsWith('clonmedic://article')) iconClass = 'fas fa-book-open text-duo-green'; 
+                else if (tab.url === 'clonmedic://english') iconClass = 'fas fa-feather-alt text-duo-dark';
+                else if (tab.url === 'clonmedic://quicklearn') iconClass = 'fas fa-lightbulb text-duo-yellow'; 
+                else if (tab.url === 'clonmedic://mcq') iconClass = 'fas fa-check-double text-duo-green';
+                else if (tab.url === 'clonmedic://converter') iconClass = 'fas fa-right-left text-duo-purple'; 
+                else if (tab.url === 'clonmedic://gpa') iconClass = 'fas fa-graduation-cap text-duo-blue';
+                else if (tab.url === 'clonmedic://formulas') iconClass = 'fas fa-square-root-variable text-duo-yellow'; 
+                else if (tab.url === 'clonmedic://tasks') iconClass = 'fas fa-check-square text-duo-blue';
+                else if (tab.url === 'clonmedic://citations') iconClass = 'fas fa-quote-right text-duo-indigo'; 
+                else if (tab.url === 'clonmedic://periodic') iconClass = 'fas fa-atom text-duo-teal';
+                else if (tab.url === 'clonmedic://calc') iconClass = 'fas fa-calculator text-duo-orange'; 
+                else if (tab.url === 'clonmedic://timer') iconClass = 'fas fa-hourglass-half text-duo-blue';
+                else if (tab.url.startsWith('clonmedic://')) iconClass = 'fas fa-graduation-cap text-duo-green'; 
+                else if (tab.url === 'medicof all.html') iconClass = 'fas fa-microscope text-duo-red';
+                else if (tab.url === 'brainboard.html') iconClass = 'fas fa-chalkboard text-duo-yellow'; 
+                else if (tab.url === 'arcade.html') iconClass = 'fas fa-gamepad text-duo-yellow'; 
+                else if (tab.url === 'rememberme.html') iconClass = 'fas fa-save text-duo-green';
+                else if (tab.url === 'SansKoder.html') iconClass = 'fas fa-code text-duo-orange';
+                else if (tab.url === 'trecore.html') iconClass = 'fas fa-cubes text-duo-purple';
+                else if (tab.url === 'heril.html') iconClass = 'fas fa-flask text-duo-purple';
+
+                const faviconUrl = getFaviconUrl(tab.url);
+                const iconHtml = faviconUrl ? `<img src="${faviconUrl}" class="w-4 h-4 shrink-0 rounded-sm" onerror="this.replaceWith(Object.assign(document.createElement('i'), {className: 'fas fa-globe text-slate-400'}))">` : `<i class="${iconClass}"></i>`;
+
+                tabEl.innerHTML = `<div class="flex items-center gap-1 sm:gap-2 truncate pointer-events-none">${iconHtml}<span class="truncate">${tab.title}</span></div><button onclick="window.closeTab(event, '${tab.id}')" class="opacity-0 group-hover:opacity-100 w-4 h-4 sm:w-5 sm:h-5 flex items-center justify-center rounded-full hover:bg-slate-200 transition-all text-slate-600"><i class="fas fa-times text-[8px] sm:text-[10px]"></i></button>`;
+                container.appendChild(tabEl);
+            });
+        };
+
+        window.switchTab = function(id) {
+            activeTabId = id;
+            const tab = tabs.find(t => t.id === id);
+            if (!tab) return;
+
+            window.renderTabs();
+            Object.values(screens).forEach(s => { if(s) { s.classList.add('hidden'); s.classList.remove('flex'); } });
+            Array.from(iframeContainer.children).forEach(f => f.classList.add('hidden'));
+
+            addressBar.value = (tab.url === HOME_URL || tab.url.startsWith('clonmedic://search') || tab.url.startsWith('clonmedic://article')) ? '' : tab.url;
+
+            if (tab.url === HOME_URL) { screens.home.classList.remove('hidden'); screens.home.classList.add('flex'); } 
+            else if (tab.url.startsWith('clonmedic://search')) { screens.search.classList.remove('hidden'); screens.search.classList.add('flex'); executeSafeSearch(new URLSearchParams(tab.url.split('?')[1]).get('q')); } 
+            else if (tab.url.startsWith('clonmedic://') && !tab.url.startsWith('clonmedic://article')) {
+                const appName = tab.url.split('://')[1];
+                if(screens[appName]) {
+                    screens[appName].classList.remove('hidden'); screens[appName].classList.add('flex');
+                    if(appName === 'receipt' && document.querySelectorAll('#receipt-items-body tr').length===0 && typeof window.addReceiptItem === 'function') window.addReceiptItem();
+                    if(appName === 'timetable' && document.querySelectorAll('#timetable-body tr').length===0 && typeof window.addTimetableRow === 'function') { window.addTimetableRow(); window.addTimetableRow(); }
+                    if(appName === 'flashcards') updateFlashcardUI(); if(appName === 'quicklearn') renderQuickLearnDropdown();
+                    if(appName === 'mcq') renderMcqList(); if(appName === 'converter' && typeof window.initConverterUnits === 'function') initConverterUnits();
+                    if(appName === 'gpa' && typeof window.renderGpaList === 'function') renderGpaList(); if(appName === 'formulas') renderFormulaList();
+                    if(appName === 'periodic') initPeriodicTable(); if(appName === 'timer') updateTimerDisplay();
+                }
+            } else {
+                if (!tab.iframe) {
+                    const iframe = document.createElement('iframe'); iframe.className = 'w-full h-full border-none absolute inset-0 bg-white';
+                    if (tab.url.startsWith('clonmedic://article')) { iframe.srcdoc = tab.srcdocContent || "<h1>Loading...</h1>"; } else { iframe.src = tab.url; }
+                    iframeContainer.appendChild(iframe); tab.iframe = iframe;
+                }
+                tab.iframe.classList.remove('hidden');
+            }
+        };
+
+        window.closeTab = function(e, id) {
+            e.stopPropagation(); 
+            if (tabs.length === 1) { if (tabs[0].iframe) tabs[0].iframe.remove(); tabs = []; window.createNewTab(); return; }
+            const tabIndex = tabs.findIndex(t => t.id === id);
+            if (tabs[tabIndex].iframe) tabs[tabIndex].iframe.remove();
+            tabs.splice(tabIndex, 1);
+            if (activeTabId === id) window.switchTab(tabs[Math.max(0, tabIndex - 1)].id); else window.renderTabs();
+        };
+
+        window.processInput = function(input) {
+            if(!input.trim()) return; triggerLoadAnimation(); const urlPattern = /^(https?:\/\/)?([\w.-]+)\.([a-z]{2,6}\.?)(\/[\w.-]*)*\/?$/i;
+            if (input.startsWith('clonmedic://') || input.endsWith('.html')) { window.loadWebPage(input); } 
+            else if (urlPattern.test(input) && !input.includes(' ')) { window.loadWebPage(input.startsWith('http') ? input : 'https://' + input); } 
+            else { window.loadWebPage(`clonmedic://search?q=${encodeURIComponent(input)}`); }
+        }
+
+        window.loadWebPage = function(url, srcdocContent = null) {
+            const tab = tabs.find(t => t.id === activeTabId); if (!tab) return;
+            tab.url = url; tab.title = url === HOME_URL ? 'New Tab' : getDomain(url);
+            if (srcdocContent) tab.srcdocContent = srcdocContent;
+            if (tab.history[tab.historyIndex] !== url) { tab.history = tab.history.slice(0, tab.historyIndex + 1); tab.history.push(url); tab.historyIndex++; }
+            if (tab.iframe && !url.startsWith('clonmedic://')) { tab.iframe.srcdoc = ''; tab.iframe.src = url; } 
+            else if (tab.iframe && url.startsWith('clonmedic://article')) { tab.iframe.src = 'about:blank'; tab.iframe.srcdoc = srcdocContent; }
+            window.switchTab(activeTabId);
+        };
+
+        // --- NAVIGATION: BACK / FORWARD / RELOAD ---
+        window.goBack = function() {
+            const tab = tabs.find(t => t.id === activeTabId);
+            if (!tab || tab.historyIndex <= 0) return;
+            tab.historyIndex--;
+            tab.url = tab.history[tab.historyIndex];
+            tab.title = tab.url === HOME_URL ? 'New Tab' : getDomain(tab.url);
+            triggerLoadAnimation();
+            if (tab.iframe && !tab.url.startsWith('clonmedic://')) { tab.iframe.srcdoc = ''; tab.iframe.src = tab.url; }
+            window.switchTab(activeTabId);
+        };
+
+        window.goForward = function() {
+            const tab = tabs.find(t => t.id === activeTabId);
+            if (!tab || tab.historyIndex >= tab.history.length - 1) return;
+            tab.historyIndex++;
+            tab.url = tab.history[tab.historyIndex];
+            tab.title = tab.url === HOME_URL ? 'New Tab' : getDomain(tab.url);
+            triggerLoadAnimation();
+            if (tab.iframe && !tab.url.startsWith('clonmedic://')) { tab.iframe.srcdoc = ''; tab.iframe.src = tab.url; }
+            window.switchTab(activeTabId);
+        };
+
+        window.reloadPage = function() {
+            const tab = tabs.find(t => t.id === activeTabId);
+            if (!tab) return;
+            triggerLoadAnimation();
+            if (tab.iframe && !tab.url.startsWith('clonmedic://')) {
+                const currentSrc = tab.iframe.src;
+                tab.iframe.src = 'about:blank';
+                setTimeout(() => { tab.iframe.src = currentSrc; }, 50);
+            } else if (tab.url.startsWith('clonmedic://search')) {
+                executeSafeSearch(new URLSearchParams(tab.url.split('?')[1]).get('q'));
+            } else {
+                window.switchTab(activeTabId);
+            }
+        };
+
+        // --- SAFE SEARCH & NATIVE READER ---
+        const BAD_WORDS = ['sex', 'porn', 'adult', 'nsfw', 'xxx', 'nude', 'fuck'];
+        async function executeSafeSearch(query) {
+            document.getElementById('search-query-display').innerText = `Results for "${query}"`; document.getElementById('address-bar').value = query;
+            const container = document.getElementById('search-results-container'); const blockedUI = document.getElementById('safe-search-blocked');
+            container.innerHTML = '';
+            if (BAD_WORDS.some(bw => query.toLowerCase().includes(bw))) { blockedUI.classList.remove('hidden'); container.classList.add('hidden'); return; }
+            blockedUI.classList.add('hidden'); container.classList.remove('hidden'); document.getElementById('search-status').innerText = "Powered by ClonBrow Safe Index";
+            try {
+                const res = await fetch(`https://en.wikipedia.org/w/api.php?action=query&list=search&srsearch=${encodeURIComponent(query)}&utf8=&format=json&origin=*`);
+                const data = await res.json();
+                if(data.query.search.length === 0) { container.innerHTML = `<div class="duo-card p-6 text-center font-bold text-slate-500">No safe results found in ClonBrow Index. Try another topic!</div>`; return; }
+                data.query.search.forEach(item => {
+                    const el = document.createElement('div'); el.className = 'duo-card p-4 sm:p-6 hover:-translate-y-1 transition-transform cursor-pointer';
+                    el.onclick = () => window.openNativeArticle(item.title);
+                    el.innerHTML = `<div class="flex items-center gap-2 mb-2"><i class="fas fa-book-open text-duo-green text-sm sm:text-base"></i><span class="text-[10px] sm:text-xs font-black text-slate-400 uppercase tracking-wider">ClonBrow Verified Article</span></div><h3 class="text-lg sm:text-xl font-black text-duo-dark mb-1 sm:mb-2">${item.title}</h3><p class="font-bold text-slate-600 text-xs sm:text-sm leading-relaxed">${item.snippet}...</p>`;
+                    container.appendChild(el);
+                });
+            } catch(e) { container.innerHTML = `<div class="duo-card p-6 text-center font-bold text-duo-red">Search engine offline.</div>`; }
+        }
+
+        window.openNativeArticle = async function(title) {
+            triggerLoadAnimation();
+            try {
+                const res = await fetch(`https://en.wikipedia.org/w/api.php?action=query&prop=extracts&titles=${encodeURIComponent(title)}&format=json&origin=*`);
+                const data = await res.json(); const pages = data.query.pages; const pageId = Object.keys(pages)[0]; const extract = pages[pageId].extract;
+                const styledHtml = `<!DOCTYPE html><html><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><style>body { font-family: 'Nunito', sans-serif; line-height: 1.6; color: #1e293b; padding: 20px; max-width: 800px; margin: 0 auto; background: #f8fafc; } h1 { font-size: 2.5em; border-bottom: 3px solid #1cb0f6; padding-bottom: 10px; margin-bottom: 20px; font-weight: 900;} h2 { color: #58cc02; margin-top: 30px; font-weight: 800;} p { font-size: 1.1em; margin-bottom: 20px; font-weight: 600;} .reader-badge { display: inline-block; background: #ffc800; color: #1e293b; padding: 5px 15px; border-radius: 20px; font-weight: 900; margin-bottom: 20px; border: 3px solid #1e293b; box-shadow: 2px 2px 0 #1e293b; text-transform: uppercase; font-size: 12px;} @media (min-width: 640px) { body { padding: 40px; } }</style><link href="https://fonts.googleapis.com/css2?family=Nunito:wght@400;600;700;800;900&display=swap" rel="stylesheet"></head><body><span class="reader-badge">ClonBrow Native Reader</span><h1>${title}</h1>${extract}</body></html>`;
+                window.loadWebPage(`clonmedic://article?title=${encodeURIComponent(title)}`, styledHtml);
+            } catch(e) { console.log("Failed to load article."); }
+        };
+
+        window.goHome = () => { window.loadWebPage(HOME_URL); };
+
+    </script>
+</body>
+</html>

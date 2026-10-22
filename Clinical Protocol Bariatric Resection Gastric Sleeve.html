@@ -1,0 +1,896 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Clinical Protocol: Bariatric Resection (Gastric Sleeve)</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Caveat:wght@700&display=swap" rel="stylesheet">
+    <style>
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: #e2e8f0; 
+            color: #0f172a;
+            overflow: hidden;
+            margin: 0;
+            padding: 0;
+            user-select: none;
+        }
+
+        .signature-font { font-family: 'Caveat', cursive; }
+
+        ::-webkit-scrollbar { width: 6px; }
+        ::-webkit-scrollbar-track { background: transparent; }
+        ::-webkit-scrollbar-thumb { background: #94a3b8; border-radius: 4px; }
+
+        .clinical-shadow { box-shadow: 0 10px 40px -10px rgba(0, 0, 0, 0.1), 0 4px 10px -4px rgba(0, 0, 0, 0.05); }
+        .glass-panel { background: rgba(255, 255, 255, 0.95); backdrop-filter: blur(12px); border: 1px solid rgba(255, 255, 255, 0.8); }
+        
+        .pulse-ring { animation: pulseRing 2s cubic-bezier(0.4, 0, 0.6, 1) infinite; }
+        @keyframes pulseRing {
+            0% { box-shadow: 0 0 0 0 rgba(37, 99, 235, 0.4); }
+            70% { box-shadow: 0 0 0 15px rgba(37, 99, 235, 0); }
+            100% { box-shadow: 0 0 0 0 rgba(37, 99, 235, 0); }
+        }
+
+        @media print {
+            body * { visibility: hidden; }
+            #report-overlay, #report-overlay * { visibility: visible; }
+            #report-overlay { position: absolute; left: 0; top: 0; width: 100%; height: 100%; transform: none !important; padding: 0 !important; background: white !important; }
+            .no-print { display: none !important; }
+            @page { margin: 0.5cm; }
+        }
+        
+        /* Custom Tool Cursor Classes */
+        .cursor-none { cursor: none; }
+    </style>
+</head>
+<body class="h-screen w-screen flex p-4 gap-4 box-border">
+
+    <!-- LEFT: Operative Canvas Area -->
+    <div class="flex-grow h-full bg-slate-50 rounded-2xl border border-slate-200 clinical-shadow relative overflow-hidden flex flex-col no-print">
+        
+        <!-- Top Telemetry Bar -->
+        <div class="h-14 border-b border-slate-200 flex items-center px-8 justify-between bg-white text-xs font-bold text-slate-500 z-20 shadow-sm">
+            <div class="flex gap-8 items-center">
+                <div class="flex items-center gap-2"><div class="w-2 h-2 rounded-full bg-emerald-500 pulse-ring"></div> PATIENT: <span class="text-slate-900">BRT-404</span></div>
+                <div>PROCEDURE: <span class="text-blue-600">LAPAROSCOPIC GASTRECTOMY</span></div>
+            </div>
+            <div class="flex gap-8">
+                <div>HR: <span class="text-emerald-600 font-mono text-sm">72 BPM</span></div>
+                <div>ICP/IAB: <span id="tel-press" class="text-slate-800 font-mono text-sm">15 mmHg</span></div>
+                <div>SPO2: <span class="text-blue-600 font-mono text-sm">99%</span></div>
+            </div>
+        </div>
+
+        <!-- Interactive Operative Field -->
+        <div class="flex-grow relative cursor-none" id="canvas-container">
+            <canvas id="medCanvas" class="w-full h-full"></canvas>
+            
+            <div id="canvas-feedback" class="absolute top-6 right-6 z-20 text-[11px] text-blue-700 bg-blue-50 border border-blue-200 px-4 py-2 rounded-lg font-bold shadow-md transition-colors tracking-wide uppercase">
+                AWAITING SURGICAL INPUT...
+            </div>
+
+            <!-- Contextual Tool UI (Buttons/Pass) -->
+            <div id="tool-overlay" class="absolute bottom-8 left-1/2 transform -translate-x-1/2 w-80 glass-panel rounded-xl p-4 hidden transition-opacity z-20 clinical-shadow text-center">
+            </div>
+        </div>
+    </div>
+
+    <!-- RIGHT: Surgical Protocol Navigator -->
+    <div class="w-[420px] h-full bg-white rounded-2xl border border-slate-200 clinical-shadow flex flex-col flex-shrink-0 z-10 no-print">
+        
+        <div class="p-6 border-b border-slate-100 bg-slate-50 rounded-t-2xl">
+            <div class="flex items-center gap-2 mb-1">
+                <span class="text-[10px] font-bold text-blue-600 tracking-widest uppercase">Operative Pathway</span>
+            </div>
+            <h1 class="text-xl font-bold text-slate-900" id="ui-phase-name">Phase 1: System Access</h1>
+            <p class="text-xs text-slate-500 mt-1 font-medium" id="ui-phase-desc">Clearing the field.</p>
+        </div>
+
+        <div class="flex-grow overflow-y-auto p-4 space-y-3" id="ui-steps-container"></div>
+
+        <div class="p-5 border-t border-slate-100 bg-slate-50 rounded-b-2xl flex flex-col gap-3">
+            <div class="flex justify-between items-center text-xs font-bold text-slate-500">
+                <span>PROCEDURE PROGRESS</span>
+                <span id="ui-progress-text" class="text-blue-600">0/15</span>
+            </div>
+            <div class="w-full h-2 bg-slate-200 rounded-full overflow-hidden border border-slate-300">
+                <div id="ui-progress-bar" class="h-full bg-blue-600 transition-all duration-500" style="width: 0%"></div>
+            </div>
+            <button id="btn-next" disabled class="w-full py-4 mt-2 bg-blue-600 hover:bg-blue-700 text-white rounded-xl text-sm font-bold transition-all disabled:opacity-50 disabled:cursor-not-allowed disabled:bg-slate-200 disabled:text-slate-400 shadow-md disabled:shadow-none tracking-wide">
+                AWAITING STEP COMPLETION
+            </button>
+        </div>
+
+        <!-- FINAL OPERATIVE REPORT OVERLAY -->
+        <div id="report-overlay" class="absolute inset-0 bg-slate-900/40 backdrop-blur-sm z-50 flex flex-col p-8 transform translate-y-full transition-transform duration-700 text-slate-900 overflow-y-auto">
+            <div id="pdf-content" class="bg-white shadow-2xl rounded-xl p-12 relative border border-slate-200 mx-auto w-full max-w-4xl" style="min-height: 800px;">
+                <div class="border-b-4 border-slate-800 pb-4 mb-8 flex justify-between items-end">
+                    <div>
+                        <h2 class="text-4xl font-black tracking-tighter text-slate-900">OPERATIVE REPORT</h2>
+                        <p class="text-sm font-bold text-slate-500 uppercase tracking-widest">Laparoscopic Sleeve Gastrectomy</p>
+                    </div>
+                    <div class="text-xs text-right text-slate-500 font-mono">
+                        <div>DATE: <span id="rep-date"></span></div>
+                        <div>PATIENT ID: BRT-404</div>
+                    </div>
+                </div>
+
+                <div class="grid grid-cols-2 gap-8 text-sm mb-8 border-b border-slate-200 pb-8">
+                    <div class="bg-slate-50 p-5 rounded-lg border border-slate-200">
+                        <h4 class="font-bold text-slate-800 border-b border-slate-200 pb-2 mb-3 tracking-wide">SURGICAL DETAILS</h4>
+                        <ul class="space-y-2 font-mono text-[11px] text-slate-600">
+                            <li class="flex justify-between"><span>ABDOMINAL_ACCESS:</span> <span class="font-bold text-emerald-600">5-PORT LAPAROSCOPY</span></li>
+                            <li class="flex justify-between"><span>OMENTUM_DISSECTION:</span> <span class="font-bold text-emerald-600">COMPLETE</span></li>
+                            <li class="flex justify-between"><span>GASTRIC_VESSELS:</span> <span class="font-bold text-emerald-600">LIGATED & SEALED</span></li>
+                            <li class="flex justify-between"><span>BOUGIE_SIZE:</span> <span class="font-bold text-emerald-600">36 FRENCH</span></li>
+                        </ul>
+                    </div>
+                    <div class="bg-blue-50 p-5 rounded-lg border border-blue-200">
+                        <h4 class="font-bold text-blue-900 border-b border-blue-200 pb-2 mb-3 tracking-wide">RESECTION & DIAGNOSTICS</h4>
+                        <ul class="space-y-2 font-mono text-[11px] text-blue-800">
+                            <li class="flex justify-between"><span>PYLORUS_MARGIN:</span> <span class="font-bold">5.0 CM</span></li>
+                            <li class="flex justify-between"><span>STAPLER_FIRINGS:</span> <span class="font-bold">6 SEQUENTIAL</span></li>
+                            <li class="flex justify-between"><span>SPECIMEN_EXTRACTED:</span> <span class="font-bold text-emerald-600">80% VOLUME</span></li>
+                            <li class="flex justify-between"><span>LEAK_TEST (METHYLENE):</span> <span class="font-bold text-emerald-600">NEGATIVE (100% SECURE)</span></li>
+                        </ul>
+                    </div>
+                </div>
+
+                <div class="bg-slate-50 border-l-4 border-slate-400 p-6 rounded text-sm text-slate-700 font-medium leading-relaxed">
+                    <strong>Surgeon's Notes:</strong> Pneumoperitoneum established. Trocar triangulation optimal. Liver retracted securely. Greater omentum dissected and short gastric vessels sealed via bipolar cautery. Resection calibrated exactly 5.0cm from the pylorus utilizing a 36-French bougie template. Six sequential stapler firings achieved gross volume reduction. Staple line oversewn for reinforcement. Methylene blue hydro-pneumatic test confirmed negative for leaks. Fascial defects closed. [GASTRIC_OS]: RESIZING SUCCESSFUL. NEW VOLUME: 150ML. SYSTEM SECURE.
+                </div>
+
+                <div class="mt-16 flex justify-between items-end border-t border-slate-200 pt-8">
+                    <div class="w-32 h-32 border-4 border-emerald-500 rounded-full flex items-center justify-center text-emerald-500 font-black rotate-[15deg] text-2xl tracking-widest opacity-90 flex-shrink-0">
+                        SUCCESS
+                    </div>
+                    <div class="text-center">
+                        <div class="text-6xl text-slate-800 signature-font mb-2 leading-none" style="transform: rotate(-3deg);">Dr. Attending</div>
+                        <div class="border-t border-slate-300 pt-2 text-[10px] font-bold text-slate-400 tracking-widest uppercase mt-2">LEAD BARIATRIC SURGEON</div>
+                    </div>
+                </div>
+            </div>
+            
+            <button onclick="downloadPDF()" id="pdf-btn" class="mt-6 mx-auto w-full max-w-4xl py-4 bg-slate-800 hover:bg-slate-900 text-white rounded-xl font-bold tracking-widest text-sm flex items-center justify-center gap-3 no-print shadow-lg transition-transform active:scale-95 flex-shrink-0">
+                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"></path></svg>
+                DOWNLOAD OPERATIVE PDF LOG
+            </button>
+        </div>
+    </div>
+
+    <script>
+        // --- LOAD HIGH-RES ASSETS ---
+        const imgStomach = new Image(); imgStomach.src = 'https://res.cloudinary.com/ds93qby5a/image/upload/v1777189331/ChatGPT_Image_Apr_26_2026_12_38_42_PM_xbiele.png';
+        const imgBelly = new Image(); imgBelly.src = 'https://res.cloudinary.com/ds93qby5a/image/upload/v1777189306/978e3f88-9bf7-4dab-b65a-663a8e159290-Photoroom_nsvpjf.png';
+        const imgGloves = new Image(); imgGloves.src = 'https://res.cloudinary.com/ds93qby5a/image/upload/v1777189309/ChatGPT_Image_Apr_26_2026_12_32_31_PM_onqvro.png';
+        const imgSponge = new Image(); imgSponge.src = 'https://res.cloudinary.com/ds93qby5a/image/upload/v1777189310/ChatGPT_Image_Apr_26_2026_12_36_46_PM_pmaenl.png';
+
+        // --- SURGICAL PROTOCOL DATA (15 Steps) ---
+        const protocol = [
+            { phase: "PHASE 1: SYSTEM ACCESS", desc: "Clearing the field.", name: "1. Abdominal Insufflation", inst: "Click and hold to pump CO2. Keep the needle in the wide green zone (10-20 mmHg).", prompt: "[SYSTEM]: Pneumoperitoneum established. Workspace expanded.", type: "game_pressure" },
+            { phase: "PHASE 1: SYSTEM ACCESS", desc: "Clearing the field.", name: "2. Trocar Triangulation", inst: "Drag the 5 metallic ports onto the torso targets to form a 'V'.", prompt: "[SYSTEM]: Port triangulation optimal. Tools inserted.", type: "game_ports" },
+            { phase: "PHASE 1: SYSTEM ACCESS", desc: "Clearing the field.", name: "3. Liver Retraction", inst: "Click and drag the liver UP. Maintain tension in the green zone.", prompt: "[SYSTEM]: Hepatic structure secured. Gastric workspace exposed.", type: "game_liver" },
+            { phase: "PHASE 1: SYSTEM ACCESS", desc: "Clearing the field.", name: "4. Greater Omentum Dissection", inst: "Click the yellow fatty attachments from bottom to top to free the stomach.", prompt: "[SYSTEM]: Greater curvature mobilized. Attachments severed.", type: "game_omentum" },
+            
+            { phase: "PHASE 2: VASCULAR LIGATION", desc: "Calibration & Sealing.", name: "5. Short Gastric Vessels", inst: "Click and HOLD the red vessels until they turn white, then release to cut.", prompt: "[SYSTEM]: Splenic vascular supply disconnected. Hemostasis verified.", type: "game_vessels" },
+            { phase: "PHASE 2: VASCULAR LIGATION", desc: "Calibration & Sealing.", name: "6. Pylorus Measurement", inst: "Drag the caliper from the bottom up to approx 5.0cm.", prompt: "[SYSTEM]: Resection start-point calibrated at 5.0cm.", type: "game_ruler" },
+            { phase: "PHASE 2: VASCULAR LIGATION", desc: "Calibration & Sealing.", name: "7. Bougie Insertion", inst: "Steer the blue tube along the inner right curve. Avoid the far left.", prompt: "[SYSTEM]: 36-French Bougie deployed. Resection template set.", type: "game_bougie" },
+            
+            { phase: "PHASE 3: THE RESECTION", desc: "Hardware modification.", name: "8. First Stapler Firing", inst: "Rotate the metallic stapler parallel to the blue Bougie, then click FIRE.", prompt: "[SYSTEM]: Base transection complete. Triple-staple line deployed.", type: "game_staple_1" },
+            { phase: "PHASE 3: THE RESECTION", desc: "Hardware modification.", name: "9. Sequential Stapling", inst: "Drag the stapler to snap onto the next cut vector lines.", prompt: "[SYSTEM]: Sequential stapling nominal. Gastric volume reduced by 80%.", type: "game_staple_seq" },
+            { phase: "PHASE 3: THE RESECTION", desc: "Hardware modification.", name: "10. Fundus Detachment", inst: "Fire the stapler in the wide green zone. Avoid the red esophagus.", prompt: "[SYSTEM]: Fundus completely detached. Resection complete.", type: "game_fundus" },
+            { phase: "PHASE 3: THE RESECTION", desc: "Hardware modification.", name: "11. Specimen Extraction", inst: "Click the resected stomach 3 times to compress and extract it.", prompt: "[SYSTEM]: Resected tissue extracted. Biopsy logged.", type: "game_extract" },
+            
+            { phase: "PHASE 4: DIAGNOSTICS", desc: "System diagnostics & leak testing.", name: "12. Staple Line Oversewing", inst: "Trace the green target in a zigzag over the staple line.", prompt: "[SYSTEM]: Suture reinforcement applied. Tensile strength increased.", type: "game_oversew" },
+            { phase: "PHASE 4: DIAGNOSTICS", desc: "System diagnostics & leak testing.", name: "13. Methylene Blue Leak Test", inst: "Scan the border. Click PASS if no blue dye escapes the staple line.", prompt: "[SYSTEM]: Hydro-pneumatic leak test negative. System integrity 100%.", type: "game_leak" },
+            { phase: "PHASE 4: DIAGNOSTICS", desc: "System diagnostics & leak testing.", name: "14. Fascial Closure", inst: "Draw loose crosses (+ or X) over all 5 ports to seal them.", prompt: "[SYSTEM]: Fascial defects closed. Hernia risk neutralized.", type: "game_fascia" },
+            { phase: "PHASE 4: DIAGNOSTICS", desc: "System diagnostics & leak testing.", name: "15. Fluid Dynamics Reboot", inst: "Hold the Vent button to rapidly purge CO2 pressure to 0 mmHg.", prompt: "[GASTRIC_OS]: RESIZING SUCCESSFUL. NEW VOLUME: 150ML. SYSTEM SECURE.", type: "game_purge" }
+        ];
+
+        let currStep = 0;
+        let stepCompleted = false;
+
+        // --- CANVAS & STATE SETUP ---
+        const canvas = document.getElementById('medCanvas');
+        const ctx = canvas.getContext('2d', { alpha: false });
+        let cw, ch;
+        let time = 0;
+
+        // Input
+        let mx = -100, my = -100;
+        let isDown = false;
+        
+        let gs = {}; // Mini-game state
+        let particles = []; // ADDED: Global particle array for visual feedback
+
+        function createParticles(x, y, color, count=5, type='spark') {
+            for(let i=0; i<count; i++) {
+                particles.push({
+                    x: x, y: y,
+                    vx: (Math.random()-0.5)*4, 
+                    vy: type === 'gas' ? -Math.random()*6 : (Math.random()-0.5)*4,
+                    life: 1.0, color: color, type: type
+                });
+            }
+        }
+
+        function updateParticles() {
+            for(let i=particles.length-1; i>=0; i--) {
+                let p = particles[i];
+                p.x += p.vx; p.y += p.vy;
+                p.life -= 0.03;
+                ctx.fillStyle = p.color; ctx.globalAlpha = Math.max(0, p.life);
+                ctx.beginPath(); ctx.arc(p.x, p.y, p.type === 'gas' ? 6 : 3, 0, Math.PI*2); ctx.fill();
+                ctx.globalAlpha = 1.0;
+                if(p.life <= 0) particles.splice(i, 1);
+            }
+        }
+
+        function resize() {
+            const rect = canvas.parentElement.getBoundingClientRect();
+            cw = rect.width; ch = rect.height;
+            canvas.width = cw; canvas.height = ch;
+            initGameState();
+        }
+        window.addEventListener('resize', resize);
+
+        function initGameState() {
+            stepCompleted = false;
+            document.getElementById('tool-overlay').classList.add('hidden');
+            let s = protocol[currStep]?.type;
+            gs = { progress: 0, fail: false };
+            
+            if(s === 'game_pressure') {
+                gs.pressure = 0; gs.target = 15; gs.stableTime = 0;
+            } else if (s === 'game_ports') {
+                gs.ports = [];
+                for(let i=0; i<5; i++) gs.ports.push({x: 50, y: 50 + i*60, locked: false, active: false});
+                gs.targets = [{x: cw*0.3, y: ch*0.4}, {x: cw*0.7, y: ch*0.4}, {x: cw*0.4, y: ch*0.6}, {x: cw*0.6, y: ch*0.6}, {x: cw*0.5, y: ch*0.75}];
+            } else if (s === 'game_liver') {
+                gs.liverY = ch*0.4; gs.tension = 0; gs.holdTime = 0;
+            } else if (s === 'game_omentum') {
+                gs.cuts = [{x: cw*0.6, y: ch*0.7, cut: false}, {x: cw*0.65, y: ch*0.6, cut: false}, {x: cw*0.7, y: ch*0.5, cut: false}];
+                gs.nextCut = 0;
+            } else if (s === 'game_vessels') {
+                gs.vessels = [{y: ch*0.4, heat: 0, cut: false}, {y: ch*0.5, heat: 0, cut: false}, {y: ch*0.6, heat: 0, cut: false}];
+            } else if (s === 'game_ruler') {
+                gs.dragY = ch*0.8; gs.dist = 0;
+            } else if (s === 'game_bougie') {
+                gs.bx = cw*0.5; gs.by = 0;
+            } else if (s === 'game_staple_1') {
+                gs.angle = 0;
+                document.getElementById('tool-overlay').classList.remove('hidden');
+                document.getElementById('tool-overlay').innerHTML = `<button id="btn-fire" class="w-full py-4 bg-rose-600 hover:bg-rose-500 text-white rounded-lg font-bold transition-all shadow-md text-lg tracking-wider">FIRE STAPLER</button>`;
+                document.getElementById('btn-fire').addEventListener('click', () => {
+                    if(Math.abs(gs.angle - Math.PI/6) < 0.4) completeStep(); else gs.fail = true; // Very forgiving angle
+                });
+            } else if (s === 'game_staple_seq') {
+                gs.vectors = [{x: cw*0.4, y: ch*0.7}, {x: cw*0.45, y: ch*0.5}, {x: cw*0.5, y: ch*0.3}, {x: cw*0.55, y: ch*0.1}];
+                gs.currVec = 0; gs.staplerX = cw*0.2; gs.staplerY = ch*0.8;
+            } else if (s === 'game_fundus') {
+                gs.esophagus = {x: cw*0.6, y: ch*0.2, r: 30}; // Smaller danger
+                gs.target = {x: cw*0.45, y: ch*0.25, r: 50}; // Bigger target
+            } else if (s === 'game_extract') {
+                gs.compress = 1.0; 
+            } else if (s === 'game_oversew') {
+                gs.sewY = ch*0.8; gs.sewX = cw*0.5; gs.targetX = cw*0.5;
+            } else if (s === 'game_leak') {
+                gs.scanTime = 0;
+                document.getElementById('tool-overlay').classList.remove('hidden');
+                document.getElementById('tool-overlay').innerHTML = `<button id="btn-pass" class="w-full py-4 bg-emerald-600 hover:bg-emerald-500 text-white rounded-lg font-bold transition-all shadow-md text-lg tracking-wider hidden">CONFIRM NO LEAKS (PASS)</button>`;
+                document.getElementById('btn-pass').addEventListener('click', completeStep);
+            } else if (s === 'game_fascia') {
+                gs.ports = [{x: cw*0.3, y: ch*0.4, h:false, v:false}, {x: cw*0.7, y: ch*0.4, h:false, v:false}, {x: cw*0.4, y: ch*0.6, h:false, v:false}, {x: cw*0.6, y: ch*0.6, h:false, v:false}, {x: cw*0.5, y: ch*0.75, h:false, v:false}];
+                gs.drawing = false; gs.start = null; gs.timer = 30; // 30 seconds (very easy)
+            } else if (s === 'game_purge') {
+                gs.pressure = 15;
+                document.getElementById('tool-overlay').classList.remove('hidden');
+                document.getElementById('tool-overlay').innerHTML = `<button id="btn-vent" class="w-full py-4 bg-slate-800 hover:bg-slate-700 text-white rounded-lg font-bold transition-transform active:scale-95 shadow-md text-lg tracking-wider">HOLD TO VENT CO2</button>`;
+                let int;
+                document.getElementById('btn-vent').addEventListener('mousedown', () => { clearInterval(int); int=setInterval(()=>gs.pressure-=0.5,30); });
+                document.getElementById('btn-vent').addEventListener('mouseup', () => { clearInterval(int); });
+                document.getElementById('btn-vent').addEventListener('mouseleave', () => { clearInterval(int); });
+            }
+        }
+
+        // Texture Generator Helper
+        function applyTissueTexture(ctx, alpha=0.03) {
+            ctx.save();
+            ctx.globalAlpha = alpha;
+            ctx.fillStyle = '#000';
+            for(let i=0; i<1000; i++) {
+                ctx.fillRect(Math.random()*cw, Math.random()*ch, 2, 2);
+            }
+            ctx.restore();
+        }
+
+        function createMetallicGradient(x, y, r) {
+            let g = ctx.createRadialGradient(x-r*0.3, y-r*0.3, r*0.1, x, y, r);
+            g.addColorStop(0, '#f8fafc'); g.addColorStop(0.5, '#94a3b8'); g.addColorStop(1, '#475569');
+            return g;
+        }
+
+        // --- MAIN RENDER LOOP ---
+        function animate() {
+            // Clinical Background
+            ctx.fillStyle = '#f8fafc'; ctx.fillRect(0, 0, cw, ch); 
+            ctx.strokeStyle = '#e2e8f0'; ctx.lineWidth = 1;
+            for(let i=0; i<cw; i+=40) { ctx.beginPath(); ctx.moveTo(i,0); ctx.lineTo(i,ch); ctx.stroke(); }
+            for(let i=0; i<ch; i+=40) { ctx.beginPath(); ctx.moveTo(0,i); ctx.lineTo(cw,i); ctx.stroke(); }
+
+            time += 0.02;
+
+            if(!stepCompleted) {
+                renderCurrentGame();
+            } else {
+                // FIXED: Beautifully formatted, clean verification overlay instead of a broken text wrap
+                ctx.fillStyle = 'rgba(248, 250, 252, 0.85)'; ctx.fillRect(0,0,cw,ch);
+                ctx.fillStyle = '#059669'; ctx.font = 'bold 36px Inter'; ctx.textAlign = 'center';
+                ctx.shadowColor = 'rgba(5, 150, 105, 0.3)'; ctx.shadowBlur = 20;
+                ctx.fillText("✓ PROTOCOL VERIFIED", cw/2, ch/2 - 10);
+                ctx.font = '600 16px Inter'; ctx.fillStyle = '#475569'; ctx.shadowBlur = 0;
+                ctx.fillText("System stabilized. Ready for next sequence.", cw/2, ch/2 + 30);
+            }
+
+            updateParticles();
+
+            // Custom cursor (Glove or Tool)
+            if (mx > 0 && !stepCompleted) {
+                let sType = protocol[currStep].type;
+                if(sType === 'game_omentum' || sType.includes('staple') || sType === 'game_vessels' || sType === 'game_fascia' || sType === 'game_oversew') {
+                    // Clinical targeting reticle
+                    ctx.strokeStyle = 'rgba(15, 23, 42, 0.7)'; ctx.lineWidth = 2;
+                    ctx.beginPath(); ctx.moveTo(mx-12, my); ctx.lineTo(mx+12, my); ctx.stroke();
+                    ctx.beginPath(); ctx.moveTo(mx, my-12); ctx.lineTo(mx, my+12); ctx.stroke();
+                    ctx.fillStyle = '#ef4444'; ctx.beginPath(); ctx.arc(mx, my, 2.5, 0, Math.PI*2); ctx.fill();
+                } else if (imgGloves.complete) {
+                    ctx.shadowColor = 'rgba(0,0,0,0.3)'; ctx.shadowBlur = 10; ctx.shadowOffsetY = 10;
+                    ctx.drawImage(imgGloves, mx - 30, my - 30, 80, 80);
+                    ctx.shadowColor = 'transparent'; ctx.shadowOffsetY = 0;
+                }
+            }
+
+            requestAnimationFrame(animate);
+        }
+
+        // --- MINI-GAME RENDERER ---
+        function renderCurrentGame() {
+            const type = protocol[currStep].type;
+            let fb = "AWAITING INPUT..."; 
+            let fbColor = "text-blue-700";
+
+            if (type === 'game_pressure') {
+                // Realistic Gauge rendering with gradients and ticks
+                ctx.shadowColor = 'rgba(0,0,0,0.1)'; ctx.shadowBlur = 20;
+                let gaugeGrad = ctx.createRadialGradient(cw/2, ch/2, 50, cw/2, ch/2, 160);
+                gaugeGrad.addColorStop(0, '#ffffff'); gaugeGrad.addColorStop(1, '#f1f5f9');
+                ctx.fillStyle = gaugeGrad; ctx.beginPath(); ctx.arc(cw/2, ch/2, 160, Math.PI, 0); ctx.fill();
+                ctx.shadowColor = 'transparent';
+                
+                // Tick marks
+                ctx.strokeStyle = '#cbd5e1'; ctx.lineWidth = 2;
+                for(let a=Math.PI; a<=Math.PI*2; a+=Math.PI/10) {
+                    ctx.beginPath(); ctx.moveTo(cw/2 + Math.cos(a)*140, ch/2 + Math.sin(a)*140); ctx.lineTo(cw/2 + Math.cos(a)*155, ch/2 + Math.sin(a)*155); ctx.stroke();
+                }
+                
+                // Wide Green Zone (10 to 20 mmHg for much easier balancing)
+                ctx.fillStyle = 'rgba(16,185,129,0.4)'; ctx.beginPath(); ctx.arc(cw/2, ch/2, 150, Math.PI*1.33, Math.PI*1.66); ctx.lineTo(cw/2, ch/2); ctx.fill();
+                ctx.fillStyle = '#94a3b8'; ctx.beginPath(); ctx.arc(cw/2, ch/2, 25, 0, Math.PI*2); ctx.fill();
+
+                if(isDown) gs.pressure += 0.4; else gs.pressure -= 0.2;
+                gs.pressure = Math.max(0, Math.min(30, gs.pressure + (Math.random()-0.5)*0.2)); 
+                
+                let angle = Math.PI + (gs.pressure/30)*Math.PI;
+                ctx.strokeStyle = '#0f172a'; ctx.lineWidth = 6; ctx.lineCap = 'round';
+                ctx.beginPath(); ctx.moveTo(cw/2, ch/2); ctx.lineTo(cw/2 + Math.cos(angle)*140, ch/2 + Math.sin(angle)*140); ctx.stroke();
+
+                if(gs.pressure >= 10 && gs.pressure <= 20) { 
+                    gs.stableTime += 0.02; fb = "PRESSURE STABLE. HOLDING..."; fbColor = "text-emerald-600";
+                    if(gs.stableTime > 1.5) completeStep(); // Faster completion
+                } else { gs.stableTime = 0; fb = "PUMP CO2 TO GREEN ZONE (10-20 mmHg)"; }
+
+                document.getElementById('tel-press').innerText = `${gs.pressure.toFixed(1)} mmHg`;
+            }
+            
+            else if (type === 'game_ports') {
+                if(imgBelly.complete) {
+                    let w = ch * 0.8 * (imgBelly.width/imgBelly.height);
+                    ctx.shadowColor='rgba(0,0,0,0.15)'; ctx.shadowBlur=20;
+                    ctx.drawImage(imgBelly, cw/2 - w/2, ch*0.1, w, ch*0.8); ctx.shadowColor='transparent';
+                }
+
+                gs.targets.forEach(t => {
+                    ctx.strokeStyle = 'rgba(148, 163, 184, 0.6)'; ctx.lineWidth = 3; ctx.setLineDash([6,6]);
+                    ctx.beginPath(); ctx.arc(t.x, t.y, 20, 0, Math.PI*2); ctx.stroke(); ctx.setLineDash([]);
+                });
+
+                let allDone = true; // FIXED: Variable scope error resolved
+                gs.ports.forEach((p, i) => {
+                    if(isDown && !p.locked && !gs.ports.some(op => op.active && op !== p) && Math.hypot(mx - p.x, my - p.y) < 60) { p.active = true; } // Big hitbox
+                    if(!isDown) p.active = false;
+                    
+                    if(p.active) { p.x = mx; p.y = my; }
+                    
+                    if(!p.locked) {
+                        gs.targets.forEach(t => {
+                            if(Math.hypot(p.x - t.x, p.y - t.y) < 40) { p.x = t.x; p.y = t.y; p.locked = true; p.active = false; createParticles(p.x, p.y, '#10b981', 10); } // Massive snap
+                        });
+                    }
+
+                    // 3D Metallic Trocar rendering
+                    let tGrad = ctx.createLinearGradient(p.x-20, p.y-20, p.x+20, p.y+20);
+                    tGrad.addColorStop(0, '#ffffff'); tGrad.addColorStop(0.5, '#94a3b8'); tGrad.addColorStop(1, '#334155');
+                    ctx.fillStyle = tGrad; ctx.shadowColor='rgba(0,0,0,0.3)'; ctx.shadowBlur=10; ctx.shadowOffsetY=5;
+                    ctx.beginPath(); ctx.arc(p.x, p.y, 20, 0, Math.PI*2); ctx.fill(); ctx.shadowColor='transparent'; ctx.shadowOffsetY=0;
+                    
+                    ctx.fillStyle = p.locked ? '#10b981' : '#0f172a'; ctx.beginPath(); ctx.arc(p.x, p.y, 8, 0, Math.PI*2); ctx.fill();
+
+                    if(!p.locked) allDone = false;
+                });
+
+                if(allDone) completeStep();
+                fb = "DRAG METALLIC PORTS TO DASHED TARGETS";
+            }
+
+            else if (type === 'game_liver') {
+                if(imgStomach.complete) {
+                    let w = ch * 0.8 * (imgStomach.width/imgStomach.height);
+                    ctx.shadowColor='rgba(0,0,0,0.2)'; ctx.shadowBlur=30; ctx.drawImage(imgStomach, cw/2 - w/2, ch*0.2, w, ch*0.8); ctx.shadowColor='transparent';
+                }
+                
+                // Organic Liver Shape & Texture
+                let livGrad = ctx.createRadialGradient(cw/2, gs.liverY-30, 0, cw/2, gs.liverY, 200);
+                livGrad.addColorStop(0, '#9f1239'); livGrad.addColorStop(1, '#4c0519');
+                ctx.fillStyle = livGrad; 
+                ctx.shadowColor='rgba(0,0,0,0.6)'; ctx.shadowBlur=25; ctx.shadowOffsetY=15;
+                ctx.beginPath(); ctx.moveTo(cw*0.2, gs.liverY);
+                ctx.bezierCurveTo(cw*0.4, gs.liverY-100, cw*0.7, gs.liverY-120, cw*0.9, gs.liverY-20);
+                ctx.bezierCurveTo(cw*0.8, gs.liverY+80, cw*0.4, gs.liverY+60, cw*0.2, gs.liverY);
+                ctx.fill(); ctx.shadowColor='transparent'; ctx.shadowOffsetY=0;
+                
+                // Retractor Handle graphic
+                ctx.strokeStyle = '#94a3b8'; ctx.lineWidth = 10; ctx.lineCap = 'round';
+                ctx.beginPath(); ctx.moveTo(cw/2, gs.liverY); ctx.lineTo(cw/2, 0); ctx.stroke();
+                
+                if(isDown && Math.hypot(mx - cw/2, my - gs.liverY) < 200) { gs.liverY = my; createParticles(mx, gs.liverY, '#f8fafc', 1); }
+                else if(gs.liverY < ch*0.4) { gs.liverY += 1.5; } 
+
+                gs.tension = Math.max(0, (ch*0.4 - gs.liverY) / 2);
+
+                // Tension Bar UI
+                ctx.fillStyle = '#e2e8f0'; ctx.fillRect(cw*0.1, ch*0.2, 20, 200);
+                ctx.fillStyle = (gs.tension > 80) ? '#ef4444' : (gs.tension > 20 ? '#10b981' : '#3b82f6'); 
+                ctx.fillRect(cw*0.1, ch*0.2 + 200 - gs.tension*2, 20, gs.tension*2);
+
+                if(gs.tension > 20 && gs.tension < 80) { gs.holdTime += 0.02; fb="TENSION OPTIMAL. HOLDING..."; fbColor="text-emerald-600"; if(gs.holdTime > 2) completeStep(); }
+                else { gs.holdTime = 0; fb="RETRACT LIVER UPWARD. MAINTAIN GREEN TENSION."; if(gs.tension>80) fbColor="text-red-600"; }
+            }
+
+            else if (type === 'game_omentum' || type === 'game_vessels') {
+                if(imgStomach.complete) {
+                    let w = ch * 0.8 * (imgStomach.width/imgStomach.height);
+                    ctx.shadowColor='rgba(0,0,0,0.2)'; ctx.shadowBlur=20; ctx.drawImage(imgStomach, cw/2 - w/2, ch*0.1, w, ch*0.8); ctx.shadowColor='transparent';
+                }
+
+                if(type === 'game_omentum') {
+                    // Organic Bubbly Fat rendering
+                    ctx.fillStyle = 'rgba(250, 204, 21, 0.8)';
+                    ctx.shadowColor='rgba(161, 98, 7, 0.4)'; ctx.shadowBlur=15;
+                    for(let fy=ch*0.4; fy<=ch*0.9; fy+=30) {
+                        ctx.beginPath(); ctx.arc(cw*0.65 + Math.sin(fy)*20, fy, 40, 0, Math.PI*2); ctx.fill();
+                    }
+                    ctx.shadowColor='transparent';
+
+                    gs.cuts.forEach((c, i) => {
+                        if(!c.cut) {
+                            let isTarget = (i === gs.nextCut);
+                            ctx.fillStyle = isTarget ? '#3b82f6' : '#cbd5e1';
+                            ctx.beginPath(); ctx.arc(c.x, c.y, 30, 0, Math.PI*2); ctx.fill(); // Huge click areas
+                            ctx.strokeStyle = '#fff'; ctx.lineWidth=4; ctx.stroke();
+                            
+                            if(isDown && Math.hypot(mx - c.x, my - c.y) < 50) {
+                                if(isTarget) { c.cut = true; gs.nextCut++; isDown = false; createParticles(c.x, c.y, '#fde047', 10); }
+                            }
+                        }
+                    });
+                    if(gs.nextCut >= gs.cuts.length) completeStep();
+                    else fb = "SEVER OMENTUM (YELLOW FAT) IN SEQUENCE (BOTTOM TO TOP)";
+                } 
+                else {
+                    let allCut = true;
+                    gs.vessels.forEach((v, i) => {
+                        if(!v.cut) {
+                            allCut = false;
+                            // Realistic curving vessels
+                            let vGrad = ctx.createLinearGradient(cw*0.5, v.y, cw*0.8, v.y-20);
+                            vGrad.addColorStop(0, `rgb(${180 + v.heat}, ${30 + v.heat*2}, ${40 + v.heat*2})`);
+                            vGrad.addColorStop(1, `rgb(${120 + v.heat}, ${20 + v.heat*2}, ${30 + v.heat*2})`);
+                            
+                            ctx.shadowColor = `rgba(239, 68, 68, ${0.6 - v.heat/200})`; ctx.shadowBlur = 15;
+                            ctx.strokeStyle = vGrad; ctx.lineWidth = 14; ctx.lineCap='round';
+                            ctx.beginPath(); ctx.moveTo(cw*0.5, v.y); ctx.bezierCurveTo(cw*0.6, v.y+15, cw*0.7, v.y-25, cw*0.8, v.y - 20); ctx.stroke(); ctx.shadowBlur=0;
+
+                            if(isDown && Math.hypot(mx - cw*0.65, my - (v.y-10)) < 60) { 
+                                v.heat += 2.5; createParticles(mx, my, '#cbd5e1', 2, 'gas'); // smoke effect
+                            }
+                            else if (v.heat > 0 && v.heat < 100) { v.heat -= 0.5; }
+
+                            if(v.heat >= 100) {
+                                ctx.strokeStyle = '#f8fafc'; ctx.beginPath(); ctx.moveTo(cw*0.5, v.y); ctx.bezierCurveTo(cw*0.6, v.y+15, cw*0.7, v.y-25, cw*0.8, v.y - 20); ctx.stroke();
+                                if(!isDown) { v.cut = true; createParticles(cw*0.65, v.y-10, '#f8fafc', 15); } 
+                            }
+                        }
+                    });
+                    if(allCut) completeStep();
+                    fb = "HOLD OVER RED VESSELS TO CAUTERIZE (WHITE), RELEASE TO CUT";
+                }
+            }
+
+            else if (type === 'game_ruler') {
+                if(imgStomach.complete) { let w = ch * 0.8 * (imgStomach.width/imgStomach.height); ctx.drawImage(imgStomach, cw/2 - w/2, ch*0.1, w, ch*0.8); }
+                
+                let pX = cw*0.42; let pY = ch*0.85; 
+                ctx.fillStyle = '#10b981'; ctx.beginPath(); ctx.arc(pX, pY, 12, 0, Math.PI*2); ctx.fill();
+
+                if(isDown && Math.hypot(mx - pX, my - gs.dragY) < 100) gs.dragY = my; 
+                
+                gs.dist = Math.abs(gs.dragY - pY);
+                let cm = (gs.dist / 30).toFixed(1);
+
+                // Detailed Metallic Caliper
+                let rGrad = ctx.createLinearGradient(pX-10, 0, pX+10, 0);
+                rGrad.addColorStop(0, '#cbd5e1'); rGrad.addColorStop(0.5, '#f8fafc'); rGrad.addColorStop(1, '#94a3b8');
+                ctx.strokeStyle = rGrad; ctx.lineWidth = 12;
+                ctx.beginPath(); ctx.moveTo(pX, pY); ctx.lineTo(pX, gs.dragY); ctx.stroke();
+                
+                // Caliper jaws
+                ctx.fillStyle = '#64748b'; ctx.fillRect(pX, pY-4, 40, 8); ctx.fillRect(pX, gs.dragY-4, 40, 8);
+
+                ctx.fillStyle = '#0f172a'; ctx.shadowColor='rgba(0,0,0,0.2)'; ctx.shadowBlur=10;
+                ctx.fillRect(pX - 60, gs.dragY - 20, 120, 40); ctx.shadowBlur=0;
+                ctx.fillStyle = '#10b981'; ctx.font='bold 18px JetBrains Mono'; ctx.textAlign='center'; ctx.textBaseline='middle'; ctx.fillText(`${cm} cm`, pX, gs.dragY);
+
+                if(!isDown && parseFloat(cm) >= 4.5 && parseFloat(cm) <= 5.5) completeStep(); // Massive forgiving zone
+                fb = "DRAG CALIPER UP FROM PYLORUS. RELEASE AT 5.0 CM.";
+            }
+
+            else if (type === 'game_bougie') {
+                if(imgStomach.complete) { let w = ch * 0.8 * (imgStomach.width/imgStomach.height); ctx.globalAlpha=0.7; ctx.drawImage(imgStomach, cw/2 - w/2, ch*0.1, w, ch*0.8); ctx.globalAlpha=1; }
+                
+                if(isDown) gs.by += 4; 
+                gs.bx += (mx - gs.bx) * 0.15; 
+
+                let tubeGrad = ctx.createLinearGradient(gs.bx-20, 0, gs.bx+20, 0);
+                tubeGrad.addColorStop(0, '#1e40af'); tubeGrad.addColorStop(0.5, '#60a5fa'); tubeGrad.addColorStop(1, '#1e40af');
+                ctx.strokeStyle = tubeGrad; ctx.lineWidth = 36; ctx.lineCap='round';
+                ctx.shadowColor='rgba(59, 130, 246, 0.5)'; ctx.shadowBlur=20;
+                ctx.beginPath(); ctx.moveTo(cw*0.5, 0); ctx.lineTo(gs.bx, gs.by); ctx.stroke(); ctx.shadowBlur=0;
+
+                let leftBound = cw/2 - 100 - (gs.by * 0.05);
+                let rightBound = cw/2 + 100 + (gs.by * 0.05);
+                
+                ctx.strokeStyle = 'rgba(239,68,68,0.4)'; ctx.lineWidth=6; ctx.setLineDash([15,15]);
+                ctx.beginPath(); ctx.moveTo(leftBound, 0); ctx.lineTo(leftBound-30, ch); ctx.stroke();
+                ctx.beginPath(); ctx.moveTo(rightBound, 0); ctx.lineTo(rightBound+30, ch); ctx.stroke(); ctx.setLineDash([]);
+
+                if(gs.bx < leftBound || gs.bx > rightBound) { gs.by = 0; fb="WALL IMPACT. RESETTING TUBE."; fbColor="text-red-600"; }
+                else if (gs.by > ch*0.85) completeStep();
+                else fb="STEER BLUE BOUGIE DOWNWARD. AVOID RED DASHED WALLS.";
+            }
+
+            else if (type === 'game_staple_1') {
+                if(imgStomach.complete) { let w = ch * 0.8 * (imgStomach.width/imgStomach.height); ctx.drawImage(imgStomach, cw/2 - w/2, ch*0.1, w, ch*0.8); }
+                ctx.strokeStyle = '#3b82f6'; ctx.lineWidth = 36; ctx.beginPath(); ctx.moveTo(cw*0.5, 0); ctx.lineTo(cw*0.55, ch*0.85); ctx.stroke(); 
+                
+                let targetAngle = Math.PI/6; 
+                if(isDown) gs.angle = Math.atan2(my - ch*0.7, mx - cw*0.35);
+
+                ctx.save(); ctx.translate(cw*0.35, ch*0.7); ctx.rotate(gs.angle);
+                
+                // Metallic Stapler rendering
+                let staplerGrad = ctx.createLinearGradient(-30, 0, 30, 0);
+                staplerGrad.addColorStop(0, '#94a3b8'); staplerGrad.addColorStop(0.5, '#f8fafc'); staplerGrad.addColorStop(1, '#64748b');
+                ctx.fillStyle = staplerGrad; ctx.shadowColor='rgba(0,0,0,0.5)'; ctx.shadowBlur=25;
+                ctx.fillRect(-25, -140, 50, 280); ctx.shadowBlur=0;
+                
+                // Inner groove
+                ctx.fillStyle = '#1e293b'; ctx.fillRect(-5, -130, 10, 260);
+
+                ctx.strokeStyle = Math.abs(gs.angle - targetAngle) < 0.4 ? '#10b981' : '#ef4444'; ctx.lineWidth = 6; ctx.strokeRect(-25, -140, 50, 280);
+                ctx.restore();
+
+                fb = "ALIGN METALLIC STAPLER PARALLEL TO BLUE TUBE. THEN CLICK FIRE.";
+                if(gs.fail) { fb = "MISALIGNED. RE-ADJUST ANGLE."; fbColor="text-red-600"; gs.fail=false; }
+            }
+
+            else if (type === 'game_staple_seq') {
+                if(imgStomach.complete) { let w = ch * 0.8 * (imgStomach.width/imgStomach.height); ctx.drawImage(imgStomach, cw/2 - w/2, ch*0.1, w, ch*0.8); }
+                
+                ctx.strokeStyle = '#0f172a'; ctx.lineWidth = 8; ctx.setLineDash([10,10]);
+                ctx.beginPath();
+                for(let i=0; i<=gs.currVec; i++) { if(i===0) ctx.moveTo(gs.vectors[i].x, gs.vectors[i].y); else ctx.lineTo(gs.vectors[i].x, gs.vectors[i].y); }
+                ctx.stroke(); ctx.setLineDash([]);
+
+                if(gs.currVec < gs.vectors.length - 1) {
+                    let target = gs.vectors[gs.currVec + 1];
+                    ctx.strokeStyle = 'rgba(59, 130, 246, 0.5)'; ctx.lineWidth=16; ctx.lineCap='round';
+                    ctx.beginPath(); ctx.moveTo(gs.vectors[gs.currVec].x, gs.vectors[gs.currVec].y); ctx.lineTo(target.x, target.y); ctx.stroke();
+                    
+                    if(isDown) { gs.staplerX = mx; gs.staplerY = my; }
+                    
+                    let sGrad = ctx.createLinearGradient(gs.staplerX-25, 0, gs.staplerX+25, 0);
+                    sGrad.addColorStop(0, '#94a3b8'); sGrad.addColorStop(0.5, '#fff'); sGrad.addColorStop(1, '#64748b');
+                    ctx.fillStyle = sGrad; ctx.shadowColor='rgba(0,0,0,0.5)'; ctx.shadowBlur=20;
+                    ctx.fillRect(gs.staplerX-25, gs.staplerY-70, 50, 140); ctx.shadowBlur=0;
+                    ctx.fillStyle = '#0f172a'; ctx.fillRect(gs.staplerX-4, gs.staplerY-60, 8, 120);
+
+                    if(!isDown && Math.hypot(gs.staplerX - target.x, gs.staplerY - target.y) < 100) { 
+                        gs.currVec++; gs.staplerX = target.x; gs.staplerY = target.y; createParticles(target.x, target.y, '#94a3b8', 10);
+                    }
+                    fb = `SNAP STAPLER TO VECTOR ${gs.currVec+1}/${gs.vectors.length-1}`;
+                } else completeStep();
+            }
+
+            else if (type === 'game_fundus') {
+                if(imgStomach.complete) { let w = ch * 0.8 * (imgStomach.width/imgStomach.height); ctx.drawImage(imgStomach, cw/2 - w/2, ch*0.1, w, ch*0.8); }
+                
+                ctx.strokeStyle = 'rgba(239,68,68,0.7)'; ctx.lineWidth = 16; ctx.beginPath(); ctx.arc(gs.esophagus.x, gs.esophagus.y, gs.esophagus.r, 0, Math.PI*2); ctx.stroke();
+                ctx.strokeStyle = 'rgba(16,185,129,0.7)'; ctx.lineWidth = 16; ctx.beginPath(); ctx.arc(gs.target.x, gs.target.y, gs.target.r, 0, Math.PI*2); ctx.stroke();
+
+                if(isDown) {
+                    let dE = Math.hypot(mx - gs.esophagus.x, my - gs.esophagus.y);
+                    let dT = Math.hypot(mx - gs.target.x, my - gs.target.y);
+                    if(dE < gs.esophagus.r + 20) { fb="WARNING: ESOPHAGEAL DAMAGE!"; fbColor="text-red-600"; }
+                    else if (dT < gs.target.r + 40) completeStep(); 
+                }
+                if(fb.includes("AWAIT")) fb = "FIRE IN GREEN ZONE. AVOID RED ESOPHAGUS.";
+            }
+
+            else if (type === 'game_extract') {
+                ctx.fillStyle = '#94a3b8'; ctx.shadowColor='rgba(0,0,0,0.5)'; ctx.shadowBlur=25; 
+                ctx.beginPath(); ctx.arc(cw/2, ch*0.8, 70, 0, Math.PI*2); ctx.fill(); ctx.shadowBlur=0;
+                ctx.fillStyle = '#020617'; ctx.beginPath(); ctx.arc(cw/2, ch*0.8, 55, 0, Math.PI*2); ctx.fill(); 
+                
+                let sW = 250 * gs.compress; let sH = 350 / gs.compress;
+                let radGrad = ctx.createRadialGradient(cw/2, ch*0.3, 0, cw/2, ch*0.3, sH/2);
+                radGrad.addColorStop(0, '#fecdd3'); radGrad.addColorStop(1, '#be123c');
+                ctx.fillStyle = radGrad; ctx.shadowColor='rgba(225,29,72,0.5)'; ctx.shadowBlur=35;
+                ctx.beginPath(); ctx.ellipse(cw/2, ch*0.3, sW/2, sH/2, 0, 0, Math.PI*2); ctx.fill(); ctx.shadowBlur=0;
+
+                if(isDown && Math.hypot(mx - cw/2, my - ch*0.3) < 200) {
+                    gs.compress -= 0.2; isDown = false; createParticles(mx, my, '#fda4af', 5);
+                }
+
+                if(gs.compress < 0.3) completeStep();
+                fb = "CLICK STOMACH TISSUE TO COMPRESS FOR EXTRACTION";
+            }
+
+            else if (type === 'game_oversew') {
+                ctx.strokeStyle = '#94a3b8'; ctx.lineWidth = 12; ctx.beginPath(); ctx.moveTo(cw/2, ch*0.1); ctx.lineTo(cw/2, ch*0.9); ctx.stroke();
+                
+                gs.targetX = cw/2 + Math.sin(time*2.5) * 60; 
+                gs.sewY -= 1.5; 
+
+                if(!gs.trail) gs.trail = [];
+                if(Math.hypot(mx - gs.targetX, my - gs.sewY) < 70) { // Very forgiving
+                    gs.trail.push({x: mx, y: my});
+                } else { gs.sewY = ch*0.9; gs.trail = []; }
+
+                ctx.strokeStyle = '#0ea5e9'; ctx.lineWidth=6; ctx.lineCap='round'; ctx.lineJoin='round'; ctx.beginPath();
+                for(let i=0; i<gs.trail.length; i++) {
+                    if(i===0) ctx.moveTo(gs.trail[i].x, gs.trail[i].y);
+                    else ctx.lineTo(gs.trail[i].x, gs.trail[i].y);
+                } ctx.stroke();
+
+                ctx.fillStyle = 'rgba(16, 185, 129, 0.5)'; ctx.beginPath(); ctx.arc(gs.targetX, gs.sewY, 50, 0, Math.PI*2); ctx.fill(); 
+
+                if(gs.sewY < ch*0.1) completeStep();
+                fb = "TRACE GREEN TARGET CONTINUOUSLY TO OVERSEW STAPLE LINE";
+            }
+
+            else if (type === 'game_leak') {
+                if(imgStomach.complete) { let w = ch * 0.8 * (imgStomach.width/imgStomach.height); ctx.drawImage(imgStomach, cw/2 - w/2, ch*0.1, w, ch*0.8); }
+                
+                let dyeGrad = ctx.createLinearGradient(cw*0.4, 0, cw*0.45, 0);
+                dyeGrad.addColorStop(0,'rgba(37,99,235,0.85)'); dyeGrad.addColorStop(1,'transparent');
+                ctx.fillStyle = dyeGrad; ctx.fillRect(cw*0.4, ch*0.1, 80, ch*0.8); 
+                
+                if(mx>0) {
+                    ctx.save();
+                    ctx.beginPath(); ctx.arc(mx, my, 120, 0, Math.PI*2); ctx.clip(); // Massive lens
+                    ctx.translate(mx, my); ctx.scale(1.8, 1.8); ctx.translate(-mx, -my);
+                    if(imgStomach.complete) { let w = ch * 0.8 * (imgStomach.width/imgStomach.height); ctx.drawImage(imgStomach, cw/2 - w/2, ch*0.1, w, ch*0.8); }
+                    ctx.fillStyle = dyeGrad; ctx.fillRect(cw*0.4, ch*0.1, 80, ch*0.8);
+                    
+                    // Glass glare
+                    let glare = ctx.createLinearGradient(mx-100, my-100, mx+100, my+100);
+                    glare.addColorStop(0, 'rgba(255,255,255,0.4)'); glare.addColorStop(0.5, 'transparent');
+                    ctx.fillStyle = glare; ctx.fillRect(mx-150, my-150, 300, 300);
+                    ctx.restore();
+                    
+                    ctx.strokeStyle = '#1e293b'; ctx.lineWidth=12; ctx.beginPath(); ctx.arc(mx, my, 120, 0, Math.PI*2); ctx.stroke();
+                    ctx.strokeStyle = '#94a3b8'; ctx.lineWidth=4; ctx.beginPath(); ctx.arc(mx, my, 114, 0, Math.PI*2); ctx.stroke();
+                    
+                    gs.scanTime++;
+                    if(gs.scanTime > 40) document.getElementById('btn-pass').classList.remove('hidden'); 
+                }
+                fb = "SCAN LINE WITH MAGNIFIER. CLICK PASS IF NO LEAKS.";
+            }
+
+            else if (type === 'game_fascia') {
+                if(imgBelly.complete) { let w = ch * 0.8 * (imgBelly.width/imgBelly.height); ctx.drawImage(imgBelly, cw/2 - w/2, ch*0.1, w, ch*0.8); }
+                
+                let allDone = true;
+                gs.ports.forEach((p, i) => {
+                    ctx.fillStyle = '#0f172a'; ctx.beginPath(); ctx.arc(p.x, p.y, 15, 0, Math.PI*2); ctx.fill();
+                    
+                    ctx.fillStyle='#3b82f6'; 
+                    ctx.beginPath(); ctx.arc(p.x, p.y-30, 6, 0, Math.PI*2); ctx.fill(); 
+                    ctx.beginPath(); ctx.arc(p.x, p.y+30, 6, 0, Math.PI*2); ctx.fill(); 
+                    ctx.beginPath(); ctx.arc(p.x-30, p.y, 6, 0, Math.PI*2); ctx.fill(); 
+                    ctx.beginPath(); ctx.arc(p.x+30, p.y, 6, 0, Math.PI*2); ctx.fill(); 
+
+                    if(p.h) { ctx.strokeStyle='#10b981'; ctx.lineWidth=6; ctx.beginPath(); ctx.moveTo(p.x-30, p.y); ctx.lineTo(p.x+30, p.y); ctx.stroke(); }
+                    if(p.v) { ctx.strokeStyle='#10b981'; ctx.lineWidth=6; ctx.beginPath(); ctx.moveTo(p.x, p.y-30); ctx.lineTo(p.x, p.y+30); ctx.stroke(); }
+
+                    if(!p.h || !p.v) allDone = false;
+
+                    if(isDown && Math.hypot(mx - p.x, my - p.y) < 50) { p.h = true; p.v = true; createParticles(p.x, p.y, '#3b82f6', 3); }
+                });
+
+                if(allDone) completeStep();
+                
+                if(time % 1 < 0.02) gs.timer--;
+                ctx.fillStyle = gs.timer > 10 ? '#2563eb' : '#ef4444'; ctx.font='bold 32px JetBrains Mono'; ctx.textAlign='left'; ctx.fillText(`TIME: ${gs.timer}s`, 30, 50);
+                if(gs.timer <= 0 && !allDone) { gs.timer = 30; gs.ports.forEach(p=>{p.h=false; p.v=false;}); fb="FAILED. RESTARTING..."; fbColor="text-red-600"; }
+                else fb="CLICK EACH PORT AREA TO SUTURE FASCIA";
+            }
+
+            else if (type === 'game_purge') {
+                if(imgBelly.complete) { 
+                    let w = ch * 0.8 * (imgBelly.width/imgBelly.height); 
+                    let scale = 1.0 + (gs.pressure/15)*0.25;
+                    ctx.save(); ctx.translate(cw/2, ch/2); ctx.scale(scale, scale); ctx.translate(-cw/2, -ch/2);
+                    ctx.drawImage(imgBelly, cw/2 - w/2, ch*0.1, w, ch*0.8); 
+                    ctx.restore();
+                }
+
+                ctx.fillStyle = '#f1f5f9'; ctx.shadowColor='rgba(0,0,0,0.1)'; ctx.shadowBlur=20;
+                ctx.fillRect(cw/2 - 25, ch/2 - 150, 50, 300); ctx.shadowBlur=0;
+                ctx.fillStyle = '#d1fae5'; ctx.fillRect(cw/2 - 25, ch/2 + 130, 50, 20); 
+                
+                if(gs.pressure < 15) {
+                    gs.pressure += 0.05; 
+                    if(isDown) createParticles(cw/2, ch/2, '#cbd5e1', 2, 'gas');
+                }
+                let py = ch/2 + 150 - ((gs.pressure || 0) * 20);
+                
+                ctx.fillStyle = '#2563eb'; ctx.beginPath(); ctx.arc(cw/2, py, 18, 0, Math.PI*2); ctx.fill();
+
+                if(gs.pressure <= 0) { gs.pressure=0; completeStep(); }
+                fb = "RAPIDLY TAP SPACEBAR OR VENT BUTTON TO PURGE CO2";
+                document.getElementById('tel-press').innerText = `${Math.max(0, gs.pressure).toFixed(1)} mmHg`;
+            }
+
+            let fbEl = document.getElementById('canvas-feedback');
+            fbEl.innerText = fb;
+            if(fbColor.includes('red')) fbEl.className = 'absolute top-6 right-6 z-20 text-[11px] text-red-700 bg-red-50 border border-red-200 px-4 py-2 rounded-lg font-bold shadow-md tracking-wide uppercase';
+            else if(fbColor.includes('emerald')) fbEl.className = 'absolute top-6 right-6 z-20 text-[11px] text-emerald-700 bg-emerald-50 border border-emerald-200 px-4 py-2 rounded-lg font-bold shadow-md tracking-wide uppercase';
+            else fbEl.className = 'absolute top-6 right-6 z-20 text-[11px] text-blue-700 bg-blue-50 border border-blue-200 px-4 py-2 rounded-lg font-bold shadow-md tracking-wide uppercase';
+        }
+
+        // --- INTERACTION LOGIC ---
+        canvas.addEventListener('mousedown', (e) => {
+            isDown = true;
+            let rect = canvas.getBoundingClientRect();
+            mx = e.clientX - rect.left; my = e.clientY - rect.top;
+        });
+
+        canvas.addEventListener('mousemove', (e) => {
+            let rect = canvas.getBoundingClientRect();
+            mx = e.clientX - rect.left; my = e.clientY - rect.top;
+        });
+
+        canvas.addEventListener('mouseup', () => { isDown = false; });
+        canvas.addEventListener('mouseleave', () => { isDown = false; mx = -100; my = -100; });
+
+        // --- HTML UI CONTROLLER ---
+        function renderProtocolUI() {
+            const container = document.getElementById('ui-steps-container');
+            container.innerHTML = '';
+            
+            protocol.forEach((step, i) => {
+                let isPast = i < currStep;
+                let isCurr = i === currStep;
+                
+                if(i === 0 || protocol[i].phase !== protocol[i-1].phase) {
+                    container.innerHTML += `<div class="text-[10px] font-bold text-slate-400 mt-6 mb-2 border-b border-slate-200 pb-1 tracking-widest uppercase">${step.phase}</div>`;
+                }
+
+                let icon = isPast ? `<svg class="w-5 h-5 text-emerald-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M5 13l4 4L19 7"></path></svg>` 
+                           : (isCurr ? `<div class="w-2.5 h-2.5 rounded-full bg-blue-600 pulse-ring m-1.5"></div>` 
+                           : `<div class="w-2.5 h-2.5 rounded-full bg-slate-300 m-1.5"></div>`);
+
+                let html = `
+                    <div class="flex items-start gap-4 mb-5 ${isCurr ? 'opacity-100' : (isPast ? 'opacity-50' : 'opacity-40')}">
+                        <div class="mt-0.5 flex-shrink-0">${icon}</div>
+                        <div class="w-full">
+                            <h3 class="text-sm font-bold ${isCurr ? 'text-blue-700' : 'text-slate-700'}">${step.name}</h3>
+                            ${isCurr ? `<div class="text-xs text-slate-600 mt-2 bg-slate-50 p-3 rounded-lg border border-slate-200 font-medium leading-relaxed shadow-sm">${step.inst}</div>` : ''}
+                        </div>
+                    </div>
+                `;
+                container.innerHTML += html;
+            });
+
+            document.getElementById('ui-phase-name').innerText = protocol[currStep].phase.split(':')[1].trim();
+            document.getElementById('ui-phase-desc').innerText = protocol[currStep].desc;
+            document.getElementById('ui-progress-text').innerText = `${currStep}/15`;
+            document.getElementById('ui-progress-bar').style.width = `${(currStep/15)*100}%`;
+            
+            let btn = document.getElementById('btn-next');
+            btn.disabled = true; btn.innerText = "AWAITING STEP COMPLETION"; 
+            btn.classList.remove('bg-emerald-600', 'hover:bg-emerald-500'); 
+            btn.classList.add('bg-blue-600', 'hover:bg-blue-700');
+        }
+
+        function completeStep() {
+            if(stepCompleted) return;
+            stepCompleted = true;
+            let btn = document.getElementById('btn-next');
+            btn.disabled = false;
+            btn.innerText = (currStep === 14) ? "GENERATE FINAL OPERATIVE REPORT" : "EXECUTE NEXT SEQUENCE >";
+            btn.classList.remove('bg-blue-600', 'hover:bg-blue-700'); 
+            btn.classList.add('bg-emerald-600', 'hover:bg-emerald-500');
+            document.getElementById('tool-overlay').classList.add('hidden');
+        }
+
+        document.getElementById('btn-next').addEventListener('click', () => {
+            if(currStep < 14) {
+                currStep++;
+                initGameState();
+                renderProtocolUI();
+                const container = document.getElementById('ui-steps-container');
+                container.scrollTop = container.scrollHeight; 
+            } else {
+                showFinalReport();
+            }
+        });
+
+        // --- FINAL REPORT ---
+        function showFinalReport() {
+            const overlay = document.getElementById('report-overlay');
+            document.getElementById('rep-date').innerText = new Date().toISOString().split('T')[0];
+            overlay.classList.remove('translate-y-full');
+        }
+
+        function downloadPDF() {
+            const btn = document.getElementById('pdf-btn');
+            const originalText = btn.innerHTML;
+            btn.innerHTML = "GENERATING PDF..."; btn.disabled = true;
+
+            const element = document.getElementById('pdf-content');
+            const opt = { 
+                margin: 0.5, 
+                filename: 'operative_log_BRT404.pdf', 
+                image: { type: 'jpeg', quality: 1.0 }, 
+                html2canvas: { scale: 2, useCORS: true }, 
+                jsPDF: { unit: 'in', format: 'letter', orientation: 'portrait' } 
+            };
+            
+            html2pdf().set(opt).from(element).save().then(() => {
+                btn.innerHTML = originalText; btn.disabled = false;
+            });
+        }
+
+        // --- INIT ---
+        resize();
+        renderProtocolUI();
+        animate();
+
+    </script>
+</body>
+</html>

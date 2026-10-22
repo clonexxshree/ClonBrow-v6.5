@@ -1,0 +1,422 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Telomere Aging Clock & Hayflick Limit</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;700&family=Inter:wght@300;400;600;700&display=swap');
+
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: #020617;
+            color: #f8fafc;
+            overflow-x: hidden;
+            user-select: none;
+            touch-action: none;
+        }
+
+        .font-mono { font-family: 'JetBrains Mono', monospace; }
+
+        .glass-card {
+            background: rgba(15, 23, 42, 0.75);
+            backdrop-filter: blur(16px);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.5);
+        }
+
+        .digital-readout {
+            background: #061021;
+            color: #fbbf24; /* Amber base */
+            text-shadow: 0 0 10px rgba(251, 191, 36, 0.4);
+            border: 1px solid #1e293b;
+            transition: all 0.3s ease;
+        }
+
+        .status-senescent {
+            color: #f43f5e !important;
+            text-shadow: 0 0 12px rgba(244, 63, 94, 0.6) !important;
+            border-color: rgba(244, 63, 94, 0.4) !important;
+        }
+
+        .status-immortal {
+            color: #a78bfa !important;
+            text-shadow: 0 0 12px rgba(167, 139, 250, 0.6) !important;
+            border-color: rgba(167, 139, 250, 0.4) !important;
+        }
+
+        /* Chromosome Styling */
+        .chromosome-arm {
+            fill: #1e1b4b;
+            stroke: #4338ca;
+            stroke-width: 4;
+            transition: all 0.5s ease;
+        }
+
+        .telomere-cap {
+            fill: #38bdf8;
+            stroke: #0ea5e9;
+            stroke-width: 2;
+            filter: drop-shadow(0 0 8px #0ea5e9);
+            transition: height 0.8s cubic-bezier(0.34, 1.56, 0.64, 1), 
+                        y 0.8s cubic-bezier(0.34, 1.56, 0.64, 1),
+                        opacity 0.5s ease;
+        }
+
+        .telomere-warning {
+            fill: #f43f5e;
+            stroke: #e11d48;
+            filter: drop-shadow(0 0 12px #f43f5e);
+        }
+
+        /* Division Animation */
+        @keyframes mitosis {
+            0% { transform: scale(1); opacity: 1; }
+            50% { transform: scale(1.1) translateX(20px); opacity: 0.5; }
+            100% { transform: scale(1) translateX(0); opacity: 1; }
+        }
+        .dividing { animation: mitosis 0.8s ease-in-out; }
+
+        /* Grid Background */
+        .bio-grid {
+            background-size: 50px 50px;
+            background-image: 
+                linear-gradient(to right, rgba(56, 189, 248, 0.03) 1px, transparent 1px),
+                linear-gradient(to bottom, rgba(56, 189, 248, 0.03) 1px, transparent 1px);
+        }
+
+        .scanline {
+            width: 100%;
+            height: 2px;
+            background: rgba(56, 189, 248, 0.05);
+            position: absolute;
+            z-index: 10;
+            animation: scan 10s linear infinite;
+        }
+        @keyframes scan { 0% { top: 0%; } 100% { top: 100%; } }
+
+        /* Telomerase Effect */
+        .immortal-glow {
+            filter: drop-shadow(0 0 15px #a78bfa);
+        }
+
+        .btn-action {
+            transition: all 0.2s ease;
+        }
+        .btn-action:active { transform: scale(0.95); }
+    </style>
+</head>
+<body class="min-h-screen p-4 md:p-8 flex items-center justify-center">
+
+    <div class="max-w-7xl w-full grid grid-cols-1 lg:grid-cols-12 gap-8 items-stretch">
+        
+        <!-- Simulation Viewport -->
+        <div class="lg:col-span-8 flex flex-col gap-6">
+            <div id="sim-viewport" class="glass-card rounded-3xl p-0 relative flex-grow min-h-[550px] flex flex-col overflow-hidden border border-slate-800 bio-grid">
+                <div class="scanline"></div>
+                
+                <!-- HUD Header -->
+                <div class="absolute top-6 left-8 flex items-center gap-3 z-30">
+                    <div id="status-dot" class="w-2.5 h-2.5 rounded-full bg-sky-500 shadow-[0_0_10px_#38bdf8]"></div>
+                    <span id="status-text" class="text-[10px] font-bold text-slate-400 uppercase tracking-widest font-mono">Cellular Phase: <span id="hud-mode" class="text-sky-400">Replicative Competence</span></span>
+                </div>
+
+                <!-- Main Visualization Area -->
+                <div class="relative w-full flex-grow flex items-center justify-center">
+                    
+                    <svg id="chromosome-svg" viewBox="0 0 600 600" class="w-full h-full max-w-[450px] relative z-10">
+                        <!-- Chromosome Arms (X-Shape) -->
+                        <g id="chromosome-group" transform="translate(300, 300)">
+                            <!-- Top Left -->
+                            <path d="M -10,-10 C -20,-100 -60,-180 -60,-220 Q -60,-240 -40,-240 Q -20,-240 -10,-220 L -5,-10 Z" class="chromosome-arm" />
+                            <!-- Top Right -->
+                            <path d="M 10,-10 C 20,-100 60,-180 60,-220 Q 60,-240 40,-240 Q 20,-240 10,-220 L 5,-10 Z" class="chromosome-arm" />
+                            <!-- Bottom Left -->
+                            <path d="M -10,10 C -20,100 -60,180 -60,220 Q -60,240 -40,240 Q -20,240 -10,220 L -5,10 Z" class="chromosome-arm" />
+                            <!-- Bottom Right -->
+                            <path d="M 10,10 C 20,100 60,180 60,220 Q 60,240 40,240 Q 20,220 10,220 L 5,10 Z" class="chromosome-arm" />
+
+                            <!-- Telomere Caps -->
+                            <!-- TL -->
+                            <rect id="cap-tl" x="-62" y="-242" width="24" height="40" rx="10" class="telomere-cap" />
+                            <!-- TR -->
+                            <rect id="cap-tr" x="38" y="-242" width="24" height="40" rx="10" class="telomere-cap" />
+                            <!-- BL -->
+                            <rect id="cap-bl" x="-62" y="202" width="24" height="40" rx="10" class="telomere-cap" />
+                            <!-- BR -->
+                            <rect id="cap-br" x="38" y="202" width="24" height="40" rx="10" class="telomere-cap" />
+
+                            <!-- Centromere -->
+                            <circle cx="0" cy="0" r="20" fill="#4338ca" stroke="#312e81" stroke-width="2" />
+                            <text y="5" text-anchor="middle" font-size="8" font-weight="bold" fill="#6366f1" font-family="monospace">DNA CORE</text>
+                        </g>
+                    </svg>
+
+                </div>
+
+                <!-- Tags -->
+                <div class="absolute bottom-6 left-8 flex flex-col gap-1 z-30">
+                    <span class="text-[9px] font-mono text-slate-500 uppercase">Marker: TTAGGG Sequence repeats</span>
+                    <span class="text-[9px] font-mono text-slate-500 uppercase">Limit: ~50 Divisions (Hayflick)</span>
+                </div>
+            </div>
+
+            <!-- Controls -->
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <button id="btn-divide" class="btn-action group relative overflow-hidden px-8 py-6 bg-sky-600 hover:bg-sky-500 text-white font-bold rounded-2xl transition-all shadow-lg shadow-sky-900/40 flex items-center justify-center gap-3">
+                    <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"></path></svg>
+                    <span class="text-lg">Trigger Cell Division</span>
+                </button>
+                
+                <div class="glass-card p-4 rounded-2xl flex items-center justify-between">
+                    <div class="flex items-center gap-4">
+                        <div id="telomerase-status-icon" class="w-10 h-10 rounded-full bg-slate-800 border border-slate-700 flex items-center justify-center transition-colors">
+                            <svg class="w-5 h-5 text-slate-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19.428 15.428a2 2 0 00-1.022-.547l-2.387-.477a6 6 0 00-3.86.517l-.318.158a6 6 0 01-3.86.517L6.05 15.21a2 2 0 00-1.806.547M8 4h8l-1 1v5.172a2 2 0 00.586 1.414l5 5c1.26 1.26.367 3.414-1.415 3.414H4.828c-1.782 0-2.674-2.154-1.414-3.414l5-5A2 2 0 009 10.172V5L8 4z"></path></svg>
+                        </div>
+                        <div>
+                            <div class="text-[10px] font-bold text-slate-200 uppercase tracking-widest">Enzyme: Telomerase (hTERT)</div>
+                            <div id="telomerase-desc" class="text-[9px] text-slate-500 font-mono">Inactive in somatic cells.</div>
+                        </div>
+                    </div>
+                    <button id="btn-toggle-telomerase" class="px-4 py-2 bg-slate-800 hover:bg-slate-700 text-slate-300 border border-slate-600 rounded-lg text-[10px] font-bold uppercase transition-all">
+                        Activate
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Sidebar: Analytics & Data -->
+        <div class="lg:col-span-4 flex flex-col gap-6">
+            
+            <!-- Digital Readout -->
+            <div id="telemetry-panel" class="digital-readout rounded-3xl p-6 space-y-6">
+                <div class="flex justify-between items-center border-b border-current pb-3 opacity-60">
+                    <span class="text-[10px] font-bold tracking-tighter uppercase">Biological Clock</span>
+                    <span class="text-xs font-mono animate-pulse" id="live-status">LIVE</span>
+                </div>
+
+                <div class="space-y-6">
+                    <!-- Telomere Length -->
+                    <div class="space-y-1">
+                        <label class="text-[10px] uppercase font-bold opacity-60">Telomere Length (Base Pairs)</label>
+                        <div class="flex items-baseline gap-2">
+                            <div id="data-bp" class="text-5xl font-bold font-mono">10,000</div>
+                            <span class="text-lg font-mono font-bold opacity-60">bp</span>
+                        </div>
+                    </div>
+
+                    <div class="grid grid-cols-2 gap-4 pt-4 border-t border-current opacity-80">
+                        <div class="space-y-1">
+                            <label class="text-[9px] uppercase font-bold text-current">Division Count</label>
+                            <div id="data-divisions" class="text-xl font-bold font-mono">0</div>
+                        </div>
+                        <div class="space-y-1 text-right">
+                            <label class="text-[9px] uppercase font-bold text-current">Genomic Health</label>
+                            <div id="data-stability" class="text-xl font-bold font-mono text-emerald-400">OPTIMAL</div>
+                        </div>
+                    </div>
+
+                    <!-- Life Potential Bar -->
+                    <div class="p-4 bg-black/30 rounded-xl border border-current space-y-2">
+                        <div class="flex justify-between items-center">
+                            <label class="text-[9px] uppercase font-bold text-current">Replicative Potential</label>
+                            <span id="data-potential-pct" class="text-[10px] font-mono">100%</span>
+                        </div>
+                        <div class="h-1.5 w-full bg-slate-900 rounded-full overflow-hidden">
+                            <div id="potential-bar" class="h-full bg-sky-400 transition-all duration-700" style="width: 100%"></div>
+                        </div>
+                        <p class="text-[8px] opacity-60 leading-tight italic">
+                            Proximity to the Hayflick Limit where apoptosis or senescence is triggered.
+                        </p>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Aging Guide Card -->
+            <div class="glass-card p-6 rounded-3xl space-y-4 flex-grow flex flex-col">
+                <h3 class="text-xs font-bold text-slate-400 uppercase tracking-widest flex items-center gap-2">
+                    <svg class="w-4 h-4 text-rose-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
+                    Mechanisms of Aging
+                </h3>
+                
+                <div class="space-y-4 text-[11px] text-slate-300 leading-relaxed">
+                    <p>
+                        Every time a cell replicates, its DNA must be copied. However, the enzyme DNA polymerase cannot copy the very end of the lagging strand.
+                    </p>
+                    <div class="p-3 bg-slate-900/50 rounded-xl border border-slate-800">
+                        <strong class="text-sky-400 block mb-1">The End-Replication Problem</strong>
+                        Without telomeres, essential genes would be lost during division. Telomeres act as "buffer zones"—meaningless sequences that can be safely sacrificed.
+                    </div>
+                    <div id="senescence-warning" class="hidden p-3 bg-rose-900/20 border border-rose-900/50 rounded-xl text-rose-300">
+                        <strong>Crisis State reached.</strong>
+                        The telomeres are too short to protect the DNA. DNA damage response (DDR) is now constitutive. The cell has stopped dividing to prevent cancer.
+                    </div>
+                </div>
+
+                <button id="btn-reset" class="mt-auto w-full py-3 bg-slate-800 hover:bg-slate-700 text-slate-500 rounded-xl text-[10px] font-bold uppercase tracking-widest border border-slate-700 transition-all">
+                    Reset Biological Clock
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', () => {
+            const btnDivide = document.getElementById('btn-divide');
+            const btnToggleTelomerase = document.getElementById('btn-toggle-telomerase');
+            const btnReset = document.getElementById('btn-reset');
+            
+            const chromosomeGroup = document.getElementById('chromosome-group');
+            const caps = [
+                document.getElementById('cap-tl'),
+                document.getElementById('cap-tr'),
+                document.getElementById('cap-bl'),
+                document.getElementById('cap-br')
+            ];
+
+            const dataBP = document.getElementById('data-bp');
+            const dataDivisions = document.getElementById('data-divisions');
+            const dataStability = document.getElementById('data-stability');
+            const dataPotentialPct = document.getElementById('data-potential-pct');
+            const potentialBar = document.getElementById('potential-bar');
+            
+            const hudMode = document.getElementById('hud-mode');
+            const statusDot = document.getElementById('status-dot');
+            const telemetryPanel = document.getElementById('telemetry-panel');
+            const senescenceWarning = document.getElementById('senescence-warning');
+            const telomeraseStatusIcon = document.getElementById('telomerase-status-icon');
+            const telomeraseDesc = document.getElementById('telomerase-desc');
+
+            // --- State ---
+            let divisions = 0;
+            const INITIAL_BP = 10000;
+            const LOSS_PER_DIV = 200;
+            const LIMIT = 50;
+            let currentBP = INITIAL_BP;
+            let telomeraseActive = false;
+            let isSenescent = false;
+
+            function updateUI() {
+                dataDivisions.textContent = divisions;
+                dataBP.textContent = Math.round(currentBP).toLocaleString();
+                
+                const potential = Math.max(0, (currentBP / INITIAL_BP) * 100);
+                dataPotentialPct.textContent = `${Math.round(potential)}%`;
+                potentialBar.style.width = `${potential}%`;
+
+                // Calculate visual cap height (40 is initial)
+                const capHeight = (currentBP / INITIAL_BP) * 40;
+                caps.forEach((cap, i) => {
+                    cap.setAttribute('height', Math.max(2, capHeight));
+                    // Adjust Y for top and bottom caps
+                    if (i < 2) { // TL, TR
+                        cap.setAttribute('y', -202 - capHeight); 
+                    } else { // BL, BR
+                        cap.setAttribute('y', 202);
+                    }
+
+                    // Change color as it gets short
+                    if (potential < 20) {
+                        cap.classList.add('telomere-warning');
+                    } else {
+                        cap.classList.remove('telomere-warning');
+                    }
+                });
+
+                // Status Logic
+                if (telomeraseActive) {
+                    hudMode.textContent = "Immortalized State";
+                    hudMode.className = "text-purple-400";
+                    statusDot.className = "w-2.5 h-2.5 rounded-full bg-purple-500 shadow-[0_0_10px_#a78bfa] animate-ping";
+                    telemetryPanel.classList.add('status-immortal');
+                    telemetryPanel.classList.remove('status-senescent');
+                    dataStability.textContent = "ABSOLUTE";
+                    dataStability.className = "text-xl font-bold font-mono text-purple-400";
+                } else if (isSenescent) {
+                    hudMode.textContent = "Cellular Senescence";
+                    hudMode.className = "text-rose-500";
+                    statusDot.className = "w-2.5 h-2.5 rounded-full bg-rose-500 shadow-[0_0_10px_#f43f5e]";
+                    telemetryPanel.classList.add('status-senescent');
+                    telemetryPanel.classList.remove('status-immortal');
+                    dataStability.textContent = "CRITICAL";
+                    dataStability.className = "text-xl font-bold font-mono text-rose-500";
+                    senescenceWarning.classList.remove('hidden');
+                    btnDivide.disabled = true;
+                    btnDivide.classList.add('opacity-50', 'grayscale');
+                } else {
+                    hudMode.textContent = "Replicative Competence";
+                    hudMode.className = "text-sky-400";
+                    statusDot.className = "w-2.5 h-2.5 rounded-full bg-sky-500 shadow-[0_0_10px_#38bdf8]";
+                    telemetryPanel.classList.remove('status-senescent', 'status-immortal');
+                    dataStability.textContent = potential > 50 ? "OPTIMAL" : "DEGRADING";
+                    dataStability.className = `text-xl font-bold font-mono ${potential > 50 ? 'text-emerald-400' : 'text-amber-400'}`;
+                    senescenceWarning.classList.add('hidden');
+                }
+            }
+
+            function triggerDivision() {
+                if (isSenescent && !telomeraseActive) return;
+
+                // Visual Animation
+                chromosomeGroup.classList.add('dividing');
+                setTimeout(() => chromosomeGroup.classList.remove('dividing'), 800);
+
+                divisions++;
+
+                if (telomeraseActive) {
+                    // hTERT rebuilds caps, preventing shortening
+                    currentBP = INITIAL_BP; 
+                } else {
+                    currentBP -= LOSS_PER_DIV;
+                    if (currentBP <= (INITIAL_BP * 0.1)) { // 10% threshold
+                        isSenescent = true;
+                    }
+                }
+
+                updateUI();
+            }
+
+            function toggleTelomerase() {
+                telomeraseActive = !telomeraseActive;
+                if (telomeraseActive) {
+                    btnToggleTelomerase.textContent = "Deactivate";
+                    btnToggleTelomerase.classList.replace('bg-slate-800', 'bg-purple-900');
+                    telomeraseStatusIcon.classList.replace('bg-slate-800', 'bg-purple-800');
+                    telomeraseStatusIcon.querySelector('svg').classList.replace('text-slate-500', 'text-purple-300');
+                    telomeraseDesc.textContent = "hTERT actively extending telomeres.";
+                    chromosomeGroup.classList.add('immortal-glow');
+                    // If we were senescent, we can now divide again
+                    btnDivide.disabled = false;
+                    btnDivide.classList.remove('opacity-50', 'grayscale');
+                } else {
+                    btnToggleTelomerase.textContent = "Activate";
+                    btnToggleTelomerase.classList.replace('bg-purple-900', 'bg-slate-800');
+                    telomeraseStatusIcon.classList.replace('bg-purple-800', 'bg-slate-800');
+                    telomeraseStatusIcon.querySelector('svg').classList.replace('text-purple-300', 'text-slate-500');
+                    telomeraseDesc.textContent = "Inactive in somatic cells.";
+                    chromosomeGroup.classList.remove('immortal-glow');
+                }
+                updateUI();
+            }
+
+            function reset() {
+                divisions = 0;
+                currentBP = INITIAL_BP;
+                isSenescent = false;
+                btnDivide.disabled = false;
+                btnDivide.classList.remove('opacity-50', 'grayscale');
+                updateUI();
+            }
+
+            // Events
+            btnDivide.addEventListener('click', triggerDivision);
+            btnToggleTelomerase.addEventListener('click', toggleTelomerase);
+            btnReset.addEventListener('click', reset);
+
+            // Init
+            updateUI();
+        });
+    </script>
+</body>
+</html>

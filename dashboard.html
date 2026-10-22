@@ -1,0 +1,575 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>ClonBrow OS | Dashboard</title>
+
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+    
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Plus+Jakarta+Sans:wght@500;600;700;800&display=swap" rel="stylesheet">
+    
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    fontFamily: { 
+                        sans: ['Inter', 'sans-serif'],
+                        jakarta: ['Plus Jakarta Sans', 'sans-serif'],
+                    }
+                }
+            }
+        }
+    </script>
+
+    <style>
+        /* --- Bright, Airy Background utilizing your video --- */
+        body { 
+            font-family: 'Inter', sans-serif; 
+            /* Soft pearl fallback color */
+            background-color: #F8FAFC; 
+            color: #0F172A;
+            -webkit-font-smoothing: antialiased;
+            position: relative;
+            min-height: 100vh;
+        }
+
+        /* The master video background layer */
+        #bg-video {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100vw;
+            height: 100vh;
+            object-fit: cover;
+            z-index: -3;
+            /* Slight manipulation to keep it bright and aesthetic */
+            filter: saturate(130%) brightness(1.05);
+        }
+
+        /* Milky wash over the video to soften it and ensure text readability */
+        body::after {
+            content: '';
+            position: fixed;
+            inset: 0;
+            background: linear-gradient(135deg, rgba(255,255,255,0.4), rgba(240,248,255,0.2));
+            z-index: -2;
+            pointer-events: none;
+        }
+
+        /* Sleek Scrollbar */
+        ::-webkit-scrollbar { width: 8px; height: 8px; }
+        ::-webkit-scrollbar-track { background: transparent; }
+        ::-webkit-scrollbar-thumb { background: rgba(148, 163, 184, 0.4); border-radius: 99px; }
+        ::-webkit-scrollbar-thumb:hover { background: rgba(148, 163, 184, 0.7); }
+
+        /* --- Milky White Frosted Glass Navigation --- */
+        .milky-nav {
+            background: linear-gradient(135deg, rgba(255, 255, 255, 0.6), rgba(255, 255, 255, 0.3));
+            backdrop-filter: blur(40px) saturate(150%);
+            -webkit-backdrop-filter: blur(40px) saturate(150%);
+            border: 1px solid rgba(255, 255, 255, 0.8);
+            border-radius: 24px; /* Curvy */
+            box-shadow: 0 8px 32px -4px rgba(0, 0, 0, 0.04), inset 0 1px 1px rgba(255, 255, 255, 1);
+        }
+
+        .nav-pill {
+            padding: 8px 18px;
+            border-radius: 12px; /* Curvy */
+            font-size: 13px;
+            font-weight: 600; 
+            color: #475569; 
+            transition: all 0.2s ease;
+            cursor: pointer;
+            text-decoration: none;
+            display: inline-block;
+        }
+        .nav-pill:hover { 
+            background: rgba(255, 255, 255, 0.6); 
+            color: #0F172A; 
+        }
+        .nav-pill.active {
+            background: #FFFFFF;
+            color: #0F172A;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.02);
+            border: 1px solid rgba(255,255,255,0.8);
+        }
+
+        /* --- AESTHETIC FROSTED GLASS CARDS --- */
+        .glass-card {
+            border-radius: 24px;
+            border: 1px solid rgba(255, 255, 255, 0.8);
+            position: relative;
+            overflow: hidden;
+            color: #1E293B; 
+            /* Added inner glows and deeper shadows to enhance glass realism */
+            box-shadow: 0 12px 40px -4px rgba(0, 15, 40, 0.05), inset 0 1px 1px rgba(255, 255, 255, 1), inset 0 0 20px rgba(255, 255, 255, 0.3);
+            z-index: 1;
+            /* Thicker, more reflective glass gradient */
+            background: linear-gradient(135deg, rgba(255, 255, 255, 0.65) 0%, rgba(255, 255, 255, 0.35) 100%);
+            backdrop-filter: blur(40px) saturate(150%);
+            -webkit-backdrop-filter: blur(40px) saturate(150%);
+        }
+
+        /* --- VIBRANT BLUE/CYAN ACCENT CARD (Tinted Glass over Video) --- */
+        .accent-card {
+            border-radius: 24px;
+            border: 1px solid rgba(255, 255, 255, 0.5);
+            position: relative;
+            overflow: hidden;
+            color: #FFFFFF; 
+            box-shadow: 0 12px 40px -8px rgba(14, 165, 233, 0.3), inset 0 1px 1px rgba(255, 255, 255, 0.6);
+            z-index: 1;
+            /* Rich, vibrant tinted glass so the video moves behind it */
+            background: linear-gradient(135deg, rgba(14, 165, 233, 0.5), rgba(3, 105, 161, 0.7));
+            backdrop-filter: blur(50px) saturate(200%);
+            -webkit-backdrop-filter: blur(50px) saturate(200%);
+        }
+
+        /* --- AESTHETIC GLASS BUTTONS --- */
+        .glass-btn-inner {
+            position: relative;
+            overflow: hidden;
+            border-radius: 12px; /* Curvy */
+            border: 1px solid rgba(255, 255, 255, 0.8);
+            color: #0F172A;
+            z-index: 1;
+            transition: all 0.2s ease;
+            cursor: pointer;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.02), inset 0 1px 1px rgba(255,255,255,1);
+            background: linear-gradient(135deg, rgba(255, 255, 255, 0.7), rgba(255, 255, 255, 0.4));
+            backdrop-filter: blur(20px);
+        }
+        .glass-btn-inner:hover {
+            transform: translateY(-1px);
+            box-shadow: 0 4px 12px rgba(14, 165, 233, 0.15), inset 0 1px 1px rgba(255,255,255,1);
+            background: rgba(255, 255, 255, 0.9);
+        }
+        .glass-btn-inner:active { transform: translateY(1px); }
+
+        /* Dedicated Accent Button (Tinted Glass) */
+        .btn-accent {
+            color: white;
+            border: 1px solid rgba(255,255,255,0.4);
+            box-shadow: 0 4px 15px rgba(14, 165, 233, 0.2), inset 0 1px 1px rgba(255,255,255,0.5);
+            background: linear-gradient(135deg, rgba(14, 165, 233, 0.6), rgba(3, 105, 161, 0.8));
+            backdrop-filter: blur(20px) saturate(150%);
+        }
+        .btn-accent:hover {
+            color: white;
+            background: linear-gradient(135deg, rgba(14, 165, 233, 0.8), rgba(3, 105, 161, 0.9));
+            box-shadow: 0 6px 20px rgba(14, 165, 233, 0.3), inset 0 1px 1px rgba(255,255,255,0.6);
+        }
+
+        /* Internal UI Elements */
+        .glass-input {
+            background: rgba(255, 255, 255, 0.5);
+            backdrop-filter: blur(20px);
+            -webkit-backdrop-filter: blur(20px);
+            border: 1px solid rgba(255, 255, 255, 0.8);
+            color: #1E293B;
+            border-radius: 12px;
+            transition: all 0.2s;
+            box-shadow: inset 0 2px 4px rgba(0,0,0,0.02);
+        }
+        .glass-input::placeholder { color: rgba(71, 85, 105, 0.6); }
+        .glass-input:focus { outline: none; border-color: rgba(56, 189, 248, 0.8); background: rgba(255, 255, 255, 0.8); box-shadow: inset 0 2px 4px rgba(0,0,0,0.01), 0 0 0 3px rgba(56, 189, 248, 0.2); }
+
+        .curvy-progress {
+            height: 8px;
+            width: 100%;
+            background-color: rgba(0, 0, 0, 0.04);
+            border: 1px solid rgba(255, 255, 255, 0.6);
+            border-radius: 99px; 
+            overflow: hidden;
+            box-shadow: inset 0 1px 2px rgba(0,0,0,0.05);
+        }
+        .curvy-fill { height: 100%; border-radius: 99px; }
+
+        /* Task List & News */
+        .list-item { transition: all 0.2s ease; cursor: pointer; border-radius: 12px; }
+        .list-item:hover { background: rgba(255, 255, 255, 0.7); transform: translateX(2px); }
+        .task-done { text-decoration: line-through; opacity: 0.5; }
+
+        /* Calendar Grid */
+        .cal-day {
+            border: 1px solid transparent;
+            border-radius: 8px;
+            transition: all 0.2s;
+        }
+        .cal-day.active {
+            background: rgba(56, 189, 248, 0.2);
+            border: 1px solid rgba(56, 189, 248, 0.4);
+            color: #0369A1;
+            font-weight: 700;
+        }
+        .cal-day:hover:not(.active) { background: rgba(255, 255, 255, 0.6); border-color: rgba(255,255,255,0.9); }
+
+    </style>
+</head>
+<body class="p-4 md:p-6 lg:p-8">
+
+    <!-- Fullscreen Video Background -->
+    <video autoplay loop muted playsinline id="bg-video">
+        <source src="https://res.cloudinary.com/f4gzfq5n/video/upload/v1788964384/video_as_bg.mp4" type="video/mp4">
+    </video>
+
+    <!-- Top Navigation (Milky Glass) -->
+    <header class="max-w-[1440px] mx-auto w-full mt-2 flex items-center justify-between mb-8 milky-nav py-3 px-6 sticky top-4 z-40">
+        
+        <!-- Logo -->
+        <a href="dert.html" class="flex items-center gap-2 hover:opacity-80 transition-opacity" style="text-decoration: none;">
+            <div class="w-9 h-9 bg-white/60 border border-white/80 rounded-xl flex items-center justify-center text-sky-600 text-[15px] shadow-sm backdrop-blur-md">
+                <i class="fas fa-layer-group"></i>
+            </div>
+            <span class="font-jakarta font-bold text-xl tracking-tight text-slate-800">ClonBrow</span>
+        </a>
+
+        <!-- Center Nav -->
+        <nav class="hidden lg:flex gap-1 bg-white/20 p-1.5 rounded-2xl border border-white/40 shadow-inner">
+            <a href="dert.html" class="nav-pill text-center">Home</a>
+            <a href="dashboard.html" class="nav-pill active block text-center">Dashboard</a>
+            <a href="searcher.html" class="nav-pill text-center">Search</a>
+        </nav>
+
+        <!-- Right Actions -->
+        <div class="flex items-center gap-3">
+            <a href="login.html" class="glass-btn-inner px-5 py-2 font-semibold text-xs text-rose-500 hover:text-rose-600" title="Log Out" style="text-decoration: none;">
+                Logout
+            </a>
+        </div>
+    </header>
+
+    <!-- Main Dashboard Container -->
+    <main class="max-w-[1440px] mx-auto w-full relative z-10">
+        
+        <!-- Dashboard Header -->
+        <div class="flex flex-col md:flex-row justify-between items-start md:items-center mb-8 gap-4 px-2">
+            <div class="flex items-center gap-3">
+                <h1 class="font-jakarta text-[36px] font-bold text-slate-800 tracking-tight leading-none drop-shadow-sm">Overview</h1>
+                <span class="px-3 py-1 bg-sky-100/50 text-sky-700 text-[10px] font-bold rounded-full flex items-center gap-1.5 border border-sky-200/50 backdrop-blur-sm shadow-sm">
+                    <div class="w-1.5 h-1.5 bg-sky-500 rounded-full animate-pulse"></div> Live sync
+                </span>
+            </div>
+            
+            <div class="flex flex-wrap items-center gap-3">
+                <button onclick="triggerExport()" class="glass-btn-inner px-5 py-2.5 text-xs font-semibold gap-2 flex items-center">
+                    <i class="fas fa-file-export text-slate-400"></i> Export Report
+                </button>
+                <a href="searcher.html" class="glass-btn-inner btn-accent px-5 py-2.5 text-xs font-semibold flex items-center gap-2" style="text-decoration: none;">
+                    <i class="fas fa-search text-[10px]"></i> Search Engine
+                </a>
+            </div>
+        </div>
+
+        <!-- Dashboard Bento Grid -->
+        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-12 gap-6">
+
+            <!-- Study Sessions Chart -->
+            <div class="glass-card col-span-1 md:col-span-2 lg:col-span-8 p-6 md:p-8 flex flex-col justify-between min-h-[320px]">
+                <div class="flex justify-between items-center mb-6">
+                    <h2 class="font-jakarta text-lg font-bold text-slate-800">Study sessions</h2>
+                    <div class="px-3 py-1 border border-white/60 text-[10px] font-bold text-slate-500 bg-white/40 rounded-full shadow-sm">Past 6 months</div>
+                </div>
+                <div class="w-full flex-1 relative min-h-[220px]">
+                    <canvas id="mainChart"></canvas>
+                </div>
+            </div>
+
+            <!-- Working Calendar Widget -->
+            <div class="glass-card col-span-1 lg:col-span-4 p-6 md:p-8 flex flex-col">
+                <div class="flex justify-between items-center mb-6">
+                    <h2 class="font-jakarta text-lg font-bold text-slate-800">Calendar</h2>
+                    <div class="flex gap-2">
+                        <button onclick="changeMonth(-1)" class="w-8 h-8 border border-white/60 bg-white/40 flex items-center justify-center hover:bg-white/70 transition-colors text-slate-600 rounded-lg shadow-sm backdrop-blur-sm cursor-pointer"><i class="fas fa-chevron-left text-[11px]"></i></button>
+                        <button onclick="changeMonth(1)" class="w-8 h-8 border border-white/60 bg-white/40 flex items-center justify-center hover:bg-white/70 transition-colors text-slate-600 rounded-lg shadow-sm backdrop-blur-sm cursor-pointer"><i class="fas fa-chevron-right text-[11px]"></i></button>
+                    </div>
+                </div>
+                <div class="text-center font-jakarta font-bold text-xl mb-4 text-sky-600 drop-shadow-sm" id="calendar-month">Month</div>
+                <div class="grid grid-cols-7 gap-1 text-center text-[10px] font-bold text-slate-400 mb-2 uppercase">
+                    <div>SU</div><div>MO</div><div>TU</div><div>WE</div><div>TH</div><div>FR</div><div>SA</div>
+                </div>
+                <div id="calendar-grid" class="grid grid-cols-7 gap-1 text-center text-xs font-semibold text-slate-700">
+                    <!-- JS Populated -->
+                </div>
+            </div>
+
+            <!-- Working Task Items -->
+            <div class="glass-card col-span-1 lg:col-span-4 p-6 md:p-8 flex flex-col h-[340px]">
+                <h2 class="font-jakarta text-lg font-bold text-slate-800 mb-6">Action items</h2>
+                <div class="flex gap-2 mb-4">
+                    <input type="text" id="task-input" placeholder="Add new task..." class="flex-1 glass-input px-4 py-2.5 text-xs font-medium" onkeypress="if(event.key === 'Enter') addTask()">
+                    <button onclick="addTask()" class="glass-btn-inner px-5 py-2.5 text-xs font-bold text-sky-600">Add</button>
+                </div>
+                <div id="task-list" class="flex flex-col gap-2 overflow-y-auto pr-2 custom-scrollbar">
+                    <!-- JS Populated -->
+                </div>
+            </div>
+
+            <!-- News Section -->
+            <div class="glass-card col-span-1 lg:col-span-4 p-6 md:p-8 flex flex-col h-[340px]">
+                <h2 class="font-jakarta text-lg font-bold text-slate-800 mb-6">System news</h2>
+                <div class="flex flex-col gap-4 overflow-y-auto pr-2 custom-scrollbar">
+                    
+                    <div class="list-item border border-white/60 p-3 bg-white/30 backdrop-blur-sm shadow-sm">
+                        <div class="flex justify-between items-center mb-1.5">
+                            <div class="text-[10px] font-bold text-sky-600 bg-sky-100/50 px-2 py-0.5 rounded border border-sky-200/50">Update</div>
+                            <div class="text-[10px] font-semibold text-slate-400">Just now</div>
+                        </div>
+                        <div class="text-xs font-medium text-slate-700 leading-relaxed">Algorithm updated to improve search relevancy across all documents.</div>
+                    </div>
+                    
+                    <div class="list-item border border-white/40 p-3 bg-white/20">
+                        <div class="flex justify-between items-center mb-1.5">
+                            <div class="text-[10px] font-bold text-emerald-600 bg-emerald-100/50 px-2 py-0.5 rounded border border-emerald-200/50">Feature</div>
+                            <div class="text-[10px] font-semibold text-slate-400">Yesterday</div>
+                        </div>
+                        <div class="text-xs font-medium text-slate-600 leading-relaxed">New integration available: Sync your study schedule directly with Canvas.</div>
+                    </div>
+
+                    <div class="list-item border border-white/30 p-3">
+                        <div class="flex justify-between items-center mb-1.5">
+                            <div class="text-[10px] font-bold text-slate-500">Notice</div>
+                            <div class="text-[10px] font-semibold text-slate-400">Oct 12</div>
+                        </div>
+                        <div class="text-xs font-medium text-slate-500 leading-relaxed">Scheduled maintenance completed. All systems operating at 100% capacity.</div>
+                    </div>
+
+                </div>
+            </div>
+
+            <!-- Gross Output Progress -->
+            <div class="glass-card col-span-1 lg:col-span-4 p-6 md:p-8 flex flex-col h-[340px]">
+                <div class="flex justify-between items-center mb-4">
+                    <h2 class="font-jakarta text-lg font-bold text-slate-800">Gross output</h2>
+                </div>
+                
+                <div class="mb-6">
+                    <div class="font-jakarta text-[52px] font-extrabold tracking-tight text-slate-800 leading-none mb-3 drop-shadow-sm">41,540</div>
+                    <div class="bg-emerald-100/50 text-emerald-700 px-2.5 py-1 rounded-full text-[10px] font-bold inline-flex items-center gap-1 border border-emerald-200/50 backdrop-blur-sm shadow-sm">
+                        <i class="fas fa-arrow-up"></i> 15% Increase
+                    </div>
+                </div>
+
+                <!-- Fix: Adjusted spacing to prevent clipping -->
+                <div class="space-y-4 flex-1 flex flex-col justify-end">
+                    <div>
+                        <div class="flex justify-between items-center text-[12px] font-semibold mb-2 text-slate-600">
+                            <span>Mathematics</span>
+                            <span class="text-slate-800 font-bold">26,800</span>
+                        </div>
+                        <div class="curvy-progress"><div class="curvy-fill bg-sky-500 shadow-[0_0_10px_rgba(14,165,233,0.4)]" style="width: 75%;"></div></div>
+                    </div>
+                    <div>
+                        <div class="flex justify-between items-center text-[12px] font-semibold mb-2 text-slate-600">
+                            <span>Computer Science</span>
+                            <span class="text-slate-800 font-bold">10,400</span>
+                        </div>
+                        <div class="curvy-progress"><div class="curvy-fill bg-indigo-400 shadow-[0_0_10px_rgba(129,140,248,0.4)]" style="width: 40%;"></div></div>
+                    </div>
+                    <div>
+                        <div class="flex justify-between items-center text-[12px] font-semibold mb-2 text-slate-600">
+                            <span>Literature</span>
+                            <span class="text-slate-800 font-bold">4,340</span>
+                        </div>
+                        <div class="curvy-progress"><div class="curvy-fill bg-slate-300" style="width: 20%;"></div></div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Insights Vibrant Card -->
+            <div class="accent-card col-span-1 lg:col-span-12 p-8 md:p-10 flex flex-col md:flex-row justify-between items-center gap-8">
+                <div class="flex-1">
+                    <h2 class="font-jakarta text-[56px] font-extrabold tracking-tight mb-2 leading-none text-white drop-shadow-md">75%</h2>
+                    <h3 class="font-jakarta text-xl font-bold leading-snug mb-3 text-white drop-shadow-sm max-w-lg">
+                        Focus retention increased by 4% vs last week.
+                    </h3>
+                    <p class="text-[14px] font-medium text-white/90 leading-relaxed max-w-xl drop-shadow-sm">
+                        This improvement recovered 12 hours of deep work time. Apply the new schedule algorithm globally to all subjects?
+                    </p>
+                </div>
+                
+                <!-- Working Action Button -->
+                <button onclick="deployFix()" class="glass-btn-inner px-8 py-4 text-sm font-bold whitespace-nowrap bg-white/90 text-sky-700 hover:text-sky-800 hover:bg-white shadow-[0_8px_20px_rgba(0,0,0,0.1)]">
+                    Deploy optimization
+                </button>
+            </div>
+
+        </div>
+    </main>
+
+    <!-- Custom Toast Notification Container -->
+    <div id="toast-container" class="fixed bottom-6 right-6 flex flex-col gap-3 z-50 pointer-events-none"></div>
+
+    <script>
+        // --- Custom Toast Notification System ---
+        function showToast(message, type = 'info') {
+            const toast = document.createElement('div');
+            toast.className = `px-5 py-3.5 backdrop-blur-xl border font-semibold text-[13px] rounded-2xl flex items-center gap-3 transform transition-all duration-300 translate-y-full opacity-0 shadow-[0_8px_30px_rgba(0,0,0,0.08)] pointer-events-auto`;
+            
+            if(type === 'success') {
+                toast.classList.add('bg-white/80', 'border-emerald-200', 'text-slate-800');
+                toast.innerHTML = `<div class="w-6 h-6 rounded-full bg-emerald-100 flex items-center justify-center border border-emerald-200"><i class="fas fa-check text-emerald-600 text-[10px]"></i></div> ${message}`;
+            } else {
+                toast.classList.add('bg-white/80', 'border-sky-200', 'text-slate-800');
+                toast.innerHTML = `<div class="w-6 h-6 rounded-full bg-sky-100 flex items-center justify-center border border-sky-200"><i class="fas fa-info text-sky-600 text-[10px]"></i></div> ${message}`;
+            }
+            
+            document.getElementById('toast-container').appendChild(toast);
+            
+            requestAnimationFrame(() => { toast.classList.remove('translate-y-full', 'opacity-0'); });
+            
+            setTimeout(() => {
+                toast.classList.add('translate-y-full', 'opacity-0', 'scale-95');
+                setTimeout(() => toast.remove(), 300);
+            }, 3500);
+        }
+
+        function triggerExport() { showToast("Generating report data. Download will begin shortly.", "info"); }
+        function deployFix() { showToast("Optimization algorithm deployed to all schedules successfully.", "success"); }
+
+        // --- Working Task List Logic ---
+        let tasks = [
+            { id: 1, text: "Review CS architecture notes", done: false },
+            { id: 2, text: "Complete math problem set 4", done: true },
+            { id: 3, text: "Read literature chapter 2", done: false }
+        ];
+
+        function renderTasks() {
+            const list = document.getElementById('task-list');
+            list.innerHTML = '';
+            tasks.forEach(task => {
+                const div = document.createElement('div');
+                div.className = `list-item border border-white/60 px-4 py-3 flex items-center gap-3 bg-white/40 shadow-sm text-slate-700 ${task.done ? 'task-done bg-white/20 text-slate-400' : ''}`;
+                div.onclick = () => toggleTask(task.id);
+                div.innerHTML = `
+                    <div class="w-4 h-4 border ${task.done ? 'border-emerald-500 bg-emerald-500' : 'border-slate-300 bg-white'} rounded flex items-center justify-center transition-colors">
+                        ${task.done ? '<i class="fas fa-check text-[10px] text-white"></i>' : ''}
+                    </div>
+                    <span class="text-[13px] font-medium drop-shadow-sm">${task.text}</span>
+                `;
+                list.appendChild(div);
+            });
+        }
+
+        function addTask() {
+            const input = document.getElementById('task-input');
+            const text = input.value.trim();
+            if(text) {
+                tasks.unshift({ id: Date.now(), text: text, done: false });
+                input.value = '';
+                renderTasks();
+            }
+        }
+
+        function toggleTask(id) {
+            const task = tasks.find(t => t.id === id);
+            if(task) { task.done = !task.done; renderTasks(); }
+        }
+        renderTasks();
+
+        // --- Working Calendar Logic ---
+        let currentDate = new Date();
+        
+        function renderCalendar() {
+            const grid = document.getElementById('calendar-grid');
+            const monthLabel = document.getElementById('calendar-month');
+            const year = currentDate.getFullYear();
+            const month = currentDate.getMonth();
+            const monthNames = ["January", "February", "March", "April", "May", "June", "July", "August", "September", "October", "November", "December"];
+            
+            monthLabel.textContent = `${monthNames[month]} ${year}`;
+            grid.innerHTML = '';
+            
+            const firstDay = new Date(year, month, 1).getDay();
+            const daysInMonth = new Date(year, month + 1, 0).getDate();
+            const today = new Date();
+            
+            for(let i = 0; i < firstDay; i++) { grid.innerHTML += `<div></div>`; }
+            
+            for(let i = 1; i <= daysInMonth; i++) {
+                const isToday = i === today.getDate() && month === today.getMonth() && year === today.getFullYear();
+                grid.innerHTML += `
+                    <div class="cal-day aspect-square flex items-center justify-center cursor-pointer ${isToday ? 'active' : ''}">
+                        ${i}
+                    </div>
+                `;
+            }
+        }
+
+        function changeMonth(offset) {
+            currentDate.setMonth(currentDate.getMonth() + offset);
+            renderCalendar();
+        }
+        renderCalendar();
+
+        // --- Chart.js ---
+        document.addEventListener("DOMContentLoaded", function() {
+            Chart.defaults.color = '#64748b';
+            Chart.defaults.font.family = 'Inter';
+            
+            const mainCtx = document.getElementById('mainChart').getContext('2d');
+            
+            // Soft gradient fill for chart to match light vibe
+            let gradientFill = mainCtx.createLinearGradient(0, 0, 0, 220);
+            gradientFill.addColorStop(0, 'rgba(14, 165, 233, 0.4)'); // Sky blue
+            gradientFill.addColorStop(1, 'rgba(14, 165, 233, 0.0)');
+
+            new Chart(mainCtx, {
+                type: 'line',
+                data: {
+                    labels: ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun'],
+                    datasets: [{
+                        label: 'Study Volume',
+                        data: [42, 54, 48, 65, 52, 60],
+                        borderColor: '#0ea5e9',
+                        borderWidth: 3,
+                        backgroundColor: gradientFill,
+                        fill: true,
+                        tension: 0.4,
+                        pointBackgroundColor: '#ffffff',
+                        pointBorderColor: '#0ea5e9',
+                        pointBorderWidth: 2,
+                        pointRadius: 4,
+                        pointHoverRadius: 6
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: { display: false },
+                        tooltip: {
+                            backgroundColor: 'rgba(255, 255, 255, 0.9)',
+                            titleColor: '#0f172a',
+                            bodyColor: '#475569',
+                            borderColor: 'rgba(255,255,255,0.8)',
+                            borderWidth: 1,
+                            cornerRadius: 12,
+                            padding: 12,
+                            displayColors: false,
+                            backdropFilter: 'blur(10px)'
+                        }
+                    },
+                    scales: {
+                        x: {
+                            grid: { display: false, drawBorder: false },
+                            ticks: { font: { family: 'Inter', size: 11, weight: '500' } }
+                        },
+                        y: {
+                            grid: { color: 'rgba(0,0,0,0.03)', drawBorder: false },
+                            border: { display: false },
+                            beginAtZero: true
+                        }
+                    }
+                }
+            });
+        });
+    </script>
+</body>
+</html>

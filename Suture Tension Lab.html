@@ -1,0 +1,454 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Suture Tension & Tissue Integrity Lab</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;700&family=Inter:wght@300;400;600;700&display=swap');
+
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: #020617;
+            color: #f8fafc;
+            overflow-x: hidden;
+            user-select: none;
+        }
+
+        .font-mono { font-family: 'JetBrains Mono', monospace; }
+
+        .glass-card {
+            background: rgba(15, 23, 42, 0.75);
+            backdrop-filter: blur(16px);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.5);
+        }
+
+        .digital-readout {
+            background: #061021;
+            color: #10b981; /* Emerald base */
+            text-shadow: 0 0 10px rgba(16, 185, 129, 0.4);
+            border: 1px solid #1e293b;
+            transition: all 0.3s ease;
+        }
+
+        .readout-danger {
+            color: #f43f5e !important;
+            text-shadow: 0 0 12px rgba(244, 63, 94, 0.6) !important;
+            border-color: rgba(244, 63, 94, 0.4) !important;
+        }
+
+        .readout-warning {
+            color: #fbbf24 !important;
+            text-shadow: 0 0 10px rgba(251, 191, 36, 0.4) !important;
+        }
+
+        /* SVG Anatomy Styles */
+        .skin-surface {
+            fill: #fca5a5; /* Healthy flesh tone */
+            stroke: #f87171;
+            stroke-width: 2;
+            transition: fill 0.3s ease, d 0.1s linear;
+        }
+
+        .tissue-ripped {
+            fill: #991b1b !important;
+            stroke: #ef4444 !important;
+        }
+
+        .suture-line {
+            fill: none;
+            stroke: #1e1b4b; /* Deep blue/black suture */
+            stroke-width: 3;
+            stroke-linecap: round;
+            filter: drop-shadow(0 2px 2px rgba(0,0,0,0.3));
+        }
+
+        .wound-inside {
+            fill: #7f1d1d; /* Deep blood red for the gap */
+        }
+
+        /* Physics Grid */
+        .lab-grid {
+            background-size: 50px 50px;
+            background-image: 
+                linear-gradient(to right, rgba(244, 63, 94, 0.03) 1px, transparent 1px),
+                linear-gradient(to bottom, rgba(244, 63, 94, 0.03) 1px, transparent 1px);
+        }
+
+        .scanline {
+            width: 100%;
+            height: 2px;
+            background: rgba(244, 63, 94, 0.05);
+            position: absolute;
+            z-index: 10;
+            animation: scan 8s linear infinite;
+        }
+        @keyframes scan { 0% { top: 0%; } 100% { top: 100%; } }
+
+        /* Suture puncture points */
+        .puncture {
+            fill: #450a0a;
+            opacity: 0.4;
+        }
+
+        .tear-mark {
+            fill: none;
+            stroke: #ef4444;
+            stroke-width: 2;
+            opacity: 0;
+            transition: opacity 0.2s;
+        }
+
+        input[type=range] {
+            -webkit-appearance: none;
+            background: transparent;
+            accent-color: #3b82f6;
+        }
+
+        input[type=range]::-webkit-slider-runnable-track {
+            background: #1e293b;
+            height: 8px;
+            border-radius: 4px;
+            border: 1px solid #334155;
+        }
+    </style>
+</head>
+<body class="min-h-screen p-4 md:p-8 flex items-center justify-center">
+
+    <div class="max-w-7xl w-full grid grid-cols-1 lg:grid-cols-12 gap-8 items-stretch">
+        
+        <!-- Simulation Viewport -->
+        <div class="lg:col-span-8 flex flex-col gap-6">
+            <div id="sim-viewport" class="glass-card rounded-3xl p-0 relative flex-grow min-h-[550px] flex flex-col overflow-hidden border border-slate-800 lab-grid">
+                <div class="scanline"></div>
+                
+                <!-- HUD Header -->
+                <div class="absolute top-6 left-8 flex items-center gap-3 z-30">
+                    <div id="status-dot" class="w-2.5 h-2.5 rounded-full bg-emerald-500 shadow-[0_0_10px_#10b981]"></div>
+                    <span id="status-text" class="text-[10px] font-bold text-slate-400 uppercase tracking-widest font-mono">Surgical Interface: <span id="hud-mode" class="text-emerald-400">Tissue Stabilized</span></span>
+                </div>
+
+                <!-- Simulation Area -->
+                <div class="relative w-full flex-grow flex items-center justify-center">
+                    
+                    <svg id="suture-svg" viewBox="0 0 800 600" class="w-full h-full relative z-10">
+                        <!-- Background Wound bed -->
+                        <rect x="350" y="100" width="100" height="400" class="wound-inside" id="wound-bed" />
+
+                        <!-- Left Skin Flap -->
+                        <path id="skin-left" class="skin-surface" d="M 0,0 L 350,0 L 350,600 L 0,600 Z" />
+                        
+                        <!-- Right Skin Flap -->
+                        <path id="skin-right" class="skin-surface" d="M 800,0 L 450,0 L 450,600 L 800,600 Z" />
+
+                        <!-- Puncture sites -->
+                        <g id="puncture-group">
+                            <!-- Left punctures -->
+                            <circle cx="280" cy="150" r="4" class="puncture" />
+                            <circle cx="280" cy="250" r="4" class="puncture" />
+                            <circle cx="280" cy="350" r="4" class="puncture" />
+                            <circle cx="280" cy="450" r="4" class="puncture" />
+                            <!-- Right punctures -->
+                            <circle cx="520" cy="150" r="4" class="puncture" />
+                            <circle cx="520" cy="250" r="4" class="puncture" />
+                            <circle cx="520" cy="350" r="4" class="puncture" />
+                            <circle cx="520" cy="450" r="4" class="puncture" />
+                        </g>
+
+                        <!-- Suture Lines -->
+                        <g id="sutures">
+                            <path id="suture-1" class="suture-line" d="M 280,150 Q 400,160 520,150" />
+                            <path id="suture-2" class="suture-line" d="M 280,250 Q 400,260 520,250" />
+                            <path id="suture-3" class="suture-line" d="M 280,350 Q 400,360 520,350" />
+                            <path id="suture-4" class="suture-line" d="M 280,450 Q 400,460 520,450" />
+                        </g>
+
+                        <!-- Tear Marks (Visible on Rip) -->
+                        <g id="tears">
+                            <path class="tear-mark" d="M 280,140 L 310,150 L 280,160" />
+                            <path class="tear-mark" d="M 520,140 L 490,150 L 520,160" />
+                            <path class="tear-mark" d="M 280,240 L 310,250 L 280,260" />
+                            <path class="tear-mark" d="M 520,240 L 490,250 L 520,260" />
+                        </g>
+                    </svg>
+
+                </div>
+
+                <!-- Tags -->
+                <div class="absolute bottom-6 left-8 flex flex-col gap-1 z-30">
+                    <span class="text-[9px] font-mono text-slate-500 uppercase">Material: 4-0 Monofilament Nylon</span>
+                    <span class="text-[9px] font-mono text-slate-500 uppercase">Limit: 12.5 Newtons (Tissue Tear Threshold)</span>
+                </div>
+            </div>
+
+            <!-- Interaction Controls -->
+            <div class="grid grid-cols-1 gap-4">
+                <div class="glass-card p-6 rounded-2xl space-y-4">
+                    <div class="flex justify-between items-center">
+                        <label class="text-[10px] font-bold text-slate-400 uppercase tracking-widest flex items-center gap-2">
+                            <svg class="w-4 h-4 text-blue-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"></path></svg>
+                            Apply Knot Tension
+                        </label>
+                        <span id="tension-label" class="text-xs font-bold font-mono text-blue-400">0.0 N</span>
+                    </div>
+                    <input type="range" id="tension-slider" min="0" max="25" step="0.1" value="0" class="w-full h-2 rounded-lg cursor-pointer">
+                    <div class="flex justify-between text-[9px] text-slate-500 font-mono uppercase">
+                        <span>Lax (Open)</span>
+                        <span>Approximation</span>
+                        <span class="text-rose-500 font-bold">Critical Tension</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Sidebar: Analytics & Data -->
+        <div class="lg:col-span-4 flex flex-col gap-6">
+            
+            <!-- Digital Readout -->
+            <div id="telemetry-panel" class="digital-readout rounded-3xl p-6 space-y-6">
+                <div class="flex justify-between items-center border-b border-current pb-3 opacity-60">
+                    <span class="text-[10px] font-bold tracking-tighter uppercase">Approximation Telemetry</span>
+                    <span class="text-xs font-mono animate-pulse">MONITORING</span>
+                </div>
+
+                <div class="space-y-6">
+                    <!-- Tensile Load -->
+                    <div class="space-y-1">
+                        <label class="text-[10px] uppercase font-bold opacity-60">Applied Tensile Force</label>
+                        <div class="flex items-baseline gap-2">
+                            <div id="data-force" class="text-6xl font-bold font-mono">0.0</div>
+                            <span class="text-xl font-mono font-bold opacity-60">N</span>
+                        </div>
+                    </div>
+
+                    <div class="grid grid-cols-2 gap-4 pt-4 border-t border-current opacity-80">
+                        <div class="space-y-1">
+                            <label class="text-[9px] uppercase font-bold text-current">Integrity</label>
+                            <div id="data-integrity" class="text-xl font-bold font-mono text-emerald-400">100%</div>
+                        </div>
+                        <div class="space-y-1 text-right">
+                            <label class="text-[9px] uppercase font-bold text-current">Gap Width</label>
+                            <div id="data-gap" class="text-xl font-bold font-mono">10.0 mm</div>
+                        </div>
+                    </div>
+
+                    <!-- Perfusion Bar -->
+                    <div class="p-4 bg-black/30 rounded-xl border border-current space-y-2">
+                        <div class="flex justify-between items-center">
+                            <label class="text-[9px] uppercase font-bold text-current">Tissue Perfusion</label>
+                            <span id="data-perf-val" class="text-[10px] font-mono">100%</span>
+                        </div>
+                        <div class="h-1.5 w-full bg-slate-900 rounded-full overflow-hidden">
+                            <div id="perf-bar" class="h-full bg-current transition-all duration-300" style="width: 100%"></div>
+                        </div>
+                        <p class="text-[8px] opacity-60 leading-tight italic">
+                            Excessive tension constricts microvasculature, leading to ischemia and necrosis.
+                        </p>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Pathophysiology Card -->
+            <div class="glass-card p-6 rounded-3xl space-y-4 flex-grow flex flex-col overflow-hidden">
+                <h3 class="text-xs font-bold text-slate-400 uppercase tracking-widest flex items-center gap-2">
+                    <svg class="w-4 h-4 text-rose-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"></path></svg>
+                    Wound Dehiscence
+                </h3>
+                
+                <div id="clinical-notes" class="space-y-4 text-[11px] text-slate-300 leading-relaxed overflow-y-auto">
+                    <p>
+                        Successful suturing requires bringing edges into light contact ("Approximation") without cutting into the tissue.
+                    </p>
+                    
+                    <div class="p-3 bg-emerald-900/20 rounded-xl border border-emerald-500/20">
+                        <strong class="text-emerald-400 block mb-1">Optimal Zone (2-8 N)</strong>
+                        Edges meet perfectly. Blood flow is maintained. Wound healing can proceed.
+                    </div>
+
+                    <div class="p-3 bg-amber-900/20 rounded-xl border border-amber-500/20">
+                        <strong class="text-amber-400 block mb-1">Ischemic Zone (9-12 N)</strong>
+                        Sutures "strangle" the tissue. Skin turns pale. Risk of necrosis increases.
+                    </div>
+
+                    <div class="p-3 bg-rose-900/20 rounded-xl border border-rose-500/20">
+                        <strong class="text-rose-400 block mb-1">Failure Zone (>12.5 N)</strong>
+                        The mechanical load exceeds the tissue strength. The skin rips red and jagged.
+                    </div>
+                </div>
+
+                <button id="btn-reset" class="mt-auto w-full py-3 bg-slate-800 hover:bg-slate-700 text-slate-500 rounded-xl text-[10px] font-bold uppercase tracking-widest border border-slate-700 transition-all">
+                    Reset Surgical Field
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', () => {
+            const tensionSlider = document.getElementById('tension-slider');
+            const tensionLabel = document.getElementById('tension-label');
+            const btnReset = document.getElementById('btn-reset');
+            
+            const skinLeft = document.getElementById('skin-left');
+            const skinRight = document.getElementById('skin-right');
+            const woundBed = document.getElementById('wound-bed');
+            const punctureGroup = document.getElementById('puncture-group');
+            const tearMarks = document.querySelectorAll('.tear-mark');
+            
+            const dataForce = document.getElementById('data-force');
+            const dataIntegrity = document.getElementById('data-integrity');
+            const dataGap = document.getElementById('data-gap');
+            const dataPerfVal = document.getElementById('data-perf-val');
+            const perfBar = document.getElementById('perf-bar');
+            
+            const hudMode = document.getElementById('hud-mode');
+            const statusDot = document.getElementById('status-dot');
+            const telemetryPanel = document.getElementById('telemetry-panel');
+
+            // --- Config ---
+            const TEAR_THRESHOLD = 12.5;
+            let isRipped = false;
+
+            function updateSim() {
+                const tension = parseFloat(tensionSlider.value);
+                tensionLabel.textContent = `${tension.toFixed(1)} N`;
+                dataForce.textContent = tension.toFixed(1);
+
+                // Check for ripping
+                if (tension >= TEAR_THRESHOLD && !isRipped) {
+                    triggerRip();
+                }
+
+                if (isRipped) {
+                    renderRippedState(tension);
+                } else {
+                    renderHealthyState(tension);
+                }
+            }
+
+            function renderHealthyState(tension) {
+                // Gap narrows from 100px to 0px
+                // 100px gap = 10mm gap. 
+                // We'll say 10N is full closure
+                const gapProgress = Math.min(1, tension / 10);
+                const gapWidth = 100 * (1 - gapProgress);
+                const leftBoundary = 350 + (50 * gapProgress);
+                const rightBoundary = 450 - (50 * gapProgress);
+
+                // Update SVG Shapes
+                skinLeft.setAttribute('d', `M 0,0 L ${leftBoundary},0 L ${leftBoundary},600 L 0,600 Z`);
+                skinRight.setAttribute('d', `M 800,0 L ${rightBoundary},0 L ${rightBoundary},600 L 800,600 Z`);
+                
+                woundBed.setAttribute('x', leftBoundary);
+                woundBed.setAttribute('width', Math.max(0, rightBoundary - leftBoundary));
+
+                // Punctures follow the skin
+                // Original left 280, right 520. Offset by movement.
+                const offset = 50 * gapProgress;
+                punctureGroup.setAttribute('transform', `translate(0, 0)`); // Reset if needed
+                
+                // Update Sutures - simple straight lines for this model
+                for (let i = 1; i <= 4; i++) {
+                    const suture = document.getElementById(`suture-${i}`);
+                    const y = 50 + (i * 100);
+                    const lX = 280 + offset;
+                    const rX = 520 - offset;
+                    // Suture tightens (less arc)
+                    const arcHeight = 10 * (1 - gapProgress);
+                    suture.setAttribute('d', `M ${lX},${y} Q 400,${y + arcHeight} ${rX},${y}`);
+                    suture.style.stroke = '#1e1b4b';
+                }
+
+                // Telemetry
+                const mmGap = (1 - gapProgress) * 10;
+                dataGap.textContent = `${mmGap.toFixed(1)} mm`;
+                
+                // Perfusion: drops as tension goes beyond 5N
+                let perfusion = 100;
+                if (tension > 5) {
+                    perfusion = Math.max(20, 100 - (tension - 5) * 10);
+                }
+                dataPerfVal.textContent = `${Math.round(perfusion)}%`;
+                perfBar.style.width = `${perfusion}%`;
+
+                // Update Status
+                if (gapProgress >= 0.95 && tension < 10) {
+                    hudMode.textContent = "Optimal Approximation";
+                    hudMode.className = "text-emerald-400";
+                    statusDot.className = "w-2.5 h-2.5 rounded-full bg-emerald-500 shadow-[0_0_10px_#10b981]";
+                    telemetryPanel.className = "digital-readout rounded-3xl p-6 space-y-6";
+                } else if (tension >= 10) {
+                    hudMode.textContent = "Tissue Strangulation (Warning)";
+                    hudMode.className = "text-amber-400";
+                    statusDot.className = "w-2.5 h-2.5 rounded-full bg-amber-500 animate-pulse";
+                    telemetryPanel.className = "digital-readout rounded-3xl p-6 space-y-6 readout-warning";
+                } else {
+                    hudMode.textContent = "Approximating Edges";
+                    hudMode.className = "text-blue-400";
+                    statusDot.className = "w-2.5 h-2.5 rounded-full bg-blue-500 shadow-[0_0_10px_#3b82f6]";
+                }
+            }
+
+            function triggerRip() {
+                isRipped = true;
+                skinLeft.classList.add('tissue-ripped');
+                skinRight.classList.add('tissue-ripped');
+                
+                hudMode.textContent = "CRITICAL: Tissue Failure";
+                hudMode.className = "text-rose-500";
+                statusDot.className = "w-2.5 h-2.5 rounded-full bg-rose-500 shadow-[0_0_20px_#f43f5e] animate-ping";
+                telemetryPanel.className = "digital-readout rounded-3xl p-6 space-y-6 readout-danger";
+                
+                dataIntegrity.textContent = "0%";
+                dataIntegrity.className = "text-xl font-bold font-mono text-rose-500";
+
+                tearMarks.forEach(t => t.style.opacity = '1');
+            }
+
+            function renderRippedState(tension) {
+                // In ripped state, skin snaps back and sutures turn red
+                const snapBack = 0.2; 
+                const leftBoundary = 350 + (50 * snapBack);
+                const rightBoundary = 450 - (50 * snapBack);
+
+                skinLeft.setAttribute('d', `M 0,0 L ${leftBoundary},0 L ${leftBoundary + 10},300 L ${leftBoundary},600 L 0,600 Z`); // Jagged edge
+                skinRight.setAttribute('d', `M 800,0 L ${rightBoundary},0 L ${rightBoundary - 10},300 L ${rightBoundary},600 L 800,600 Z`);
+
+                woundBed.setAttribute('x', leftBoundary);
+                woundBed.setAttribute('width', rightBoundary - leftBoundary);
+
+                for (let i = 1; i <= 4; i++) {
+                    const suture = document.getElementById(`suture-${i}`);
+                    suture.style.stroke = '#ef4444';
+                    // Suture looks loose/broken
+                    const y = 50 + (i * 100);
+                    suture.setAttribute('d', `M 290,${y} Q 400,${y + 40} 510,${y}`);
+                }
+
+                dataGap.textContent = "DEHISCENT";
+                dataPerfVal.textContent = "0%";
+                perfBar.style.width = "0%";
+            }
+
+            function reset() {
+                isRipped = false;
+                tensionSlider.value = 0;
+                skinLeft.classList.remove('tissue-ripped');
+                skinRight.classList.remove('tissue-ripped');
+                tearMarks.forEach(t => t.style.opacity = '0');
+                dataIntegrity.textContent = "100%";
+                dataIntegrity.className = "text-xl font-bold font-mono text-emerald-400";
+                updateSim();
+            }
+
+            tensionSlider.addEventListener('input', updateSim);
+            btnReset.addEventListener('click', reset);
+
+            // Init
+            updateSim();
+        });
+    </script>
+</body>
+</html>

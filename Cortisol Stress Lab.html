@@ -1,0 +1,357 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Cortisol Stress Lab: Physiological Response</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;700;900&family=JetBrains+Mono:wght@500;800&display=swap');
+        
+        :root {
+            --stress-red: #ef4444;
+            --heart-green: #10b981;
+            --bp-blue: #3b82f6;
+            --cortisol-amber: #f59e0b;
+            --bg-dark: #020617;
+        }
+
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: var(--bg-dark);
+            color: #f8fafc;
+            overflow: hidden;
+        }
+
+        .sidebar-glass {
+            background: rgba(15, 23, 42, 0.8);
+            backdrop-filter: blur(12px);
+            border-right: 1px solid rgba(255,255,255,0.1);
+        }
+
+        canvas {
+            display: block;
+        }
+
+        .data-card {
+            background: rgba(30, 41, 59, 0.6);
+            border: 1px solid rgba(255,255,255,0.05);
+            backdrop-filter: blur(4px);
+        }
+
+        .pulse {
+            animation: pulse-kf 0.8s ease-out infinite;
+        }
+
+        @keyframes pulse-kf {
+            0% { transform: scale(1); opacity: 1; }
+            100% { transform: scale(1.5); opacity: 0; }
+        }
+
+        .stressor-icon {
+            filter: drop-shadow(0 0 8px rgba(239, 68, 68, 0.3));
+        }
+    </style>
+</head>
+<body class="flex h-screen">
+
+    <!-- Sidebar -->
+    <aside class="w-96 sidebar-glass p-8 flex flex-col gap-6 z-20">
+        <div>
+            <h1 class="text-3xl font-black tracking-tighter text-white mb-2 leading-none uppercase">STRESS<br><span class="text-red-500">RESPONSE</span></h1>
+            <p class="text-slate-400 text-sm leading-relaxed mt-4">
+                When external stressors accumulate, the HPA-axis triggers the release of <strong>Cortisol</strong> and <strong>Adrenaline</strong>, spiking your vitals.
+            </p>
+        </div>
+
+        <div class="space-y-4">
+            <button id="btnAddStressor" class="w-full py-4 bg-red-600 hover:bg-red-500 active:scale-95 text-white font-bold rounded-xl transition-all shadow-lg shadow-red-500/20 flex items-center justify-center gap-2">
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><path d="M12 5v14M5 12h14"/></svg>
+                ADD STRESSOR
+            </button>
+            
+            <button id="btnReset" class="w-full py-3 bg-slate-800 hover:bg-slate-700 text-slate-300 font-bold rounded-xl transition-all text-xs uppercase tracking-widest">
+                Clear System (Homeostasis)
+            </button>
+        </div>
+
+        <div class="space-y-4 mt-4">
+            <div class="data-card p-4 rounded-2xl border-l-4 border-amber-500">
+                <div class="flex justify-between items-center mb-1">
+                    <span class="text-[10px] font-bold text-slate-500 uppercase tracking-widest">Cortisol Concentration</span>
+                    <span id="cortVal" class="font-mono text-lg font-bold text-amber-500">Normal</span>
+                </div>
+                <div class="h-1.5 bg-slate-800 rounded-full overflow-hidden">
+                    <div id="cortProgress" class="h-full bg-amber-500 transition-all duration-300" style="width: 5%"></div>
+                </div>
+            </div>
+
+            <div class="data-card p-4 rounded-2xl">
+                <div class="flex items-center gap-4">
+                    <div class="relative">
+                        <div class="w-3 h-3 bg-emerald-500 rounded-full"></div>
+                        <div class="absolute inset-0 w-3 h-3 bg-emerald-500 rounded-full pulse"></div>
+                    </div>
+                    <div>
+                        <div class="text-[10px] font-bold text-slate-500 uppercase">Heart Rate</div>
+                        <div class="flex items-baseline gap-1">
+                            <span id="hrVal" class="font-mono text-2xl font-black text-emerald-400">72</span>
+                            <span class="text-xs text-slate-500">BPM</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="data-card p-4 rounded-2xl">
+                <div class="flex items-center gap-4">
+                    <div class="w-3 h-3 bg-blue-500 rounded-full"></div>
+                    <div>
+                        <div class="text-[10px] font-bold text-slate-500 uppercase">Blood Pressure</div>
+                        <div class="flex items-baseline gap-1">
+                            <span id="bpVal" class="font-mono text-2xl font-black text-blue-400">120/80</span>
+                            <span class="text-xs text-slate-500">mmHg</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div id="statusCard" class="mt-auto p-5 rounded-2xl border border-emerald-500/20 bg-emerald-500/5 transition-all">
+            <h3 id="statusTitle" class="text-emerald-400 font-bold mb-1 text-sm uppercase tracking-wider italic">Status: Relaxed</h3>
+            <p id="statusText" class="text-xs text-slate-400 leading-normal">
+                Vagus nerve is active. Parasympathetic system is maintaining homeostasis.
+            </p>
+        </div>
+    </aside>
+
+    <!-- Main Viewport -->
+    <main class="flex-1 relative flex flex-col bg-[#020617]">
+        <!-- Top: Stressor Fall Zone -->
+        <div class="flex-[1.5] relative overflow-hidden border-b border-white/5">
+            <canvas id="physicsCanvas" class="w-full h-full"></canvas>
+            <div class="absolute top-10 left-1/2 -translate-x-1/2 text-center pointer-events-none opacity-20">
+                <div class="text-[10px] font-bold tracking-[0.4em] uppercase text-slate-400">Environment Stress Input</div>
+            </div>
+        </div>
+
+        <!-- Bottom: Real-time Graph -->
+        <div class="flex-1 relative bg-[#020617]">
+            <div class="absolute top-4 left-6 flex gap-6 z-10">
+                <div class="flex items-center gap-2 text-[10px] font-bold text-emerald-500 uppercase tracking-widest">
+                    <div class="w-4 h-[2px] bg-emerald-500"></div> Heart Rate
+                </div>
+                <div class="flex items-center gap-2 text-[10px] font-bold text-blue-500 uppercase tracking-widest">
+                    <div class="w-4 h-[2px] bg-blue-500"></div> Systolic BP
+                </div>
+            </div>
+            <canvas id="graphCanvas" class="w-full h-full"></canvas>
+        </div>
+    </main>
+
+    <script>
+        const btnAdd = document.getElementById('btnAddStressor');
+        const btnReset = document.getElementById('btnReset');
+        const hrVal = document.getElementById('hrVal');
+        const bpVal = document.getElementById('bpVal');
+        const cortVal = document.getElementById('cortVal');
+        const cortProgress = document.getElementById('cortProgress');
+        const statusTitle = document.getElementById('statusTitle');
+        const statusText = document.getElementById('statusText');
+        const statusCard = document.getElementById('statusCard');
+
+        const pCanvas = document.getElementById('physicsCanvas');
+        const pCtx = pCanvas.getContext('2d');
+        const gCanvas = document.getElementById('graphCanvas');
+        const gCtx = gCanvas.getContext('2d');
+
+        // State
+        let stressors = [];
+        let time = 0;
+        let vitalHistory = []; // {hr, bp, time}
+        const maxHistory = 300;
+
+        let currentHR = 72;
+        let currentBP = 120;
+        let currentCortisol = 5; // 0-100 scale
+
+        const stressIcons = ["🕒", "📧", "⚡", "📑", "📞", "💸"];
+
+        function resize() {
+            pCanvas.width = pCanvas.offsetWidth;
+            pCanvas.height = pCanvas.offsetHeight;
+            gCanvas.width = gCanvas.offsetWidth;
+            gCanvas.height = gCanvas.offsetHeight;
+        }
+        window.addEventListener('resize', resize);
+        resize();
+
+        class Stressor {
+            constructor() {
+                this.x = 100 + Math.random() * (pCanvas.width - 200);
+                this.y = -50;
+                this.vy = 2 + Math.random() * 3;
+                this.icon = stressIcons[Math.floor(Math.random() * stressIcons.length)];
+                this.rotation = Math.random() * Math.PI * 2;
+                this.vr = (Math.random() - 0.5) * 0.1;
+                this.active = true;
+            }
+            update() {
+                this.y += this.vy;
+                this.rotation += this.vr;
+                
+                // Detection: hits the "Psychological Threshold" (bottom of canvas)
+                if (this.y > pCanvas.height - 40) {
+                    this.active = false;
+                    impactSystem();
+                }
+            }
+            draw() {
+                pCtx.save();
+                pCtx.translate(this.x, this.y);
+                pCtx.rotate(this.rotation);
+                pCtx.font = "32px serif";
+                pCtx.textAlign = "center";
+                pCtx.textBaseline = "middle";
+                pCtx.fillText(this.icon, 0, 0);
+                pCtx.restore();
+            }
+        }
+
+        function impactSystem() {
+            // Instant Adrenaline boost
+            currentHR += 5 + Math.random() * 5;
+            currentBP += 3 + Math.random() * 3;
+            // Gradual Cortisol build
+            currentCortisol = Math.min(100, currentCortisol + 2.5);
+        }
+
+        function updateVitals() {
+            // Decay toward homeostasis
+            // Higher cortisol makes the decay slower (resistance to calming)
+            const decayRate = 0.03 / (1 + currentCortisol / 20);
+            
+            const targetHR = 72;
+            const targetBP = 120;
+            const targetCort = 5;
+
+            currentHR += (targetHR - currentHR) * decayRate;
+            currentBP += (targetBP - currentBP) * decayRate;
+            currentCortisol += (targetCort - currentCortisol) * (decayRate * 0.1); // Cortisol lasts much longer
+
+            // Update UI
+            hrVal.textContent = Math.round(currentHR);
+            bpVal.textContent = `${Math.round(currentBP)}/${Math.round(80 + (currentBP - 120) * 0.5)}`;
+            
+            cortProgress.style.width = currentCortisol + "%";
+            if (currentCortisol < 25) cortVal.textContent = "Normal";
+            else if (currentCortisol < 50) cortVal.textContent = "Elevated";
+            else if (currentCortisol < 80) cortVal.textContent = "High (Distress)";
+            else cortVal.textContent = "CHRONIC";
+
+            // Status Card Logic
+            if (currentHR > 120) {
+                updateStatus("Fight or Flight", "Adrenaline surge detected. Heart contracting with force to prioritize muscle oxygenation.", "red");
+            } else if (currentCortisol > 40) {
+                updateStatus("Resistance Phase", "System remains on high alert. Cortisol is suppressing non-essential functions (digestion/immune).", "amber");
+            } else {
+                updateStatus("Relaxed", "Vagus nerve is active. Parasympathetic system is maintaining homeostasis.", "emerald");
+            }
+
+            // Save history for graph
+            vitalHistory.push({ hr: currentHR, bp: currentBP });
+            if (vitalHistory.length > maxHistory) vitalHistory.shift();
+        }
+
+        function updateStatus(title, text, color) {
+            statusTitle.textContent = "Status: " + title;
+            statusText.textContent = text;
+            statusTitle.className = `text-${color}-400 font-bold mb-1 text-sm uppercase tracking-wider italic`;
+            statusCard.className = `mt-auto p-5 rounded-2xl border border-${color}-500/20 bg-${color}-500/5 transition-all`;
+            
+            // Sync HR pulse speed to UI pulse animation
+            const pulseRate = 60 / currentHR;
+            document.querySelector('.pulse').style.animationDuration = `${pulseRate}s`;
+        }
+
+        function drawGraph() {
+            gCtx.clearRect(0, 0, gCanvas.width, gCanvas.height);
+            
+            // Grid
+            gCtx.strokeStyle = "rgba(255,255,255,0.05)";
+            gCtx.lineWidth = 1;
+            for(let i=0; i<10; i++) {
+                const y = (gCanvas.height / 10) * i;
+                gCtx.beginPath(); gCtx.moveTo(0, y); gCtx.lineTo(gCanvas.width, y); gCtx.stroke();
+            }
+
+            if (vitalHistory.length < 2) return;
+
+            const scaleX = gCanvas.width / maxHistory;
+            
+            // Heart Rate Line (Green)
+            gCtx.beginPath();
+            gCtx.strokeStyle = "#10b981";
+            gCtx.lineWidth = 2;
+            vitalHistory.forEach((v, i) => {
+                // Map HR 60-160 to graph
+                const y = gCanvas.height - ((v.hr - 60) / 100) * gCanvas.height;
+                if(i===0) gCtx.moveTo(i * scaleX, y);
+                else gCtx.lineTo(i * scaleX, y);
+            });
+            gCtx.stroke();
+
+            // Blood Pressure Line (Blue)
+            gCtx.beginPath();
+            gCtx.strokeStyle = "#3b82f6";
+            gCtx.lineWidth = 2;
+            vitalHistory.forEach((v, i) => {
+                // Map BP 100-200 to graph
+                const y = gCanvas.height - ((v.bp - 100) / 100) * gCanvas.height;
+                if(i===0) gCtx.moveTo(i * scaleX, y);
+                else gCtx.lineTo(i * scaleX, y);
+            });
+            gCtx.stroke();
+        }
+
+        function animate() {
+            pCtx.clearRect(0, 0, pCanvas.width, pCanvas.height);
+            
+            // Draw Threshold Line
+            pCtx.strokeStyle = "rgba(239, 68, 68, 0.2)";
+            pCtx.setLineDash([5, 5]);
+            pCtx.beginPath();
+            pCtx.moveTo(0, pCanvas.height - 40);
+            pCtx.lineTo(pCanvas.width, pCanvas.height - 40);
+            pCtx.stroke();
+            pCtx.setLineDash([]);
+
+            // Update Stressors
+            for(let i=stressors.length-1; i>=0; i--) {
+                stressors[i].update();
+                stressors[i].draw();
+                if (!stressors[i].active) stressors.splice(i, 1);
+            }
+
+            updateVitals();
+            drawGraph();
+            
+            requestAnimationFrame(animate);
+        }
+
+        btnAdd.addEventListener('click', () => {
+            stressors.push(new Stressor());
+        });
+
+        btnReset.addEventListener('click', () => {
+            currentHR = 72;
+            currentBP = 120;
+            currentCortisol = 5;
+            stressors = [];
+            vitalHistory = [];
+        });
+
+        // Start
+        animate();
+    </script>
+</body>
+</html>

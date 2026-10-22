@@ -1,0 +1,1844 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>FORENSIC OS | Digital Crime Lab</title>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@300;400;600;700&family=Inter:wght@300;400;600;800&display=swap');
+        
+        :root {
+            --bg-primary: #0a0e17;
+            --bg-secondary: #111827;
+            --bg-tertiary: #1a2332;
+            --accent-cyan: #06b6d4;
+            --accent-red: #ef4444;
+            --accent-purple: #8b5cf6;
+            --accent-green: #10b981;
+            --accent-amber: #f59e0b;
+            --text-primary: #e2e8f0;
+            --text-secondary: #94a3b8;
+            --border: #1e293b;
+            --grid: rgba(6, 182, 212, 0.05);
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Inter', sans-serif;
+            background: var(--bg-primary);
+            color: var(--text-primary);
+            overflow-x: hidden;
+            min-height: 100vh;
+        }
+
+        /* Scanline effect */
+        body::before {
+            content: '';
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: repeating-linear-gradient(
+                0deg,
+                rgba(0, 0, 0, 0.15),
+                rgba(0, 0, 0, 0.15) 1px,
+                transparent 1px,
+                transparent 2px
+            );
+            pointer-events: none;
+            z-index: 9999;
+            opacity: 0.3;
+        }
+
+        .header {
+            background: var(--bg-secondary);
+            border-bottom: 1px solid var(--border);
+            padding: 1.5rem 3rem;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            position: sticky;
+            top: 0;
+            z-index: 100;
+            backdrop-filter: blur(10px);
+        }
+
+        .logo {
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+        }
+
+        .logo-icon {
+            width: 40px;
+            height: 40px;
+            border: 2px solid var(--accent-cyan);
+            border-radius: 8px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-family: 'JetBrains Mono', monospace;
+            font-weight: 700;
+            color: var(--accent-cyan);
+            font-size: 1.2rem;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .logo-icon::after {
+            content: '';
+            position: absolute;
+            top: -50%;
+            left: -50%;
+            width: 200%;
+            height: 200%;
+            background: linear-gradient(45deg, transparent, rgba(6, 182, 212, 0.2), transparent);
+            animation: scan 3s linear infinite;
+        }
+
+        @keyframes scan {
+            0% { transform: translateX(-100%) translateY(-100%); }
+            100% { transform: translateX(100%) translateY(100%); }
+        }
+
+        .logo-text h1 {
+            font-size: 1.25rem;
+            font-weight: 800;
+            letter-spacing: 0.05em;
+            color: var(--text-primary);
+        }
+
+        .logo-text span {
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 0.75rem;
+            color: var(--accent-cyan);
+            text-transform: uppercase;
+            letter-spacing: 0.1em;
+        }
+
+        .status-bar {
+            display: flex;
+            gap: 2rem;
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 0.75rem;
+            color: var(--text-secondary);
+        }
+
+        .status-item {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+        .status-dot {
+            width: 8px;
+            height: 8px;
+            border-radius: 50%;
+            background: var(--accent-green);
+            box-shadow: 0 0 10px var(--accent-green);
+            animation: pulse 2s infinite;
+        }
+
+        @keyframes pulse {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.5; }
+        }
+
+        .main-container {
+            padding: 2rem 3rem;
+            max-width: 1600px;
+            margin: 0 auto;
+        }
+
+        .grid-layout {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 1.5rem;
+        }
+
+        .module {
+            background: var(--bg-secondary);
+            border: 1px solid var(--border);
+            border-radius: 12px;
+            overflow: hidden;
+            position: relative;
+            transition: all 0.3s ease;
+        }
+
+        .module::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: 2px;
+            background: linear-gradient(90deg, var(--accent-cyan), transparent);
+            opacity: 0.5;
+        }
+
+        .module:hover {
+            border-color: rgba(6, 182, 212, 0.3);
+            box-shadow: 0 0 30px rgba(6, 182, 212, 0.05);
+        }
+
+        .module-header {
+            padding: 1.25rem 1.5rem;
+            background: rgba(17, 24, 39, 0.8);
+            border-bottom: 1px solid var(--border);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .module-title {
+            font-size: 0.875rem;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+            display: flex;
+            align-items: center;
+            gap: 0.75rem;
+        }
+
+        .module-icon {
+            width: 32px;
+            height: 32px;
+            border-radius: 6px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1rem;
+        }
+
+        .module-body {
+            padding: 1.5rem;
+            min-height: 400px;
+            position: relative;
+        }
+
+        .badge {
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 0.65rem;
+            padding: 0.25rem 0.75rem;
+            border-radius: 4px;
+            background: rgba(6, 182, 212, 0.1);
+            color: var(--accent-cyan);
+            border: 1px solid rgba(6, 182, 212, 0.2);
+            text-transform: uppercase;
+        }
+
+        /* Blood Spatter Module */
+        .blood-module .module-icon { background: rgba(239, 68, 68, 0.15); color: var(--accent-red); }
+        .blood-module .badge { background: rgba(239, 68, 68, 0.1); color: var(--accent-red); border-color: rgba(239, 68, 68, 0.2); }
+        
+        .spatter-container {
+            display: grid;
+            grid-template-columns: 1fr 200px;
+            gap: 1.5rem;
+            height: 100%;
+        }
+
+        .canvas-wrapper {
+            position: relative;
+            background: var(--bg-tertiary);
+            border-radius: 8px;
+            border: 1px solid var(--border);
+            overflow: hidden;
+        }
+
+        .canvas-wrapper canvas {
+            display: block;
+            cursor: crosshair;
+        }
+
+        .controls {
+            display: flex;
+            flex-direction: column;
+            gap: 1rem;
+        }
+
+        .control-group {
+            background: var(--bg-tertiary);
+            padding: 1rem;
+            border-radius: 8px;
+            border: 1px solid var(--border);
+        }
+
+        .control-label {
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 0.7rem;
+            color: var(--text-secondary);
+            text-transform: uppercase;
+            margin-bottom: 0.5rem;
+            display: block;
+        }
+
+        .value-display {
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 1.5rem;
+            font-weight: 700;
+            color: var(--accent-red);
+            text-shadow: 0 0 20px rgba(239, 68, 68, 0.3);
+        }
+
+        .formula {
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 0.75rem;
+            color: var(--text-secondary);
+            margin-top: 0.5rem;
+            padding: 0.5rem;
+            background: rgba(0,0,0,0.3);
+            border-radius: 4px;
+            border-left: 2px solid var(--accent-red);
+        }
+
+        .btn {
+            background: var(--bg-tertiary);
+            border: 1px solid var(--border);
+            color: var(--text-primary);
+            padding: 0.75rem 1rem;
+            border-radius: 6px;
+            font-family: 'Inter', sans-serif;
+            font-size: 0.875rem;
+            cursor: pointer;
+            transition: all 0.2s;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+            font-weight: 600;
+        }
+
+        .btn:hover {
+            background: rgba(6, 182, 212, 0.1);
+            border-color: var(--accent-cyan);
+            color: var(--accent-cyan);
+        }
+
+        .btn-primary {
+            background: rgba(239, 68, 68, 0.1);
+            border-color: rgba(239, 68, 68, 0.3);
+            color: var(--accent-red);
+        }
+
+        .btn-primary:hover {
+            background: rgba(239, 68, 68, 0.2);
+            box-shadow: 0 0 20px rgba(239, 68, 68, 0.1);
+        }
+
+        /* Lividity Module */
+        .lividity-module .module-icon { background: rgba(139, 92, 246, 0.15); color: var(--accent-purple); }
+        .lividity-module .badge { background: rgba(139, 92, 246, 0.1); color: var(--accent-purple); border-color: rgba(139, 92, 246, 0.2); }
+
+        .lividity-container {
+            display: grid;
+            grid-template-columns: 1fr 250px;
+            gap: 1.5rem;
+            height: 100%;
+        }
+
+        .body-svg-container {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            background: var(--bg-tertiary);
+            border-radius: 8px;
+            border: 1px solid var(--border);
+            position: relative;
+        }
+
+        .body-svg-container svg {
+            max-height: 350px;
+            filter: drop-shadow(0 0 20px rgba(139, 92, 246, 0.1));
+        }
+
+        .color-picker-wrapper {
+            display: flex;
+            flex-direction: column;
+            gap: 1rem;
+        }
+
+        .color-swatch {
+            width: 100%;
+            height: 60px;
+            border-radius: 8px;
+            border: 2px solid var(--border);
+            position: relative;
+            overflow: hidden;
+            cursor: pointer;
+            transition: transform 0.2s;
+        }
+
+        .color-swatch:hover {
+            transform: scale(1.02);
+        }
+
+        .color-swatch input[type="color"] {
+            position: absolute;
+            top: -50%;
+            left: -50%;
+            width: 200%;
+            height: 200%;
+            cursor: pointer;
+            border: none;
+            padding: 0;
+            margin: 0;
+        }
+
+        .time-estimate {
+            background: linear-gradient(135deg, rgba(139, 92, 246, 0.1), rgba(139, 92, 246, 0.05));
+            border: 1px solid rgba(139, 92, 246, 0.2);
+            border-radius: 8px;
+            padding: 1.25rem;
+            text-align: center;
+        }
+
+        .time-value {
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 2rem;
+            font-weight: 700;
+            color: var(--accent-purple);
+            text-shadow: 0 0 20px rgba(139, 92, 246, 0.3);
+        }
+
+        .time-label {
+            font-size: 0.75rem;
+            color: var(--text-secondary);
+            text-transform: uppercase;
+            letter-spacing: 0.1em;
+            margin-top: 0.25rem;
+        }
+
+        .lividity-stages {
+            display: flex;
+            flex-direction: column;
+            gap: 0.5rem;
+            margin-top: 0.5rem;
+        }
+
+        .stage-item {
+            display: flex;
+            align-items: center;
+            gap: 0.75rem;
+            padding: 0.5rem;
+            border-radius: 4px;
+            font-size: 0.8rem;
+            color: var(--text-secondary);
+            transition: all 0.2s;
+        }
+
+        .stage-item.active {
+            background: rgba(139, 92, 246, 0.1);
+            color: var(--accent-purple);
+            border-left: 2px solid var(--accent-purple);
+        }
+
+        .stage-dot {
+            width: 12px;
+            height: 12px;
+            border-radius: 50%;
+            border: 2px solid var(--border);
+        }
+
+        /* Centrifuge Module */
+        .centrifuge-module .module-icon { background: rgba(245, 158, 11, 0.15); color: var(--accent-amber); }
+        .centrifuge-module .badge { background: rgba(245, 158, 11, 0.1); color: var(--accent-amber); border-color: rgba(245, 158, 11, 0.2); }
+
+        .centrifuge-container {
+            display: grid;
+            grid-template-columns: 1fr 220px;
+            gap: 1.5rem;
+            height: 100%;
+        }
+
+        .tube-container {
+            position: relative;
+            background: var(--bg-tertiary);
+            border-radius: 8px;
+            border: 1px solid var(--border);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            overflow: hidden;
+        }
+
+        .tube {
+            width: 120px;
+            height: 300px;
+            border: 3px solid rgba(255,255,255,0.2);
+            border-radius: 0 0 60px 60px;
+            position: relative;
+            background: linear-gradient(90deg, rgba(255,255,255,0.05), transparent, rgba(255,255,255,0.05));
+            overflow: hidden;
+        }
+
+        .tube-content {
+            position: absolute;
+            bottom: 0;
+            left: 0;
+            right: 0;
+            height: 85%;
+            background: rgba(245, 158, 11, 0.1);
+            border-radius: 0 0 57px 57px;
+            overflow: hidden;
+        }
+
+        .layer {
+            position: absolute;
+            left: 0;
+            right: 0;
+            transition: all 1s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+
+        .layer-solid { bottom: 0; height: 15%; background: #5c3d2e; }
+        .layer-semi { bottom: 15%; height: 25%; background: #8b6914; }
+        .layer-liquid { bottom: 40%; height: 35%; background: rgba(245, 158, 11, 0.3); }
+        .layer-clear { bottom: 75%; height: 25%; background: rgba(255,255,255,0.05); }
+
+        .particle {
+            position: absolute;
+            width: 6px;
+            height: 6px;
+            border-radius: 50%;
+            transition: all 2s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+
+        .particle.meat { background: #a0522d; }
+        .particle.veg { background: #228b22; }
+        .particle.bone { background: #f5f5dc; }
+        .particle.liquid { background: rgba(255,255,255,0.3); width: 4px; height: 4px; }
+
+        .centrifuge-controls {
+            display: flex;
+            flex-direction: column;
+            gap: 1rem;
+        }
+
+        .rpm-display {
+            background: var(--bg-tertiary);
+            border: 1px solid var(--border);
+            border-radius: 8px;
+            padding: 1rem;
+            text-align: center;
+        }
+
+        .rpm-value {
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 2.5rem;
+            font-weight: 700;
+            color: var(--accent-amber);
+        }
+
+        .rpm-label {
+            font-size: 0.75rem;
+            color: var(--text-secondary);
+            text-transform: uppercase;
+        }
+
+        .slider-container {
+            margin-top: 0.5rem;
+        }
+
+        .slider {
+            width: 100%;
+            -webkit-appearance: none;
+            height: 6px;
+            border-radius: 3px;
+            background: var(--bg-tertiary);
+            outline: none;
+            border: 1px solid var(--border);
+        }
+
+        .slider::-webkit-slider-thumb {
+            -webkit-appearance: none;
+            width: 18px;
+            height: 18px;
+            border-radius: 50%;
+            background: var(--accent-amber);
+            cursor: pointer;
+            box-shadow: 0 0 10px rgba(245, 158, 11, 0.3);
+        }
+
+        .analysis-log {
+            background: var(--bg-tertiary);
+            border: 1px solid var(--border);
+            border-radius: 8px;
+            padding: 1rem;
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 0.75rem;
+            color: var(--text-secondary);
+            height: 150px;
+            overflow-y: auto;
+        }
+
+        .log-entry {
+            margin-bottom: 0.5rem;
+            padding-left: 1rem;
+            border-left: 2px solid var(--accent-amber);
+            opacity: 0;
+            animation: fadeIn 0.3s forwards;
+        }
+
+        @keyframes fadeIn {
+            to { opacity: 1; }
+        }
+
+        /* Hair Analysis Module */
+        .hair-module .module-icon { background: rgba(16, 185, 129, 0.15); color: var(--accent-green); }
+        .hair-module .badge { background: rgba(16, 185, 129, 0.1); color: var(--accent-green); border-color: rgba(16, 185, 129, 0.2); }
+
+        .hair-container {
+            display: grid;
+            grid-template-columns: 1fr 220px;
+            gap: 1.5rem;
+            height: 100%;
+        }
+
+        .microscope-view {
+            background: var(--bg-tertiary);
+            border-radius: 8px;
+            border: 1px solid var(--border);
+            position: relative;
+            overflow: hidden;
+        }
+
+        .microscope-view canvas {
+            display: block;
+            width: 100%;
+            height: 100%;
+        }
+
+        .timeline-controls {
+            display: flex;
+            flex-direction: column;
+            gap: 1rem;
+        }
+
+        .timeline {
+            position: relative;
+            height: 300px;
+            background: var(--bg-tertiary);
+            border: 1px solid var(--border);
+            border-radius: 8px;
+            padding: 1rem;
+            overflow: hidden;
+        }
+
+        .timeline-line {
+            position: absolute;
+            left: 50%;
+            top: 20px;
+            bottom: 20px;
+            width: 2px;
+            background: linear-gradient(to bottom, var(--accent-green), transparent);
+        }
+
+        .timeline-marker {
+            position: absolute;
+            left: 50%;
+            transform: translateX(-50%);
+            width: 16px;
+            height: 16px;
+            border-radius: 50%;
+            background: var(--bg-secondary);
+            border: 2px solid var(--accent-green);
+            cursor: pointer;
+            transition: all 0.2s;
+            z-index: 10;
+        }
+
+        .timeline-marker:hover {
+            transform: translateX(-50%) scale(1.3);
+            box-shadow: 0 0 15px var(--accent-green);
+        }
+
+        .timeline-marker.active {
+            background: var(--accent-green);
+            box-shadow: 0 0 20px var(--accent-green);
+        }
+
+        .marker-label {
+            position: absolute;
+            right: calc(50% + 20px);
+            top: 50%;
+            transform: translateY(-50%);
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 0.7rem;
+            color: var(--text-secondary);
+            white-space: nowrap;
+        }
+
+        .timeline-marker:nth-child(even) .marker-label {
+            right: auto;
+            left: calc(50% + 20px);
+        }
+
+        .arsenic-data {
+            background: var(--bg-tertiary);
+            border: 1px solid var(--border);
+            border-radius: 8px;
+            padding: 1rem;
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 0.75rem;
+        }
+
+        .data-row {
+            display: flex;
+            justify-content: space-between;
+            padding: 0.4rem 0;
+            border-bottom: 1px solid var(--border);
+        }
+
+        .data-row:last-child { border-bottom: none; }
+
+        .data-label { color: var(--text-secondary); }
+        .data-value { color: var(--accent-green); font-weight: 600; }
+
+        /* Ballistics Module */
+        .ballistics-module .module-icon { background: rgba(6, 182, 212, 0.15); color: var(--accent-cyan); }
+        .ballistics-module .badge { background: rgba(6, 182, 212, 0.1); color: var(--accent-cyan); border-color: rgba(6, 182, 212, 0.2); }
+        .ballistics-module { grid-column: 1 / -1; }
+
+        .ballistics-container {
+            display: grid;
+            grid-template-columns: 1fr 280px;
+            gap: 1.5rem;
+            height: 100%;
+        }
+
+        .viewport-3d {
+            background: var(--bg-tertiary);
+            border-radius: 8px;
+            border: 1px solid var(--border);
+            position: relative;
+            overflow: hidden;
+            cursor: crosshair;
+        }
+
+        .viewport-3d canvas {
+            display: block;
+            width: 100%;
+            height: 100%;
+        }
+
+        .trajectory-data {
+            display: flex;
+            flex-direction: column;
+            gap: 1rem;
+        }
+
+        .data-card {
+            background: var(--bg-tertiary);
+            border: 1px solid var(--border);
+            border-radius: 8px;
+            padding: 1rem;
+        }
+
+        .data-card h4 {
+            font-size: 0.7rem;
+            text-transform: uppercase;
+            letter-spacing: 0.1em;
+            color: var(--text-secondary);
+            margin-bottom: 0.75rem;
+            font-family: 'JetBrains Mono', monospace;
+        }
+
+        .coord-display {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 0.5rem;
+        }
+
+        .coord-box {
+            background: rgba(0,0,0,0.3);
+            padding: 0.75rem;
+            border-radius: 6px;
+            text-align: center;
+        }
+
+        .coord-label {
+            font-size: 0.65rem;
+            color: var(--text-secondary);
+            text-transform: uppercase;
+            margin-bottom: 0.25rem;
+        }
+
+        .coord-value {
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 1rem;
+            font-weight: 700;
+            color: var(--accent-cyan);
+        }
+
+        .trajectory-line {
+            height: 2px;
+            background: linear-gradient(90deg, var(--accent-cyan), transparent);
+            margin: 1rem 0;
+            position: relative;
+        }
+
+        .trajectory-line::after {
+            content: '';
+            position: absolute;
+            right: 0;
+            top: -3px;
+            width: 8px;
+            height: 8px;
+            border-radius: 50%;
+            background: var(--accent-cyan);
+            box-shadow: 0 0 10px var(--accent-cyan);
+        }
+
+        .instruction {
+            font-size: 0.8rem;
+            color: var(--text-secondary);
+            font-style: italic;
+            padding: 0.75rem;
+            background: rgba(6, 182, 212, 0.05);
+            border-left: 2px solid var(--accent-cyan);
+            border-radius: 0 4px 4px 0;
+        }
+
+        .angle-readout {
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 2rem;
+            font-weight: 700;
+            color: var(--accent-cyan);
+            text-align: center;
+            margin-top: 0.5rem;
+        }
+
+        @media (max-width: 1200px) {
+            .grid-layout { grid-template-columns: 1fr; }
+            .ballistics-module { grid-column: 1; }
+        }
+
+        .loading-overlay {
+            position: absolute;
+            inset: 0;
+            background: var(--bg-secondary);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            z-index: 50;
+            transition: opacity 0.5s;
+        }
+
+        .loading-overlay.hidden { opacity: 0; pointer-events: none; }
+
+        .loader {
+            width: 40px;
+            height: 40px;
+            border: 3px solid var(--border);
+            border-top-color: var(--accent-cyan);
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+        }
+
+        @keyframes spin { to { transform: rotate(360deg); } }
+
+        .grid-bg {
+            position: absolute;
+            inset: 0;
+            background-image: 
+                linear-gradient(var(--grid) 1px, transparent 1px),
+                linear-gradient(90deg, var(--grid) 1px, transparent 1px);
+            background-size: 20px 20px;
+            pointer-events: none;
+        }
+    </style>
+</head>
+<body>
+
+    <header class="header">
+        <div class="logo">
+            <div class="logo-icon">F</div>
+            <div class="logo-text">
+                <h1>Forensic OS</h1>
+                <span>Digital Crime Laboratory v2.4</span>
+            </div>
+        </div>
+        <div class="status-bar">
+            <div class="status-item">
+                <div class="status-dot"></div>
+                <span>SYSTEM ONLINE</span>
+            </div>
+            <div class="status-item">
+                <span>CASE-ID: <span style="color: var(--accent-cyan)">FX-2026-0442</span></span>
+            </div>
+            <div class="status-item">
+                <span>SECURE CONNECTION</span>
+            </div>
+        </div>
+    </header>
+
+    <main class="main-container">
+        <div class="grid-layout">
+
+            <!-- Blood Spatter Analysis -->
+            <div class="module blood-module">
+                <div class="module-header">
+                    <div class="module-title">
+                        <div class="module-icon">🩸</div>
+                        Blood Spatter Analysis
+                    </div>
+                    <span class="badge">Projectile Math</span>
+                </div>
+                <div class="module-body">
+                    <div class="spatter-container">
+                        <div class="canvas-wrapper" id="bloodCanvasWrapper">
+                            <div class="grid-bg"></div>
+                            <canvas id="bloodCanvas" width="500" height="350"></canvas>
+                        </div>
+                        <div class="controls">
+                            <div class="control-group">
+                                <span class="control-label">Impact Angle</span>
+                                <div class="value-display" id="angleDisplay">0°</div>
+                                <div class="formula">
+                                    θ = arcsin(W/L)<br>
+                                    <span style="font-size: 0.65rem; opacity: 0.7">Width / Length ratio</span>
+                                </div>
+                            </div>
+                            <div class="control-group">
+                                <span class="control-label">Drop Dimensions</span>
+                                <div style="font-family: 'JetBrains Mono', monospace; font-size: 0.8rem; color: var(--text-secondary); margin-top: 0.5rem;">
+                                    <div>W: <span id="widthVal" style="color: var(--accent-red)">0</span>px</div>
+                                    <div>L: <span id="lengthVal" style="color: var(--accent-red)">0</span>px</div>
+                                </div>
+                            </div>
+                            <button class="btn btn-primary" onclick="generateBloodDrop()">Generate Drop</button>
+                            <button class="btn" onclick="clearBlood()">Clear</button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Lividity Analysis -->
+            <div class="module lividity-module">
+                <div class="module-header">
+                    <div class="module-title">
+                        <div class="module-icon">💜</div>
+                        Post-Mortem Lividity
+                    </div>
+                    <span class="badge">TOD Estimation</span>
+                </div>
+                <div class="module-body">
+                    <div class="lividity-container">
+                        <div class="body-svg-container">
+                            <svg viewBox="0 0 200 400" id="bodySvg">
+                                <defs>
+                                    <filter id="glow">
+                                        <feGaussianBlur stdDeviation="3" result="coloredBlur"/>
+                                        <feMerge>
+                                            <feMergeNode in="coloredBlur"/>
+                                            <feMergeNode in="SourceGraphic"/>
+                                        </feMerge>
+                                    </filter>
+                                    <radialGradient id="poolGrad" cx="50%" cy="50%" r="50%">
+                                        <stop offset="0%" stop-color="#8b5cf6" stop-opacity="0.8"/>
+                                        <stop offset="100%" stop-color="#8b5cf6" stop-opacity="0"/>
+                                    </radialGradient>
+                                </defs>
+                                <!-- Body outline -->
+                                <ellipse cx="100" cy="60" rx="35" ry="40" fill="none" stroke="#475569" stroke-width="2"/>
+                                <path d="M100 100 L100 120 M70 110 Q60 130 60 160 M130 110 Q140 130 140 160" fill="none" stroke="#475569" stroke-width="2"/>
+                                <rect x="75" y="120" width="50" height="100" rx="10" fill="none" stroke="#475569" stroke-width="2"/>
+                                <path d="M75 140 L60 220 M125 140 L140 220" fill="none" stroke="#475569" stroke-width="2"/>
+                                <path d="M85 220 L80 350 M115 220 L120 350" fill="none" stroke="#475569" stroke-width="2"/>
+                                
+                                <!-- Lividity pools -->
+                                <ellipse id="poolBack" cx="100" cy="160" rx="40" ry="50" fill="url(#poolGrad)" opacity="0" filter="url(#glow)"/>
+                                <ellipse id="poolLegs" cx="100" cy="300" rx="30" ry="40" fill="url(#poolGrad)" opacity="0" filter="url(#glow)"/>
+                                <ellipse id="poolArms" cx="60" cy="180" rx="15" ry="30" fill="url(#poolGrad)" opacity="0" filter="url(#glow)"/>
+                                <ellipse id="poolArms2" cx="140" cy="180" rx="15" ry="30" fill="url(#poolGrad)" opacity="0" filter="url(#glow)"/>
+                            </svg>
+                        </div>
+                        <div class="color-picker-wrapper">
+                            <div class="color-swatch">
+                                <input type="color" id="lividityColor" value="#8b5cf6" oninput="updateLividity(this.value)">
+                            </div>
+                            <div class="time-estimate">
+                                <div class="time-value" id="timeEstimate">0h</div>
+                                <div class="time-label">Estimated Time Since Death</div>
+                            </div>
+                            <div class="lividity-stages" id="lividityStages">
+                                <div class="stage-item active" data-hours="0">
+                                    <div class="stage-dot" style="background: #fca5a5; border-color: #fca5a5;"></div>
+                                    <span>0-2h: Pallor</span>
+                                </div>
+                                <div class="stage-item" data-hours="3">
+                                    <div class="stage-dot" style="background: #c084fc; border-color: #c084fc;"></div>
+                                    <span>2-6h: Early Lividity</span>
+                                </div>
+                                <div class="stage-item" data-hours="7">
+                                    <div class="stage-dot" style="background: #8b5cf6; border-color: #8b5cf6;"></div>
+                                    <span>6-12h: Fixed Purple</span>
+                                </div>
+                                <div class="stage-item" data-hours="13">
+                                    <div class="stage-dot" style="background: #6d28d9; border-color: #6d28d9;"></div>
+                                    <span>12-24h: Deep Set</span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Centrifuge Analysis -->
+            <div class="module centrifuge-module">
+                <div class="module-header">
+                    <div class="module-title">
+                        <div class="module-icon">🧪</div>
+                        Gastric Content Analysis
+                    </div>
+                    <span class="badge">Centrifuge Sim</span>
+                </div>
+                <div class="module-body">
+                    <div class="centrifuge-container">
+                        <div class="tube-container" id="tubeContainer">
+                            <div class="tube">
+                                <div class="tube-content">
+                                    <div class="layer layer-solid"></div>
+                                    <div class="layer layer-semi"></div>
+                                    <div class="layer layer-liquid"></div>
+                                    <div class="layer layer-clear"></div>
+                                    <div id="particles"></div>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="centrifuge-controls">
+                            <div class="rpm-display">
+                                <div class="rpm-value" id="rpmValue">0</div>
+                                <div class="rpm-label">RPM</div>
+                            </div>
+                            <div class="slider-container">
+                                <input type="range" class="slider" id="rpmSlider" min="0" max="5000" value="0" oninput="updateRPM(this.value)">
+                            </div>
+                            <button class="btn" onclick="startCentrifuge()" style="background: rgba(245, 158, 11, 0.1); color: var(--accent-amber); border-color: rgba(245, 158, 11, 0.3);">Start Sequence</button>
+                            <div class="analysis-log" id="analysisLog">
+                                <div class="log-entry">> System ready. Load sample.</div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Arsenic Hair Test -->
+            <div class="module hair-module">
+                <div class="module-header">
+                    <div class="module-title">
+                        <div class="module-icon">🔬</div>
+                        Toxicology: Hair Analysis
+                    </div>
+                    <span class="badge">Chronic Exposure</span>
+                </div>
+                <div class="module-body">
+                    <div class="hair-container">
+                        <div class="microscope-view">
+                            <canvas id="hairCanvas" width="500" height="350"></canvas>
+                            <div class="loading-overlay" id="hairLoading">
+                                <div class="loader"></div>
+                            </div>
+                        </div>
+                        <div class="timeline-controls">
+                            <div class="timeline" id="hairTimeline">
+                                <div class="timeline-line"></div>
+                                <div class="timeline-marker active" style="top: 20px;" onclick="selectBand(0)">
+                                    <span class="marker-label">Month 1</span>
+                                </div>
+                                <div class="timeline-marker" style="top: 80px;" onclick="selectBand(1)">
+                                    <span class="marker-label">Month 3</span>
+                                </div>
+                                <div class="timeline-marker" style="top: 140px;" onclick="selectBand(2)">
+                                    <span class="marker-label">Month 6</span>
+                                </div>
+                                <div class="timeline-marker" style="top: 200px;" onclick="selectBand(3)">
+                                    <span class="marker-label">Month 9</span>
+                                </div>
+                                <div class="timeline-marker" style="top: 260px;" onclick="selectBand(4)">
+                                    <span class="marker-label">Month 12</span>
+                                </div>
+                            </div>
+                            <div class="arsenic-data">
+                                <div class="data-row">
+                                    <span class="data-label">As Concentration</span>
+                                    <span class="data-value" id="asConc">0.2 ppm</span>
+                                </div>
+                                <div class="data-row">
+                                    <span class="data-label">Exposure Level</span>
+                                    <span class="data-value" id="exposureLvl">Minimal</span>
+                                </div>
+                                <div class="data-row">
+                                    <span class="data-label">Hair Growth</span>
+                                    <span class="data-value">1.0 cm/mo</span>
+                                </div>
+                                <div class="data-row">
+                                    <span class="data-label">Toxic Band</span>
+                                    <span class="data-value" id="toxicBand">None</span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Ballistics Trajectory -->
+            <div class="module ballistics-module">
+                <div class="module-header">
+                    <div class="module-title">
+                        <div class="module-icon">🎯</div>
+                        Ballistics Trajectory Mapping
+                    </div>
+                    <span class="badge">3D Wireframe</span>
+                </div>
+                <div class="module-body">
+                    <div class="ballistics-container">
+                        <div class="viewport-3d" id="viewport3d">
+                            <canvas id="ballisticsCanvas" width="800" height="400"></canvas>
+                            <div class="loading-overlay" id="ballisticsLoading">
+                                <div class="loader"></div>
+                            </div>
+                        </div>
+                        <div class="trajectory-data">
+                            <div class="data-card">
+                                <h4>Entry Coordinates</h4>
+                                <div class="coord-display">
+                                    <div class="coord-box">
+                                        <div class="coord-label">X</div>
+                                        <div class="coord-value" id="entryX">--</div>
+                                    </div>
+                                    <div class="coord-box">
+                                        <div class="coord-label">Y</div>
+                                        <div class="coord-value" id="entryY">--</div>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="data-card">
+                                <h4>Exit Coordinates</h4>
+                                <div class="coord-display">
+                                    <div class="coord-box">
+                                        <div class="coord-label">X</div>
+                                        <div class="coord-value" id="exitX">--</div>
+                                    </div>
+                                    <div class="coord-box">
+                                        <div class="coord-label">Y</div>
+                                        <div class="coord-value" id="exitY">--</div>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="data-card">
+                                <h4>Trajectory Vector</h4>
+                                <div class="angle-readout" id="trajectoryAngle">--°</div>
+                                <div class="trajectory-line"></div>
+                                <div class="instruction">
+                                    Drag on the 3D model to draw trajectory path
+                                </div>
+                            </div>
+                            <button class="btn" onclick="resetTrajectory()">Reset View</button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+        </div>
+    </main>
+
+    <script>
+        // ==================== BLOOD SPATTER ====================
+        const bloodCanvas = document.getElementById('bloodCanvas');
+        const bloodCtx = bloodCanvas.getContext('2d');
+        let bloodDrops = [];
+
+        function generateBloodDrop() {
+            bloodDrops = [];
+            const centerX = bloodCanvas.width / 2;
+            const centerY = bloodCanvas.height / 2;
+            
+            // Random angle of impact (0-90 degrees)
+            const trueAngle = Math.random() * 75 + 10;
+            const radians = trueAngle * (Math.PI / 180);
+            
+            // Ellipse dimensions based on angle
+            const maxLength = 120;
+            const width = maxLength * Math.sin(radians);
+            const length = maxLength;
+            
+            // Add some randomness to position
+            const offsetX = (Math.random() - 0.5) * 100;
+            const offsetY = (Math.random() - 0.5) * 50;
+            
+            bloodDrops.push({
+                x: centerX + offsetX,
+                y: centerY + offsetY,
+                width: width,
+                length: length,
+                angle: Math.random() * Math.PI * 2,
+                trueAngle: trueAngle,
+                spatter: []
+            });
+            
+            // Generate spatter points
+            for (let i = 0; i < 15; i++) {
+                const dist = length/2 + Math.random() * 80;
+                const spatterAngle = Math.random() * Math.PI * 2;
+                bloodDrops[0].spatter.push({
+                    x: centerX + offsetX + Math.cos(spatterAngle) * dist,
+                    y: centerY + offsetY + Math.sin(spatterAngle) * dist * 0.3,
+                    size: Math.random() * 4 + 1,
+                    opacity: Math.random() * 0.6 + 0.2
+                });
+            }
+            
+            drawBloodDrops();
+            calculateAngle(width, length);
+        }
+
+        function drawBloodDrops() {
+            bloodCtx.fillStyle = '#0f172a';
+            bloodCtx.fillRect(0, 0, bloodCanvas.width, bloodCanvas.height);
+            
+            // Grid
+            bloodCtx.strokeStyle = 'rgba(6, 182, 212, 0.05)';
+            bloodCtx.lineWidth = 1;
+            for (let i = 0; i < bloodCanvas.width; i += 20) {
+                bloodCtx.beginPath();
+                bloodCtx.moveTo(i, 0);
+                bloodCtx.lineTo(i, bloodCanvas.height);
+                bloodCtx.stroke();
+            }
+            for (let i = 0; i < bloodCanvas.height; i += 20) {
+                bloodCtx.beginPath();
+                bloodCtx.moveTo(0, i);
+                bloodCtx.lineTo(bloodCanvas.width, i);
+                bloodCtx.stroke();
+            }
+            
+            bloodDrops.forEach(drop => {
+                // Draw spatter
+                drop.spatter.forEach(s => {
+                    bloodCtx.beginPath();
+                    bloodCtx.arc(s.x, s.y, s.size, 0, Math.PI * 2);
+                    bloodCtx.fillStyle = `rgba(185, 28, 28, ${s.opacity})`;
+                    bloodCtx.fill();
+                });
+                
+                // Draw main drop
+                bloodCtx.save();
+                bloodCtx.translate(drop.x, drop.y);
+                bloodCtx.rotate(drop.angle);
+                
+                // Ellipse
+                bloodCtx.beginPath();
+                bloodCtx.ellipse(0, 0, drop.length/2, drop.width/2, 0, 0, Math.PI * 2);
+                const grad = bloodCtx.createRadialGradient(0, 0, 0, 0, 0, drop.length/2);
+                grad.addColorStop(0, '#dc2626');
+                grad.addColorStop(0.7, '#991b1b');
+                grad.addColorStop(1, 'rgba(153, 27, 27, 0.8)');
+                bloodCtx.fillStyle = grad;
+                bloodCtx.fill();
+                
+                // Outline
+                bloodCtx.strokeStyle = '#ef4444';
+                bloodCtx.lineWidth = 1.5;
+                bloodCtx.stroke();
+                
+                // Direction indicator
+                bloodCtx.beginPath();
+                bloodCtx.moveTo(-drop.length/2 - 10, 0);
+                bloodCtx.lineTo(-drop.length/2 - 25, 0);
+                bloodCtx.strokeStyle = 'rgba(239, 68, 68, 0.6)';
+                bloodCtx.lineWidth = 2;
+                bloodCtx.stroke();
+                
+                // Arrowhead
+                bloodCtx.beginPath();
+                bloodCtx.moveTo(-drop.length/2 - 20, -5);
+                bloodCtx.lineTo(-drop.length/2 - 25, 0);
+                bloodCtx.lineTo(-drop.length/2 - 20, 5);
+                bloodCtx.stroke();
+                
+                bloodCtx.restore();
+                
+                // Measurement lines
+                bloodCtx.strokeStyle = 'rgba(239, 68, 68, 0.4)';
+                bloodCtx.setLineDash([5, 5]);
+                bloodCtx.beginPath();
+                bloodCtx.moveTo(drop.x - drop.length/2, drop.y + drop.width/2 + 20);
+                bloodCtx.lineTo(drop.x + drop.length/2, drop.y + drop.width/2 + 20);
+                bloodCtx.stroke();
+                
+                bloodCtx.beginPath();
+                bloodCtx.moveTo(drop.x + drop.length/2 + 20, drop.y - drop.width/2);
+                bloodCtx.lineTo(drop.x + drop.length/2 + 20, drop.y + drop.width/2);
+                bloodCtx.stroke();
+                bloodCtx.setLineDash([]);
+            });
+        }
+
+        function calculateAngle(width, length) {
+            const ratio = width / length;
+            const angle = Math.asin(ratio) * (180 / Math.PI);
+            
+            document.getElementById('angleDisplay').textContent = angle.toFixed(1) + '°';
+            document.getElementById('widthVal').textContent = width.toFixed(1);
+            document.getElementById('lengthVal').textContent = length.toFixed(1);
+        }
+
+        function clearBlood() {
+            bloodDrops = [];
+            bloodCtx.fillStyle = '#0f172a';
+            bloodCtx.fillRect(0, 0, bloodCanvas.width, bloodCanvas.height);
+            document.getElementById('angleDisplay').textContent = '0°';
+            document.getElementById('widthVal').textContent = '0';
+            document.getElementById('lengthVal').textContent = '0';
+        }
+
+        // ==================== LIVIDITY ====================
+        function updateLividity(color) {
+            const pools = ['poolBack', 'poolLegs', 'poolArms', 'poolArms2'];
+            const hex = color.replace('#', '');
+            const r = parseInt(hex.substr(0, 2), 16);
+            const g = parseInt(hex.substr(2, 2), 16);
+            const b = parseInt(hex.substr(4, 2), 16);
+            
+            // Calculate time based on color intensity and hue
+            const brightness = (r + g + b) / 3;
+            const purpleIntensity = b / 255;
+            
+            let hours = 0;
+            if (brightness > 200) hours = Math.random() * 2;
+            else if (brightness > 170) hours = 2 + Math.random() * 4;
+            else if (brightness > 120) hours = 6 + Math.random() * 6;
+            else hours = 12 + Math.random() * 12;
+            
+            hours = Math.min(hours, 24);
+            
+            // Update SVG pools
+            pools.forEach((id, i) => {
+                const el = document.getElementById(id);
+                el.setAttribute('fill', `url(#poolGrad)`);
+                el.style.opacity = Math.min(purpleIntensity * 0.8 + 0.2, 0.9);
+                
+                // Update gradient color
+                const grad = document.getElementById('poolGrad');
+                grad.innerHTML = `
+                    <stop offset="0%" stop-color="${color}" stop-opacity="0.9"/>
+                    <stop offset="100%" stop-color="${color}" stop-opacity="0"/>
+                `;
+            });
+            
+            document.getElementById('timeEstimate').textContent = hours.toFixed(1) + 'h';
+            
+            // Update stages
+            document.querySelectorAll('.stage-item').forEach(el => {
+                el.classList.remove('active');
+                const stageHours = parseInt(el.dataset.hours);
+                if (hours >= stageHours && hours < stageHours + (stageHours === 0 ? 2 : stageHours === 3 ? 4 : stageHours === 7 ? 6 : 12)) {
+                    el.classList.add('active');
+                }
+            });
+        }
+
+        // ==================== CENTRIFUGE ====================
+        let rpm = 0;
+        let centrifugeRunning = false;
+        const particles = [];
+
+        function initParticles() {
+            const container = document.getElementById('particles');
+            container.innerHTML = '';
+            particles.length = 0;
+            
+            const types = ['meat', 'veg', 'bone', 'liquid'];
+            for (let i = 0; i < 40; i++) {
+                const p = document.createElement('div');
+                const type = types[Math.floor(Math.random() * types.length)];
+                p.className = `particle ${type}`;
+                p.style.left = Math.random() * 100 + '%';
+                p.style.top = Math.random() * 100 + '%';
+                container.appendChild(p);
+                particles.push({
+                    el: p,
+                    type: type,
+                    x: Math.random() * 100,
+                    y: Math.random() * 100,
+                    targetY: type === 'bone' ? 5 : type === 'meat' ? 15 : type === 'veg' ? 35 : 70
+                });
+            }
+        }
+
+        function updateRPM(val) {
+            rpm = parseInt(val);
+            document.getElementById('rpmValue').textContent = rpm;
+            
+            if (rpm > 1000) {
+                particles.forEach(p => {
+                    const speed = rpm / 5000;
+                    p.y = p.y + (p.targetY - p.y) * speed * 0.1;
+                    p.el.style.top = p.y + '%';
+                    
+                    // Add horizontal shake based on RPM
+                    const shake = (Math.random() - 0.5) * (rpm / 5000) * 10;
+                    p.el.style.left = (p.x + shake) + '%';
+                });
+            }
+        }
+
+        function startCentrifuge() {
+            if (centrifugeRunning) return;
+            centrifugeRunning = true;
+            
+            const log = document.getElementById('analysisLog');
+            const slider = document.getElementById('rpmSlider');
+            let currentRPM = 0;
+            
+            log.innerHTML = '<div class="log-entry">> Initiating centrifuge sequence...</div>';
+            
+            const interval = setInterval(() => {
+                currentRPM += 100;
+                slider.value = currentRPM;
+                updateRPM(currentRPM);
+                
+                if (currentRPM === 1000) {
+                    log.innerHTML += '<div class="log-entry">> Phase 1: Initial separation detected</div>';
+                }
+                if (currentRPM === 2500) {
+                    log.innerHTML += '<div class="log-entry">> Phase 2: Dense particles settling</div>';
+                }
+                if (currentRPM === 4000) {
+                    log.innerHTML += '<div class="log-entry">> Phase 3: Clear stratification visible</div>';
+                }
+                if (currentRPM >= 5000) {
+                    clearInterval(interval);
+                    centrifugeRunning = false;
+                    log.innerHTML += '<div class="log-entry">> Analysis complete. 4 distinct layers identified.</div>';
+                    log.innerHTML += '<div class="log-entry">> Top: Gastric fluid (60%)</div>';
+                    log.innerHTML += '<div class="log-entry">> Layer 2: Vegetable matter (25%)</div>';
+                    log.innerHTML += '<div class="log-entry">> Layer 3: Protein fragments (12%)</div>';
+                    log.innerHTML += '<div class="log-entry">> Bottom: Bone fragments (3%)</div>';
+                }
+                log.scrollTop = log.scrollHeight;
+            }, 50);
+        }
+
+        // ==================== HAIR ANALYSIS ====================
+        const hairCanvas = document.getElementById('hairCanvas');
+        const hairCtx = hairCanvas.getContext('2d');
+        let selectedBand = 0;
+        const bandData = [
+            { conc: '0.2 ppm', level: 'Minimal', toxic: 'None', color: '#10b981' },
+            { conc: '2.8 ppm', level: 'Moderate', toxic: 'Band A', color: '#f59e0b' },
+            { conc: '8.4 ppm', level: 'High', toxic: 'Band B', color: '#ef4444' },
+            { conc: '15.1 ppm', level: 'Severe', toxic: 'Band C', color: '#dc2626' },
+            { conc: '4.2 ppm', level: 'Declining', toxic: 'Band D', color: '#f97316' }
+        ];
+
+        function drawHair() {
+            const w = hairCanvas.width;
+            const h = hairCanvas.height;
+            
+            hairCtx.fillStyle = '#0f172a';
+            hairCtx.fillRect(0, 0, w, h);
+            
+            // Background grid
+            hairCtx.strokeStyle = 'rgba(16, 185, 129, 0.05)';
+            hairCtx.lineWidth = 1;
+            for (let i = 0; i < w; i += 10) {
+                hairCtx.beginPath();
+                hairCtx.moveTo(i, 0);
+                hairCtx.lineTo(i, h);
+                hairCtx.stroke();
+            }
+            for (let i = 0; i < h; i += 10) {
+                hairCtx.beginPath();
+                hairCtx.moveTo(0, i);
+                hairCtx.lineTo(w, i);
+                hairCtx.stroke();
+            }
+            
+            const hairX = w / 2;
+            const hairWidth = 80;
+            
+            // Draw hair shaft
+            const gradient = hairCtx.createLinearGradient(hairX - hairWidth/2, 0, hairX + hairWidth/2, 0);
+            gradient.addColorStop(0, '#3d2b1f');
+            gradient.addColorStop(0.3, '#5c3d2e');
+            gradient.addColorStop(0.5, '#6b4423');
+            gradient.addColorStop(0.7, '#5c3d2e');
+            gradient.addColorStop(1, '#3d2b1f');
+            
+            hairCtx.fillStyle = gradient;
+            hairCtx.fillRect(hairX - hairWidth/2, 30, hairWidth, h - 60);
+            
+            // Cuticle scales
+            for (let y = 30; y < h - 30; y += 8) {
+                hairCtx.beginPath();
+                hairCtx.moveTo(hairX - hairWidth/2 - 5, y);
+                hairCtx.lineTo(hairX - hairWidth/2, y + 4);
+                hairCtx.lineTo(hairX - hairWidth/2 - 5, y + 8);
+                hairCtx.strokeStyle = 'rgba(139, 69, 19, 0.5)';
+                hairCtx.lineWidth = 1;
+                hairCtx.stroke();
+                
+                hairCtx.beginPath();
+                hairCtx.moveTo(hairX + hairWidth/2 + 5, y);
+                hairCtx.lineTo(hairX + hairWidth/2, y + 4);
+                hairCtx.lineTo(hairX + hairWidth/2 + 5, y + 8);
+                hairCtx.stroke();
+            }
+            
+            // Cortex texture
+            for (let i = 0; i < 200; i++) {
+                const x = hairX - hairWidth/2 + 10 + Math.random() * (hairWidth - 20);
+                const y = 30 + Math.random() * (h - 60);
+                hairCtx.fillStyle = `rgba(92, 61, 46, ${Math.random() * 0.3})`;
+                hairCtx.fillRect(x, y, 2, 2);
+            }
+            
+            // Medulla
+            hairCtx.fillStyle = 'rgba(139, 110, 80, 0.3)';
+            hairCtx.fillRect(hairX - 8, 30, 16, h - 60);
+            
+            // Draw arsenic bands
+            const bandPositions = [60, 120, 180, 240, 300];
+            bandPositions.forEach((y, i) => {
+                const intensity = bandData[i].conc === '0.2 ppm' ? 0.1 : 
+                                 bandData[i].conc === '2.8 ppm' ? 0.4 :
+                                 bandData[i].conc === '8.4 ppm' ? 0.7 :
+                                 bandData[i].conc === '15.1 ppm' ? 0.95 : 0.5;
+                
+                // Band glow
+                if (i === selectedBand) {
+                    hairCtx.shadowColor = bandData[i].color;
+                    hairCtx.shadowBlur = 20;
+                }
+                
+                hairCtx.fillStyle = bandData[i].color;
+                hairCtx.globalAlpha = intensity;
+                hairCtx.fillRect(hairX - hairWidth/2 + 5, y, hairWidth - 10, 12);
+                hairCtx.globalAlpha = 1;
+                hairCtx.shadowBlur = 0;
+                
+                // Band label
+                hairCtx.fillStyle = '#e2e8f0';
+                hairCtx.font = '10px JetBrains Mono';
+                hairCtx.fillText(`M${i === 0 ? '1' : i === 1 ? '3' : i === 2 ? '6' : i === 3 ? '9' : '12'}`, hairX + hairWidth/2 + 15, y + 9);
+            });
+            
+            // Scale indicator
+            hairCtx.fillStyle = 'rgba(255,255,255,0.3)';
+            hairCtx.fillRect(hairX - hairWidth/2 - 30, 30, 2, h - 60);
+            for (let i = 0; i <= 10; i++) {
+                const y = 30 + (h - 60) * (i / 10);
+                hairCtx.fillRect(hairX - hairWidth/2 - 35, y, 7, 1);
+                hairCtx.fillText(`${i}mm`, hairX - hairWidth/2 - 55, y + 3);
+            }
+            
+            // Crosshair for selected band
+            if (selectedBand >= 0) {
+                const y = bandPositions[selectedBand];
+                hairCtx.strokeStyle = 'rgba(255,255,255,0.5)';
+                hairCtx.setLineDash([3, 3]);
+                hairCtx.beginPath();
+                hairCtx.moveTo(0, y);
+                hairCtx.lineTo(w, y);
+                hairCtx.stroke();
+                hairCtx.setLineDash([]);
+            }
+        }
+
+        function selectBand(index) {
+            selectedBand = index;
+            document.querySelectorAll('.timeline-marker').forEach((el, i) => {
+                el.classList.toggle('active', i === index);
+            });
+            
+            document.getElementById('asConc').textContent = bandData[index].conc;
+            document.getElementById('exposureLvl').textContent = bandData[index].level;
+            document.getElementById('toxicBand').textContent = bandData[index].toxic;
+            
+            drawHair();
+        }
+
+        // ==================== BALLISTICS ====================
+        const ballCanvas = document.getElementById('ballisticsCanvas');
+        const ballCtx = ballCanvas.getContext('2d');
+        let bodyRotation = 0;
+        let isDragging = false;
+        let dragStart = null;
+        let dragEnd = null;
+        let trajectoryLine = null;
+
+        // 3D Body vertices (simplified humanoid)
+        const bodyVertices = [];
+        const bodyEdges = [];
+
+        function generateBody() {
+            // Head
+            for (let i = 0; i < 8; i++) {
+                const angle = (i / 8) * Math.PI * 2;
+                bodyVertices.push({ x: Math.cos(angle) * 25, y: -120, z: Math.sin(angle) * 30 });
+            }
+            // Neck
+            bodyVertices.push({ x: 0, y: -95, z: 0 });
+            
+            // Torso
+            for (let i = 0; i < 8; i++) {
+                const angle = (i / 8) * Math.PI * 2;
+                bodyVertices.push({ x: Math.cos(angle) * 40, y: -60, z: Math.sin(angle) * 25 });
+            }
+            for (let i = 0; i < 8; i++) {
+                const angle = (i / 8) * Math.PI * 2;
+                bodyVertices.push({ x: Math.cos(angle) * 35, y: -20, z: Math.sin(angle) * 20 });
+            }
+            for (let i = 0; i < 8; i++) {
+                const angle = (i / 8) * Math.PI * 2;
+                bodyVertices.push({ x: Math.cos(angle) * 30, y: 20, z: Math.sin(angle) * 18 });
+            }
+            
+            // Arms
+            [-1, 1].forEach(side => {
+                bodyVertices.push({ x: side * 55, y: -50, z: 0 }); // Shoulder
+                bodyVertices.push({ x: side * 65, y: -10, z: 0 }); // Elbow
+                bodyVertices.push({ x: side * 70, y: 30, z: 0 });  // Hand
+            });
+            
+            // Legs
+            [-1, 1].forEach(side => {
+                bodyVertices.push({ x: side * 20, y: 50, z: 0 });  // Hip
+                bodyVertices.push({ x: side * 20, y: 100, z: 0 }); // Knee
+                bodyVertices.push({ x: side * 20, y: 150, z: 0 }); // Foot
+            });
+            
+            // Define edges
+            // Head
+            for (let i = 0; i < 8; i++) {
+                bodyEdges.push([i, (i + 1) % 8]);
+            }
+            // Torso rings
+            for (let ring = 0; ring < 3; ring++) {
+                const base = 9 + ring * 8;
+                for (let i = 0; i < 8; i++) {
+                    bodyEdges.push([base + i, base + (i + 1) % 8]);
+                    if (ring < 2) bodyEdges.push([base + i, base + 8 + i]);
+                }
+            }
+            // Arms
+            bodyEdges.push([33, 34], [34, 35], [36, 37], [37, 38]);
+            // Legs
+            bodyEdges.push([39, 40], [40, 41], [42, 43], [43, 44]);
+            // Connect to torso
+            bodyEdges.push([9, 33], [13, 36], [17, 39], [21, 42]);
+        }
+
+        function project3D(v) {
+            const scale = 400 / (400 + v.z);
+            return {
+                x: ballCanvas.width / 2 + v.x * scale,
+                y: ballCanvas.height / 2 + v.y * scale,
+                scale: scale
+            };
+        }
+
+        function rotateY(v, angle) {
+            const cos = Math.cos(angle);
+            const sin = Math.sin(angle);
+            return {
+                x: v.x * cos - v.z * sin,
+                y: v.y,
+                z: v.x * sin + v.z * cos
+            };
+        }
+
+        function drawBody() {
+            ballCtx.fillStyle = '#0f172a';
+            ballCtx.fillRect(0, 0, ballCanvas.width, ballCanvas.height);
+            
+            // Grid
+            ballCtx.strokeStyle = 'rgba(6, 182, 212, 0.03)';
+            ballCtx.lineWidth = 1;
+            for (let i = 0; i < ballCanvas.width; i += 30) {
+                ballCtx.beginPath();
+                ballCtx.moveTo(i, 0);
+                ballCtx.lineTo(i, ballCanvas.height);
+                ballCtx.stroke();
+            }
+            for (let i = 0; i < ballCanvas.height; i += 30) {
+                ballCtx.beginPath();
+                ballCtx.moveTo(0, i);
+                ballCtx.lineTo(ballCanvas.width, i);
+                ballCtx.stroke();
+            }
+            
+            const rotated = bodyVertices.map(v => rotateY(v, bodyRotation));
+            const projected = rotated.map(v => project3D(v));
+            
+            // Draw edges
+            ballCtx.strokeStyle = 'rgba(6, 182, 212, 0.4)';
+            ballCtx.lineWidth = 1.5;
+            bodyEdges.forEach(edge => {
+                const p1 = projected[edge[0]];
+                const p2 = projected[edge[1]];
+                ballCtx.beginPath();
+                ballCtx.moveTo(p1.x, p1.y);
+                ballCtx.lineTo(p2.x, p2.y);
+                ballCtx.stroke();
+            });
+            
+            // Draw vertices
+            projected.forEach((p, i) => {
+                ballCtx.beginPath();
+                ballCtx.arc(p.x, p.y, 2 * p.scale, 0, Math.PI * 2);
+                ballCtx.fillStyle = `rgba(6, 182, 212, ${0.3 + p.scale * 0.4})`;
+                ballCtx.fill();
+            });
+            
+            // Draw trajectory if exists
+            if (trajectoryLine) {
+                const p1 = project3D(rotateY(trajectoryLine.start, bodyRotation));
+                const p2 = project3D(rotateY(trajectoryLine.end, bodyRotation));
+                
+                // Trajectory line
+                ballCtx.beginPath();
+                ballCtx.moveTo(p1.x, p1.y);
+                ballCtx.lineTo(p2.x, p2.y);
+                ballCtx.strokeStyle = '#ef4444';
+                ballCtx.lineWidth = 3;
+                ballCtx.setLineDash([8, 4]);
+                ballCtx.stroke();
+                ballCtx.setLineDash([]);
+                
+                // Entry point
+                ballCtx.beginPath();
+                ballCtx.arc(p1.x, p1.y, 8, 0, Math.PI * 2);
+                ballCtx.fillStyle = '#ef4444';
+                ballCtx.fill();
+                ballCtx.beginPath();
+                ballCtx.arc(p1.x, p1.y, 12, 0, Math.PI * 2);
+                ballCtx.strokeStyle = 'rgba(239, 68, 68, 0.5)';
+                ballCtx.lineWidth = 2;
+                ballCtx.stroke();
+                
+                // Exit point
+                ballCtx.beginPath();
+                ballCtx.arc(p2.x, p2.y, 8, 0, Math.PI * 2);
+                ballCtx.fillStyle = '#f59e0b';
+                ballCtx.fill();
+                ballCtx.beginPath();
+                ballCtx.arc(p2.x, p2.y, 12, 0, Math.PI * 2);
+                ballCtx.strokeStyle = 'rgba(245, 158, 11, 0.5)';
+                ballCtx.lineWidth = 2;
+                ballCtx.stroke();
+                
+                // Trajectory extension
+                const dx = p2.x - p1.x;
+                const dy = p2.y - p1.y;
+                const len = Math.sqrt(dx*dx + dy*dy);
+                const extendX = p2.x + (dx/len) * 100;
+                const extendY = p2.y + (dy/len) * 100;
+                
+                ballCtx.beginPath();
+                ballCtx.moveTo(p2.x, p2.y);
+                ballCtx.lineTo(extendX, extendY);
+                ballCtx.strokeStyle = 'rgba(239, 68, 68, 0.3)';
+                ballCtx.lineWidth = 2;
+                ballCtx.setLineDash([4, 4]);
+                ballCtx.stroke();
+                ballCtx.setLineDash([]);
+                
+                // Update displays
+                document.getElementById('entryX').textContent = trajectoryLine.start.x.toFixed(0);
+                document.getElementById('entryY').textContent = trajectoryLine.start.y.toFixed(0);
+                document.getElementById('exitX').textContent = trajectoryLine.end.x.toFixed(0);
+                document.getElementById('exitY').textContent = trajectoryLine.end.y.toFixed(0);
+                
+                const angle = Math.atan2(dy, dx) * (180 / Math.PI);
+                document.getElementById('trajectoryAngle').textContent = Math.abs(angle).toFixed(1) + '°';
+            }
+        }
+
+        // Mouse interaction for ballistics
+        ballCanvas.addEventListener('mousedown', (e) => {
+            const rect = ballCanvas.getBoundingClientRect();
+            const x = e.clientX - rect.left;
+            const y = e.clientY - rect.top;
+            dragStart = { x, y };
+            isDragging = true;
+        });
+
+        ballCanvas.addEventListener('mousemove', (e) => {
+            if (!isDragging) {
+                bodyRotation += 0.005;
+                drawBody();
+                return;
+            }
+            const rect = ballCanvas.getBoundingClientRect();
+            dragEnd = { x: e.clientX - rect.left, y: e.clientY - rect.top };
+            
+            // Convert screen to 3D space (simplified)
+            const start3D = {
+                x: (dragStart.x - ballCanvas.width/2) * 0.8,
+                y: dragStart.y - ballCanvas.height/2,
+                z: 0
+            };
+            const end3D = {
+                x: (dragEnd.x - ballCanvas.width/2) * 0.8,
+                y: dragEnd.y - ballCanvas.height/2,
+                z: Math.random() * 40 - 20
+            };
+            
+            trajectoryLine = { start: start3D, end: end3D };
+            drawBody();
+        });
+
+        ballCanvas.addEventListener('mouseup', () => {
+            isDragging = false;
+        });
+
+        function resetTrajectory() {
+            trajectoryLine = null;
+            bodyRotation = 0;
+            document.getElementById('entryX').textContent = '--';
+            document.getElementById('entryY').textContent = '--';
+            document.getElementById('exitX').textContent = '--';
+            document.getElementById('exitY').textContent = '--';
+            document.getElementById('trajectoryAngle').textContent = '--°';
+            drawBody();
+        }
+
+        // ==================== INITIALIZATION ====================
+        window.onload = () => {
+            // Init blood canvas
+            clearBlood();
+            setTimeout(generateBloodDrop, 500);
+            
+            // Init lividity
+            updateLividity('#8b5cf6');
+            
+            // Init centrifuge
+            initParticles();
+            
+            // Init hair
+            document.getElementById('hairLoading').classList.add('hidden');
+            drawHair();
+            
+            // Init ballistics
+            generateBody();
+            document.getElementById('ballisticsLoading').classList.add('hidden');
+            drawBody();
+            
+            // Auto-rotate body
+            setInterval(() => {
+                if (!isDragging) {
+                    bodyRotation += 0.003;
+                    drawBody();
+                }
+            }, 16);
+        };
+    </script>
+</body>
+</html>

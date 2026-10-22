@@ -1,0 +1,396 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Physics Lab - Velocity vs Time Graphs</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        body, html {
+            margin: 0;
+            padding: 0;
+            width: 100%;
+            height: 100%;
+            overflow: hidden;
+            background-color: #020617; /* Slate 950 */
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+            touch-action: none;
+            user-select: none;
+        }
+
+        #sim-canvas {
+            display: block;
+            width: 100%;
+            height: 100%;
+        }
+
+        /* Glassmorphism UI */
+        .glass-panel {
+            background: linear-gradient(145deg, rgba(15, 23, 42, 0.85) 0%, rgba(2, 6, 23, 0.95) 100%);
+            backdrop-filter: blur(30px);
+            -webkit-backdrop-filter: blur(30px);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            border-top: 1px solid rgba(255, 255, 255, 0.2);
+            box-shadow: 0 30px 60px -12px rgba(0, 0, 0, 0.8), inset 0 1px 10px rgba(255, 255, 255, 0.05);
+        }
+
+        .scroll-area::-webkit-scrollbar { width: 4px; }
+        .scroll-area::-webkit-scrollbar-thumb { background: rgba(59, 130, 246, 0.5); border-radius: 4px; }
+
+        .control-btn {
+            transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+            position: relative;
+            overflow: hidden;
+        }
+        .control-btn:active {
+            transform: scale(0.95);
+        }
+        .gas-active {
+            background: rgba(34, 197, 94, 0.2) !important;
+            border-color: #22c55e !important;
+            box-shadow: 0 0 20px rgba(34, 197, 94, 0.3);
+        }
+        .brake-active {
+            background: rgba(239, 68, 68, 0.2) !important;
+            border-color: #ef4444 !important;
+            box-shadow: 0 0 20px rgba(239, 68, 68, 0.3);
+        }
+    </style>
+</head>
+<body>
+
+    <!-- Main UI Overlay -->
+    <div class="absolute top-5 left-5 md:top-8 md:left-8 z-20 w-[360px] glass-panel p-6 rounded-[1.5rem] pointer-events-auto flex flex-col max-h-[92vh]">
+        
+        <!-- Header -->
+        <div class="mb-5 border-b border-white/10 pb-5 shrink-0 flex items-center justify-between">
+            <div>
+                <h1 class="text-2xl font-bold tracking-tight text-white mb-1">Graphing Motion</h1>
+                <p class="text-[11px] font-medium text-emerald-400 uppercase tracking-widest">Velocity vs. Time ($v$-$t$)</p>
+            </div>
+            <div class="w-10 h-10 rounded-full bg-emerald-500/20 flex items-center justify-center text-emerald-400">
+                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 12l3-3 3 3 4-4M8 21l4-4 4 4M3 4h18M4 4h16v12a1 1 0 01-1 1H5a1 1 0 01-1-1V4z"></path></svg>
+            </div>
+        </div>
+
+        <div class="scroll-area overflow-y-auto pr-2 pb-2 space-y-6">
+            <!-- Learning Concept -->
+            <div class="bg-black/30 p-4 rounded-xl border border-white/5 shadow-inner">
+                <p class="text-xs text-gray-400 leading-relaxed">
+                    <strong class="text-white underline decoration-emerald-500/50">Slope = Acceleration.</strong> 
+                    When you press Gas, the slope goes up. When you Brake, the slope goes down. A horizontal line means constant velocity.
+                </p>
+            </div>
+
+            <!-- Driving Controls -->
+            <div class="space-y-4">
+                <label class="text-[10px] font-bold uppercase tracking-widest text-gray-500">Vehicle Controls</label>
+                
+                <div class="grid grid-cols-2 gap-3">
+                    <button id="gas-pedal" class="control-btn h-24 rounded-2xl bg-white/5 border border-white/10 flex flex-col items-center justify-center gap-2 group">
+                        <div class="w-8 h-8 rounded-full bg-emerald-500/10 flex items-center justify-center text-emerald-500 group-hover:bg-emerald-500 group-hover:text-white transition-all">
+                            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 10l7-7m0 0l7 7m-7-7v18"></path></svg>
+                        </div>
+                        <span class="text-[11px] font-bold text-white uppercase tracking-wider">Gas (Accel)</span>
+                    </button>
+
+                    <button id="brake-pedal" class="control-btn h-24 rounded-2xl bg-white/5 border border-white/10 flex flex-col items-center justify-center gap-2 group">
+                        <div class="w-8 h-8 rounded-full bg-red-500/10 flex items-center justify-center text-red-500 group-hover:bg-red-500 group-hover:text-white transition-all">
+                            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 14l-7 7m0 0l-7-7m7 7V3"></path></svg>
+                        </div>
+                        <span class="text-[11px] font-bold text-white uppercase tracking-wider">Brake (Decel)</span>
+                    </button>
+                </div>
+                
+                <p class="text-[10px] text-gray-500 italic text-center">Tip: Hold keyboard 'W' for Gas and 'S' for Brake</p>
+            </div>
+
+            <!-- Simulation Actions -->
+            <div class="pt-4 border-t border-white/10">
+                <button id="btn-reset" class="w-full py-3 bg-white/5 hover:bg-white/10 text-gray-300 text-[11px] font-bold uppercase tracking-widest rounded-xl transition-all border border-white/5 flex items-center justify-center gap-2">
+                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"></path></svg>
+                    Reset Simulation
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Live Telemetry HUD (Bottom Right) -->
+    <div class="absolute bottom-6 right-6 z-10 glass-panel p-6 rounded-2xl pointer-events-none min-w-[280px]">
+        <div class="text-[10px] font-bold uppercase tracking-widest text-gray-500 mb-4 border-b border-white/10 pb-2">Live Telemetry</div>
+        <div class="space-y-4">
+            <div class="flex justify-between items-center">
+                <span class="text-sm text-gray-300 font-medium tracking-tight">Velocity ($v$)</span>
+                <span id="vel-val" class="text-xl font-mono font-bold text-emerald-400">0.0 m/s</span>
+            </div>
+            <div class="flex justify-between items-center">
+                <span class="text-sm text-gray-300 font-medium tracking-tight">Acceleration ($a$)</span>
+                <span id="acc-val" class="text-xl font-mono font-bold text-blue-400">0.0 m/s²</span>
+            </div>
+        </div>
+    </div>
+
+    <canvas id="sim-canvas"></canvas>
+
+    <script>
+        const canvas = document.getElementById('sim-canvas');
+        const ctx = canvas.getContext('2d');
+
+        // Physics State
+        let carPos = 0;
+        let carVel = 0; // m/s
+        let carAcc = 0; // m/s^2
+        let time = 0;
+        let dataPoints = [];
+        const maxPoints = 300;
+
+        // Constants
+        const ACCEL_POWER = 8.0; 
+        const BRAKE_POWER = 15.0;
+        const FRICTION = 0.5;
+        const MAX_VEL = 40.0;
+
+        // UI Refs
+        const gasBtn = document.getElementById('gas-pedal');
+        const brakeBtn = document.getElementById('brake-pedal');
+        const resetBtn = document.getElementById('btn-reset');
+        const velVal = document.getElementById('vel-val');
+        const accVal = document.getElementById('acc-val');
+
+        // Input Tracking
+        let inputState = { gas: false, brake: false };
+
+        function resize() {
+            canvas.width = window.innerWidth;
+            canvas.height = window.innerHeight;
+        }
+        window.addEventListener('resize', resize);
+        resize();
+
+        // Control Listeners
+        const setGas = (state) => { 
+            inputState.gas = state; 
+            gasBtn.classList.toggle('gas-active', state);
+        };
+        const setBrake = (state) => { 
+            inputState.brake = state; 
+            brakeBtn.classList.toggle('brake-active', state);
+        };
+
+        gasBtn.onpointerdown = () => setGas(true);
+        gasBtn.onpointerup = gasBtn.onpointerleave = () => setGas(false);
+        brakeBtn.onpointerdown = () => setBrake(true);
+        brakeBtn.onpointerup = brakeBtn.onpointerleave = () => setBrake(false);
+
+        window.onkeydown = (e) => {
+            if(e.code === 'KeyW' || e.code === 'ArrowUp') setGas(true);
+            if(e.code === 'KeyS' || e.code === 'ArrowDown') setBrake(true);
+        };
+        window.onkeyup = (e) => {
+            if(e.code === 'KeyW' || e.code === 'ArrowUp') setGas(false);
+            if(e.code === 'KeyS' || e.code === 'ArrowDown') setBrake(false);
+        };
+
+        resetBtn.onclick = () => {
+            carPos = 0; carVel = 0; carAcc = 0; time = 0; dataPoints = [];
+        };
+
+        // --- DRAWING COMPONENTS ---
+
+        function drawCar(x, y) {
+            ctx.save();
+            ctx.translate(x, y);
+            
+            // Motion Blur / Speed Lines
+            if (Math.abs(carVel) > 5) {
+                ctx.strokeStyle = 'rgba(52, 211, 153, 0.2)';
+                ctx.lineWidth = 2;
+                for(let i=0; i<3; i++) {
+                    const offset = -20 - (i*15) - (Math.random()*10);
+                    ctx.beginPath();
+                    ctx.moveTo(offset, -10 + i*10);
+                    ctx.lineTo(offset - (carVel * 2), -10 + i*10);
+                    ctx.stroke();
+                }
+            }
+
+            // Simple Aesthetic 2D Car
+            ctx.shadowBlur = 20;
+            ctx.shadowColor = 'rgba(0, 0, 0, 0.5)';
+            
+            // Body
+            ctx.fillStyle = '#10b981'; // Emerald
+            ctx.beginPath();
+            ctx.roundRect(-40, -25, 80, 25, [10, 10, 0, 0]);
+            ctx.fill();
+            
+            // Cockpit
+            ctx.fillStyle = '#064e3b';
+            ctx.beginPath();
+            ctx.roundRect(-20, -40, 40, 20, [15, 15, 0, 0]);
+            ctx.fill();
+
+            // Wheels
+            ctx.fillStyle = '#000';
+            ctx.beginPath(); ctx.arc(-25, 0, 10, 0, Math.PI*2); ctx.fill();
+            ctx.beginPath(); ctx.arc(25, 0, 10, 0, Math.PI*2); ctx.fill();
+            
+            // Wheel spin effect
+            ctx.strokeStyle = '#333';
+            ctx.lineWidth = 2;
+            const rot = carPos * 0.1;
+            ctx.beginPath();
+            ctx.moveTo(-25 + Math.cos(rot)*8, Math.sin(rot)*8);
+            ctx.lineTo(-25 - Math.cos(rot)*8, -Math.sin(rot)*8);
+            ctx.stroke();
+
+            ctx.restore();
+        }
+
+        function drawGraph() {
+            const margin = 80;
+            const graphWidth = canvas.width - margin * 2 - 360; // Leave room for UI
+            const graphHeight = 250;
+            const leftX = 420; // Offset from side panel
+            const bottomY = canvas.height - 100;
+            const topY = bottomY - graphHeight;
+
+            // Graph Background
+            ctx.fillStyle = 'rgba(0, 0, 0, 0.3)';
+            ctx.beginPath();
+            ctx.roundRect(leftX, topY, graphWidth, graphHeight, 12);
+            ctx.fill();
+
+            // Axes
+            ctx.strokeStyle = 'rgba(255, 255, 255, 0.2)';
+            ctx.lineWidth = 2;
+            ctx.beginPath();
+            ctx.moveTo(leftX, topY); ctx.lineTo(leftX, bottomY); // Velocity Axis
+            ctx.lineTo(leftX + graphWidth, bottomY); // Time Axis
+            ctx.stroke();
+
+            // Grid Lines
+            ctx.setLineDash([5, 5]);
+            ctx.strokeStyle = 'rgba(255, 255, 255, 0.05)';
+            for(let i=1; i<5; i++) {
+                const y = bottomY - (graphHeight/5)*i;
+                ctx.beginPath(); ctx.moveTo(leftX, y); ctx.lineTo(leftX + graphWidth, y); ctx.stroke();
+            }
+            ctx.setLineDash([]);
+
+            // Labels
+            ctx.fillStyle = 'rgba(255, 255, 255, 0.5)';
+            ctx.font = 'bold 10px Inter';
+            ctx.textAlign = 'right';
+            ctx.fillText("VELOCITY (m/s)", leftX - 15, topY + graphHeight/2);
+            ctx.textAlign = 'center';
+            ctx.fillText("TIME (s)", leftX + graphWidth/2, bottomY + 30);
+
+            // Velocity Ticks
+            ctx.textAlign = 'right';
+            for(let i=0; i<=40; i+=10) {
+                const y = bottomY - (i / MAX_VEL) * graphHeight;
+                ctx.fillText(i, leftX - 10, y + 4);
+            }
+
+            // THE DATA LINE
+            if (dataPoints.length > 1) {
+                ctx.strokeStyle = '#10b981';
+                ctx.lineWidth = 3;
+                ctx.shadowBlur = 15;
+                ctx.shadowColor = 'rgba(16, 185, 129, 0.4)';
+                ctx.beginPath();
+                
+                const timeScale = graphWidth / maxPoints;
+                dataPoints.forEach((p, i) => {
+                    const vx = leftX + i * timeScale;
+                    const vy = bottomY - (p.v / MAX_VEL) * graphHeight;
+                    if(i === 0) ctx.moveTo(vx, vy);
+                    else ctx.lineTo(vx, vy);
+                });
+                ctx.stroke();
+                ctx.shadowBlur = 0;
+
+                // Current point indicator
+                const last = dataPoints[dataPoints.length - 1];
+                const lx = leftX + (dataPoints.length - 1) * timeScale;
+                const ly = bottomY - (last.v / MAX_VEL) * graphHeight;
+                ctx.fillStyle = '#fff';
+                ctx.beginPath(); ctx.arc(lx, ly, 4, 0, Math.PI*2); ctx.fill();
+            }
+        }
+
+        // --- ENGINE LOOP ---
+
+        let lastTime = 0;
+        function update(timestamp) {
+            if(!lastTime) lastTime = timestamp;
+            const dt = (timestamp - lastTime) / 1000;
+            lastTime = timestamp;
+
+            // 1. Calculate Acceleration
+            carAcc = 0;
+            if (inputState.gas) carAcc += ACCEL_POWER;
+            if (inputState.brake) carAcc -= BRAKE_POWER;
+            
+            // Friction/Drag (Air resistance)
+            if (carVel > 0.1) carAcc -= FRICTION * (carVel / 10);
+            else if (carVel < -0.1) carAcc += FRICTION * (Math.abs(carVel) / 10);
+
+            // 2. Integration
+            carVel += carAcc * dt;
+            
+            // Clamp velocity
+            if (carVel > MAX_VEL) carVel = MAX_VEL;
+            if (Math.abs(carVel) < 0.05 && !inputState.gas) carVel = 0; // Snap to zero
+
+            carPos += carVel * dt * 20; // 20px per meter visual scale
+
+            // Cycle car position visually (Endless track)
+            const trackWidth = canvas.width - 450;
+            if (carPos > trackWidth) carPos = -50;
+            if (carPos < -100) carPos = trackWidth;
+
+            // 3. Data Recording
+            time += dt;
+            dataPoints.push({ t: time, v: Math.max(0, carVel) });
+            if (dataPoints.length > maxPoints) dataPoints.shift();
+
+            // 4. UI Update
+            velVal.innerText = `${carVel.toFixed(1)} m/s`;
+            accVal.innerText = `${carAcc.toFixed(1)} m/s²`;
+            accVal.style.color = carAcc > 0.1 ? '#10b981' : (carAcc < -0.1 ? '#ef4444' : '#60a5fa');
+
+            // 5. Render
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+            
+            // Background Grid (Overall)
+            ctx.strokeStyle = 'rgba(255, 255, 255, 0.02)';
+            ctx.lineWidth = 1;
+            ctx.beginPath();
+            for(let i=0; i<canvas.width; i+=80) { ctx.moveTo(i, 0); ctx.lineTo(i, canvas.height); }
+            for(let i=0; i<canvas.height; i+=80) { ctx.moveTo(0, i); ctx.lineTo(canvas.width, i); }
+            ctx.stroke();
+
+            // The Road
+            const roadY = canvas.height * 0.35;
+            ctx.fillStyle = '#1e293b';
+            ctx.fillRect(380, roadY, canvas.width - 380, 4);
+            
+            // Road dashes
+            ctx.strokeStyle = 'rgba(255,255,255,0.1)';
+            ctx.setLineDash([20, 20]);
+            ctx.beginPath(); ctx.moveTo(380, roadY + 2); ctx.lineTo(canvas.width, roadY + 2); ctx.stroke();
+            ctx.setLineDash([]);
+
+            drawCar(380 + carPos, roadY);
+            drawGraph();
+
+            requestAnimationFrame(update);
+        }
+
+        requestAnimationFrame(update);
+    </script>
+</body>
+</html>

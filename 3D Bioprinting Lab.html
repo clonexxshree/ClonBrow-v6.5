@@ -1,0 +1,448 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Bio-Fabrication | 3D Organ Printer</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;600;800&family=JetBrains+Mono&display=swap" rel="stylesheet">
+    <!-- Load Three.js -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+    <style>
+        :root {
+            --bg-deep: #050105;
+            --ink-color: #f43f5e;
+            --grid-color: #1e1b4b;
+        }
+
+        body {
+            font-family: 'Plus Jakarta Sans', sans-serif;
+            background-color: var(--bg-deep);
+            color: #f8fafc;
+            overflow: hidden;
+            margin: 0;
+            background-image: radial-gradient(circle at 50% 50%, rgba(225, 29, 72, 0.05) 0%, transparent 60%);
+        }
+
+        .glass {
+            background: rgba(10, 5, 15, 0.7);
+            backdrop-filter: blur(16px);
+            border: 1px solid rgba(255, 255, 255, 0.05);
+            box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.5);
+        }
+
+        #canvas-container {
+            width: 100%;
+            height: 100%;
+            cursor: grab;
+        }
+        #canvas-container:active {
+            cursor: grabbing;
+        }
+
+        .pulse-text {
+            animation: pulse-op 1.5s infinite alternate;
+        }
+
+        @keyframes pulse-op {
+            0% { opacity: 0.4; }
+            100% { opacity: 1; }
+        }
+
+        .terminal-log {
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 0.65rem;
+            line-height: 1.5;
+            color: #94a3b8;
+            height: 120px;
+            overflow-y: hidden;
+            display: flex;
+            flex-direction: column-reverse;
+        }
+        
+        .log-entry {
+            animation: slideIn 0.3s ease-out;
+        }
+
+        @keyframes slideIn {
+            from { opacity: 0; transform: translateY(10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        /* Custom Scrollbar for sleekness */
+        ::-webkit-scrollbar { width: 4px; }
+        ::-webkit-scrollbar-track { background: transparent; }
+        ::-webkit-scrollbar-thumb { background: rgba(244, 63, 94, 0.3); border-radius: 4px; }
+    </style>
+</head>
+<body class="flex items-center justify-center min-h-screen">
+
+    <main class="w-full max-w-[90rem] flex flex-col gap-6 px-6 h-[95vh] py-6 relative z-10">
+        
+        <!-- Header -->
+        <header class="flex justify-between items-end">
+            <div>
+                <p class="text-[10px] font-bold tracking-[0.4em] text-rose-500 uppercase mb-1">Tissue Engineering Node</p>
+                <h1 class="text-3xl font-extralight tracking-tight text-white">3D Bio-Print <span class="font-semibold text-rose-500">Fabricator</span></h1>
+            </div>
+            <div class="flex gap-4">
+                <div class="glass px-6 py-2 rounded-full text-[10px] font-bold uppercase tracking-widest flex items-center gap-4 border-rose-500/20">
+                    <span class="flex items-center gap-2">
+                        <span class="w-2 h-2 rounded-full bg-rose-500 shadow-[0_0_8px_#f43f5e] pulse-text"></span> Bio-Ink Active
+                    </span>
+                    <span class="text-slate-600">|</span>
+                    <span class="flex items-center gap-2">
+                        <span class="w-2 h-2 rounded-full bg-slate-500"></span> Renal Scaffold
+                    </span>
+                </div>
+            </div>
+        </header>
+
+        <div class="flex-grow flex gap-6">
+            <!-- Left Panel: Controls & Telemetry -->
+            <div class="w-80 flex flex-col gap-4 flex-shrink-0">
+                <div class="glass rounded-3xl p-6 flex flex-col gap-6 h-full relative overflow-hidden border-rose-900/30">
+                    
+                    <!-- Print Status -->
+                    <div class="text-center mb-2">
+                        <h3 class="text-[10px] font-bold text-slate-500 uppercase tracking-widest mb-4">Fabrication Status</h3>
+                        <div class="flex justify-center items-baseline gap-1">
+                            <span id="layer-display" class="text-5xl font-mono font-light text-rose-400 tracking-tighter">0</span>
+                            <span class="text-xl font-light text-slate-500">/ 40</span>
+                        </div>
+                        <p class="text-[9px] text-rose-400/70 uppercase tracking-widest font-bold mt-1">Current Layer</p>
+                    </div>
+
+                    <!-- Progress Bar -->
+                    <div>
+                        <div class="flex justify-between text-[9px] font-bold uppercase text-slate-400 mb-2">
+                            <span>Completion</span>
+                            <span id="progress-val" class="text-rose-400">0%</span>
+                        </div>
+                        <div class="w-full bg-slate-900 h-1.5 rounded-full overflow-hidden">
+                            <div id="progress-bar" class="h-full bg-rose-500 w-0 transition-all duration-300 shadow-[0_0_10px_#f43f5e]"></div>
+                        </div>
+                    </div>
+
+                    <!-- Vitals -->
+                    <div class="grid grid-cols-2 gap-3">
+                        <div class="p-3 bg-rose-500/5 border border-rose-500/10 rounded-xl text-center">
+                            <p class="text-[9px] text-slate-500 uppercase font-bold mb-1">Viability</p>
+                            <p class="text-lg font-mono text-emerald-400">98.2%</p>
+                        </div>
+                        <div class="p-3 bg-rose-500/5 border border-rose-500/10 rounded-xl text-center">
+                            <p class="text-[9px] text-slate-500 uppercase font-bold mb-1">Temp</p>
+                            <p class="text-lg font-mono text-amber-400">37.0°C</p>
+                        </div>
+                    </div>
+
+                    <!-- Actions -->
+                    <div class="space-y-3 mt-2">
+                        <button id="toggle-btn" class="w-full py-3 bg-rose-600 hover:bg-rose-500 text-white text-xs font-bold uppercase tracking-widest rounded-xl transition-all shadow-[0_0_15px_rgba(244,63,94,0.3)]">
+                            Initiate Print
+                        </button>
+                        <button id="reset-btn" class="w-full py-3 border border-white/5 hover:bg-white/10 text-slate-300 text-xs font-bold uppercase tracking-widest rounded-xl transition-all">
+                            Flush & Reset
+                        </button>
+                    </div>
+
+                    <!-- Terminal -->
+                    <div class="mt-auto">
+                        <p class="text-[9px] font-bold text-slate-600 uppercase tracking-widest mb-2 border-b border-white/5 pb-1">System Log</p>
+                        <div id="terminal" class="terminal-log">
+                            <div class="log-entry">> System initialized. Waiting for command...</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Right Panel: 3D Canvas -->
+            <div class="flex-grow glass rounded-[2.5rem] relative overflow-hidden flex flex-col bg-[#020104] border-rose-900/20">
+                <div id="canvas-container"></div>
+                
+                <!-- Overlays -->
+                <div class="absolute top-6 left-6 text-[10px] uppercase tracking-[0.2em] font-bold text-slate-500">
+                    Viewport: <span class="text-rose-400">Free-Orbit</span><br>
+                    <span class="text-[8px] opacity-60">(Drag to rotate camera)</span>
+                </div>
+                
+                <div class="absolute bottom-6 right-6 flex items-center gap-2 bg-black/40 px-3 py-1.5 rounded border border-white/5">
+                    <div class="w-1.5 h-1.5 rounded-full bg-emerald-500 pulse-text"></div>
+                    <span class="text-[9px] font-mono text-slate-400 uppercase tracking-widest">Extruder Online</span>
+                </div>
+            </div>
+        </div>
+    </main>
+
+    <script>
+        // --- UI Elements ---
+        const toggleBtn = document.getElementById('toggle-btn');
+        const resetBtn = document.getElementById('reset-btn');
+        const layerDisplay = document.getElementById('layer-display');
+        const progressVal = document.getElementById('progress-val');
+        const progressBar = document.getElementById('progress-bar');
+        const terminal = document.getElementById('terminal');
+        const container = document.getElementById('canvas-container');
+
+        // --- Three.js Setup ---
+        const scene = new THREE.Scene();
+        scene.fog = new THREE.FogExp2(0x050105, 0.05);
+
+        const camera = new THREE.PerspectiveCamera(45, container.clientWidth / container.clientHeight, 0.1, 100);
+        const renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true });
+        renderer.setSize(container.clientWidth, container.clientHeight);
+        renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+        container.appendChild(renderer.domElement);
+
+        // --- Camera Orbit Logic ---
+        let isDragging = false;
+        let previousMousePosition = { x: 0, y: 0 };
+        let theta = Math.PI / 4; // Horizontal angle
+        let phi = Math.PI / 3;   // Vertical angle
+        const radius = 12;
+
+        container.addEventListener('mousedown', (e) => {
+            isDragging = true;
+            previousMousePosition = { x: e.offsetX, y: e.offsetY };
+        });
+        window.addEventListener('mouseup', () => { isDragging = false; });
+        window.addEventListener('mousemove', (e) => {
+            if (isDragging) {
+                const deltaX = e.offsetX - previousMousePosition.x;
+                const deltaY = e.offsetY - previousMousePosition.y;
+                theta -= deltaX * 0.01;
+                phi -= deltaY * 0.01;
+                phi = Math.max(0.1, Math.min(Math.PI / 2 - 0.05, phi)); // Constrain vertical angle
+                previousMousePosition = { x: e.offsetX, y: e.offsetY };
+            }
+        });
+
+        // --- Environment Details ---
+        // Grid Floor
+        const gridHelper = new THREE.GridHelper(15, 30, 0x1e1b4b, 0x0f0c29);
+        gridHelper.position.y = 0;
+        scene.add(gridHelper);
+
+        // Print Bed Base
+        const bedGeo = new THREE.CylinderGeometry(4, 4, 0.2, 32);
+        const bedMat = new THREE.MeshStandardMaterial({ 
+            color: 0x0f172a, metalness: 0.8, roughness: 0.2 
+        });
+        const bed = new THREE.Mesh(bedGeo, bedMat);
+        bed.position.y = -0.1;
+        scene.add(bed);
+
+        // Lighting
+        const ambientLight = new THREE.AmbientLight(0xffffff, 0.2);
+        scene.add(ambientLight);
+        
+        const spotLight = new THREE.SpotLight(0xffffff, 1);
+        spotLight.position.set(5, 10, 5);
+        spotLight.angle = Math.PI / 4;
+        spotLight.penumbra = 0.5;
+        scene.add(spotLight);
+
+        // --- The Print Nozzle ---
+        const nozzleGroup = new THREE.Group();
+        
+        // Shaft
+        const shaftGeo = new THREE.CylinderGeometry(0.15, 0.15, 2, 16);
+        const shaftMat = new THREE.MeshStandardMaterial({ color: 0xcbd5e1, metalness: 0.9, roughness: 0.1 });
+        const shaft = new THREE.Mesh(shaftGeo, shaftMat);
+        shaft.position.y = 1;
+        nozzleGroup.add(shaft);
+
+        // Tip
+        const tipGeo = new THREE.ConeGeometry(0.15, 0.3, 16);
+        const tipMat = new THREE.MeshStandardMaterial({ color: 0xf8fafc, metalness: 1.0, roughness: 0.0 });
+        const tip = new THREE.Mesh(tipGeo, tipMat);
+        tip.position.y = -0.15;
+        tip.rotation.x = Math.PI; // point down
+        nozzleGroup.add(tip);
+
+        // Nozzle Glow (Bio-ink light)
+        const nozzleLight = new THREE.PointLight(0xf43f5e, 2, 4);
+        nozzleLight.position.y = -0.3;
+        nozzleGroup.add(nozzleLight);
+
+        scene.add(nozzleGroup);
+
+        // --- Kidney Print Logic ---
+        const maxLayers = 40;
+        const pointsPerLayer = 100;
+        const totalPoints = maxLayers * pointsPerLayer;
+        const layerHeight = 0.08;
+        
+        // Bio-ink material (Glowing Red)
+        const inkGeo = new THREE.SphereGeometry(0.06, 8, 8);
+        const inkMat = new THREE.MeshStandardMaterial({
+            color: 0xe11d48,
+            emissive: 0x9f1239,
+            emissiveIntensity: 0.8,
+            transparent: true,
+            opacity: 0.95,
+            roughness: 0.2
+        });
+
+        // Use InstancedMesh for extreme performance (rendering thousands of cells instantly)
+        let instancedMesh = new THREE.InstancedMesh(inkGeo, inkMat, totalPoints);
+        instancedMesh.instanceMatrix.setUsage(THREE.DynamicDrawUsage);
+        scene.add(instancedMesh);
+
+        // Kidney Profile Curve (Cross-section)
+        const curvePoints = [
+            new THREE.Vector3(0, 0, 1.5),
+            new THREE.Vector3(1.2, 0, 0.8),
+            new THREE.Vector3(1.5, 0, 0),
+            new THREE.Vector3(1.2, 0, -0.8),
+            new THREE.Vector3(0, 0, -1.5),
+            new THREE.Vector3(-1.0, 0, -0.8),
+            new THREE.Vector3(-0.3, 0, 0), // The Hilum indentation
+            new THREE.Vector3(-1.0, 0, 0.8)
+        ];
+        const kidneyCurve = new THREE.CatmullRomCurve3(curvePoints, true);
+
+        // State Variables
+        let isPrinting = false;
+        let currentInstanceCount = 0;
+        let t = 0; // Progress along the current layer loop (0 to 1)
+        let currentLayer = 0;
+        const dummy = new THREE.Object3D();
+
+        function logToTerminal(msg) {
+            const entry = document.createElement('div');
+            entry.className = 'log-entry text-rose-400';
+            const time = new Date().toTimeString().split(' ')[0];
+            entry.innerHTML = `<span class="text-slate-500">[${time}]</span> ${msg}`;
+            terminal.prepend(entry);
+        }
+
+        function resetPrint() {
+            isPrinting = false;
+            currentInstanceCount = 0;
+            currentLayer = 0;
+            t = 0;
+            instancedMesh.count = 0;
+            
+            // Reset UI
+            toggleBtn.innerText = "Initiate Print";
+            toggleBtn.classList.replace('bg-slate-700', 'bg-rose-600');
+            layerDisplay.innerText = "0";
+            progressVal.innerText = "0%";
+            progressBar.style.width = "0%";
+            nozzleGroup.position.set(0, 2, 0); // Move nozzle up
+
+            logToTerminal("System flushed. Scaffolding cleared.");
+        }
+
+        // --- Main Animation Loop ---
+        function animate() {
+            requestAnimationFrame(animate);
+
+            // 1. Update Camera Position (Orbit)
+            camera.position.x = radius * Math.sin(phi) * Math.sin(theta);
+            camera.position.y = radius * Math.cos(phi);
+            camera.position.z = radius * Math.sin(phi) * Math.cos(theta);
+            camera.lookAt(0, 1.5, 0);
+
+            // 2. Printing Logic
+            if (isPrinting && currentLayer < maxLayers) {
+                // Calculate position on curve
+                const basePoint = kidneyCurve.getPoint(t);
+                
+                // Volume Scaling: Make it thicker in the middle, narrow at bottom/top
+                const layerProgress = currentLayer / maxLayers;
+                // Sine wave curve for volume (0 at ends, 1 in middle)
+                const volumeScale = Math.sin(layerProgress * Math.PI) * 1.0 + 0.3; 
+                
+                const targetX = basePoint.x * volumeScale;
+                const targetY = currentLayer * layerHeight;
+                const targetZ = basePoint.z * volumeScale;
+
+                // Move Nozzle
+                // Add a little sinusoidal bobbing for realistic "extrusion" feel
+                nozzleGroup.position.x = targetX;
+                nozzleGroup.position.y = targetY + 0.3 + Math.sin(t * Math.PI * 40) * 0.01;
+                nozzleGroup.position.z = targetZ;
+
+                // Deposit Bio-ink (Place a sphere instance)
+                if (currentInstanceCount < totalPoints) {
+                    dummy.position.set(targetX, targetY, targetZ);
+                    // Slight random rotation for organic texture
+                    dummy.rotation.set(Math.random(), Math.random(), Math.random());
+                    dummy.scale.setScalar(1 + (Math.random() - 0.5) * 0.2);
+                    dummy.updateMatrix();
+                    
+                    instancedMesh.setMatrixAt(currentInstanceCount, dummy.matrix);
+                    instancedMesh.count = currentInstanceCount + 1;
+                    instancedMesh.instanceMatrix.needsUpdate = true;
+                    
+                    currentInstanceCount++;
+                }
+
+                // Advance Extruder
+                t += 1 / pointsPerLayer;
+                
+                if (t >= 1) {
+                    t = 0;
+                    currentLayer++;
+                    
+                    // Update UI
+                    layerDisplay.innerText = currentLayer;
+                    const percent = Math.floor((currentLayer / maxLayers) * 100);
+                    progressVal.innerText = `${percent}%`;
+                    progressBar.style.width = `${percent}%`;
+                    
+                    if(currentLayer % 5 === 0) {
+                        logToTerminal(`Layer ${currentLayer} stabilized. Cross-linking matrix...`);
+                    }
+
+                    if (currentLayer >= maxLayers) {
+                        isPrinting = false;
+                        logToTerminal("PRINT COMPLETE. Organogenesis sequence ready.");
+                        toggleBtn.innerText = "Fabrication Complete";
+                        toggleBtn.classList.replace('bg-slate-700', 'bg-emerald-600');
+                        nozzleGroup.position.y += 2; // Pull nozzle away
+                    }
+                }
+            } else if (!isPrinting && currentLayer === 0) {
+                // Idle floating animation
+                nozzleGroup.position.y = 1.5 + Math.sin(Date.now() * 0.002) * 0.1;
+            }
+
+            renderer.render(scene, camera);
+        }
+
+        // --- Event Listeners ---
+        window.addEventListener('resize', () => {
+            camera.aspect = container.clientWidth / container.clientHeight;
+            camera.updateProjectionMatrix();
+            renderer.setSize(container.clientWidth, container.clientHeight);
+        });
+
+        toggleBtn.addEventListener('click', () => {
+            if (currentLayer >= maxLayers) return; // Done printing
+
+            isPrinting = !isPrinting;
+            if (isPrinting) {
+                toggleBtn.innerText = "Pause Fabrication";
+                toggleBtn.classList.replace('bg-rose-600', 'bg-slate-700');
+                logToTerminal("Extrusion resumed. Monitoring cell flow.");
+            } else {
+                toggleBtn.innerText = "Resume Fabrication";
+                toggleBtn.classList.replace('bg-slate-700', 'bg-rose-600');
+                logToTerminal("Print paused. Heating elements maintaining 37.0°C.");
+            }
+        });
+
+        resetBtn.addEventListener('click', resetPrint);
+
+        // Start
+        window.onload = () => {
+            logToTerminal("Bioprinting Lab initialized. Awaiting manual override.");
+            animate();
+        };
+
+    </script>
+</body>
+</html>

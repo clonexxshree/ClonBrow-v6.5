@@ -1,0 +1,465 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>BrainBoard | ClonBrow OS</title>
+    
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Nunito:wght@400;600;700;800;900&display=swap" rel="stylesheet">
+    
+    <!-- HTML2Canvas for downloading the board -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+    
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    fontFamily: { sans: ['Nunito', 'sans-serif'] },
+                    colors: {
+                        duo: {
+                            dark: '#1e293b', blue: '#1cb0f6', green: '#58cc02', 
+                            red: '#ff4b4b', yellow: '#ffc800', purple: '#ce82ff', pink: '#ff718d'
+                        }
+                    }
+                }
+            }
+        }
+    </script>
+
+    <style>
+        body { font-family: 'Nunito', sans-serif; overflow: hidden; background-color: #e2e8f0; }
+        
+        #viewport { width: 100vw; height: 100vh; position: relative; overflow: hidden; }
+        
+        #workspace { 
+            position: absolute; top: 0; left: 0; width: 5000px; height: 5000px; 
+            transform-origin: 0 0;
+            background-color: #f8f9fa;
+            background-image: radial-gradient(#cbd5e1 2px, transparent 2px);
+            background-size: 40px 40px;
+        }
+
+        .duo-btn { border: 3px solid #1e293b; border-radius: 12px; font-weight: 800; text-transform: uppercase; transition: all 0.1s; box-shadow: 0px 4px 0px #1e293b; cursor: pointer; display: flex; align-items: center; justify-content: center;}
+        .duo-btn:active { transform: translateY(4px); box-shadow: 0px 0px 0px #1e293b; }
+        
+        .sticky-note {
+            position: absolute; width: 220px; min-height: 220px;
+            border: 3px solid #1e293b; border-radius: 16px;
+            box-shadow: 6px 6px 0px rgba(30, 41, 59, 0.2);
+            display: flex; flex-direction: column; overflow: hidden;
+            transition: box-shadow 0.2s;
+        }
+        .sticky-note.dragging { box-shadow: 12px 12px 20px rgba(30, 41, 59, 0.3); z-index: 999 !important; }
+        
+        .drag-handle { height: 32px; background: rgba(0,0,0,0.1); cursor: grab; display: flex; justify-content: flex-end; align-items: center; padding: 0 8px; }
+        .drag-handle:active { cursor: grabbing; }
+        .note-content { flex: 1; background: transparent; border: none; outline: none; resize: none; padding: 16px; font-weight: 700; color: #1e293b; font-size: 1.1rem; line-height: 1.5;}
+        
+        .shape-node { position: absolute; border: 4px solid #1e293b; box-shadow: 4px 4px 0px rgba(30, 41, 59, 0.2); }
+        .free-text textarea { background: transparent; border: none; outline: none; resize: none; font-weight: 800; font-size: 1.5rem; line-height: 1.2; overflow: hidden; }
+
+        #draw-canvas { position: absolute; top: 0; left: 0; pointer-events: none; }
+
+        /* Tools UI */
+        .toolbar { 
+            position: absolute; bottom: 30px; left: 50%; transform: translateX(-50%); 
+            background: white; border: 3px solid #1e293b; border-radius: 20px; 
+            padding: 12px; box-shadow: 0px 8px 0px #1e293b; display: flex; gap: 8px; 
+            align-items: center; flex-wrap: wrap; justify-content: center; max-width: 95vw;
+        }
+        
+        .tool-btn { width: 44px; height: 44px; border-radius: 12px; font-size: 1.1rem; }
+        .tool-active { background: #1e293b !important; color: white !important; box-shadow: 0px 0px 0px #1e293b !important; transform: translateY(4px); }
+
+        .zoom-controls { position: absolute; top: 30px; right: 30px; display: flex; flex-direction: column; gap: 10px; }
+
+        /* Hide UI elements during export */
+        .no-export { transition: opacity 0.2s; }
+    </style>
+</head>
+<body>
+
+    <!-- Infinite Canvas Area -->
+    <div id="viewport">
+        <div id="workspace">
+            <canvas id="draw-canvas" width="5000" height="5000"></canvas>
+            <!-- Notes and Shapes injected here -->
+        </div>
+    </div>
+
+    <!-- UI Overlay: Zoom -->
+    <div class="zoom-controls no-export z-50">
+        <button onclick="handleZoom(0.1)" class="w-12 h-12 bg-white duo-btn text-xl"><i class="fas fa-plus"></i></button>
+        <button onclick="handleZoom(-0.1)" class="w-12 h-12 bg-white duo-btn text-xl"><i class="fas fa-minus"></i></button>
+        <button onclick="resetView()" class="w-12 h-12 bg-duo-dark text-white duo-btn text-xl mt-2" title="Reset View"><i class="fas fa-crosshairs"></i></button>
+    </div>
+
+    <!-- UI Overlay: Main Toolbar -->
+    <div class="toolbar no-export z-50">
+        <!-- Modes -->
+        <button onclick="setMode('pan')" id="btn-mode-pan" class="tool-btn bg-slate-100 duo-btn tool-active" title="Pan Canvas"><i class="fas fa-hand-paper"></i></button>
+        <button onclick="setMode('draw')" id="btn-mode-draw" class="tool-btn bg-slate-100 duo-btn" title="Pen"><i class="fas fa-pen"></i></button>
+        <button onclick="setMode('erase')" id="btn-mode-erase" class="tool-btn bg-slate-100 duo-btn" title="Eraser"><i class="fas fa-eraser"></i></button>
+        
+        <div class="w-px h-8 bg-slate-300 mx-1"></div>
+
+        <!-- Shapes & Arrows -->
+        <button onclick="setMode('arrow')" id="btn-mode-arrow" class="tool-btn bg-slate-100 duo-btn" title="Draw Arrow"><i class="fas fa-arrow-right"></i></button>
+        <button onclick="addShape('rect')" class="tool-btn bg-slate-100 duo-btn" title="Add Rectangle"><i class="far fa-square"></i></button>
+        <button onclick="addShape('circle')" class="tool-btn bg-slate-100 duo-btn" title="Add Circle"><i class="far fa-circle"></i></button>
+        
+        <div class="w-px h-8 bg-slate-300 mx-1"></div>
+        
+        <!-- Add Notes & Text & Media -->
+        <button onclick="addTextNode()" class="tool-btn bg-slate-100 duo-btn" title="Free Text"><i class="fas fa-font"></i></button>
+        <button onclick="addNote('bg-yellow-200')" class="tool-btn bg-yellow-200 duo-btn" title="Yellow Note"><i class="fas fa-sticky-note text-yellow-700"></i></button>
+        <button onclick="addNote('bg-blue-200')" class="tool-btn bg-blue-200 duo-btn" title="Blue Note"><i class="fas fa-sticky-note text-blue-700"></i></button>
+        <button onclick="addNote('bg-pink-200')" class="tool-btn bg-pink-200 duo-btn" title="Pink Note"><i class="fas fa-sticky-note text-pink-700"></i></button>
+        
+        <button onclick="document.getElementById('image-upload').click()" class="tool-btn bg-duo-purple text-white duo-btn" title="Upload Image/Template"><i class="fas fa-image"></i></button>
+        <input type="file" id="image-upload" accept="image/*" class="hidden" onchange="addImage(event)">
+        
+        <div class="w-px h-8 bg-slate-300 mx-1"></div>
+        
+        <!-- Color & Actions -->
+        <input type="color" id="color-picker" value="#1e293b" class="w-10 h-10 border-[3px] border-duo-dark rounded-xl cursor-pointer shadow-[0_2px_0_#1e293b]" onchange="currentColor = this.value" title="Color Picker">
+        <button onclick="downloadBoard()" class="tool-btn bg-duo-green text-white duo-btn" title="Download Board PNG"><i class="fas fa-download"></i></button>
+        <button onclick="clearBoard()" class="tool-btn bg-white text-duo-red duo-btn" title="Clear Board"><i class="fas fa-trash"></i></button>
+    </div>
+
+    <script>
+        const viewport = document.getElementById('viewport');
+        const workspace = document.getElementById('workspace');
+        const canvas = document.getElementById('draw-canvas');
+        const ctx = canvas.getContext('2d');
+        
+        // Workspace State
+        let scale = 1;
+        let panX = -1500; // Center the 5000x5000 canvas roughly
+        let panY = -1500;
+        let isPanning = false;
+        let startX, startY;
+        
+        // Tools State
+        let currentMode = 'pan'; // 'pan', 'draw', 'arrow', 'erase'
+        let currentColor = '#1e293b';
+        let isDrawing = false;
+        let zIndexCounter = 10;
+
+        // Drawing states
+        let drawStartX, drawStartY;
+        let savedCanvasData;
+
+        // Initialize view
+        updateWorkspaceTransform();
+
+        function updateWorkspaceTransform() {
+            workspace.style.transform = `translate(${panX}px, ${panY}px) scale(${scale})`;
+        }
+
+        function setMode(mode) {
+            currentMode = mode;
+            ['pan', 'draw', 'arrow', 'erase'].forEach(m => {
+                const btn = document.getElementById(`btn-mode-${m}`);
+                if(btn) btn.classList.remove('tool-active');
+            });
+            const activeBtn = document.getElementById(`btn-mode-${mode}`);
+            if(activeBtn) activeBtn.classList.add('tool-active');
+            
+            if (mode === 'pan') {
+                workspace.style.cursor = 'grab';
+                canvas.style.pointerEvents = 'none';
+            } else if (mode === 'erase') {
+                workspace.style.cursor = 'cell';
+                canvas.style.pointerEvents = 'auto';
+            } else {
+                workspace.style.cursor = 'crosshair';
+                canvas.style.pointerEvents = 'auto';
+            }
+        }
+
+        function handleZoom(delta) {
+            scale = Math.min(Math.max(0.3, scale + delta), 2);
+            updateWorkspaceTransform();
+        }
+
+        function resetView() {
+            scale = 1; panX = -1500; panY = -1500;
+            updateWorkspaceTransform();
+        }
+
+        // --- PANNING LOGIC ---
+        viewport.addEventListener('mousedown', (e) => {
+            if (currentMode !== 'pan' || e.target !== viewport && e.target !== workspace && e.target.id !== 'draw-canvas') return;
+            isPanning = true;
+            startX = e.clientX - panX;
+            startY = e.clientY - panY;
+            workspace.style.cursor = 'grabbing';
+        });
+
+        window.addEventListener('mousemove', (e) => {
+            if (!isPanning) return;
+            panX = e.clientX - startX;
+            panY = e.clientY - startY;
+            updateWorkspaceTransform();
+        });
+
+        window.addEventListener('mouseup', () => {
+            isPanning = false;
+            if (currentMode === 'pan') workspace.style.cursor = 'grab';
+        });
+
+        viewport.addEventListener('wheel', (e) => {
+            if (e.ctrlKey) {
+                e.preventDefault();
+                handleZoom(e.deltaY > 0 ? -0.1 : 0.1);
+            } else {
+                panX -= e.deltaX;
+                panY -= e.deltaY;
+                updateWorkspaceTransform();
+            }
+        }, { passive: false });
+
+        // --- DRAWING & ARROW & ERASE LOGIC ---
+        canvas.addEventListener('mousedown', (e) => {
+            if (currentMode === 'pan') return;
+            isDrawing = true;
+            const rect = canvas.getBoundingClientRect();
+            const x = (e.clientX - rect.left) / scale;
+            const y = (e.clientY - rect.top) / scale;
+            
+            if(currentMode === 'erase') {
+                ctx.globalCompositeOperation = "destination-out";
+                ctx.lineWidth = 40;
+                ctx.beginPath();
+                ctx.moveTo(x, y);
+            } else if (currentMode === 'arrow') {
+                drawStartX = x; drawStartY = y;
+                savedCanvasData = ctx.getImageData(0, 0, canvas.width, canvas.height);
+            } else {
+                ctx.globalCompositeOperation = "source-over";
+                ctx.beginPath();
+                ctx.moveTo(x, y);
+                ctx.lineWidth = 6;
+                ctx.lineCap = 'round';
+                ctx.lineJoin = 'round';
+                ctx.strokeStyle = currentColor;
+            }
+        });
+
+        canvas.addEventListener('mousemove', (e) => {
+            if (!isDrawing) return;
+            const rect = canvas.getBoundingClientRect();
+            const x = (e.clientX - rect.left) / scale;
+            const y = (e.clientY - rect.top) / scale;
+            
+            if (currentMode === 'arrow') {
+                ctx.putImageData(savedCanvasData, 0, 0); // Restore previous state
+                drawArrow(ctx, drawStartX, drawStartY, x, y, currentColor);
+            } else {
+                ctx.lineTo(x, y);
+                ctx.stroke();
+            }
+        });
+
+        canvas.addEventListener('mouseup', () => {
+            isDrawing = false;
+            ctx.globalCompositeOperation = "source-over"; // Reset eraser
+        });
+        canvas.addEventListener('mouseout', () => {
+            isDrawing = false;
+            ctx.globalCompositeOperation = "source-over";
+        });
+
+        function drawArrow(context, fromx, fromy, tox, toy, color) {
+            const headlen = 15; // length of head in pixels
+            const dx = tox - fromx;
+            const dy = toy - fromy;
+            const angle = Math.atan2(dy, dx);
+            context.beginPath();
+            context.moveTo(fromx, fromy);
+            context.lineTo(tox, toy);
+            context.lineTo(tox - headlen * Math.cos(angle - Math.PI / 6), toy - headlen * Math.sin(angle - Math.PI / 6));
+            context.moveTo(tox, toy);
+            context.lineTo(tox - headlen * Math.cos(angle + Math.PI / 6), toy - headlen * Math.sin(angle + Math.PI / 6));
+            context.lineWidth = 6;
+            context.strokeStyle = color;
+            context.lineCap = 'round';
+            context.stroke();
+        }
+
+        // --- SPATIAL ELEMENTS (Notes, Text, Shapes, Images) ---
+        function getCenterCoords() {
+            return {
+                x: (-panX + (window.innerWidth / 2)) / scale,
+                y: (-panY + (window.innerHeight / 2)) / scale
+            };
+        }
+
+        function addNote(colorClass) {
+            const pos = getCenterCoords();
+            const note = document.createElement('div');
+            note.className = `sticky-note ${colorClass}`;
+            note.style.left = `${pos.x - 110}px`;
+            note.style.top = `${pos.y - 110}px`;
+            note.style.zIndex = zIndexCounter++;
+
+            note.innerHTML = `
+                <div class="drag-header drag-handle">
+                    <button class="text-duo-dark hover:text-duo-red" onclick="this.parentElement.parentElement.remove()"><i class="fas fa-times"></i></button>
+                </div>
+                <textarea class="note-content" placeholder="Type a brilliant idea..."></textarea>
+            `;
+            workspace.appendChild(note);
+            makeDraggable(note);
+        }
+
+        function addTextNode() {
+            const pos = getCenterCoords();
+            const textNode = document.createElement('div');
+            textNode.className = `absolute flex flex-col free-text`;
+            textNode.style.left = `${pos.x - 100}px`;
+            textNode.style.top = `${pos.y - 20}px`;
+            textNode.style.zIndex = zIndexCounter++;
+
+            textNode.innerHTML = `
+                <div class="drag-handle h-6 cursor-move bg-slate-200/80 hover:bg-slate-300 rounded-t-md flex justify-end items-center px-2 opacity-0 hover:opacity-100 transition-opacity absolute -top-6 left-0 right-0">
+                    <button class="text-duo-dark hover:text-duo-red" onclick="this.parentElement.parentElement.remove()"><i class="fas fa-times text-xs"></i></button>
+                </div>
+                <textarea class="w-[300px] bg-transparent border-none outline-none resize-none font-black text-2xl" placeholder="Type text..." style="color: ${currentColor}"></textarea>
+            `;
+            workspace.appendChild(textNode);
+            makeDraggable(textNode);
+        }
+
+        function addShape(type) {
+            const pos = getCenterCoords();
+            const shape = document.createElement('div');
+            const radiusClass = type === 'circle' ? 'rounded-full' : 'rounded-xl';
+            
+            shape.className = `shape-node ${radiusClass} bg-transparent flex items-center justify-center group`;
+            shape.style.left = `${pos.x - 100}px`;
+            shape.style.top = `${pos.y - 100}px`;
+            shape.style.width = '200px';
+            shape.style.height = '200px';
+            shape.style.borderColor = currentColor;
+            shape.style.zIndex = zIndexCounter++;
+
+            shape.innerHTML = `
+                <div class="drag-handle absolute inset-0 cursor-move rounded-inherit bg-black/0 group-hover:bg-black/5 transition-colors"></div>
+                <button class="absolute -top-4 -right-4 bg-white border-2 border-duo-dark rounded-full w-8 h-8 text-duo-red opacity-0 group-hover:opacity-100 transition-opacity z-10" onclick="this.parentElement.remove()"><i class="fas fa-times"></i></button>
+                <textarea class="w-[80%] h-[80%] bg-transparent border-none outline-none resize-none font-bold text-center z-10" placeholder="Label..." style="color: ${currentColor}"></textarea>
+            `;
+            workspace.appendChild(shape);
+            makeDraggable(shape);
+        }
+
+        function addImage(event) {
+            const file = event.target.files[0];
+            if (!file) return;
+
+            const reader = new FileReader();
+            reader.onload = function(e) {
+                const pos = getCenterCoords();
+                const imgContainer = document.createElement('div');
+                imgContainer.className = `absolute border-[3px] border-duo-dark shadow-[6px_6px_0_rgba(30,41,59,0.2)] rounded-xl overflow-hidden bg-white flex flex-col group`;
+                imgContainer.style.left = `${pos.x - 150}px`;
+                imgContainer.style.top = `${pos.y - 100}px`;
+                imgContainer.style.zIndex = zIndexCounter++;
+
+                imgContainer.innerHTML = `
+                    <div class="drag-header drag-handle h-8 bg-slate-100/80 absolute top-0 left-0 right-0 opacity-0 group-hover:opacity-100 transition-opacity">
+                        <button class="text-duo-dark hover:text-duo-red ml-auto" onclick="this.parentElement.parentElement.remove()"><i class="fas fa-times"></i></button>
+                    </div>
+                    <img src="${e.target.result}" style="max-width: 400px; max-height: 400px; object-fit: contain; pointer-events: none;">
+                `;
+                workspace.appendChild(imgContainer);
+                makeDraggable(imgContainer);
+            };
+            reader.readAsDataURL(file);
+        }
+
+        function clearBoard() {
+            document.querySelectorAll('.sticky-note, .shape-node, .free-text').forEach(n => n.remove());
+            // Also remove images, they don't have a specific class above, let's just remove anything that isn't the canvas
+            Array.from(workspace.children).forEach(child => {
+                if(child.id !== 'draw-canvas') child.remove();
+            });
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+        }
+
+        async function downloadBoard() {
+            // Hide UI
+            document.querySelectorAll('.no-export').forEach(el => el.style.opacity = '0');
+            
+            try {
+                // We use html2canvas on the viewport to get what the user currently sees
+                const resultCanvas = await html2canvas(document.getElementById('viewport'), {
+                    scale: 2, // High-res
+                    useCORS: true,
+                    backgroundColor: '#e2e8f0'
+                });
+                
+                const link = document.createElement('a');
+                link.download = 'ClonBrow_BrainBoard.png';
+                link.href = resultCanvas.toDataURL('image/png');
+                link.click();
+            } catch (e) {
+                alert("Error exporting board. Ensure all images are valid.");
+            }
+            
+            // Restore UI
+            document.querySelectorAll('.no-export').forEach(el => el.style.opacity = '1');
+        }
+
+        function makeDraggable(el) {
+            const header = el.querySelector('.drag-handle');
+            let isDraggingNode = false;
+            let startDragX, startDragY;
+            let startElemX, startElemY;
+
+            header.addEventListener('mousedown', (e) => {
+                isDraggingNode = true;
+                el.style.zIndex = zIndexCounter++;
+                el.classList.add('dragging');
+                
+                startDragX = e.clientX;
+                startDragY = e.clientY;
+                startElemX = parseInt(el.style.left || 0);
+                startElemY = parseInt(el.style.top || 0);
+                
+                e.stopPropagation(); // prevent panning
+            });
+
+            window.addEventListener('mousemove', (e) => {
+                if (!isDraggingNode) return;
+                
+                const dx = (e.clientX - startDragX) / scale;
+                const dy = (e.clientY - startDragY) / scale;
+                
+                el.style.left = `${startElemX + dx}px`;
+                el.style.top = `${startElemY + dy}px`;
+            });
+
+            window.addEventListener('mouseup', () => {
+                if (isDraggingNode) {
+                    isDraggingNode = false;
+                    el.classList.remove('dragging');
+                }
+            });
+            
+            // Bring to front on text click
+            const textInput = el.querySelector('textarea');
+            if(textInput) {
+                textInput.addEventListener('mousedown', () => {
+                    el.style.zIndex = zIndexCounter++;
+                    setMode('pan'); // auto switch to pan so drawing doesn't trigger
+                });
+            }
+        }
+
+    </script>
+</body>
+</html>

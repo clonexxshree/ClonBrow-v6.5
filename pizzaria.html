@@ -1,0 +1,632 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>3D Pizza Tycoon</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Chewy&family=Nunito:wght@700&display=swap');
+
+        body { 
+            margin: 0; overflow: hidden; background-color: #fcd34d; 
+            font-family: 'Nunito', sans-serif; user-select: none;
+            -webkit-font-smoothing: antialiased;
+        }
+        
+        #game-canvas { display: block; width: 100vw; height: 100vh; }
+
+        h1, h2, h3, .chewy-font { font-family: 'Chewy', cursive; }
+
+        /* --- UI LAYER --- */
+        #ui-layer {
+            position: absolute; top: 0; left: 0; width: 100%; height: 100%;
+            pointer-events: none; display: flex; flex-direction: column;
+            justify-content: space-between; padding: 20px; z-index: 10;
+        }
+
+        /* Top Bar */
+        .top-bar {
+            display: flex; justify-content: space-between; align-items: flex-start;
+        }
+
+        .money-badge {
+            background: #4ade80; border: 4px solid #166534; color: white;
+            padding: 10px 30px; border-radius: 30px; font-size: 32px;
+            text-shadow: 2px 2px 0px #166534; box-shadow: 0 8px 0px #166534;
+        }
+
+        /* Order Ticket */
+        .order-ticket {
+            background: #fef3c7; border: 2px dashed #d97706; padding: 20px; width: 280px;
+            box-shadow: 5px 5px 15px rgba(0,0,0,0.2); transform: rotate(-2deg);
+            pointer-events: auto; position: relative;
+        }
+        .order-ticket::before {
+            content: ''; position: absolute; top: -15px; left: 50%; transform: translateX(-50%);
+            width: 60px; height: 30px; background: rgba(0,0,0,0.1); border-radius: 50%; z-index: -1;
+        }
+        .order-ticket::after { /* The pin */
+            content: ''; position: absolute; top: -10px; left: 50%; transform: translateX(-50%);
+            width: 15px; height: 15px; background: #ef4444; border-radius: 50%;
+            box-shadow: inset -2px -2px 0 rgba(0,0,0,0.2), 0 4px 4px rgba(0,0,0,0.2);
+        }
+
+        .ticket-title { font-size: 28px; color: #b45309; border-bottom: 2px solid #b45309; margin-bottom: 10px; text-align: center; }
+        .ticket-item { display: flex; align-items: center; gap: 10px; font-size: 20px; color: #451a03; margin-bottom: 5px;}
+        .ticket-icon { font-size: 24px; }
+
+        /* Bottom Controls */
+        .kitchen-controls {
+            display: flex; justify-content: center; gap: 15px; pointer-events: auto;
+            background: rgba(255,255,255,0.8); padding: 15px 30px; border-radius: 30px;
+            backdrop-filter: blur(5px); box-shadow: 0 10px 30px rgba(0,0,0,0.1);
+        }
+
+        .btn-ingred {
+            background: white; border: 4px solid #e2e8f0; border-radius: 20px;
+            width: 80px; height: 90px; display: flex; flex-direction: column;
+            align-items: center; justify-content: center; cursor: pointer; transition: 0.1s;
+            box-shadow: 0 6px 0 #cbd5e1;
+        }
+        .btn-ingred:hover { transform: translateY(-3px); box-shadow: 0 9px 0 #cbd5e1; }
+        .btn-ingred:active { transform: translateY(6px); box-shadow: 0 0 0 #cbd5e1; }
+        .btn-ingred.disabled { filter: grayscale(1); opacity: 0.5; pointer-events: none; }
+        
+        .btn-action {
+            background: #3b82f6; color: white; border: 4px solid #1e3a8a; border-radius: 20px;
+            padding: 0 20px; font-size: 24px; text-shadow: 2px 2px 0 #1e3a8a; cursor: pointer;
+            box-shadow: 0 6px 0 #1e3a8a; transition: 0.1s; display: flex; align-items: center; gap: 8px;
+        }
+        .btn-action:hover { transform: translateY(-3px); box-shadow: 0 9px 0 #1e3a8a; }
+        .btn-action:active { transform: translateY(6px); box-shadow: 0 0 0 #1e3a8a; }
+
+        .btn-serve { background: #10b981; border-color: #064e3b; text-shadow: 2px 2px 0 #064e3b; box-shadow: 0 6px 0 #064e3b; }
+        .btn-serve:hover { box-shadow: 0 9px 0 #064e3b; }
+        .btn-serve:active { box-shadow: 0 0 0 #064e3b; }
+
+        .btn-trash { background: #ef4444; border-color: #7f1d1d; text-shadow: 2px 2px 0 #7f1d1d; box-shadow: 0 6px 0 #7f1d1d; }
+        .btn-trash:hover { box-shadow: 0 9px 0 #7f1d1d; }
+        .btn-trash:active { box-shadow: 0 0 0 #7f1d1d; }
+
+        /* Overlays */
+        #start-menu {
+            position: absolute; top: 0; left: 0; width: 100%; height: 100%;
+            background: rgba(252, 211, 77, 0.95); z-index: 100;
+            display: flex; flex-direction: column; align-items: center; justify-content: center;
+        }
+        .start-btn {
+            background: #ef4444; color: white; border: 6px solid #991b1b; padding: 20px 60px;
+            font-size: 48px; border-radius: 50px; box-shadow: 0 10px 0 #991b1b; cursor: pointer; transition: 0.1s;
+        }
+        .start-btn:active { transform: translateY(10px); box-shadow: 0 0 0 #991b1b; }
+
+        #baking-progress {
+            position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%);
+            width: 300px; height: 30px; background: rgba(0,0,0,0.5); border-radius: 15px;
+            border: 4px solid white; display: none; overflow: hidden; z-index: 20;
+        }
+        #baking-fill { height: 100%; width: 0%; background: #f59e0b; transition: width 0.1s linear; }
+
+        .floating-text {
+            position: absolute; font-size: 48px; color: white; text-shadow: 0 4px 0 #000;
+            pointer-events: none; animation: floatUp 1.5s ease-out forwards; z-index: 60; opacity: 0;
+            left: 50%; top: 40%; transform: translate(-50%, -50%);
+        }
+        @keyframes floatUp {
+            0% { opacity: 1; transform: translate(-50%, -50%) scale(0.5); }
+            20% { transform: translate(-50%, -70%) scale(1.2); }
+            100% { opacity: 0; transform: translate(-50%, -150%) scale(1); }
+        }
+
+    </style>
+</head>
+<body>
+
+    <div id="start-menu">
+        <h1 style="font-size: 100px; color: #ef4444; text-shadow: 0 8px 0 #991b1b, 0 0 20px rgba(255,255,255,0.8); margin: 0;">PAPA'S 3D PIZZERIA</h1>
+        <p style="font-size: 28px; color: #78350f; max-width: 600px; text-align: center; margin-bottom: 40px;">
+            Prep, top, and bake the perfect pizzas! Don't forget to put them in the oven before serving. Watch out for angry customers!
+        </p>
+        <button class="start-btn chewy-font" id="btn-play">LET'S COOK!</button>
+    </div>
+
+    <canvas id="game-canvas"></canvas>
+
+    <div id="baking-progress"><div id="baking-fill"></div></div>
+
+    <div id="ui-layer">
+        
+        <div class="top-bar">
+            <!-- Order Ticket -->
+            <div class="order-ticket" id="order-ui">
+                <div class="ticket-title chewy-font" id="order-name">Cheese Pizza</div>
+                <div id="order-reqs">
+                    <!-- Injected by JS -->
+                </div>
+            </div>
+
+            <!-- Money -->
+            <div class="money-badge chewy-font" id="money-ui">
+                $0
+            </div>
+        </div>
+
+        <div class="kitchen-controls">
+            <!-- Ingredients -->
+            <button class="btn-ingred" id="btn-dough" onclick="action('dough')">
+                <span style="font-size: 40px;">🟡</span>
+                <span class="chewy-font">Dough</span>
+            </button>
+            <button class="btn-ingred" id="btn-sauce" onclick="action('sauce')">
+                <span style="font-size: 40px;">🍅</span>
+                <span class="chewy-font">Sauce</span>
+            </button>
+            <button class="btn-ingred" id="btn-cheese" onclick="action('cheese')">
+                <span style="font-size: 40px;">🧀</span>
+                <span class="chewy-font">Cheese</span>
+            </button>
+            <button class="btn-ingred" id="btn-pepperoni" onclick="action('pepperoni')">
+                <span style="font-size: 40px;">🥓</span>
+                <span class="chewy-font">Pepperoni</span>
+            </button>
+            <button class="btn-ingred" id="btn-veggie" onclick="action('veggie')">
+                <span style="font-size: 40px;">🫑</span>
+                <span class="chewy-font">Veggie</span>
+            </button>
+            <button class="btn-ingred" id="btn-mushroom" onclick="action('mushroom')">
+                <span style="font-size: 40px;">🍄</span>
+                <span class="chewy-font">Mushroom</span>
+            </button>
+
+            <!-- Actions -->
+            <div style="width: 2px; background: #cbd5e1; margin: 0 10px;"></div>
+            
+            <button class="btn-action" id="btn-bake" onclick="action('bake')">
+                🔥 <span class="chewy-font">Bake</span>
+            </button>
+            <button class="btn-action btn-serve" id="btn-serve" onclick="action('serve')">
+                🛎️ <span class="chewy-font">Serve</span>
+            </button>
+            <button class="btn-action btn-trash" id="btn-trash" onclick="action('trash')">
+                🗑️ <span class="chewy-font">Trash</span>
+            </button>
+        </div>
+    </div>
+
+    <script>
+        // --- AUDIO SYSTEM ---
+        const AudioContext = window.AudioContext || window.webkitAudioContext;
+        let audioCtx;
+        
+        function initAudio() {
+            if (audioCtx) return; 
+            audioCtx = new AudioContext();
+        }
+
+        function playSound(type) {
+            if(!audioCtx) return;
+            const t = audioCtx.currentTime;
+            const osc = audioCtx.createOscillator(); const gain = audioCtx.createGain();
+            
+            if (type === 'pop') { // Add ingredient
+                osc.type = 'sine'; osc.frequency.setValueAtTime(600, t); osc.frequency.exponentialRampToValueAtTime(1200, t + 0.1);
+                gain.gain.setValueAtTime(0.3, t); gain.gain.exponentialRampToValueAtTime(0.01, t + 0.1); osc.start(t); osc.stop(t + 0.1);
+            } else if (type === 'splat') { // Sauce
+                osc.type = 'square'; osc.frequency.setValueAtTime(200, t); osc.frequency.exponentialRampToValueAtTime(100, t + 0.15);
+                gain.gain.setValueAtTime(0.4, t); gain.gain.exponentialRampToValueAtTime(0.01, t + 0.15); osc.start(t); osc.stop(t + 0.15);
+            } else if (type === 'oven') { // Bake start
+                osc.type = 'sawtooth'; osc.frequency.setValueAtTime(100, t); osc.frequency.linearRampToValueAtTime(150, t + 0.5);
+                gain.gain.setValueAtTime(0.2, t); gain.gain.linearRampToValueAtTime(0, t + 3); osc.start(t); osc.stop(t + 3);
+            } else if (type === 'ding') { // Bake done
+                osc.type = 'triangle'; osc.frequency.setValueAtTime(880, t); 
+                gain.gain.setValueAtTime(0.8, t); gain.gain.exponentialRampToValueAtTime(0.01, t + 0.5); osc.start(t); osc.stop(t + 0.5);
+            } else if (type === 'success') { // Serve good
+                osc.type = 'sine'; osc.frequency.setValueAtTime(400, t); osc.frequency.setValueAtTime(600, t+0.1); osc.frequency.setValueAtTime(800, t+0.2);
+                gain.gain.setValueAtTime(0.5, t); gain.gain.exponentialRampToValueAtTime(0.01, t + 0.4); osc.start(t); osc.stop(t + 0.4);
+            } else if (type === 'fail') { // Serve bad / trash
+                osc.type = 'sawtooth'; osc.frequency.setValueAtTime(200, t); osc.frequency.exponentialRampToValueAtTime(50, t + 0.4);
+                gain.gain.setValueAtTime(0.5, t); gain.gain.exponentialRampToValueAtTime(0.01, t + 0.4); osc.start(t); osc.stop(t + 0.4);
+            }
+            osc.connect(gain); gain.connect(audioCtx.destination);
+        }
+
+        // --- GAME DATA ---
+        const Recipes = [
+            { name: "Plain Dough", req: { dough: true, sauce: false, cheese: false, toppings: [], baked: true }, price: 5, color: '#fcd34d' },
+            { name: "Margherita Pizza", req: { dough: true, sauce: true, cheese: true, toppings: [], baked: true }, price: 12, color: '#ef4444' },
+            { name: "Pepperoni Pizza", req: { dough: true, sauce: true, cheese: true, toppings: ['pepperoni'], baked: true }, price: 16, color: '#b91c1c' },
+            { name: "Veggie Pizza", req: { dough: true, sauce: true, cheese: true, toppings: ['veggie'], baked: true }, price: 15, color: '#22c55e' },
+            { name: "Mushroom Pizza", req: { dough: true, sauce: true, cheese: true, toppings: ['mushroom'], baked: true }, price: 15, color: '#78350f' },
+            { name: "Supreme Pizza", req: { dough: true, sauce: true, cheese: true, toppings: ['pepperoni', 'veggie', 'mushroom'], baked: true }, price: 25, color: '#a21caf' }
+        ];
+
+        let State = {
+            money: 0,
+            currentOrder: null,
+            pizza: null, // { dough: true, sauce: false, cheese: false, toppings: [], baked: false }
+            isBaking: false,
+            bakeProgress: 0
+        };
+
+        // --- THREE.JS GLOBALS ---
+        let scene, camera, renderer;
+        let pizzaGrp; // 3D object holding the pizza layers
+        let ovenDoor;
+        let clock = new THREE.Clock();
+
+        const Colors = {
+            doughRaw: 0xFDE68A, doughBaked: 0xD97706,
+            sauce: 0xB91C1C, 
+            cheeseRaw: 0xFEF08A, cheeseBaked: 0xF59E0B,
+            pepperoni: 0x7F1D1D, veggie: 0x22C55E, mushroom: 0x78350F,
+            counter: 0xD1D5DB, wood: 0x78350F, oven: 0x475569
+        };
+
+        window.onload = init;
+
+        function init() {
+            // Setup Scene
+            scene = new THREE.Scene();
+            scene.background = new THREE.Color(0xFBBF24); // Warm yellow background
+            scene.fog = new THREE.Fog(0xFBBF24, 20, 100);
+
+            camera = new THREE.PerspectiveCamera(45, window.innerWidth / window.innerHeight, 0.1, 1000);
+            camera.position.set(0, 15, 20);
+            camera.lookAt(0, 0, 0);
+
+            renderer = new THREE.WebGLRenderer({ canvas: document.getElementById('game-canvas'), antialias: true });
+            renderer.setSize(window.innerWidth, window.innerHeight);
+            renderer.shadowMap.enabled = true;
+
+            // Lights
+            const hemiLight = new THREE.HemisphereLight(0xffffff, 0x444444, 0.6); scene.add(hemiLight);
+            const dirLight = new THREE.DirectionalLight(0xffffff, 0.8);
+            dirLight.position.set(10, 20, 10); dirLight.castShadow = true;
+            dirLight.shadow.camera.left = -20; dirLight.shadow.camera.right = 20;
+            dirLight.shadow.camera.top = 20; dirLight.shadow.camera.bottom = -20;
+            scene.add(dirLight);
+
+            buildKitchen();
+
+            window.addEventListener('resize', onWindowResize, false);
+
+            document.getElementById('btn-play').addEventListener('click', () => {
+                initAudio();
+                document.getElementById('start-menu').style.display = 'none';
+                generateNewOrder();
+                updateUI();
+            });
+
+            animate();
+        }
+
+        function buildKitchen() {
+            // Countertop
+            const counter = new THREE.Mesh(new THREE.BoxGeometry(30, 2, 10), new THREE.MeshLambertMaterial({color: Colors.counter}));
+            counter.position.set(0, -1, 4); counter.receiveShadow = true; scene.add(counter);
+
+            // Wood Prep Board
+            const board = new THREE.Mesh(new THREE.CylinderGeometry(5, 5, 0.2, 32), new THREE.MeshLambertMaterial({color: Colors.wood}));
+            board.position.set(0, 0.1, 4); board.receiveShadow = true; scene.add(board);
+
+            // Oven Background Wall
+            const ovenWall = new THREE.Mesh(new THREE.BoxGeometry(40, 20, 2), new THREE.MeshLambertMaterial({color: 0x9CA3AF}));
+            ovenWall.position.set(0, 8, -8); scene.add(ovenWall);
+
+            // The Hollow Oven
+            // Bottom Plate
+            const ovenBottom = new THREE.Mesh(new THREE.BoxGeometry(14, 1, 10), new THREE.MeshLambertMaterial({color: Colors.oven}));
+            ovenBottom.position.set(0, 3.5, -2); ovenBottom.castShadow = true; ovenBottom.receiveShadow = true; scene.add(ovenBottom);
+            
+            // Top Plate
+            const ovenTop = new THREE.Mesh(new THREE.BoxGeometry(14, 1, 10), new THREE.MeshLambertMaterial({color: Colors.oven}));
+            ovenTop.position.set(0, 7.5, -2); ovenTop.castShadow = true; scene.add(ovenTop);
+            
+            // Left Wall
+            const ovenLeft = new THREE.Mesh(new THREE.BoxGeometry(2, 3, 10), new THREE.MeshLambertMaterial({color: Colors.oven}));
+            ovenLeft.position.set(-6, 5.5, -2); ovenLeft.castShadow = true; scene.add(ovenLeft);
+            
+            // Right Wall
+            const ovenRight = new THREE.Mesh(new THREE.BoxGeometry(2, 3, 10), new THREE.MeshLambertMaterial({color: Colors.oven}));
+            ovenRight.position.set(6, 5.5, -2); ovenRight.castShadow = true; scene.add(ovenRight);
+            
+            // Back Wall (dark inside)
+            const ovenBack = new THREE.Mesh(new THREE.BoxGeometry(14, 3, 2), new THREE.MeshLambertMaterial({color: 0x111111}));
+            ovenBack.position.set(0, 5.5, -6); scene.add(ovenBack);
+            
+            // Glowing fire inside oven at the back
+            const fire = new THREE.Mesh(new THREE.BoxGeometry(10, 0.5, 2), new THREE.MeshBasicMaterial({color: 0xf59e0b}));
+            fire.position.set(0, 4.25, -4); scene.add(fire);
+            const ovenLight = new THREE.PointLight(0xf59e0b, 1.5, 20); ovenLight.position.set(0, 5.5, -3); scene.add(ovenLight);
+
+            // Oven Door (Hinged at the bottom, opens down!)
+            ovenDoor = new THREE.Group();
+            const doorMesh = new THREE.Mesh(new THREE.BoxGeometry(10, 3.5, 0.4), new THREE.MeshLambertMaterial({color: 0x333333, transparent: true, opacity: 0.8}));
+            doorMesh.position.set(0, 1.75, 0); // Offset up from bottom hinge
+            const handle = new THREE.Mesh(new THREE.CylinderGeometry(0.1, 0.1, 8), new THREE.MeshLambertMaterial({color: 0xcccccc}));
+            handle.rotation.z = Math.PI/2; handle.position.set(0, 3, 0.4); doorMesh.add(handle);
+            ovenDoor.add(doorMesh);
+            ovenDoor.position.set(0, 4.0, 3); // Hinge position at bottom front edge of opening
+            scene.add(ovenDoor);
+
+            // Setup Pizza Group
+            pizzaGrp = new THREE.Group();
+            scene.add(pizzaGrp);
+        }
+
+        // --- GAMEPLAY LOGIC ---
+
+        function generateNewOrder() {
+            // Pick a random recipe, biased slightly towards easier ones
+            const r = Math.random();
+            let idx = 1; // Margherita default
+            if (r > 0.3) idx = 2; // Pepperoni
+            if (r > 0.5) idx = 3; // Veggie
+            if (r > 0.7) idx = 4; // Mushroom
+            if (r > 0.85) idx = 5; // Supreme
+            
+            State.currentOrder = Recipes[idx];
+            
+            const reqsDiv = document.getElementById('order-reqs');
+            reqsDiv.innerHTML = '';
+            document.getElementById('order-name').innerText = State.currentOrder.name;
+            document.getElementById('order-name').style.color = State.currentOrder.color;
+            document.getElementById('order-name').style.borderBottomColor = State.currentOrder.color;
+
+            // Build UI list based on reqs
+            const rData = State.currentOrder.req;
+            if(rData.dough) addTicketItem('🟡', 'Pizza Dough');
+            if(rData.sauce) addTicketItem('🍅', 'Tomato Sauce');
+            if(rData.cheese) addTicketItem('🧀', 'Mozzarella');
+            if(rData.toppings.includes('pepperoni')) addTicketItem('🥓', 'Pepperoni');
+            if(rData.toppings.includes('veggie')) addTicketItem('🫑', 'Green Peppers');
+            if(rData.toppings.includes('mushroom')) addTicketItem('🍄', 'Mushrooms');
+            if(rData.baked) addTicketItem('🔥', 'Bake well!');
+        }
+
+        function addTicketItem(icon, text) {
+            const d = document.createElement('div'); d.className = 'ticket-item chewy-font';
+            d.innerHTML = `<span class="ticket-icon">${icon}</span> ${text}`;
+            document.getElementById('order-reqs').appendChild(d);
+        }
+
+        function action(type) {
+            if (State.isBaking) return;
+
+            if (type === 'dough') {
+                if (!State.pizza) {
+                    State.pizza = { dough: true, sauce: false, cheese: false, toppings: [], baked: false };
+                    playSound('pop'); renderPizza(); updateUI();
+                }
+            }
+            else if (['sauce', 'cheese'].includes(type)) {
+                if (State.pizza && !State.pizza[type] && !State.pizza.baked) {
+                    // Must have dough to add sauce. Must have sauce to add cheese.
+                    if (type === 'sauce') State.pizza.sauce = true;
+                    if (type === 'cheese' && State.pizza.sauce) State.pizza.cheese = true;
+                    playSound('splat'); renderPizza(); updateUI();
+                }
+            }
+            else if (['pepperoni', 'veggie', 'mushroom'].includes(type)) {
+                if (State.pizza && State.pizza.cheese && !State.pizza.baked) {
+                    if (!State.pizza.toppings.includes(type)) {
+                        State.pizza.toppings.push(type);
+                        playSound('pop'); renderPizza(); updateUI();
+                    }
+                }
+            }
+            else if (type === 'bake') {
+                if (State.pizza && !State.pizza.baked) {
+                    startBaking();
+                }
+            }
+            else if (type === 'serve') {
+                if (State.pizza) servePizza();
+            }
+            else if (type === 'trash') {
+                if (State.pizza) {
+                    playSound('fail');
+                    clearPizza();
+                    updateUI();
+                }
+            }
+        }
+
+        function renderPizza() {
+            // Clear current visuals
+            while(pizzaGrp.children.length > 0){ pizzaGrp.remove(pizzaGrp.children[0]); }
+            if (!State.pizza) return;
+
+            // Maintain position if currently rendering a new state (e.g. midway bake)
+            if (!State.isBaking) {
+                pizzaGrp.position.set(0, 0.3, 4); // On prep board
+                pizzaGrp.scale.setScalar(1);
+            }
+
+            const p = State.pizza;
+            
+            // Dough Base
+            const dMat = new THREE.MeshLambertMaterial({color: p.baked ? Colors.doughBaked : Colors.doughRaw});
+            const dough = new THREE.Mesh(new THREE.CylinderGeometry(3.8, 3.8, 0.15, 32), dMat);
+            dough.castShadow = true; pizzaGrp.add(dough);
+
+            // Crust Edge
+            const crust = new THREE.Mesh(new THREE.TorusGeometry(3.8, 0.25, 16, 32), dMat);
+            crust.rotation.x = Math.PI/2; crust.position.y = 0.05; pizzaGrp.add(crust);
+
+            // Sauce
+            if (p.sauce) {
+                const sMat = new THREE.MeshLambertMaterial({color: p.baked ? 0x991b1b : Colors.sauce});
+                const sauce = new THREE.Mesh(new THREE.CylinderGeometry(3.6, 3.6, 0.18, 32), sMat);
+                sauce.position.y = 0.02; pizzaGrp.add(sauce);
+            }
+
+            // Cheese
+            if (p.cheese) {
+                const cMat = new THREE.MeshLambertMaterial({color: p.baked ? Colors.cheeseBaked : Colors.cheeseRaw});
+                const cheese = new THREE.Mesh(new THREE.CylinderGeometry(3.5, 3.5, 0.22, 32), cMat);
+                cheese.position.y = 0.04; pizzaGrp.add(cheese);
+            }
+
+            // Toppings
+            p.toppings.forEach(t => {
+                let count = 0; let geo, mat;
+                if (t === 'pepperoni') {
+                    count = 12; geo = new THREE.CylinderGeometry(0.5, 0.5, 0.05, 16); 
+                    mat = new THREE.MeshLambertMaterial({color: p.baked ? 0x450a0a : Colors.pepperoni});
+                } else if (t === 'veggie') {
+                    count = 15; geo = new THREE.TorusGeometry(0.3, 0.1, 4, 8); 
+                    mat = new THREE.MeshLambertMaterial({color: p.baked ? 0x14532d : Colors.veggie});
+                } else if (t === 'mushroom') {
+                    count = 10; geo = new THREE.DodecahedronGeometry(0.4, 0); 
+                    mat = new THREE.MeshLambertMaterial({color: p.baked ? 0x451a03 : Colors.mushroom});
+                }
+
+                // Deterministic random placement so it doesn't jump around
+                let seed = t.charCodeAt(0);
+                for(let i=0; i<count; i++) {
+                    const top = new THREE.Mesh(geo, mat);
+                    const angle = (i/count) * Math.PI * 2 + (seed * 0.1);
+                    const radius = (seed % 3.2) + Math.random()*0.5;
+                    top.position.set(Math.cos(angle)*radius, 0.16, Math.sin(angle)*radius);
+                    if(t === 'veggie') top.rotation.x = Math.PI/2;
+                    if(t === 'mushroom') top.scale.y = 0.5;
+                    pizzaGrp.add(top);
+                    seed += 7;
+                }
+            });
+        }
+
+        function startBaking() {
+            State.isBaking = true;
+            State.bakeProgress = 0;
+            playSound('oven');
+            document.getElementById('baking-progress').style.display = 'block';
+            updateUI();
+        }
+
+        function servePizza() {
+            // Check if matches order
+            const p = State.pizza;
+            const req = State.currentOrder.req;
+            
+            // Match logic
+            let isMatch = true;
+            if(p.dough !== req.dough || p.sauce !== req.sauce || p.cheese !== req.cheese || p.baked !== req.baked) isMatch = false;
+            
+            if(p.toppings.length !== req.toppings.length) isMatch = false;
+            else {
+                req.toppings.forEach(t => { if(!p.toppings.includes(t)) isMatch = false; });
+            }
+
+            if (isMatch) {
+                State.money += State.currentOrder.price;
+                playSound('success');
+                showFloatingText(`+ $${State.currentOrder.price}!`, '#4ade80');
+            } else {
+                State.money -= 5; // Penalty
+                playSound('fail');
+                showFloatingText("WRONG ORDER! -$5", '#ef4444');
+            }
+
+            document.getElementById('money-ui').innerText = `$${State.money}`;
+            clearPizza();
+            generateNewOrder();
+            updateUI();
+        }
+
+        function clearPizza() {
+            State.pizza = null;
+            while(pizzaGrp.children.length > 0){ pizzaGrp.remove(pizzaGrp.children[0]); }
+        }
+
+        function showFloatingText(text, color) {
+            const el = document.createElement('div');
+            el.className = 'floating-text chewy-font';
+            el.innerText = text;
+            el.style.color = color;
+            document.body.appendChild(el);
+            setTimeout(() => el.remove(), 1500);
+        }
+
+        function updateUI() {
+            const p = State.pizza;
+            // Disable/Enable buttons based on state
+            const setBtn = (id, enabled) => {
+                const el = document.getElementById(id);
+                if(enabled && !State.isBaking) el.classList.remove('disabled');
+                else el.classList.add('disabled');
+            };
+
+            setBtn('btn-dough', !p);
+            setBtn('btn-sauce', p && !p.sauce && !p.baked);
+            setBtn('btn-cheese', p && p.sauce && !p.cheese && !p.baked);
+            
+            const topsEn = p && p.cheese && !p.baked;
+            setBtn('btn-pepperoni', topsEn && !p.toppings.includes('pepperoni'));
+            setBtn('btn-veggie', topsEn && !p.toppings.includes('veggie'));
+            setBtn('btn-mushroom', topsEn && !p.toppings.includes('mushroom'));
+
+            setBtn('btn-bake', p && !p.baked);
+            setBtn('btn-serve', p); // Can serve raw/wrong if you want, but will lose money
+            setBtn('btn-trash', p);
+        }
+
+        function onWindowResize() {
+            camera.aspect = window.innerWidth / window.innerHeight;
+            camera.updateProjectionMatrix();
+            renderer.setSize(window.innerWidth, window.innerHeight);
+        }
+
+        // --- RENDER LOOP ---
+
+        function animate() {
+            requestAnimationFrame(animate);
+            const delta = Math.min(clock.getDelta(), 0.1);
+
+            // Handle Baking Animation
+            if (State.isBaking) {
+                State.bakeProgress += delta / 3.0; // 3 seconds to bake
+                
+                // Animate oven door opening downwards!
+                if (State.bakeProgress < 0.15) ovenDoor.rotation.x = THREE.MathUtils.lerp(ovenDoor.rotation.x, Math.PI/2, 0.2); // Open down
+                else if (State.bakeProgress > 0.85) ovenDoor.rotation.x = THREE.MathUtils.lerp(ovenDoor.rotation.x, Math.PI/2, 0.2); // Open down
+                else ovenDoor.rotation.x = THREE.MathUtils.lerp(ovenDoor.rotation.x, 0, 0.2); // Close up
+
+                // Animate Pizza moving smoothly into the hollow oven
+                if (State.bakeProgress < 0.25) {
+                    pizzaGrp.position.z = THREE.MathUtils.lerp(pizzaGrp.position.z, -2, 0.08); // Move deep in
+                    pizzaGrp.position.y = THREE.MathUtils.lerp(pizzaGrp.position.y, 4.15, 0.08); // Lift to oven floor height
+                    pizzaGrp.scale.setScalar(THREE.MathUtils.lerp(pizzaGrp.scale.x, 0.8, 0.08));
+                } else if (State.bakeProgress > 0.75) {
+                    pizzaGrp.position.z = THREE.MathUtils.lerp(pizzaGrp.position.z, 4, 0.1); // Move back out
+                    pizzaGrp.position.y = THREE.MathUtils.lerp(pizzaGrp.position.y, 0.3, 0.1); // Back down to board
+                    pizzaGrp.scale.setScalar(THREE.MathUtils.lerp(pizzaGrp.scale.x, 1, 0.1));
+                } else if (State.bakeProgress > 0.5 && !State.pizza.baked) {
+                    // Midpoint: Transform to baked visual!
+                    State.pizza.baked = true;
+                    renderPizza(); 
+                }
+
+                // UI Progress
+                document.getElementById('baking-fill').style.width = `${Math.min(100, State.bakeProgress * 100)}%`;
+
+                if (State.bakeProgress >= 1.0) {
+                    State.isBaking = false;
+                    document.getElementById('baking-progress').style.display = 'none';
+                    ovenDoor.rotation.x = 0; // Ensure closed
+                    playSound('ding');
+                    updateUI();
+                }
+            } else {
+                ovenDoor.rotation.x = THREE.MathUtils.lerp(ovenDoor.rotation.x, 0, 0.1);
+            }
+
+            renderer.render(scene, camera);
+        }
+
+    </script>
+</body>
+</html>

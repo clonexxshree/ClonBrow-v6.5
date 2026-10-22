@@ -1,0 +1,784 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Math Lab - Proportions, Exponents & Trigonometry</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Fira+Code:wght@400;500&display=swap" rel="stylesheet">
+    <style>
+        body, html {
+            margin: 0; padding: 0; width: 100%; height: 100%; overflow: hidden;
+            background-color: #020617; font-family: 'Inter', sans-serif;
+            touch-action: none; user-select: none;
+        }
+
+        .main-shell { display: flex; width: 100%; height: 100%; }
+        
+        .workspace { 
+            flex-grow: 1; 
+            position: relative; 
+            overflow: hidden; 
+            background: radial-gradient(circle at center, #0f172a 0%, #020617 100%);
+        }
+        
+        #sim-canvas {
+            display: block; width: 100%; height: 100%; cursor: default;
+        }
+
+        .glass-panel {
+            background: linear-gradient(145deg, rgba(15, 23, 42, 0.9) 0%, rgba(2, 6, 23, 0.98) 100%);
+            backdrop-filter: blur(40px); -webkit-backdrop-filter: blur(40px);
+            border-right: 1px solid rgba(255, 255, 255, 0.1);
+            box-shadow: 20px 0 50px rgba(0, 0, 0, 0.5);
+            display: flex; flex-direction: column; padding: 2rem; z-index: 100; width: 380px;
+        }
+
+        @media (max-width: 1024px) {
+            .glass-panel { width: 100%; height: 42%; border-right: none; border-bottom: 1px solid rgba(255,255,255,0.1); padding: 1rem; }
+            .main-shell { flex-direction: column; }
+        }
+
+        .tab-btn { transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1); }
+        .tab-btn.active { background-color: #ffffff; color: #020617; box-shadow: 0 4px 12px rgba(0,0,0,0.4); }
+
+        input[type=range] { -webkit-appearance: none; width: 100%; background: transparent; }
+        input[type=range]::-webkit-slider-thumb {
+            -webkit-appearance: none; height: 20px; width: 20px; border-radius: 50%;
+            background: #ffffff; cursor: pointer; margin-top: -8px;
+            box-shadow: 0 4px 10px rgba(0,0,0,0.5); border: 1px solid rgba(255,255,255,0.2);
+            transition: transform 0.2s cubic-bezier(0.2, 0.8, 0.2, 1);
+        }
+        input[type=range]::-webkit-slider-thumb:hover { transform: scale(1.15); }
+        input[type=range]::-webkit-slider-runnable-track {
+            width: 100%; height: 4px; cursor: pointer; background: rgba(255, 255, 255, 0.15); border-radius: 2px;
+        }
+
+        .formula-box { font-family: 'Fira Code', monospace; }
+        .scroll-area::-webkit-scrollbar { width: 4px; }
+        .scroll-area::-webkit-scrollbar-thumb { background: rgba(255, 255, 255, 0.2); border-radius: 4px; }
+
+        #loading-screen {
+            position: absolute; inset: 0; background: #020617; display: flex; flex-direction: column;
+            align-items: center; justify-content: center; color: white; z-index: 150; transition: opacity 0.6s ease;
+        }
+    </style>
+</head>
+<body>
+
+    <div id="loading-screen">
+        <div class="flex flex-col items-center gap-5">
+            <svg class="animate-spin h-10 w-10 text-emerald-500" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="3"></circle><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path></svg>
+            <span class="text-xs font-bold tracking-widest text-gray-400 uppercase italic text-center">Centering Workspace Engine...</span>
+        </div>
+    </div>
+
+    <div class="main-shell">
+        <!-- UI Panel -->
+        <div class="glass-panel shrink-0">
+            <div class="mb-6 border-b border-white/10 pb-6 shrink-0 flex items-center justify-between">
+                <div>
+                    <h1 class="text-2xl font-bold tracking-tight text-white mb-1">Math Lab</h1>
+                    <p class="text-[11px] font-medium text-emerald-400 uppercase tracking-widest">Algebra & Trigonometry</p>
+                </div>
+                <div class="w-10 h-10 rounded-full bg-emerald-500/20 flex items-center justify-center text-emerald-400 shadow-[0_0_15px_rgba(16,185,129,0.3)]">
+                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"></path></svg>
+                </div>
+            </div>
+
+            <!-- Tab Navigation -->
+            <div class="grid grid-cols-2 p-1 bg-black/40 rounded-xl shadow-inner gap-1 mb-6 shrink-0 border border-white/5">
+                <button data-tab="proportions" class="tab-btn active py-2 text-[10px] font-bold uppercase tracking-wider rounded-lg text-gray-400">Ratios</button>
+                <button data-tab="exponents" class="tab-btn py-2 text-[10px] font-bold uppercase tracking-wider rounded-lg text-gray-400">Exponents</button>
+                <button data-tab="trig" class="tab-btn py-2 text-[10px] font-bold uppercase tracking-wider rounded-lg text-gray-400">Trigonometry</button>
+                <button data-tab="unitcircle" class="tab-btn py-2 text-[10px] font-bold uppercase tracking-wider rounded-lg text-gray-400">Unit Circle</button>
+            </div>
+
+            <div class="scroll-area overflow-y-auto pr-2 pb-2 flex-1 space-y-7">
+                
+                <!-- Dynamic Info Box -->
+                <div class="bg-black/30 p-4 rounded-xl border border-white/5 shadow-inner">
+                    <h2 id="info-title" class="text-sm font-bold text-white mb-2 italic">Aspect Ratios</h2>
+                    <div id="formula-display" class="formula-box bg-white/5 p-2 rounded text-[11px] text-blue-300 mb-3 border border-white/10 text-center">
+                        Width : Height = Constant
+                    </div>
+                    <p id="info-desc" class="text-xs text-gray-400 leading-relaxed">
+                        A ratio compares two quantities. When scaling a photo, locking the <b>Aspect Ratio</b> ensures the proportions stay identical, preventing unnatural stretching.
+                    </p>
+                </div>
+
+                <!-- PROPORTIONS SECTION -->
+                <div id="section-proportions" class="space-y-6">
+                    <div class="space-y-5">
+                        <div class="pt-2 flex items-center justify-between">
+                            <div>
+                                <div class="text-[13px] font-bold text-white mb-0.5">Lock Aspect Ratio</div>
+                                <div class="text-[10px] text-gray-500 uppercase tracking-widest font-semibold" id="lock-status">Constrained</div>
+                            </div>
+                            <label class="relative inline-flex items-center cursor-pointer">
+                                <input type="checkbox" id="ratio-lock" class="sr-only peer" checked>
+                                <div class="w-12 h-6 bg-gray-700 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-blue-500 shadow-inner"></div>
+                            </label>
+                        </div>
+
+                        <div class="space-y-3 pt-3 border-t border-white/5">
+                            <div class="flex justify-between items-end">
+                                <label class="text-[11px] font-semibold text-blue-400 uppercase tracking-widest">Width (X)</label>
+                                <span id="prop-w-disp" class="text-[11px] font-mono bg-blue-500/10 px-2 py-1 rounded text-blue-300">400 px</span>
+                            </div>
+                            <input type="range" id="prop-w" min="100" max="800" step="5" value="400" style="accent-color: #3b82f6;">
+                        </div>
+                        
+                        <div class="space-y-3">
+                            <div class="flex justify-between items-end">
+                                <label class="text-[11px] font-semibold text-purple-400 uppercase tracking-widest">Height (Y)</label>
+                                <span id="prop-h-disp" class="text-[11px] font-mono bg-purple-500/10 px-2 py-1 rounded text-purple-300">200 px</span>
+                            </div>
+                            <input type="range" id="prop-h" min="50" max="600" step="5" value="200" style="accent-color: #c084fc;">
+                        </div>
+                    </div>
+                </div>
+
+                <!-- EXPONENTS SECTION -->
+                <div id="section-exponents" class="space-y-6 hidden">
+                    <div class="space-y-5">
+                        <div class="space-y-3">
+                            <div class="flex justify-between items-end">
+                                <label class="text-[11px] font-semibold text-emerald-400 uppercase tracking-widest">Generation ($x$)</label>
+                                <span id="exp-gen-disp" class="text-[11px] font-mono bg-emerald-500/10 px-2 py-1 rounded text-emerald-300">0</span>
+                            </div>
+                            <input type="range" id="exp-gen" min="0" max="8" step="1" value="0" style="accent-color: #10b981;">
+                            <div class="flex justify-between px-1 text-[9px] text-gray-500 font-bold">
+                                <span>1 Cell</span>
+                                <span>256 Cells</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- TRIGONOMETRY SECTION -->
+                <div id="section-trig" class="space-y-6 hidden">
+                    <div class="space-y-5">
+                        <div class="space-y-3">
+                            <div class="flex justify-between items-end">
+                                <label class="text-[11px] font-semibold text-yellow-400 uppercase tracking-widest">Sun Elevation (θ)</label>
+                                <span id="trig-angle-disp" class="text-[11px] font-mono bg-yellow-500/10 px-2 py-1 rounded text-yellow-300">45°</span>
+                            </div>
+                            <input type="range" id="trig-angle" min="15" max="80" step="1" value="45" style="accent-color: #facc15;">
+                            <div class="flex justify-between text-[9px] text-gray-500 font-bold uppercase mt-1 px-1">
+                                <span>Sunset (Long)</span>
+                                <span>Noon (Short)</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- UNIT CIRCLE SECTION -->
+                <div id="section-unitcircle" class="space-y-6 hidden">
+                    <div class="space-y-5">
+                        <div class="space-y-3">
+                            <div class="flex justify-between items-end">
+                                <label class="text-[11px] font-semibold text-pink-400 uppercase tracking-widest">Angular Velocity</label>
+                                <span id="uc-speed-disp" class="text-[11px] font-mono bg-pink-500/10 px-2 py-1 rounded text-pink-300">1.0x</span>
+                            </div>
+                            <input type="range" id="uc-speed" min="0" max="3" step="0.1" value="1.0" style="accent-color: #f472b6;">
+                        </div>
+                    </div>
+                </div>
+
+            </div>
+            
+            <div class="pt-6 border-t border-white/5 text-[10px] text-gray-600 font-medium text-center shrink-0 mt-4 uppercase tracking-widest">
+                Perfect 1:1 Workspace Centering
+            </div>
+        </div>
+
+        <!-- Simulation Workspace -->
+        <div class="workspace" id="workspace">
+            <canvas id="sim-canvas"></canvas>
+            
+            <!-- Contextual HUD -->
+            <div id="hud" class="absolute bottom-8 right-8 z-10 glass-panel !w-[280px] !p-5 !border !rounded-2xl pointer-events-none shadow-2xl transition-opacity duration-300">
+                <div class="text-[10px] font-bold uppercase tracking-widest text-gray-500 mb-3 border-b border-white/5 pb-1">Mathematical Result</div>
+                <div class="space-y-3">
+                    <div class="flex justify-between items-center">
+                        <span class="text-[12px] text-gray-400 font-medium" id="hud-label-1">Data 1</span>
+                        <span id="hud-val-1" class="text-base font-mono font-bold text-white">---</span>
+                    </div>
+                    <div class="flex justify-between items-center">
+                        <span class="text-[12px] text-gray-400 font-medium" id="hud-label-2">Data 2</span>
+                        <span id="hud-val-2" class="text-base font-mono font-bold text-white">---</span>
+                    </div>
+                    <div id="hud-status" class="pt-2 text-center text-[11px] font-bold tracking-widest text-blue-400 border-t border-white/5">
+                        STATUS
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- MAIN ENGINE SCRIPT -->
+    <script>
+        const canvas = document.getElementById('sim-canvas');
+        const ctx = canvas.getContext('2d');
+        const workspace = document.getElementById('workspace');
+
+        // --- ASSETS ---
+        const imgPhoto = new Image();
+        let loadedCount = 0;
+
+        function checkLoad() {
+            loadedCount++;
+            if (loadedCount >= 1) {
+                const ls = document.getElementById('loading-screen');
+                if(ls) {
+                    ls.style.opacity = '0';
+                    setTimeout(() => ls.style.display = 'none', 600);
+                }
+            }
+        }
+        
+        imgPhoto.onload = checkLoad; imgPhoto.onerror = checkLoad;
+        imgPhoto.src = 'https://res.cloudinary.com/ds93qby5a/image/upload/v1775902319/photo-1502877338535-766e1452684a-Photoroom_wpphzt.png';
+        setTimeout(checkLoad, 2000); // Failsafe
+
+        // --- GLOBAL STATE ---
+        let currentMode = 'proportions'; 
+        let cx, cy, wsWidth, wsHeight;
+
+        const M = {
+            prop: { w: 400, h: 200, baseW: 400, baseH: 200, ratio: 2.0, locked: true },
+            exp:  { gen: 0, cells: [] },
+            trig: { angle: 45 },
+            uc:   { speed: 1.0, angle: 0, history: [] }
+        };
+
+        function resize() {
+            // CRITICAL FIX: Base canvas dimensions purely on the flex workspace size
+            canvas.width = workspace.clientWidth;
+            canvas.height = workspace.clientHeight;
+            wsWidth = canvas.width;
+            wsHeight = canvas.height;
+            
+            // EXACT CENTER OF THE WORKSPACE CANVAS
+            cx = wsWidth / 2;
+            cy = wsHeight / 2;
+            
+            // Re-center any floating cells instantly on resize
+            if (M.exp.cells.length > 0) {
+                M.exp.cells.forEach(c => {
+                    c.x = cx + (c.x - cx) * 0.5; // pull closer to new center
+                    c.y = cy + (c.y - cy) * 0.5;
+                });
+            }
+        }
+        window.addEventListener('resize', resize);
+        resize(); // Initial sizing
+
+        // --- UI BINDINGS ---
+        const bindSlider = (id, obj, key, displayId, suffix="", callback=null) => {
+            const el = document.getElementById(id);
+            if(!el) return;
+            el.addEventListener('input', (e) => {
+                obj[key] = parseFloat(e.target.value);
+                document.getElementById(displayId).innerText = obj[key] + suffix;
+                if(callback) callback();
+            });
+        };
+
+        // Proportions specific bindings
+        const propWSlider = document.getElementById('prop-w');
+        const propHSlider = document.getElementById('prop-h');
+        const ratioLock = document.getElementById('ratio-lock');
+        
+        ratioLock.addEventListener('change', (e) => {
+            M.prop.locked = e.target.checked;
+            document.getElementById('lock-status').innerText = M.prop.locked ? "Constrained" : "Unlocked";
+            document.getElementById('lock-status').className = M.prop.locked 
+                ? "text-[10px] text-blue-400 uppercase tracking-widest font-semibold" 
+                : "text-[10px] text-gray-500 uppercase tracking-widest font-semibold";
+            
+            if (M.prop.locked) M.prop.ratio = M.prop.w / M.prop.h;
+        });
+
+        propWSlider.addEventListener('input', (e) => {
+            M.prop.w = parseInt(e.target.value);
+            if (M.prop.locked) {
+                M.prop.h = Math.round(M.prop.w / M.prop.ratio);
+                propHSlider.value = M.prop.h;
+                document.getElementById('prop-h-disp').innerText = M.prop.h + " px";
+            }
+            document.getElementById('prop-w-disp').innerText = M.prop.w + " px";
+        });
+
+        propHSlider.addEventListener('input', (e) => {
+            M.prop.h = parseInt(e.target.value);
+            if (M.prop.locked) {
+                M.prop.w = Math.round(M.prop.h * M.prop.ratio);
+                propWSlider.value = M.prop.w;
+                document.getElementById('prop-w-disp').innerText = M.prop.w + " px";
+            }
+            document.getElementById('prop-h-disp').innerText = M.prop.h + " px";
+        });
+
+        // Other bindings
+        const expSlider = document.getElementById('exp-gen');
+        expSlider.addEventListener('input', (e) => {
+            M.exp.gen = parseInt(e.target.value);
+            document.getElementById('exp-gen-disp').innerText = M.exp.gen;
+            updateCells();
+        });
+
+        bindSlider('trig-angle', M.trig, 'angle', 'trig-angle-disp', '°');
+        bindSlider('uc-speed', M.uc, 'speed', 'uc-speed-disp', 'x');
+
+        // --- EXCELL DIVISION LOGIC ---
+        function initCells() {
+            M.exp.cells = [];
+            M.exp.cells.push({ x: cx, y: cy, vx: 0, vy: 0, radius: 12 });
+            M.exp.gen = 0;
+            expSlider.value = 0;
+            document.getElementById('exp-gen-disp').innerText = "0";
+        }
+
+        function updateCells() {
+            const targetCount = Math.pow(2, M.exp.gen);
+            const currentCount = M.exp.cells.length;
+
+            if (targetCount > currentCount) {
+                const newCells = [];
+                for (let i = 0; i < targetCount - currentCount; i++) {
+                    const parent = M.exp.cells[i % currentCount];
+                    const angle = Math.random() * Math.PI * 2;
+                    const bump = 15; 
+                    newCells.push({
+                        x: parent.x + Math.cos(angle) * 5,
+                        y: parent.y + Math.sin(angle) * 5,
+                        vx: Math.cos(angle) * bump,
+                        vy: Math.sin(angle) * bump,
+                        radius: 12
+                    });
+                    parent.vx -= Math.cos(angle) * bump;
+                    parent.vy -= Math.sin(angle) * bump;
+                }
+                M.exp.cells.push(...newCells);
+            } else if (targetCount < currentCount) {
+                M.exp.cells.splice(targetCount);
+            }
+        }
+
+        function simulateCells(dt) {
+            const SPRING_K = 0.8; // Strong pull strictly to exact center
+            const DAMPING = 0.80; // Friction
+
+            for (let i = 0; i < M.exp.cells.length; i++) {
+                const c1 = M.exp.cells[i];
+                c1.vx += (cx - c1.x) * SPRING_K * dt;
+                c1.vy += (cy - c1.y) * SPRING_K * dt;
+
+                for (let j = i + 1; j < M.exp.cells.length; j++) {
+                    const c2 = M.exp.cells[j];
+                    const dx = c2.x - c1.x;
+                    const dy = c2.y - c1.y;
+                    const distSq = dx*dx + dy*dy;
+                    const minDist = c1.radius + c2.radius + 2; 
+
+                    if (distSq < minDist * minDist && distSq > 0.1) {
+                        const dist = Math.sqrt(distSq);
+                        const overlap = minDist - dist;
+                        const nx = dx / dist;
+                        const ny = dy / dist;
+                        const force = overlap * 4.0; 
+
+                        c1.vx += nx * force * dt; c1.vy += ny * force * dt;
+                        c2.vx -= nx * force * dt; c2.vy -= ny * force * dt;
+                    }
+                }
+
+                c1.vx *= DAMPING; c1.vy *= DAMPING;
+                c1.x += c1.vx; c1.y += c1.vy;
+            }
+        }
+
+        // --- RENDER FUNCTIONS ---
+
+        function drawProportions() {
+            // Draw Cartesian Grid
+            ctx.strokeStyle = 'rgba(255,255,255,0.04)'; ctx.lineWidth = 1;
+            ctx.beginPath();
+            for(let x = cx; x < wsWidth; x += 50) { ctx.moveTo(x, 0); ctx.lineTo(x, wsHeight); }
+            for(let x = cx; x > 0; x -= 50) { ctx.moveTo(x, 0); ctx.lineTo(x, wsHeight); }
+            for(let y = cy; y < wsHeight; y += 50) { ctx.moveTo(0, y); ctx.lineTo(wsWidth, y); }
+            for(let y = cy; y > 0; y -= 50) { ctx.moveTo(0, y); ctx.lineTo(wsWidth, y); }
+            ctx.stroke();
+
+            // Main Axes
+            ctx.strokeStyle = 'rgba(255,255,255,0.15)'; ctx.lineWidth = 2;
+            ctx.beginPath(); ctx.moveTo(cx, 0); ctx.lineTo(cx, wsHeight);
+            ctx.moveTo(0, cy); ctx.lineTo(wsWidth, cy); ctx.stroke();
+
+            const w = M.prop.w; const h = M.prop.h;
+
+            ctx.save();
+            ctx.translate(cx, cy);
+
+            ctx.fillStyle = 'rgba(15, 23, 42, 0.8)';
+            ctx.fillRect(-w/2, -h/2, w, h);
+            
+            if (imgPhoto.complete && imgPhoto.naturalWidth) {
+                const currentRatio = w / h;
+                const originalRatio = M.prop.baseW / M.prop.baseH;
+                const isDistorted = Math.abs(currentRatio - originalRatio) > 0.05;
+                if (isDistorted) ctx.globalAlpha = 0.8;
+                ctx.drawImage(imgPhoto, -w/2, -h/2, w, h);
+                ctx.globalAlpha = 1.0;
+            }
+
+            ctx.strokeStyle = M.prop.locked ? '#38bdf8' : '#f87171'; 
+            ctx.lineWidth = 3;
+            ctx.strokeRect(-w/2, -h/2, w, h);
+            
+            ctx.strokeStyle = '#60a5fa'; ctx.lineWidth = 2;
+            ctx.beginPath(); ctx.moveTo(-w/2, h/2 + 20); ctx.lineTo(w/2, h/2 + 20);
+            ctx.moveTo(-w/2, h/2 + 15); ctx.lineTo(-w/2, h/2 + 25);
+            ctx.moveTo(w/2, h/2 + 15); ctx.lineTo(w/2, h/2 + 25); ctx.stroke();
+            ctx.fillStyle = '#93c5fd'; ctx.font = 'bold 12px Inter'; ctx.textAlign='center';
+            ctx.fillText(`Width: ${w}`, 0, h/2 + 35);
+
+            ctx.strokeStyle = '#c084fc';
+            ctx.beginPath(); ctx.moveTo(-w/2 - 20, -h/2); ctx.lineTo(-w/2 - 20, h/2);
+            ctx.moveTo(-w/2 - 25, -h/2); ctx.lineTo(-w/2 - 15, -h/2);
+            ctx.moveTo(-w/2 - 25, h/2); ctx.lineTo(-w/2 - 15, h/2); ctx.stroke();
+            ctx.fillStyle = '#d8b4fe'; ctx.textAlign='right'; ctx.textBaseline='middle';
+            ctx.fillText(`Height: ${h}`, -w/2 - 30, 0);
+
+            ctx.restore();
+
+            const currentRatio = w / h;
+            const originalRatio = M.prop.baseW / M.prop.baseH;
+            
+            document.getElementById('hud-label-1').innerText = "Current Ratio (W:H)";
+            document.getElementById('hud-val-1').innerText = `${(currentRatio).toFixed(2)} : 1`;
+            document.getElementById('hud-val-1').style.color = "#38bdf8";
+
+            document.getElementById('hud-label-2').innerText = "Distortion Status";
+            if (Math.abs(currentRatio - originalRatio) < 0.05) {
+                document.getElementById('hud-val-2').innerText = "Original Proportions";
+                document.getElementById('hud-val-2').style.color = "#4ade80";
+                document.getElementById('hud-status').innerText = "Image Geometry Preserved";
+                document.getElementById('hud-status').style.color = "#4ade80";
+            } else {
+                document.getElementById('hud-val-2').innerText = "Stretched / Squished";
+                document.getElementById('hud-val-2').style.color = "#f87171";
+                document.getElementById('hud-status').innerText = "WARNING: Distorted Image";
+                document.getElementById('hud-status').style.color = "#f87171";
+            }
+            document.getElementById('hud-status').classList.remove('hidden');
+            document.getElementById('hud').style.opacity = '1';
+        }
+
+        function drawExponents(dt) {
+            const bgGrad = ctx.createRadialGradient(cx, cy, 50, cx, cy, 400);
+            bgGrad.addColorStop(0, 'rgba(16, 185, 129, 0.15)'); 
+            bgGrad.addColorStop(1, 'transparent');
+            ctx.fillStyle = bgGrad; ctx.fillRect(0, 0, wsWidth, wsHeight);
+
+            ctx.strokeStyle = 'rgba(255,255,255,0.08)'; ctx.lineWidth = 4;
+            ctx.beginPath(); ctx.arc(cx, cy, 320, 0, Math.PI*2); ctx.stroke();
+            ctx.strokeStyle = 'rgba(255,255,255,0.03)'; ctx.lineWidth = 1;
+            ctx.beginPath(); ctx.arc(cx, cy, 200, 0, Math.PI*2); ctx.stroke();
+            ctx.beginPath(); ctx.arc(cx, cy, 100, 0, Math.PI*2); ctx.stroke();
+
+            for(let i=0; i<6; i++) simulateCells(dt/6);
+
+            M.exp.cells.forEach(cell => {
+                ctx.save();
+                ctx.translate(cell.x, cell.y);
+                ctx.shadowBlur = 15; ctx.shadowColor = 'rgba(16, 185, 129, 0.6)';
+
+                const grad = ctx.createRadialGradient(0, 0, 0, 0, 0, cell.radius);
+                grad.addColorStop(0, '#a7f3d0'); 
+                grad.addColorStop(0.5, '#10b981'); 
+                grad.addColorStop(1, '#064e3b'); 
+                
+                ctx.fillStyle = grad;
+                ctx.beginPath(); ctx.arc(0, 0, cell.radius, 0, Math.PI*2); ctx.fill();
+                
+                ctx.shadowBlur = 0; ctx.fillStyle = 'rgba(0,0,0,0.5)';
+                ctx.beginPath(); ctx.arc(0, 0, 3, 0, Math.PI*2); ctx.fill();
+                ctx.restore();
+            });
+
+            const gen = M.exp.gen;
+            const totalCells = Math.pow(2, gen);
+            const linearComparison = 2 * gen; 
+
+            document.getElementById('hud-label-1').innerText = "Exponential (2^x)";
+            document.getElementById('hud-val-1').innerText = `${totalCells} Cells`;
+            document.getElementById('hud-val-1').style.color = "#10b981";
+
+            document.getElementById('hud-label-2').innerText = "Linear vs Exp.";
+            document.getElementById('hud-val-2').innerText = `${linearComparison} vs ${totalCells}`;
+            document.getElementById('hud-val-2').style.color = "#fcd34d";
+
+            const status = document.getElementById('hud-status');
+            status.innerText = "Explosive Mitosis Rate";
+            status.style.color = "#10b981";
+            status.classList.remove('hidden');
+            document.getElementById('hud').style.opacity = '1';
+
+            // Floating Chart
+            const chartW = Math.min(wsWidth * 0.3, 250);
+            const chartH = 120;
+            const gx = cx - chartW/2;
+            const gy = cy + 340 > wsHeight - chartH - 20 ? wsHeight - chartH - 20 : cy + 340;
+            
+            ctx.fillStyle = 'rgba(15,23,42,0.85)';
+            ctx.beginPath(); ctx.roundRect(gx, gy, chartW, chartH, 8); ctx.fill();
+            ctx.strokeStyle = 'rgba(255,255,255,0.1)'; ctx.strokeRect(gx, gy, chartW, chartH);
+            
+            ctx.strokeStyle = '#10b981'; ctx.lineWidth = 2.5; ctx.lineJoin = 'round';
+            ctx.beginPath();
+            for(let x=0; x<=8; x++) {
+                const val = Math.pow(2, x);
+                const px = gx + (x/8)*chartW;
+                const py = gy + chartH - (val/256)*chartH; 
+                if(x===0) ctx.moveTo(px, py); else ctx.lineTo(px, py);
+            }
+            ctx.stroke();
+
+            ctx.strokeStyle = '#fcd34d'; ctx.lineWidth = 2.5; ctx.setLineDash([5,5]);
+            ctx.beginPath();
+            for(let x=0; x<=8; x++) {
+                const val = 2 * x;
+                const px = gx + (x/8)*chartW;
+                const py = gy + chartH - (val/256)*chartH; 
+                if(x===0) ctx.moveTo(px, py); else ctx.lineTo(px, py);
+            }
+            ctx.stroke(); ctx.setLineDash([]);
+            ctx.fillStyle = 'rgba(255,255,255,0.9)'; ctx.font = 'bold 11px Inter'; ctx.textAlign='left'; 
+            ctx.fillText("Growth Curves", gx + 12, gy + 20);
+        }
+
+        function drawTrig() {
+            // Strictly center the visual geometric bounding box
+            const H = Math.min(wsHeight * 0.35, 250); 
+            const rad = M.trig.angle * Math.PI / 180;
+            const shadowLen = H / Math.tan(rad);
+            
+            // To perfectly center the box of (Width: shadowLen, Height: H)
+            const baseX = cx - shadowLen/2;
+            const baseY = cy + H/2 + 20;
+            const shadowEndX = baseX + shadowLen;
+
+            ctx.save();
+            
+            // Ground
+            ctx.fillStyle = '#1e293b'; ctx.fillRect(0, baseY, wsWidth, wsHeight - baseY);
+            ctx.strokeStyle = '#334155'; ctx.lineWidth = 4;
+            ctx.beginPath(); ctx.moveTo(0, baseY); ctx.lineTo(wsWidth, baseY); ctx.stroke();
+
+            // Shadow
+            ctx.fillStyle = 'rgba(0,0,0,0.6)';
+            ctx.beginPath(); ctx.moveTo(baseX, baseY); ctx.lineTo(shadowEndX, baseY);
+            ctx.lineTo(baseX, baseY - 5); ctx.fill();
+
+            // The Pillar (Opposite)
+            ctx.shadowBlur = 20; ctx.shadowColor = 'rgba(56, 189, 248, 0.5)';
+            ctx.fillStyle = '#38bdf8';
+            ctx.fillRect(baseX - 10, baseY - H, 20, H);
+            ctx.shadowBlur = 0;
+
+            // The Sun (Spotlight) along hypotenuse
+            const hypLen = Math.sqrt(H*H + shadowLen*shadowLen);
+            const sunX = shadowEndX - (shadowLen/hypLen) * (hypLen + 100);
+            const sunY = baseY - (H/hypLen) * (hypLen + 100);
+            
+            ctx.shadowBlur = 40; ctx.shadowColor = '#facc15'; ctx.fillStyle = '#fef08a';
+            ctx.beginPath(); ctx.arc(sunX, sunY, 30, 0, Math.PI*2); ctx.fill();
+            ctx.shadowBlur = 0;
+
+            // Triangle Overlay
+            ctx.strokeStyle = 'rgba(255, 255, 255, 0.4)';
+            ctx.lineWidth = 2; ctx.setLineDash([8, 6]);
+            ctx.beginPath(); ctx.moveTo(baseX, baseY); ctx.lineTo(shadowEndX, baseY); ctx.lineTo(baseX, baseY - H); ctx.closePath(); ctx.stroke(); 
+            ctx.setLineDash([]);
+
+            // Math Labels
+            ctx.fillStyle = '#ffffff'; ctx.font = 'bold 14px Inter'; ctx.textAlign = 'center';
+            ctx.fillText(`Opposite: ${Math.round(H)}`, baseX - 60, baseY - H/2);
+            ctx.fillText(`Adjacent: ${Math.round(shadowLen)}`, baseX + shadowLen/2, baseY + 25);
+            
+            ctx.save();
+            ctx.translate(baseX + shadowLen/2, baseY - H/2);
+            ctx.rotate(-rad);
+            ctx.fillText(`Hypotenuse: ${Math.round(hypLen)}`, 0, -10);
+            ctx.restore();
+
+            // Angle arc
+            ctx.beginPath(); ctx.arc(shadowEndX, baseY, 40, Math.PI, Math.PI + rad); ctx.stroke();
+            ctx.fillText(`${M.trig.angle}°`, shadowEndX - 60, baseY - 15);
+
+            ctx.restore();
+
+            // HUD Updates
+            document.getElementById('hud-label-1').innerText = "Tan(θ) = Opp / Adj";
+            document.getElementById('hud-val-1').innerText = Math.tan(rad).toFixed(3);
+            document.getElementById('hud-val-1').style.color = "#facc15";
+            document.getElementById('hud-label-2').innerText = "Sin(θ) = Opp / Hyp";
+            document.getElementById('hud-val-2').innerText = Math.sin(rad).toFixed(3);
+            document.getElementById('hud-val-2').style.color = "#38bdf8";
+            
+            const st = document.getElementById('hud-status');
+            st.innerText = `Cos(θ) = Adj / Hyp = ${Math.cos(rad).toFixed(3)}`;
+            st.style.color = "#a78bfa";
+            st.classList.remove('hidden');
+            document.getElementById('hud').style.opacity = '1';
+        }
+
+        function drawUnitCircle(dt) {
+            // Perfectly center the entire arrangement
+            const R = Math.min(wsWidth * 0.15, 120); 
+            const gap = 60;
+            const graphW = Math.min(wsWidth * 0.35, 400);
+            
+            // Total width of elements = 2R + gap + graphW
+            const totalVisualWidth = (R * 2) + gap + graphW;
+            const ccX = cx - totalVisualWidth/2 + R; 
+            const ccY = cy;
+            const graphX = ccX + R + gap;
+            
+            M.uc.angle += M.uc.speed * dt * 2.0;
+            if (M.uc.angle > Math.PI * 2) M.uc.angle -= Math.PI * 2;
+            
+            const theta = M.uc.angle;
+            const px = ccX + R * Math.cos(theta);
+            const py = ccY - R * Math.sin(theta); 
+
+            M.uc.history.push({ t: M.uc.angle, sin: Math.sin(theta), cos: Math.cos(theta) });
+            if (M.uc.history.length > 200) M.uc.history.shift();
+
+            ctx.save();
+            
+            // Draw Axis
+            ctx.strokeStyle = 'rgba(255,255,255,0.2)'; ctx.lineWidth = 2;
+            ctx.beginPath(); ctx.moveTo(ccX - R - 20, ccY); ctx.lineTo(graphX + graphW, ccY); ctx.stroke(); 
+            ctx.beginPath(); ctx.moveTo(ccX, ccY - R - 20); ctx.lineTo(ccX, ccY + R + 20); ctx.stroke(); 
+
+            // Draw Unit Circle
+            ctx.strokeStyle = '#ffffff'; ctx.lineWidth = 3;
+            ctx.beginPath(); ctx.arc(ccX, ccY, R, 0, Math.PI*2); ctx.stroke();
+
+            // Draw Triangle inside circle
+            ctx.fillStyle = 'rgba(56, 189, 248, 0.2)';
+            ctx.beginPath(); ctx.moveTo(ccX, ccY); ctx.lineTo(px, ccY); ctx.lineTo(px, py); ctx.closePath(); ctx.fill();
+
+            // Sine Line (Vertical)
+            ctx.strokeStyle = '#38bdf8'; ctx.lineWidth = 4;
+            ctx.beginPath(); ctx.moveTo(px, ccY); ctx.lineTo(px, py); ctx.stroke();
+            
+            // Cosine Line (Horizontal)
+            ctx.strokeStyle = '#ef4444'; ctx.lineWidth = 4;
+            ctx.beginPath(); ctx.moveTo(ccX, ccY); ctx.lineTo(px, ccY); ctx.stroke();
+
+            // Point Orb
+            ctx.fillStyle = '#facc15'; ctx.shadowBlur = 15; ctx.shadowColor = '#facc15';
+            ctx.beginPath(); ctx.arc(px, py, 8, 0, Math.PI*2); ctx.fill(); ctx.shadowBlur = 0;
+
+            // Draw Tracers to Graph
+            ctx.strokeStyle = 'rgba(56, 189, 248, 0.4)'; ctx.setLineDash([4, 4]); ctx.lineWidth = 1;
+            ctx.beginPath(); ctx.moveTo(px, py); ctx.lineTo(graphX, py); ctx.stroke();
+            
+            ctx.setLineDash([]); ctx.lineWidth = 3;
+
+            // Sine Graph (Blue)
+            ctx.strokeStyle = '#38bdf8';
+            ctx.beginPath();
+            M.uc.history.forEach((h, i) => {
+                const gx = graphX + (i / 200) * graphW;
+                const gy = ccY - h.sin * R;
+                if(i===0) ctx.moveTo(gx, gy); else ctx.lineTo(gx, gy);
+            });
+            ctx.stroke();
+
+            // Cosine Graph (Red)
+            ctx.strokeStyle = '#ef4444';
+            ctx.beginPath();
+            M.uc.history.forEach((h, i) => {
+                const gx = graphX + (i / 200) * graphW;
+                const gy = ccY - h.cos * R;
+                if(i===0) ctx.moveTo(gx, gy); else ctx.lineTo(gx, gy);
+            });
+            ctx.stroke();
+
+            ctx.restore();
+
+            // HUD
+            document.getElementById('hud-label-1').innerText = "Sine (Y-Height)";
+            document.getElementById('hud-val-1').innerText = Math.sin(theta).toFixed(2);
+            document.getElementById('hud-val-1').style.color = "#38bdf8";
+            
+            document.getElementById('hud-label-2').innerText = "Cosine (X-Width)";
+            document.getElementById('hud-val-2').innerText = Math.cos(theta).toFixed(2);
+            document.getElementById('hud-val-2').style.color = "#ef4444";
+            
+            const st = document.getElementById('hud-status');
+            st.innerText = `Angle: ${Math.round(theta * 180 / Math.PI)}°`;
+            st.style.color = "#facc15";
+            st.classList.remove('hidden');
+            document.getElementById('hud').style.opacity = '1';
+        }
+
+        // --- MASTER RENDER LOOP ---
+        let lastTime = 0;
+        function renderLoop(timestamp) {
+            const dt = (timestamp - lastTime) / 1000 || 0.016;
+            lastTime = timestamp;
+
+            ctx.clearRect(0, 0, wsWidth, wsHeight);
+
+            if (currentMode === 'proportions') drawProportions();
+            else if (currentMode === 'exponents') drawExponents(dt);
+            else if (currentMode === 'trig') drawTrig();
+            else if (currentMode === 'unitcircle') drawUnitCircle(dt);
+
+            requestAnimationFrame(renderLoop);
+        }
+
+        // --- TAB SWITCHING ---
+        const tabs = document.querySelectorAll('.tab-btn');
+        tabs.forEach(btn => {
+            btn.addEventListener('click', (e) => {
+                tabs.forEach(t => t.classList.remove('active', 'bg-white', 'text-gray-900'));
+                tabs.forEach(t => t.classList.add('text-gray-400'));
+                btn.classList.add('active', 'bg-white', 'text-gray-900');
+                
+                currentMode = btn.dataset.tab;
+
+                const info = {
+                    proportions: { title: "Aspect Ratios", formula: "Width : Height = Constant", desc: "A ratio compares two quantities. When scaling a photo, locking the <b>Aspect Ratio</b> ensures the proportions stay identical, preventing unnatural stretching." },
+                    exponents: { title: "Exponential Growth", formula: "y = 2^x", desc: "Unlike linear addition, exponents multiply repeatedly. Watch one biological cell divide into two, then four, then eight—showing how rapidly 2^x explodes." },
+                    trig: { title: "Trigonometry Basics", formula: "SOH CAH TOA", desc: "Watch how the angle of elevation changes the length of the shadow. The shadow forms the <b>Adjacent</b> side, while the pillar forms the <b>Opposite</b> side." },
+                    unitcircle: { title: "The Unit Circle", formula: "y = sin(θ), x = cos(θ)", desc: "As a point travels around a circle of radius 1, its vertical height perfectly traces the <b>Sine Wave</b>, and its horizontal width traces the <b>Cosine Wave</b>." }
+                };
+
+                document.getElementById('info-title').innerText = info[currentMode].title;
+                document.getElementById('info-desc').innerHTML = info[currentMode].desc;
+                document.getElementById('formula-display').innerText = info[currentMode].formula;
+                
+                ['proportions', 'exponents', 'trig', 'unitcircle'].forEach(id => document.getElementById(`section-${id}`).classList.add('hidden'));
+                document.getElementById(`section-${currentMode}`).classList.remove('hidden');
+                
+                document.getElementById('hud').style.opacity = '0'; // Briefly hide to transition cleanly
+
+                if (currentMode === 'exponents' && M.exp.cells.length === 0) initCells();
+            });
+        });
+
+        // Start
+        initCells();
+        requestAnimationFrame(renderLoop);
+
+    </script>
+</body>
+</html>

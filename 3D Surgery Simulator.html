@@ -1,0 +1,616 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Advanced 3D Clinical Surgery Simulator</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Three.js Core -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+    <!-- OrbitControls for camera movement -->
+    <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/controls/OrbitControls.js"></script>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;700&family=Inter:wght@300;400;600;700&display=swap');
+
+        body {
+            margin: 0;
+            padding: 0;
+            overflow: hidden;
+            background-color: #020617;
+            font-family: 'Inter', sans-serif;
+            color: #f8fafc;
+            user-select: none;
+        }
+
+        .font-mono { font-family: 'JetBrains Mono', monospace; }
+
+        #webgl-container {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100vw;
+            height: 100vh;
+            z-index: 1;
+        }
+
+        /* Medical HUD Overlay */
+        #hud-layer {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100vw;
+            height: 100vh;
+            z-index: 10;
+            pointer-events: none;
+            display: flex;
+            flex-direction: column;
+            justify-content: space-between;
+            padding: 1.5rem;
+            box-sizing: border-box;
+        }
+
+        .glass-panel {
+            background: rgba(15, 23, 42, 0.75);
+            backdrop-filter: blur(16px);
+            border: 1px solid rgba(56, 189, 248, 0.15);
+            box-shadow: 0 10px 30px -10px rgba(0, 0, 0, 0.8);
+            border-radius: 1rem;
+            pointer-events: auto;
+        }
+
+        .scanline {
+            width: 100%;
+            height: 2px;
+            background: rgba(56, 189, 248, 0.15);
+            position: absolute;
+            top: 0;
+            left: 0;
+            z-index: 20;
+            animation: scan 6s linear infinite;
+            pointer-events: none;
+        }
+        @keyframes scan { 0% { top: 0%; } 100% { top: 100%; } }
+
+        .organ-data-hidden {
+            opacity: 0;
+            transform: translateX(30px);
+            transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+        .organ-data-visible {
+            opacity: 1;
+            transform: translateX(0);
+            transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+
+        /* Live ECG Canvas */
+        #ecg-canvas {
+            width: 100%;
+            height: 60px;
+            background: rgba(2, 6, 23, 0.5);
+            border-radius: 0.5rem;
+            border: 1px solid rgba(56, 189, 248, 0.2);
+            margin-top: 1rem;
+        }
+        
+        .grid-bg {
+            background-size: 20px 20px;
+            background-image: 
+                linear-gradient(to right, rgba(56, 189, 248, 0.05) 1px, transparent 1px),
+                linear-gradient(to bottom, rgba(56, 189, 248, 0.05) 1px, transparent 1px);
+        }
+    </style>
+</head>
+<body>
+
+    <div class="scanline"></div>
+
+    <!-- 3D Canvas -->
+    <div id="webgl-container"></div>
+
+    <!-- 2D HUD Overlay -->
+    <div id="hud-layer">
+        
+        <!-- Header -->
+        <div class="flex justify-between items-start w-full">
+            <div class="glass-panel p-4 flex flex-col gap-2 w-80">
+                <h1 class="text-sm font-bold text-sky-400 uppercase tracking-widest flex items-center gap-2">
+                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10"></path></svg>
+                    OR-7 Holographic Suite
+                </h1>
+                <p class="text-[10px] text-slate-400 font-mono">Orbit: Left Click | Pan: Right Click | Inspect: Click Organ</p>
+                
+                <!-- Live ECG Trace -->
+                <div class="relative w-full">
+                    <div class="absolute top-1 left-2 text-[8px] font-bold text-emerald-400 font-mono z-10">LEAD II - 72 BPM</div>
+                    <canvas id="ecg-canvas" class="grid-bg"></canvas>
+                </div>
+            </div>
+            
+            <div class="glass-panel p-4 flex gap-6">
+                <div class="text-right">
+                    <div class="text-[9px] uppercase font-bold text-slate-500 tracking-widest">Patient Status</div>
+                    <div class="text-emerald-400 font-bold font-mono text-sm animate-pulse">STABLE VITALITY</div>
+                </div>
+                <div class="text-right border-l border-slate-700 pl-6">
+                    <div class="text-[9px] uppercase font-bold text-slate-500 tracking-widest">Life Support</div>
+                    <div class="text-sky-400 font-bold font-mono text-sm">ECMO ACTIVE</div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Target Organ Info Panel (Bottom Right) -->
+        <div class="flex justify-end w-full">
+            <div id="organ-panel" class="glass-panel p-6 w-96 organ-data-hidden">
+                <div class="flex justify-between items-center border-b border-slate-700 pb-3 mb-4">
+                    <div class="flex items-center gap-3">
+                        <div id="organ-color-swatch" class="w-3 h-3 rounded-full bg-slate-500 shadow-[0_0_8px_#64748b]"></div>
+                        <h2 id="organ-name" class="text-xl font-bold text-white uppercase tracking-wider">Awaiting Selection</h2>
+                    </div>
+                    <span id="organ-status" class="text-[9px] bg-emerald-900/50 text-emerald-400 px-2 py-1 rounded font-bold font-mono border border-emerald-800">SCANNING</span>
+                </div>
+                
+                <p id="organ-desc" class="text-xs text-slate-300 leading-relaxed mb-6 h-12 overflow-hidden">
+                    Initialize raycast selection by interacting with the 3D patient model.
+                </p>
+
+                <div class="space-y-4 bg-slate-900/50 p-4 rounded-lg border border-slate-800">
+                    <div class="flex justify-between items-end border-b border-slate-700/50 pb-2">
+                        <span class="text-[10px] uppercase font-bold text-slate-500 tracking-widest" id="vital-label-1">Telemetry 1</span>
+                        <span class="font-mono text-sm text-sky-400 font-bold" id="vital-val-1">--</span>
+                    </div>
+                    <div class="flex justify-between items-end border-b border-slate-700/50 pb-2">
+                        <span class="text-[10px] uppercase font-bold text-slate-500 tracking-widest" id="vital-label-2">Telemetry 2</span>
+                        <span class="font-mono text-sm text-amber-400 font-bold" id="vital-val-2">--</span>
+                    </div>
+                    <div class="flex justify-between items-end">
+                        <span class="text-[10px] uppercase font-bold text-slate-500 tracking-widest" id="vital-label-3">Telemetry 3</span>
+                        <span class="font-mono text-sm text-emerald-400 font-bold" id="vital-val-3">--</span>
+                    </div>
+                </div>
+
+                <button class="mt-6 w-full py-3 bg-slate-800 hover:bg-slate-700 text-sky-400 text-[10px] font-bold uppercase tracking-widest rounded-lg transition-all border border-slate-600 shadow-inner">
+                    Isolate & Magnify Tissue
+                </button>
+            </div>
+        </div>
+
+    </div>
+
+    <script>
+        // --- ECG Setup ---
+        const ecgCanvas = document.getElementById('ecg-canvas');
+        const ecgCtx = ecgCanvas.getContext('2d');
+        let ecgX = 0;
+        let timeGlobal = 0;
+
+        function resizeECG() {
+            ecgCanvas.width = ecgCanvas.clientWidth * 2;
+            ecgCanvas.height = ecgCanvas.clientHeight * 2;
+            ecgCtx.scale(2, 2);
+        }
+        window.addEventListener('resize', resizeECG);
+        resizeECG();
+
+        function drawECG() {
+            const w = ecgCanvas.width / 2;
+            const h = ecgCanvas.height / 2;
+            const baseline = h / 2;
+            
+            // Fade effect to simulate monitor phosphor
+            ecgCtx.fillStyle = 'rgba(2, 6, 23, 0.1)';
+            ecgCtx.fillRect(0, 0, w, h);
+
+            // Generate normal sinus rhythm
+            const phase = (timeGlobal * 60) % 60; // 60 frames = 1 beat (approx 1 sec)
+            let y = baseline;
+
+            if (phase > 5 && phase < 10) y = baseline - 5 * Math.sin((phase - 5) / 5 * Math.PI); // P wave
+            else if (phase > 15 && phase < 17) y = baseline + 3; // Q wave
+            else if (phase >= 17 && phase < 19) y = baseline - 20; // R wave
+            else if (phase >= 19 && phase < 21) y = baseline + 8; // S wave
+            else if (phase > 30 && phase < 45) y = baseline - 6 * Math.sin((phase - 30) / 15 * Math.PI); // T wave
+            
+            // Add physiological noise
+            y += (Math.random() - 0.5) * 1.5;
+
+            ecgCtx.beginPath();
+            ecgCtx.fillStyle = '#10b981';
+            ecgCtx.arc(ecgX, y, 1.5, 0, Math.PI * 2);
+            ecgCtx.fill();
+
+            // Erase a gap ahead of the current pixel
+            ecgCtx.clearRect(ecgX + 2, 0, 10, h);
+
+            ecgX += 2;
+            if (ecgX >= w) ecgX = 0;
+        }
+
+        // --- 3D Scene Setup ---
+        window.onload = function() {
+            init3DScene();
+        };
+
+        function init3DScene() {
+            const container = document.getElementById('webgl-container');
+            const scene = new THREE.Scene();
+            scene.background = new THREE.Color(0x020617);
+            scene.fog = new THREE.FogExp2(0x020617, 0.03);
+
+            const camera = new THREE.PerspectiveCamera(45, window.innerWidth / window.innerHeight, 0.1, 100);
+            camera.position.set(4, 4, 7);
+
+            const renderer = new THREE.WebGLRenderer({ antialias: true, powerPreference: "high-performance" });
+            renderer.setSize(window.innerWidth, window.innerHeight);
+            renderer.setPixelRatio(window.devicePixelRatio);
+            renderer.shadowMap.enabled = true;
+            renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+            container.appendChild(renderer.domElement);
+
+            const controls = new THREE.OrbitControls(camera, renderer.domElement);
+            controls.enableDamping = true;
+            controls.dampingFactor = 0.05;
+            controls.maxPolarAngle = Math.PI / 2 + 0.1;
+            controls.target.set(0, 1.2, 0);
+
+            // --- Lighting ---
+            const ambientLight = new THREE.AmbientLight(0x0f172a, 2.0);
+            scene.add(ambientLight);
+
+            // Surgical Light Array (Ring of spotlights)
+            const lightGroup = new THREE.Group();
+            lightGroup.position.set(0, 6, 0);
+            
+            const fixtureGeo = new THREE.CylinderGeometry(1.5, 1.5, 0.1, 32);
+            const fixtureMat = new THREE.MeshStandardMaterial({ color: 0x1e293b, metalness: 0.8, roughness: 0.2 });
+            const fixture = new THREE.Mesh(fixtureGeo, fixtureMat);
+            lightGroup.add(fixture);
+
+            for(let i=0; i<5; i++) {
+                const angle = (i / 5) * Math.PI * 2;
+                const spotLight = new THREE.SpotLight(0xffffff, 2);
+                spotLight.position.set(Math.cos(angle) * 1.0, -0.1, Math.sin(angle) * 1.0);
+                spotLight.angle = Math.PI / 8;
+                spotLight.penumbra = 0.5;
+                spotLight.decay = 2;
+                spotLight.distance = 15;
+                spotLight.castShadow = true;
+                spotLight.shadow.mapSize.width = 1024;
+                spotLight.shadow.mapSize.height = 1024;
+                
+                // Visible bulbs
+                const bulb = new THREE.Mesh(new THREE.SphereGeometry(0.2), new THREE.MeshBasicMaterial({color: 0xffffff}));
+                bulb.position.copy(spotLight.position);
+                lightGroup.add(bulb);
+                lightGroup.add(spotLight);
+            }
+            scene.add(lightGroup);
+
+            // Fill light from table
+            const fillLight = new THREE.PointLight(0x38bdf8, 1);
+            fillLight.position.set(0, -2, 0);
+            scene.add(fillLight);
+
+            // --- Environment ---
+            const gridHelper = new THREE.GridHelper(30, 30, 0x38bdf8, 0x0f172a);
+            gridHelper.position.y = 0;
+            gridHelper.material.opacity = 0.3;
+            gridHelper.material.transparent = true;
+            scene.add(gridHelper);
+
+            // Detailed Surgical Table
+            const tableGroup = new THREE.Group();
+            const tableMat = new THREE.MeshStandardMaterial({ color: 0x0f172a, metalness: 0.6, roughness: 0.3 });
+            
+            const tableTop = new THREE.Mesh(new THREE.BoxGeometry(2.8, 0.15, 6.5), tableMat);
+            tableTop.position.set(0, 0.8, -0.5);
+            tableTop.receiveShadow = true;
+            
+            const headRest = new THREE.Mesh(new THREE.BoxGeometry(1.2, 0.15, 1.2), tableMat);
+            headRest.position.set(0, 0.8, 1.8);
+            headRest.rotation.x = 0.1;
+            headRest.receiveShadow = true;
+
+            const pillar = new THREE.Mesh(new THREE.CylinderGeometry(0.5, 0.8, 0.8, 32), tableMat);
+            pillar.position.set(0, 0.4, 0);
+            pillar.receiveShadow = true;
+
+            tableGroup.add(tableTop, headRest, pillar);
+            scene.add(tableGroup);
+
+            // Holographic Scanner Ring
+            const scannerGeo = new THREE.TorusGeometry(1.6, 0.02, 16, 64);
+            const scannerMat = new THREE.MeshBasicMaterial({ color: 0x22d3ee, transparent: true, opacity: 0.8 });
+            const scannerRing = new THREE.Mesh(scannerGeo, scannerMat);
+            scannerRing.rotation.x = Math.PI / 2;
+            scene.add(scannerRing);
+
+            // --- Patient Construction ---
+            const organs = [];
+            let animatedOrgans = {};
+
+            // Biological "Wet" Material Generator
+            const createOrganMat = (color, opacity = 1.0) => {
+                return new THREE.MeshPhysicalMaterial({
+                    color: color,
+                    metalness: 0.1,
+                    roughness: 0.3,
+                    clearcoat: 1.0,
+                    clearcoatRoughness: 0.2,
+                    transparent: opacity < 1.0,
+                    opacity: opacity,
+                    emissive: color,
+                    emissiveIntensity: 0.15
+                });
+            };
+
+            // 1. Patient Holographic Shell (Humanoid)
+            const shellGroup = new THREE.Group();
+            const shellMat = new THREE.MeshPhysicalMaterial({
+                color: 0x0ea5e9, metalness: 0.2, roughness: 0.1, transmission: 0.9, opacity: 1, transparent: true, side: THREE.DoubleSide, depthWrite: false
+            });
+
+            const torso = new THREE.Mesh(new THREE.CylinderGeometry(0.8, 0.8, 2.0, 32), shellMat);
+            torso.position.set(0, 1.2, 0);
+            torso.rotation.x = Math.PI / 2;
+            const head = new THREE.Mesh(new THREE.SphereGeometry(0.45, 32, 32), shellMat);
+            head.position.set(0, 1.2, 1.7);
+            const lArm = new THREE.Mesh(new THREE.CylinderGeometry(0.25, 0.25, 1.8, 16), shellMat);
+            lArm.position.set(1.1, 1.05, 0); lArm.rotation.x = Math.PI/2; lArm.rotation.z = -0.1;
+            const rArm = new THREE.Mesh(new THREE.CylinderGeometry(0.25, 0.25, 1.8, 16), shellMat);
+            rArm.position.set(-1.1, 1.05, 0); rArm.rotation.x = Math.PI/2; rArm.rotation.z = 0.1;
+            const lLeg = new THREE.Mesh(new THREE.CylinderGeometry(0.35, 0.35, 2.4, 16), shellMat);
+            lLeg.position.set(0.4, 1.05, -2.0); lLeg.rotation.x = Math.PI/2;
+            const rLeg = new THREE.Mesh(new THREE.CylinderGeometry(0.35, 0.35, 2.4, 16), shellMat);
+            rLeg.position.set(-0.4, 1.05, -2.0); rLeg.rotation.x = Math.PI/2;
+            
+            shellGroup.add(torso, head, lArm, rArm, lLeg, rLeg);
+            scene.add(shellGroup);
+
+            // 2. Skeletal System (Ribcage & Spine)
+            const boneMat = createOrganMat(0xe2e8f0, 0.4);
+            const spine = new THREE.Mesh(new THREE.CylinderGeometry(0.1, 0.1, 2.5, 16), boneMat);
+            spine.position.set(0, 1.0, 0.2); spine.rotation.x = Math.PI/2;
+            scene.add(spine);
+
+            for(let i=0; i<7; i++) {
+                const ribGeo = new THREE.TorusGeometry(0.6 + (i*0.02), 0.04, 8, 32, Math.PI);
+                const rib = new THREE.Mesh(ribGeo, boneMat);
+                rib.position.set(0, 1.4 - (i*0.05), 0.8 - (i*0.18));
+                rib.rotation.x = Math.PI/2;
+                scene.add(rib);
+            }
+
+            // --- Organ Generation Functions ---
+            const addOrgan = (mesh, name, desc, vitals) => {
+                mesh.castShadow = true;
+                mesh.receiveShadow = true;
+                
+                // Safely extract color depending on if it's a Mesh or a Group
+                let baseColor = 0xffffff;
+                if (mesh.material && mesh.material.color) {
+                    baseColor = mesh.material.color.getHex();
+                } else if (mesh.children && mesh.children.length > 0 && mesh.children[0].material && mesh.children[0].material.color) {
+                    baseColor = mesh.children[0].material.color.getHex();
+                }
+
+                mesh.userData = { name, baseColor, desc, vitals };
+                scene.add(mesh);
+                organs.push(mesh);
+                return mesh;
+            };
+
+            // Brain
+            const brainGeo = new THREE.IcosahedronGeometry(0.35, 3);
+            animatedOrgans.brain = addOrgan(new THREE.Mesh(brainGeo, createOrganMat(0xd8b4e2)), "Cerebral Cortex", 
+                "Central nervous system command center. Analyzing advanced neural connectivity and neurotransmitter levels.",
+                [{l: "ICP", v: "12 mmHg"}, {l: "CPP", v: "75 mmHg"}, {l: "EEG", v: "Alpha Dominant"}]
+            );
+            animatedOrgans.brain.position.set(0, 1.25, 1.7);
+
+            // Trachea
+            const trachea = new THREE.Mesh(new THREE.CylinderGeometry(0.06, 0.06, 0.5, 16), createOrganMat(0xcbd5e1));
+            trachea.position.set(0, 1.2, 1.1); trachea.rotation.x = Math.PI/2;
+            scene.add(trachea);
+
+            // Lungs
+            const lungGeo = new THREE.SphereGeometry(0.35, 32, 32);
+            const leftLung = addOrgan(new THREE.Mesh(lungGeo, createOrganMat(0xfca5a5)), "Left Lung", 
+                "Respiration and gas exchange. Monitoring alveolar capillary membrane integrity and tidal volume.",
+                [{l: "SpO2", v: "99%"}, {l: "Tidal Vol", v: "500 mL"}, {l: "PaCO2", v: "40 mmHg"}]
+            );
+            leftLung.position.set(0.4, 1.25, 0.4); leftLung.scale.set(0.8, 1.0, 1.5);
+            
+            const rightLung = addOrgan(new THREE.Mesh(lungGeo, createOrganMat(0xfca5a5)), "Right Lung", 
+                "Respiration and gas exchange. Checking for pulmonary edema and airway resistance.",
+                [{l: "SpO2", v: "99%"}, {l: "Compliance", v: "Normal"}, {l: "FiO2", v: "0.21"}]
+            );
+            rightLung.position.set(-0.4, 1.25, 0.4); rightLung.scale.set(0.8, 1.0, 1.5);
+            animatedOrgans.lungs = [leftLung, rightLung];
+
+            // Heart & Aorta
+            const heartGroup = new THREE.Group();
+            const ventricles = new THREE.Mesh(new THREE.SphereGeometry(0.22, 32, 32), createOrganMat(0xe11d48));
+            ventricles.scale.set(1, 1.2, 0.9);
+            const aorta = new THREE.Mesh(new THREE.TorusGeometry(0.1, 0.06, 16, 32, Math.PI), createOrganMat(0xbe123c));
+            aorta.position.set(0, 0.15, 0); aorta.rotation.x = Math.PI/2;
+            heartGroup.add(ventricles, aorta);
+            heartGroup.position.set(0.05, 1.35, 0.5);
+            
+            animatedOrgans.heart = addOrgan(heartGroup, "Myocardium & Aorta", 
+                "Cardiovascular pump. EKG shows normal sinus rhythm. Tracking cardiac output and systemic vascular resistance.",
+                [{l: "Heart Rate", v: "72 BPM"}, {l: "Blood Pres.", v: "120/80"}, {l: "Cardiac Out", v: "5.0 L/min"}]
+            );
+            // Fix userData for group
+            heartGroup.children.forEach(c => c.userData = heartGroup.userData);
+            organs.push(...heartGroup.children); // Raycast hits children
+
+            // Liver & Gallbladder
+            const liverGroup = new THREE.Group();
+            const liverMesh = new THREE.Mesh(new THREE.ConeGeometry(0.45, 0.7, 32), createOrganMat(0x7f1d1d));
+            liverMesh.rotation.z = -Math.PI / 4; liverMesh.rotation.x = Math.PI / 2;
+            const gallbladder = new THREE.Mesh(new THREE.SphereGeometry(0.08, 16, 16), createOrganMat(0x22c55e));
+            gallbladder.position.set(-0.15, -0.15, -0.1);
+            liverGroup.add(liverMesh, gallbladder);
+            liverGroup.position.set(-0.2, 1.2, -0.2);
+            
+            addOrgan(liverGroup, "Hepatic System", 
+                "Metabolic filtration and bile production. Analyzing liver enzymes (AST/ALT) and hepatic portal vein flow.",
+                [{l: "AST/ALT", v: "25 / 30 U/L"}, {l: "Bilirubin", v: "0.8 mg/dL"}, {l: "Albumin", v: "4.5 g/dL"}]
+            );
+            liverGroup.children.forEach(c => c.userData = liverGroup.userData);
+            organs.push(...liverGroup.children);
+
+            // Stomach
+            const stomach = addOrgan(new THREE.Mesh(new THREE.SphereGeometry(0.2, 32, 32), createOrganMat(0xd97706)), "Stomach", 
+                "Primary digestive sac. Monitoring gastric acid pH and mucosal integrity.",
+                [{l: "Gastric pH", v: "1.5"}, {l: "Motility", v: "Active"}, {l: "Volume", v: "Empty"}]
+            );
+            stomach.position.set(0.25, 1.25, -0.3); stomach.scale.set(1.5, 1, 1); stomach.rotation.z = Math.PI/4;
+
+            // Kidneys
+            const kidneyGeo = new THREE.SphereGeometry(0.12, 16, 16);
+            const rightKidney = addOrgan(new THREE.Mesh(kidneyGeo, createOrganMat(0x450a0a)), "Right Kidney", 
+                "Renal filtration. Glomeruli successfully filtering blood toxins into urine.",
+                [{l: "eGFR", v: "115 mL/min"}, {l: "Creatinine", v: "0.9 mg/dL"}, {l: "BUN", v: "15 mg/dL"}]
+            );
+            rightKidney.position.set(-0.35, 1.1, -0.5);
+            rightKidney.scale.set(1, 1.5, 1);
+
+            const leftKidney = addOrgan(new THREE.Mesh(kidneyGeo, createOrganMat(0x450a0a)), "Left Kidney", 
+                "Renal filtration. Glomeruli successfully filtering blood toxins into urine.",
+                [{l: "eGFR", v: "115 mL/min"}, {l: "Creatinine", v: "0.9 mg/dL"}, {l: "BUN", v: "15 mg/dL"}]
+            );
+            leftKidney.position.set(0.35, 1.1, -0.5);
+            leftKidney.scale.set(1, 1.5, 1);
+
+            // Intestines (Procedural CatmullRomCurve3)
+            const intPoints = [];
+            for(let i=0; i<40; i++) {
+                const angle = i * 0.8;
+                const r = 0.3 + Math.sin(i*0.5)*0.1;
+                intPoints.push(new THREE.Vector3(
+                    Math.cos(angle) * r,
+                    (Math.random()-0.5)*0.15,
+                    -0.8 - (i*0.02)
+                ));
+            }
+            const intCurve = new THREE.CatmullRomCurve3(intPoints);
+            const intGeo = new THREE.TubeGeometry(intCurve, 100, 0.08, 12, false);
+            animatedOrgans.intestines = addOrgan(new THREE.Mesh(intGeo, createOrganMat(0xb45309)), "Small Intestine", 
+                "Nutrient absorption tract. Tracking peristaltic waves and mesenteric blood flow.",
+                [{l: "Bowel Sounds", v: "Normoactive"}, {l: "Peristalsis", v: "12 cpm"}, {l: "Vascularity", v: "Patent"}]
+            );
+            animatedOrgans.intestines.position.y = 1.25;
+
+            // --- Raycasting & UI Logic ---
+            const raycaster = new THREE.Raycaster();
+            const mouse = new THREE.Vector2();
+            let hoveredOrgan = null;
+
+            const organPanel = document.getElementById('organ-panel');
+            const uiName = document.getElementById('organ-name');
+            const uiDesc = document.getElementById('organ-desc');
+            const uiSwatch = document.getElementById('organ-color-swatch');
+            const vL1 = document.getElementById('vital-label-1'); const vV1 = document.getElementById('vital-val-1');
+            const vL2 = document.getElementById('vital-label-2'); const vV2 = document.getElementById('vital-val-2');
+            const vL3 = document.getElementById('vital-label-3'); const vV3 = document.getElementById('vital-val-3');
+
+            function onMouseMove(event) {
+                mouse.x = (event.clientX / window.innerWidth) * 2 - 1;
+                mouse.y = -(event.clientY / window.innerHeight) * 2 + 1;
+
+                raycaster.setFromCamera(mouse, camera);
+                // Intersect only with organ meshes
+                const intersects = raycaster.intersectObjects(organs);
+
+                if (intersects.length > 0) {
+                    document.body.style.cursor = 'crosshair';
+                    const object = intersects[0].object;
+                    
+                    if (hoveredOrgan !== object) {
+                        if (hoveredOrgan) hoveredOrgan.material.emissiveIntensity = 0.15;
+                        hoveredOrgan = object;
+                        hoveredOrgan.material.emissiveIntensity = 0.6; // Highlight
+                    }
+                } else {
+                    document.body.style.cursor = 'default';
+                    if (hoveredOrgan) {
+                        hoveredOrgan.material.emissiveIntensity = 0.15;
+                        hoveredOrgan = null;
+                    }
+                }
+            }
+
+            function onClick() {
+                if (hoveredOrgan) {
+                    const data = hoveredOrgan.userData;
+                    uiName.textContent = data.name;
+                    
+                    const hexColor = '#' + data.baseColor.toString(16).padStart(6, '0');
+                    uiName.style.color = hexColor;
+                    uiSwatch.style.backgroundColor = hexColor;
+                    uiSwatch.style.boxShadow = `0 0 12px ${hexColor}`;
+                    
+                    uiDesc.textContent = data.desc;
+                    
+                    vL1.textContent = data.vitals[0].l; vV1.textContent = data.vitals[0].v;
+                    vL2.textContent = data.vitals[1].l; vV2.textContent = data.vitals[1].v;
+                    vL3.textContent = data.vitals[2].l; vV3.textContent = data.vitals[2].v;
+
+                    organPanel.classList.replace('organ-data-hidden', 'organ-data-visible');
+                    
+                    // Flash effect
+                    hoveredOrgan.material.emissiveIntensity = 1.0;
+                    setTimeout(() => { if (hoveredOrgan) hoveredOrgan.material.emissiveIntensity = 0.6; }, 150);
+                } else {
+                    organPanel.classList.replace('organ-data-visible', 'organ-data-hidden');
+                }
+            }
+
+            window.addEventListener('mousemove', onMouseMove);
+            window.addEventListener('click', onClick);
+            window.addEventListener('resize', () => {
+                camera.aspect = window.innerWidth / window.innerHeight;
+                camera.updateProjectionMatrix();
+                renderer.setSize(window.innerWidth, window.innerHeight);
+            });
+
+            // --- Animation Loop ---
+            const clock = new THREE.Clock();
+
+            function animate() {
+                requestAnimationFrame(animate);
+                const delta = clock.getDelta();
+                timeGlobal += delta;
+
+                // Draw ECG in 2D HUD
+                drawECG();
+
+                // Scanner Ring motion
+                scannerRing.position.z = Math.sin(timeGlobal * 0.5) * 2;
+
+                // Heartbeat
+                const beat = Math.pow(Math.sin(timeGlobal * 1.2 * Math.PI * 2), 16); 
+                animatedOrgans.heart.scale.set(1 + beat*0.1, 1 + beat*0.15, 1 + beat*0.1);
+
+                // Breathing
+                const breath = Math.sin(timeGlobal * 0.25 * Math.PI * 2);
+                animatedOrgans.lungs.forEach(lung => {
+                    lung.scale.set(0.8 + breath*0.05, 1.0 + breath*0.02, 1.5 + breath*0.1);
+                });
+
+                // Subtle Brain pulse
+                animatedOrgans.brain.position.y = 1.25 + Math.sin(timeGlobal * 2) * 0.005;
+
+                // Subtle Intestine motility
+                animatedOrgans.intestines.rotation.z = Math.sin(timeGlobal * 0.5) * 0.05;
+
+                controls.update();
+                renderer.render(scene, camera);
+            }
+
+            animate();
+        }
+    </script>
+</body>
+</html>

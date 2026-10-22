@@ -1,0 +1,385 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Professional Spectrophotometer Simulation</title>
+    <style>
+        :root {
+            --bg-color: #f8fafc;
+            --panel-bg: #ffffff;
+            --text-main: #0f172a;
+            --text-muted: #64748b;
+            --accent: #2563eb;
+            --border-color: #e2e8f0;
+            --instrument-body: #334155;
+            --digital-panel: #111827;
+            --liquid-color: #3b82f6;
+            --laser-color: #ef4444;
+        }
+
+        * { box-sizing: border-box; margin: 0; padding: 0; }
+
+        body {
+            background-color: var(--bg-color);
+            color: var(--text-main);
+            font-family: 'Inter', -apple-system, system-ui, sans-serif;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            padding: 20px;
+        }
+
+        .app-container {
+            display: flex;
+            background: var(--panel-bg);
+            border-radius: 20px;
+            box-shadow: 0 20px 50px -12px rgba(0, 0, 0, 0.1);
+            width: 100%;
+            max-width: 1100px;
+            height: 700px;
+            overflow: hidden;
+            border: 1px solid var(--border-color);
+        }
+
+        /* Sidebar UI */
+        .sidebar {
+            width: 350px;
+            padding: 40px;
+            border-right: 1px solid var(--border-color);
+            display: flex;
+            flex-direction: column;
+            gap: 20px;
+        }
+
+        .sidebar h1 { font-size: 22px; font-weight: 800; margin-bottom: 5px; }
+        .description { font-size: 13px; line-height: 1.5; color: var(--text-muted); margin-bottom: 10px; }
+
+        .control-group {
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+        }
+
+        label { font-size: 13px; font-weight: 600; color: var(--text-main); }
+        
+        input[type="range"] {
+            width: 100%;
+            cursor: pointer;
+        }
+
+        .color-picker {
+            display: flex;
+            gap: 10px;
+            margin-top: 5px;
+        }
+
+        .color-swatch {
+            width: 25px;
+            height: 25px;
+            border-radius: 50%;
+            cursor: pointer;
+            border: 2px solid transparent;
+            transition: transform 0.2s;
+        }
+        .color-swatch.active { border-color: var(--accent); transform: scale(1.2); }
+
+        .main-btn {
+            width: 100%;
+            padding: 14px;
+            background: var(--accent);
+            color: white;
+            border: none;
+            border-radius: 10px;
+            font-size: 15px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.2s;
+            margin-top: 10px;
+        }
+        .main-btn:hover { background: #1d4ed8; }
+        .main-btn:active { transform: scale(0.98); }
+
+        .status-card {
+            background: #f1f5f9;
+            padding: 15px;
+            border-radius: 10px;
+            font-size: 13px;
+            line-height: 1.4;
+            color: var(--text-muted);
+        }
+
+        /* Simulation Canvas Area */
+        .simulation-area {
+            flex: 1;
+            background: radial-gradient(circle at center, #ffffff, #f1f5f9);
+            position: relative;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            overflow: hidden;
+        }
+
+        /* Digital Readout Panel */
+        .digital-readout {
+            position: absolute;
+            top: 40px;
+            right: 40px;
+            background: var(--digital-panel);
+            padding: 20px;
+            border-radius: 12px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.3);
+            border: 2px solid #374151;
+            width: 220px;
+            color: #10b981;
+            font-family: 'Courier New', Courier, monospace;
+        }
+
+        .readout-label { font-size: 10px; color: #9ca3af; text-transform: uppercase; margin-bottom: 5px; display: block; }
+        .readout-value { font-size: 32px; font-weight: bold; }
+        .readout-unit { font-size: 14px; margin-left: 5px; }
+
+        /* The Instrument Setup */
+        .instrument-container {
+            position: relative;
+            width: 500px;
+            height: 300px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+        }
+
+        .source-housing, .detector-housing {
+            width: 80px;
+            height: 120px;
+            background: var(--instrument-body);
+            border-radius: 8px;
+            box-shadow: 0 10px 20px rgba(0,0,0,0.1);
+            position: relative;
+            z-index: 5;
+        }
+
+        /* Laser Beam */
+        .laser-beam {
+            position: absolute;
+            top: 50%;
+            left: 80px;
+            width: 0; /* Animated */
+            height: 3px;
+            background: var(--laser-color);
+            box-shadow: 0 0 10px var(--laser-color), 0 0 20px var(--laser-color);
+            transform: translateY(-50%);
+            z-index: 2;
+            transition: width 0.5s ease;
+        }
+
+        .laser-beam.active {
+            width: 340px;
+        }
+
+        /* Cuvette Styling */
+        .cuvette-wrapper {
+            position: relative;
+            z-index: 10;
+        }
+
+        .cuvette-svg {
+            width: 100px;
+            height: 180px;
+            filter: drop-shadow(0 15px 25px rgba(0,0,0,0.1));
+        }
+
+        .cuvette-glass {
+            fill: rgba(255, 255, 255, 0.4);
+            stroke: rgba(255, 255, 255, 0.8);
+            stroke-width: 1.5;
+        }
+
+        .liquid-fill {
+            transition: fill 0.3s, opacity 0.3s;
+        }
+
+        @media (max-width: 900px) {
+            .app-container { flex-direction: column; height: auto; }
+            .sidebar { width: 100%; border-right: none; }
+            .simulation-area { min-height: 500px; }
+        }
+    </style>
+</head>
+<body>
+
+    <div class="app-container">
+        <aside class="sidebar">
+            <h1>Spectrophotometer</h1>
+            <p class="description">Measure light absorbance based on sample concentration using the Beer-Lambert Law.</p>
+
+            <div class="control-group">
+                <label>Sample Color</label>
+                <div class="color-picker">
+                    <div class="color-swatch active" style="background: #3b82f6;" data-color="#3b82f6"></div>
+                    <div class="color-swatch" style="background: #ef4444;" data-color="#ef4444"></div>
+                    <div class="color-swatch" style="background: #10b981;" data-color="#10b981"></div>
+                    <div class="color-swatch" style="background: #f59e0b;" data-color="#f59e0b"></div>
+                    <div class="color-swatch" style="background: #8b5cf6;" data-color="#8b5cf6"></div>
+                </div>
+            </div>
+
+            <div class="control-group">
+                <label id="concLabel">Concentration: 50%</label>
+                <input type="range" id="concSlider" min="0" max="100" value="50">
+            </div>
+
+            <button class="main-btn" id="scanBtn">Measure Absorbance</button>
+
+            <div class="status-card">
+                <strong>Beer-Lambert Law:</strong><br>
+                A = εbc<br>
+                <small>Where <strong>A</strong> is absorbance, <strong>ε</strong> is molarity, <strong>b</strong> is path length, and <strong>c</strong> is concentration.</small>
+            </div>
+        </aside>
+
+        <main class="simulation-area">
+            <div class="digital-readout">
+                <div style="border-bottom: 1px solid #374151; padding-bottom: 10px; margin-bottom: 10px;">
+                    <span class="readout-label">Absorbance (A)</span>
+                    <div class="readout-value" id="absVal">0.000</div>
+                </div>
+                <div>
+                    <span class="readout-label">Transmittance (T)</span>
+                    <div class="readout-value" id="transVal" style="font-size: 24px; color: #3b82f6;">100.0<span class="readout-unit">%</span></div>
+                </div>
+            </div>
+
+            <div class="instrument-container">
+                <!-- Light Source -->
+                <div class="source-housing">
+                    <div style="position: absolute; right: -5px; top: 50%; transform: translateY(-50%); width: 10px; height: 20px; background: #64748b; border-radius: 2px;"></div>
+                </div>
+
+                <!-- Laser Beam Line -->
+                <div class="laser-beam" id="beam"></div>
+
+                <!-- Cuvette -->
+                <div class="cuvette-wrapper">
+                    <svg class="cuvette-svg" viewBox="0 0 100 180">
+                        <defs>
+                            <linearGradient id="glassReflect" x1="0%" y1="0%" x2="100%" y2="0%">
+                                <stop offset="0%" stop-color="white" stop-opacity="0.1" />
+                                <stop offset="50%" stop-color="white" stop-opacity="0.3" />
+                                <stop offset="100%" stop-color="white" stop-opacity="0.1" />
+                            </linearGradient>
+                        </defs>
+                        <!-- Glass Body -->
+                        <rect x="10" y="10" width="80" height="160" rx="4" class="cuvette-glass" />
+                        <!-- Liquid Fill -->
+                        <rect id="liquid" x="12" y="30" width="76" height="138" rx="2" class="liquid-fill" fill="var(--liquid-color)" opacity="0.5" />
+                        <!-- Reflections -->
+                        <rect x="10" y="10" width="80" height="160" rx="4" fill="url(#glassReflect)" pointer-events="none" />
+                        <line x1="25" y1="10" x2="25" y2="170" stroke="white" stroke-opacity="0.2" stroke-width="2" />
+                    </svg>
+                </div>
+
+                <!-- Detector -->
+                <div class="detector-housing">
+                    <div style="position: absolute; left: -5px; top: 50%; transform: translateY(-50%); width: 10px; height: 20px; background: #64748b; border-radius: 2px;"></div>
+                </div>
+            </div>
+
+            <p style="margin-top: 40px; font-size: 12px; color: var(--text-muted); font-weight: 500;">LASER WAVELENGTH: 650nm (Fixed)</p>
+        </main>
+    </div>
+
+    <script>
+        const concSlider = document.getElementById('concSlider');
+        const concLabel = document.getElementById('concLabel');
+        const liquid = document.getElementById('liquid');
+        const beam = document.getElementById('beam');
+        const absVal = document.getElementById('absVal');
+        const transVal = document.getElementById('transVal');
+        const scanBtn = document.getElementById('scanBtn');
+        const swatches = document.querySelectorAll('.color-swatch');
+
+        let isScanning = false;
+
+        // Configuration
+        const molarAbsorptivity = 0.02; // ε constant for simulation
+        const pathLength = 1; // b constant
+
+        function updateSimulation() {
+            const concentration = concSlider.value;
+            concLabel.textContent = `Concentration: ${concentration}%`;
+            
+            // Visual feedback: darker liquid for higher concentration
+            // We map 0-100 to 0.05-0.9 opacity
+            const opacity = 0.05 + (concentration / 100) * 0.85;
+            liquid.style.opacity = opacity;
+
+            // Reset values if not scanning
+            if (!isScanning) {
+                absVal.textContent = "0.000";
+                transVal.innerHTML = `100.0<span class="readout-unit">%</span>`;
+                beam.classList.remove('active');
+            }
+        }
+
+        async function performScan() {
+            if (isScanning) return;
+            isScanning = true;
+            scanBtn.textContent = "Scanning...";
+            scanBtn.disabled = true;
+
+            // Activate Beam
+            beam.classList.add('active');
+            
+            // Calculate actual Physics (Beer-Lambert Law)
+            // A = εbc
+            const concentration = parseFloat(concSlider.value);
+            const absorbance = molarAbsorptivity * pathLength * concentration;
+            
+            // Transmittance T = 10^(-A)
+            const transmittance = Math.pow(10, -absorbance);
+            const transmittancePercent = (transmittance * 100).toFixed(1);
+
+            // Animate the digital readout "gathering data"
+            let displayAbs = 0;
+            const steps = 20;
+            const stepAbs = absorbance / steps;
+            
+            for (let i = 0; i <= steps; i++) {
+                absVal.textContent = (stepAbs * i).toFixed(3);
+                const currentT = (Math.pow(10, -(stepAbs * i)) * 100).toFixed(1);
+                transVal.innerHTML = `${currentT}<span class="readout-unit">%</span>`;
+                await new Promise(r => setTimeout(r, 40));
+            }
+
+            absVal.textContent = absorbance.toFixed(3);
+            transVal.innerHTML = `${transmittancePercent}<span class="readout-unit">%</span>`;
+
+            setTimeout(() => {
+                isScanning = false;
+                scanBtn.textContent = "Measure Absorbance";
+                scanBtn.disabled = false;
+            }, 500);
+        }
+
+        // Color Picking
+        swatches.forEach(swatch => {
+            swatch.addEventListener('click', () => {
+                swatches.forEach(s => s.classList.remove('active'));
+                swatch.classList.add('active');
+                const color = swatch.dataset.color;
+                liquid.setAttribute('fill', color);
+                updateSimulation();
+            });
+        });
+
+        concSlider.addEventListener('input', updateSimulation);
+        scanBtn.addEventListener('click', performScan);
+
+        // Initial update
+        updateSimulation();
+    </script>
+</body>
+</html>

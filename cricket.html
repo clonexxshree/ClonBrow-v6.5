@@ -1,0 +1,584 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>3D Cricket Master</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Nunito:wght@700;900&display=swap');
+
+        body { 
+            margin: 0; overflow: hidden; background-color: #1e293b; 
+            font-family: 'Nunito', sans-serif; user-select: none;
+            touch-action: none; color: white;
+        }
+
+        #game-canvas { display: block; width: 100vw; height: 100vh; outline: none; }
+
+        /* --- UI LAYER --- */
+        #ui-layer {
+            position: absolute; top: 0; left: 0; width: 100%; height: 100%;
+            pointer-events: none; display: flex; flex-direction: column;
+            justify-content: space-between; padding: 20px; box-sizing: border-box; z-index: 10;
+        }
+
+        .hud-top {
+            display: flex; justify-content: space-between; align-items: flex-start;
+        }
+
+        .score-board {
+            background: rgba(15, 23, 42, 0.85); backdrop-filter: blur(8px);
+            border: 4px solid #334155; border-radius: 16px; padding: 10px 30px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.5); display: flex; gap: 20px;
+        }
+
+        .stat-group { display: flex; flex-direction: column; align-items: center; }
+        .stat-label { font-size: 14px; color: #94a3b8; text-transform: uppercase; font-weight: 900;}
+        .stat-value { font-family: 'Bebas Neue', sans-serif; font-size: 48px; color: #f8fafc; line-height: 1; text-shadow: 0 4px 0 #000;}
+        .text-blue { color: #38bdf8; }
+        .text-red { color: #f87171; }
+        .text-yellow { color: #facc15; }
+
+        /* Action Text (Six!, Four!, Out!) */
+        #action-text {
+            position: absolute; top: 40%; left: 50%; transform: translate(-50%, -50%);
+            font-family: 'Bebas Neue', sans-serif; font-size: 120px; color: #facc15; 
+            text-shadow: 0 8px 0 #b45309, 0 0 30px rgba(0,0,0,0.8);
+            pointer-events: none; opacity: 0; z-index: 50; transition: 0.2s;
+        }
+
+        .controls-hint {
+            align-self: center; background: rgba(0,0,0,0.6); padding: 10px 20px; 
+            border-radius: 12px; color: #cbd5e1; font-size: 16px; font-weight: bold;
+            border: 2px solid #334155; margin-bottom: 20px;
+        }
+        .key { background: #475569; padding: 4px 10px; border-radius: 6px; color: white; }
+
+        /* Modals */
+        .modal {
+            position: absolute; top: 0; left: 0; width: 100vw; height: 100vh;
+            background: rgba(0,0,0,0.8); display: flex; flex-direction: column;
+            align-items: center; justify-content: center; z-index: 100; backdrop-filter: blur(5px);
+            pointer-events: auto;
+        }
+        .modal-box {
+            background: #1e293b; padding: 40px 60px; border-radius: 24px; text-align: center;
+            border: 4px solid #38bdf8; box-shadow: 0 20px 50px rgba(0,0,0,0.8);
+        }
+        .title { font-family: 'Bebas Neue', sans-serif; font-size: 80px; margin-bottom: 10px; color: #38bdf8; text-shadow: 0 6px 0 #0284c7;}
+        
+        .btn {
+            background: #facc15; color: #1e293b; border: none; padding: 15px 40px; font-size: 28px;
+            font-family: 'Bebas Neue'; border-radius: 12px; cursor: pointer; transition: 0.1s;
+            box-shadow: 0 6px 0 #ca8a04; margin-top: 20px; letter-spacing: 2px;
+        }
+        .btn:hover { background: #fef08a; transform: translateY(-2px); box-shadow: 0 8px 0 #ca8a04; }
+        .btn:active { transform: translateY(6px); box-shadow: 0 0 0 #ca8a04; }
+
+        #btn-bowl {
+            position: absolute; bottom: 100px; left: 50%; transform: translateX(-50%);
+            pointer-events: auto; display: none;
+        }
+
+    </style>
+</head>
+<body>
+
+    <!-- START MENU -->
+    <div id="start-menu" class="modal">
+        <div class="modal-box">
+            <h1 class="title">CRICKET MASTER</h1>
+            <p style="color: #cbd5e1; font-size: 20px; margin-bottom: 20px;">Move mouse/finger to position the bat.<br>Click or press SPACE to swing!</p>
+            <p style="color: #94a3b8; font-size: 16px; margin-bottom: 30px;">2 Overs | 3 Wickets</p>
+            <button class="btn" onclick="startGame()">PLAY MATCH</button>
+        </div>
+    </div>
+
+    <!-- GAME OVER MODAL -->
+    <div id="end-modal" class="modal" style="display: none;">
+        <div class="modal-box" style="border-color: #f87171;">
+            <h1 class="title" style="color: #f87171; text-shadow: 0 6px 0 #b91c1c;">INNINGS OVER</h1>
+            <div style="font-size: 32px; color: white; margin-bottom: 20px;">Final Score: <span id="final-score" class="text-yellow" style="font-family: 'Bebas Neue'; font-size: 64px;">0</span></div>
+            <button class="btn" style="background: #f87171; color: white; box-shadow: 0 6px 0 #b91c1c;" onclick="location.reload()">PLAY AGAIN</button>
+        </div>
+    </div>
+
+    <canvas id="game-canvas"></canvas>
+
+    <div id="ui-layer">
+        <div class="hud-top">
+            <div class="score-board">
+                <div class="stat-group">
+                    <div class="stat-label">SCORE</div>
+                    <div class="stat-value text-yellow"><span id="ui-runs">0</span><span style="font-size:24px; color:#94a3b8;">/</span><span id="ui-wickets" class="text-red" style="font-size:32px;">0</span></div>
+                </div>
+                <div style="width: 2px; background: #334155; margin: 0 10px;"></div>
+                <div class="stat-group">
+                    <div class="stat-label">OVERS</div>
+                    <div class="stat-value text-blue" id="ui-overs">0.0</div>
+                </div>
+            </div>
+        </div>
+
+        <div id="action-text">SIX!</div>
+
+        <button class="btn" id="btn-bowl" onclick="bowlBall()">TAP TO BOWL</button>
+
+        <div class="controls-hint">
+            <span class="key">DRAG</span> Move Bat &nbsp;|&nbsp; <span class="key">CLICK / SPACE</span> Swing
+        </div>
+    </div>
+
+    <script>
+        // --- AUDIO ENGINE ---
+        const AudioContext = window.AudioContext || window.webkitAudioContext;
+        let audioCtx;
+        function initAudio() { if(!audioCtx) audioCtx = new AudioContext(); }
+        
+        function playSound(type) {
+            if(!audioCtx) return;
+            const t = audioCtx.currentTime;
+            const osc = audioCtx.createOscillator(); const gain = audioCtx.createGain();
+            
+            if(type === 'hit') {
+                osc.type = 'triangle'; osc.frequency.setValueAtTime(800, t); osc.frequency.exponentialRampToValueAtTime(100, t+0.1);
+                gain.gain.setValueAtTime(1.0, t); gain.gain.exponentialRampToValueAtTime(0.01, t+0.1);
+            } else if(type === 'bounce') {
+                osc.type = 'sine'; osc.frequency.setValueAtTime(300, t); osc.frequency.exponentialRampToValueAtTime(150, t+0.1);
+                gain.gain.setValueAtTime(0.4, t); gain.gain.exponentialRampToValueAtTime(0.01, t+0.1);
+            } else if(type === 'wicket') {
+                osc.type = 'sawtooth'; osc.frequency.setValueAtTime(200, t); osc.frequency.exponentialRampToValueAtTime(50, t+0.4);
+                gain.gain.setValueAtTime(0.8, t); gain.gain.exponentialRampToValueAtTime(0.01, t+0.5);
+            } else if(type === 'cheer') {
+                osc.type = 'sine'; osc.frequency.setValueAtTime(400, t); osc.frequency.linearRampToValueAtTime(800, t+0.5); osc.frequency.linearRampToValueAtTime(300, t+1.5);
+                gain.gain.setValueAtTime(0.3, t); gain.gain.linearRampToValueAtTime(0.6, t+0.5); gain.gain.exponentialRampToValueAtTime(0.01, t+1.5);
+            }
+            
+            osc.connect(gain); gain.connect(audioCtx.destination);
+            osc.start(t); osc.stop(t + 2);
+        }
+
+        // --- THREE.JS GLOBALS ---
+        let scene, camera, renderer;
+        let clock = new THREE.Clock();
+        
+        // Game Objects
+        let ballMesh, batMesh, batPivot;
+        let stumps = [];
+        let pitchMarker;
+        
+        // Materials
+        const Mats = {
+            grass: new THREE.MeshLambertMaterial({color: 0x22c55e}),
+            pitch: new THREE.MeshLambertMaterial({color: 0xd97706}),
+            crease: new THREE.MeshBasicMaterial({color: 0xffffff}),
+            ball: new THREE.MeshStandardMaterial({color: 0xef4444, roughness: 0.4}),
+            bat: new THREE.MeshStandardMaterial({color: 0xfcd34d, roughness: 0.6}),
+            batHandle: new THREE.MeshStandardMaterial({color: 0x111111}),
+            stump: new THREE.MeshLambertMaterial({color: 0xfacc15})
+        };
+
+        // --- GAME STATE ---
+        const GameState = {
+            runs: 0,
+            wickets: 0,
+            balls: 0,
+            maxOvers: 2,
+            maxWickets: 3,
+            
+            phase: 'IDLE', // IDLE, BOWLING, HIT, DEAD
+            
+            // Physics
+            ballPos: new THREE.Vector3(0, 0, -20),
+            ballVel: new THREE.Vector3(0, 0, 0),
+            gravity: -30,
+            
+            batX: 0,
+            isSwinging: false,
+            swingTimer: 0,
+            
+            hasBounced: false
+        };
+
+        window.onload = init;
+
+        function init() {
+            scene = new THREE.Scene();
+            scene.background = new THREE.Color(0x38bdf8); // Sky blue
+            scene.fog = new THREE.Fog(0x38bdf8, 30, 150);
+
+            camera = new THREE.PerspectiveCamera(50, window.innerWidth / window.innerHeight, 0.1, 200);
+            camera.position.set(0, 4, 15);
+            camera.lookAt(0, 0, 0);
+
+            renderer = new THREE.WebGLRenderer({ canvas: document.getElementById('game-canvas'), antialias: true });
+            renderer.setSize(window.innerWidth, window.innerHeight);
+            renderer.shadowMap.enabled = true;
+
+            // Lights
+            const ambient = new THREE.AmbientLight(0xffffff, 0.6); scene.add(ambient);
+            const dirLight = new THREE.DirectionalLight(0xffffff, 0.8);
+            dirLight.position.set(20, 50, 20); dirLight.castShadow = true;
+            dirLight.shadow.mapSize.width = 2048; dirLight.shadow.mapSize.height = 2048;
+            dirLight.shadow.camera.near = 0.5; dirLight.shadow.camera.far = 100;
+            dirLight.shadow.camera.left = -30; dirLight.shadow.camera.right = 30;
+            dirLight.shadow.camera.top = 30; dirLight.shadow.camera.bottom = -30;
+            scene.add(dirLight);
+
+            buildStadium();
+
+            // Input
+            window.addEventListener('resize', onWindowResize);
+            window.addEventListener('keydown', e => { if(e.code === 'Space') swingBat(); });
+            
+            const cvs = renderer.domElement;
+            cvs.addEventListener('pointermove', onPointerMove);
+            cvs.addEventListener('pointerdown', () => { initAudio(); swingBat(); });
+
+            animate();
+        }
+
+        function buildStadium() {
+            // Ground
+            const ground = new THREE.Mesh(new THREE.CylinderGeometry(80, 80, 1, 32), Mats.grass);
+            ground.position.y = -0.5; ground.receiveShadow = true; scene.add(ground);
+
+            // Pitch
+            const pitch = new THREE.Mesh(new THREE.BoxGeometry(4, 0.05, 44), Mats.pitch);
+            pitch.position.set(0, 0.02, 0); pitch.receiveShadow = true; scene.add(pitch);
+
+            // Crease Lines
+            const creaseGeo = new THREE.PlaneGeometry(4, 0.1);
+            const c1 = new THREE.Mesh(creaseGeo, Mats.crease); c1.rotation.x = -Math.PI/2; c1.position.set(0, 0.06, 8.5); scene.add(c1); // Batting crease
+            const c2 = new THREE.Mesh(creaseGeo, Mats.crease); c2.rotation.x = -Math.PI/2; c2.position.set(0, 0.06, -8.5); scene.add(c2); // Bowling crease
+
+            // Boundary Rope
+            const boundary = new THREE.Mesh(new THREE.TorusGeometry(75, 0.2, 8, 64), new THREE.MeshLambertMaterial({color: 0xffffff}));
+            boundary.rotation.x = Math.PI/2; boundary.position.y = 0.1; scene.add(boundary);
+
+            // Stumps (Batting end)
+            for(let i=-0.4; i<=0.4; i+=0.4) {
+                const s = new THREE.Mesh(new THREE.CylinderGeometry(0.05, 0.05, 1.8), Mats.stump);
+                s.position.set(i, 0.9, 10); s.castShadow = true; scene.add(s); stumps.push(s);
+            }
+            // Bails
+            const bailGeo = new THREE.CylinderGeometry(0.02, 0.02, 0.4);
+            const b1 = new THREE.Mesh(bailGeo, Mats.stump); b1.rotation.z = Math.PI/2; b1.position.set(-0.2, 1.82, 10); scene.add(b1); stumps.push(b1);
+            const b2 = new THREE.Mesh(bailGeo, Mats.stump); b2.rotation.z = Math.PI/2; b2.position.set(0.2, 1.82, 10); scene.add(b2); stumps.push(b2);
+
+            // Ball
+            ballMesh = new THREE.Mesh(new THREE.SphereGeometry(0.15, 16, 16), Mats.ball);
+            ballMesh.castShadow = true; scene.add(ballMesh);
+
+            // Pitch Marker (shows where ball will bounce)
+            pitchMarker = new THREE.Mesh(new THREE.RingGeometry(0.3, 0.4, 16), new THREE.MeshBasicMaterial({color: 0xffffff, transparent: true, opacity: 0.5}));
+            pitchMarker.rotation.x = -Math.PI/2; pitchMarker.position.y = 0.06; pitchMarker.visible = false; scene.add(pitchMarker);
+
+            // Bat
+            batPivot = new THREE.Group();
+            batPivot.position.set(0, 2.5, 9); // Pivot at hands
+            scene.add(batPivot);
+
+            batMesh = new THREE.Group();
+            const blade = new THREE.Mesh(new THREE.BoxGeometry(0.6, 1.5, 0.15), Mats.bat);
+            blade.position.set(0, -1, 0); blade.castShadow = true; batMesh.add(blade);
+            const handle = new THREE.Mesh(new THREE.CylinderGeometry(0.08, 0.08, 0.8), Mats.batHandle);
+            handle.position.set(0, 0.15, 0); handle.castShadow = true; batMesh.add(handle);
+            
+            // Initial stance rotation
+            batMesh.rotation.x = -Math.PI/6;
+            batPivot.add(batMesh);
+        }
+
+        // --- INPUT & UI ---
+
+        function onPointerMove(e) {
+            if(GameState.phase === 'DEAD') return;
+            // Map mouse X to bat X position (limited to pitch width)
+            const nx = (e.clientX / window.innerWidth) * 2 - 1;
+            GameState.batX = nx * 2.5; // -2.5 to 2.5 range
+        }
+
+        function swingBat() {
+            if(GameState.isSwinging || GameState.phase === 'DEAD' || GameState.phase === 'IDLE') return;
+            GameState.isSwinging = true;
+            GameState.swingTimer = 0;
+            // Sound of swoosh could go here
+        }
+
+        function startGame() {
+            initAudio();
+            document.getElementById('start-menu').style.display = 'none';
+            document.getElementById('end-modal').style.display = 'none';
+            
+            GameState.runs = 0; GameState.wickets = 0; GameState.balls = 0;
+            updateHUD();
+            resetDelivery();
+        }
+
+        function updateHUD() {
+            document.getElementById('ui-runs').innerText = GameState.runs;
+            document.getElementById('ui-wickets').innerText = GameState.wickets;
+            
+            const overs = Math.floor(GameState.balls / 6);
+            const balls = GameState.balls % 6;
+            document.getElementById('ui-overs').innerText = `${overs}.${balls}`;
+        }
+
+        function showActionText(text, color) {
+            const el = document.getElementById('action-text');
+            el.innerText = text;
+            el.style.color = color;
+            el.style.opacity = 1;
+            el.style.transform = 'translate(-50%, -50%) scale(1.2)';
+            setTimeout(() => {
+                el.style.opacity = 0;
+                el.style.transform = 'translate(-50%, -50%) scale(1)';
+            }, 1500);
+        }
+
+        // --- GAMEPLAY CORE ---
+
+        function resetDelivery() {
+            if (GameState.wickets >= GameState.maxWickets || GameState.balls >= GameState.maxOvers * 6) {
+                endInnings();
+                return;
+            }
+
+            GameState.phase = 'IDLE';
+            GameState.isSwinging = false;
+            batMesh.rotation.x = -Math.PI/6;
+            batMesh.rotation.y = 0;
+
+            ballMesh.position.set(0, -10, 0); // Hide ball
+            pitchMarker.visible = false;
+            
+            // Reset stumps visually
+            stumps.forEach(s => { s.position.y = s.geometry.parameters.height/2 + (s.geometry.parameters.radiusTop===0.02?1.8:0); s.rotation.set(0,0,s.geometry.parameters.radiusTop===0.02?Math.PI/2:0); });
+
+            document.getElementById('btn-bowl').style.display = 'block';
+        }
+
+        function bowlBall() {
+            initAudio();
+            document.getElementById('btn-bowl').style.display = 'none';
+            GameState.phase = 'BOWLING';
+            GameState.hasBounced = false;
+
+            // Randomize delivery
+            const speed = 25 + Math.random() * 10; // Z velocity
+            const startX = (Math.random() - 0.5) * 1.5;
+            
+            // Target pitch location (X and Z)
+            const targetX = (Math.random() - 0.5) * 2.0;
+            const targetZ = 3 + Math.random() * 4; // Bounces between 3 and 7 units from batter (Z=10)
+
+            // Physics calculation to hit targetZ
+            const timeToPitch = (targetZ - (-10)) / speed; 
+            const dropHeight = 2.0; // Release height
+            
+            GameState.ballPos.set(startX, dropHeight, -10);
+            
+            // vy = (y - y0 - 0.5*g*t^2) / t
+            const initialVy = (0.15 - dropHeight - 0.5 * GameState.gravity * timeToPitch * timeToPitch) / timeToPitch;
+            
+            GameState.ballVel.set((targetX - startX) / timeToPitch, initialVy, speed);
+
+            // Show marker
+            pitchMarker.position.set(targetX, 0.06, targetZ);
+            pitchMarker.visible = true;
+        }
+
+        function processHit() {
+            GameState.phase = 'HIT';
+            playSound('hit');
+            pitchMarker.visible = false;
+            
+            // Calculate outgoing trajectory based on bat position and timing
+            // Bat is at Z=9. If ball is at Z=8.5 (early) to Z=9.5 (late)
+            const timing = GameState.ballPos.z - 9.0; 
+            const xOffset = GameState.ballPos.x - GameState.batX; // - means ball is left of center
+
+            // Power multiplier based on timing (closer to 0 is better)
+            const timingMult = Math.max(0.2, 1.0 - Math.abs(timing));
+            
+            const power = 30 + Math.random() * 20 * timingMult;
+            
+            // Angle based on xOffset and timing
+            const angleY = xOffset * 0.5 + timing * 0.5; // Left/Right direction
+            const elevation = 10 + 20 * timingMult; // Upwards
+            
+            GameState.ballVel.set(
+                Math.sin(angleY) * power,
+                elevation,
+                -Math.cos(angleY) * power // Negative Z to fly into the field
+            );
+        }
+
+        function resolveResult(distance) {
+            GameState.phase = 'DEAD';
+            GameState.balls++;
+
+            let runs = 0;
+            if (distance > 75) { runs = 6; showActionText("SIX!", "#38bdf8"); playSound('cheer'); }
+            else if (distance > 60) { runs = 4; showActionText("FOUR!", "#4ade80"); playSound('cheer'); }
+            else if (distance > 40) { runs = 3; showActionText("3 RUNS", "#f8fafc"); }
+            else if (distance > 20) { runs = 2; showActionText("2 RUNS", "#f8fafc"); }
+            else if (distance > 5)  { runs = 1; showActionText("1 RUN", "#f8fafc"); }
+            else { showActionText("DOT BALL", "#94a3b8"); }
+
+            GameState.runs += runs;
+            updateHUD();
+
+            setTimeout(resetDelivery, 2000);
+        }
+
+        function handleWicket() {
+            if(GameState.phase === 'DEAD') return;
+            GameState.phase = 'DEAD';
+            GameState.balls++;
+            GameState.wickets++;
+            
+            playSound('wicket');
+            showActionText("OUT!", "#ef4444");
+            
+            // Scatter stumps visually
+            stumps.forEach(s => {
+                s.position.x += (Math.random()-0.5)*2;
+                s.position.y += Math.random()*2;
+                s.position.z += Math.random()*2;
+                s.rotation.x = Math.random()*Math.PI;
+                s.rotation.z = Math.random()*Math.PI;
+            });
+
+            updateHUD();
+            setTimeout(resetDelivery, 2500);
+        }
+
+        function endInnings() {
+            GameState.phase = 'DEAD';
+            document.getElementById('end-modal').style.display = 'flex';
+            document.getElementById('final-score').innerText = `${GameState.runs}/${GameState.wickets}`;
+        }
+
+        // --- RENDER & PHYSICS LOOP ---
+
+        function onWindowResize() {
+            camera.aspect = window.innerWidth / window.innerHeight;
+            camera.updateProjectionMatrix();
+            renderer.setSize(window.innerWidth, window.innerHeight);
+        }
+
+        function animate() {
+            requestAnimationFrame(animate);
+            const dt = Math.min(clock.getDelta(), 0.1);
+
+            // Bat Positioning
+            batPivot.position.x = THREE.MathUtils.lerp(batPivot.position.x, GameState.batX, 15 * dt);
+
+            // Bat Swing Animation
+            if (GameState.isSwinging) {
+                GameState.swingTimer += dt;
+                const swingDuration = 0.25;
+                const t = Math.min(GameState.swingTimer / swingDuration, 1.0);
+                
+                // Swing from back (-PI/6) to front (PI/2)
+                batMesh.rotation.x = -Math.PI/6 + t * (Math.PI/1.5);
+                
+                if (t === 1.0) {
+                    GameState.isSwinging = false; // End swing
+                }
+            } else if (GameState.phase !== 'DEAD') {
+                // Return to stance
+                batMesh.rotation.x = THREE.MathUtils.lerp(batMesh.rotation.x, -Math.PI/6, 10 * dt);
+            }
+
+            // Physics Update
+            if (GameState.phase === 'BOWLING' || GameState.phase === 'HIT') {
+                GameState.ballVel.y += GameState.gravity * dt;
+                GameState.ballPos.addScaledVector(GameState.ballVel, dt);
+
+                // Floor Bounce
+                if (GameState.ballPos.y < 0.15) {
+                    GameState.ballPos.y = 0.15;
+                    GameState.ballVel.y *= -0.6; // Loss of energy on bounce
+                    
+                    if (Math.abs(GameState.ballVel.y) > 2) {
+                        playSound('bounce');
+                        if(GameState.phase === 'BOWLING') {
+                            GameState.hasBounced = true;
+                            pitchMarker.visible = false;
+                            // Add slight random spin deviation on bounce
+                            GameState.ballVel.x += (Math.random()-0.5)*5;
+                        }
+                    } else {
+                        GameState.ballVel.y = 0;
+                        // If ball stops rolling and was hit
+                        if (GameState.phase === 'HIT') {
+                            const dist = Math.hypot(GameState.ballPos.x, GameState.ballPos.z);
+                            resolveResult(dist);
+                        }
+                    }
+                }
+
+                // Collision with Bat
+                if (GameState.phase === 'BOWLING' && GameState.isSwinging) {
+                    // Bat collision zone roughly Z: 8.5 to 9.5
+                    if (GameState.ballPos.z > 8.5 && GameState.ballPos.z < 9.5) {
+                        // Check X overlap
+                        if (Math.abs(GameState.ballPos.x - batPivot.position.x) < 0.6) {
+                            // Check Y overlap (bat height)
+                            if (GameState.ballPos.y > 0 && GameState.ballPos.y < 2.0) {
+                                processHit();
+                            }
+                        }
+                    }
+                }
+
+                // Missed and hits stumps
+                if (GameState.phase === 'BOWLING' && GameState.ballPos.z > 10.0) {
+                    if (Math.abs(GameState.ballPos.x) < 0.6 && GameState.ballPos.y < 1.8) {
+                        handleWicket();
+                    } else if (GameState.ballPos.z > 15) {
+                        // Went past wicket safely (Dot ball)
+                        GameState.phase = 'DEAD';
+                        GameState.balls++;
+                        showActionText("MISS", "#94a3b8");
+                        updateHUD();
+                        setTimeout(resetDelivery, 1500);
+                    }
+                }
+
+                // If hit ball goes out of bounds (Boundary)
+                if (GameState.phase === 'HIT') {
+                    const dist = Math.hypot(GameState.ballPos.x, GameState.ballPos.z);
+                    if (dist > 75) {
+                        // Crossed boundary
+                        resolveResult(dist);
+                    }
+                }
+
+                ballMesh.position.copy(GameState.ballPos);
+            }
+
+            // Camera follow slightly if ball is hit
+            if (GameState.phase === 'HIT') {
+                const targetZ = Math.max(5, GameState.ballPos.z + 20);
+                const targetY = Math.max(4, GameState.ballPos.y + 5);
+                camera.position.z = THREE.MathUtils.lerp(camera.position.z, targetZ, 2 * dt);
+                camera.position.y = THREE.MathUtils.lerp(camera.position.y, targetY, 2 * dt);
+                camera.lookAt(GameState.ballPos);
+            } else {
+                camera.position.z = THREE.MathUtils.lerp(camera.position.z, 15, 5 * dt);
+                camera.position.y = THREE.MathUtils.lerp(camera.position.y, 4, 5 * dt);
+                camera.lookAt(0, 0, 0);
+            }
+
+            renderer.render(scene, camera);
+        }
+
+    </script>
+</body>
+</html>

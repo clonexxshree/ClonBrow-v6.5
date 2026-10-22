@@ -1,0 +1,324 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Bio-Synth | Protein Factory</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;600&family=JetBrains+Mono&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --base-a: #fb7185; /* Rose */
+            --base-u: #38bdf8; /* Sky */
+            --base-g: #fbbf24; /* Amber */
+            --base-c: #34d399; /* Emerald */
+            --ribosome-bg: rgba(99, 102, 241, 0.15);
+        }
+
+        body {
+            font-family: 'Plus Jakarta Sans', sans-serif;
+            background-color: #020617;
+            color: #f8fafc;
+            overflow: hidden;
+        }
+
+        .glass {
+            background: rgba(15, 23, 42, 0.6);
+            backdrop-filter: blur(12px);
+            border: 1px solid rgba(255, 255, 255, 0.05);
+        }
+
+        /* mRNA Strip Animation */
+        #mrna-belt {
+            display: flex;
+            transition: transform 0.6s cubic-bezier(0.45, 0.05, 0.55, 0.95);
+            padding-left: 50%;
+        }
+
+        .base-unit {
+            width: 40px;
+            height: 60px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-family: 'JetBrains Mono', monospace;
+            font-weight: bold;
+            border-radius: 4px;
+            margin: 0 2px;
+            font-size: 1.2rem;
+            position: relative;
+        }
+
+        .base-A { background: var(--base-a); color: #881337; }
+        .base-U { background: var(--base-u); color: #0c4a6e; }
+        .base-G { background: var(--base-g); color: #78350f; }
+        .base-C { background: var(--base-c); color: #064e3b; }
+
+        /* Ribosome Visuals */
+        #ribosome {
+            position: absolute;
+            left: 50%;
+            top: 50%;
+            transform: translate(-50%, -50%);
+            width: 160px;
+            height: 220px;
+            pointer-events: none;
+            z-index: 20;
+        }
+
+        .ribosome-subunit {
+            background: var(--ribosome-bg);
+            border: 2px solid rgba(99, 102, 241, 0.3);
+            border-radius: 40px;
+            position: absolute;
+            width: 100%;
+            box-shadow: 0 0 30px rgba(99, 102, 241, 0.1);
+        }
+
+        .subunit-large { height: 140px; top: -30px; border-radius: 60px 60px 20px 20px; }
+        .subunit-small { height: 70px; bottom: -30px; border-radius: 20px 20px 60px 60px; }
+
+        /* Protein Chain */
+        #protein-chain {
+            display: flex;
+            flex-direction: column-reverse;
+            align-items: center;
+            gap: 4px;
+            position: absolute;
+            bottom: 120px;
+            left: 50%;
+            transform: translateX(-50%);
+            z-index: 30;
+        }
+
+        .amino-acid {
+            width: 32px;
+            height: 32px;
+            border-radius: 50%;
+            background: white;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 8px;
+            font-weight: bold;
+            color: #1e293b;
+            box-shadow: 0 4px 10px rgba(0,0,0,0.3), inset 0 -2px 5px rgba(0,0,0,0.2);
+            animation: popIn 0.5s cubic-bezier(0.175, 0.885, 0.32, 1.275) forwards;
+        }
+
+        @keyframes popIn {
+            0% { transform: scale(0) translateY(20px); opacity: 0; }
+            100% { transform: scale(1) translateY(0); opacity: 1; }
+        }
+
+        .led-active {
+            box-shadow: 0 0 15px #6366f1;
+            background: #6366f1 !important;
+        }
+    </style>
+</head>
+<body class="flex items-center justify-center min-h-screen">
+
+    <div class="fixed inset-0 bg-[radial-gradient(circle_at_center,_rgba(30,41,59,1)_0%,_rgba(2,6,23,1)_100%)] -z-10"></div>
+
+    <main class="w-full max-w-5xl h-[80vh] flex gap-6 px-6">
+        
+        <!-- Left Panel: Diagnostics -->
+        <div class="w-1/4 glass rounded-[2rem] p-8 flex flex-col">
+            <div class="mb-10">
+                <p class="text-[10px] font-bold tracking-[0.4em] text-indigo-400 uppercase mb-1">Industrial Genomics</p>
+                <h1 class="text-2xl font-light">Bio-Synth <span class="font-semibold text-white">v4</span></h1>
+            </div>
+
+            <div class="space-y-6 flex-grow">
+                <div>
+                    <label class="text-[9px] text-slate-500 uppercase tracking-widest font-bold">Factory Output</label>
+                    <div id="output-name" class="text-xl font-mono text-indigo-300 mt-1">Insulin-Beta</div>
+                </div>
+                
+                <div class="p-4 bg-white/5 rounded-xl border border-white/5">
+                    <label class="text-[9px] text-slate-400 uppercase font-bold">Chain Length</label>
+                    <div id="chain-count" class="text-3xl font-mono">00</div>
+                    <div class="w-full bg-slate-800 h-1 mt-3 rounded-full overflow-hidden">
+                        <div id="progress-bar" class="h-full bg-indigo-500 w-0 transition-all duration-500"></div>
+                    </div>
+                </div>
+
+                <div class="space-y-2">
+                    <div class="flex justify-between text-[10px] text-slate-500 uppercase font-bold">
+                        <span>Speed</span>
+                        <span id="speed-val">1.0x</span>
+                    </div>
+                    <input type="range" id="speed-slider" min="0.5" max="3" step="0.1" value="1" class="w-full accent-indigo-500">
+                </div>
+            </div>
+
+            <button id="action-btn" class="w-full py-4 bg-indigo-600 hover:bg-indigo-500 rounded-2xl font-semibold transition-all shadow-lg shadow-indigo-500/20 active:scale-95">
+                Initiate Synthesis
+            </button>
+        </div>
+
+        <!-- Center: The Assembly Line -->
+        <div class="flex-grow glass rounded-[2rem] relative overflow-hidden flex flex-col">
+            
+            <!-- Top: Polypeptide Exit -->
+            <div class="h-1/2 relative border-b border-white/5">
+                <div class="absolute inset-0 bg-[linear-gradient(to_bottom,transparent_0%,rgba(99,102,241,0.03)_100%)]"></div>
+                <div id="protein-chain">
+                    <!-- Amino acids injected here -->
+                </div>
+            </div>
+
+            <!-- Middle: The Ribosome Machine -->
+            <div id="factory-floor" class="h-1/2 relative flex items-center">
+                
+                <!-- The Ribosome Structure -->
+                <div id="ribosome">
+                    <div class="ribosome-subunit subunit-large"></div>
+                    <div class="ribosome-subunit subunit-small"></div>
+                    <!-- Scanning Indicator -->
+                    <div class="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[44px] h-[64px] border-2 border-white/20 rounded-lg z-30"></div>
+                </div>
+
+                <!-- mRNA Conveyor -->
+                <div id="mrna-belt">
+                    <!-- Sequence injected here -->
+                </div>
+
+            </div>
+
+            <!-- Assembly Info Overlay -->
+            <div class="absolute bottom-6 right-6 flex gap-4">
+                <div class="glass px-4 py-2 rounded-lg text-[10px] font-mono flex items-center gap-2">
+                    <span class="w-2 h-2 rounded-full bg-emerald-500"></span> ATP: OPTIMAL
+                </div>
+            </div>
+        </div>
+
+        <!-- Right Panel: Codon Key -->
+        <div class="w-1/5 glass rounded-[2rem] p-6 overflow-y-auto">
+            <h3 class="text-[10px] font-bold text-slate-500 uppercase tracking-widest mb-4">Transcription Log</h3>
+            <div id="log-container" class="space-y-3 font-mono text-[10px]">
+                <div class="text-slate-500 italic">Waiting for start codon (AUG)...</div>
+            </div>
+        </div>
+
+    </main>
+
+    <script>
+        const codonMap = {
+            'AUG': { name: 'Met', color: '#f43f5e' },
+            'UUU': { name: 'Phe', color: '#3b82f6' }, 'UUC': { name: 'Phe', color: '#3b82f6' },
+            'UUA': { name: 'Leu', color: '#8b5cf6' }, 'UUG': { name: 'Leu', color: '#8b5cf6' },
+            'UCU': { name: 'Ser', color: '#ec4899' }, 'UCC': { name: 'Ser', color: '#ec4899' },
+            'GGU': { name: 'Gly', color: '#10b981' }, 'GGC': { name: 'Gly', color: '#10b981' },
+            'CCU': { name: 'Pro', color: '#f59e0b' }, 'CCC': { name: 'Pro', color: '#f59e0b' },
+            'UAA': { name: 'STOP', color: '#ffffff' }, 'UAG': { name: 'STOP', color: '#ffffff' }, 'UGA': { name: 'STOP', color: '#ffffff' }
+        };
+
+        const bases = ['A', 'U', 'G', 'C'];
+        const mrnaBelt = document.getElementById('mrna-belt');
+        const proteinChain = document.getElementById('protein-chain');
+        const actionBtn = document.getElementById('action-btn');
+        const chainCount = document.getElementById('chain-count');
+        const logContainer = document.getElementById('log-container');
+        const speedSlider = document.getElementById('speed-slider');
+        const speedVal = document.getElementById('speed-val');
+
+        let sequence = [];
+        let currentIndex = 0;
+        let isRunning = false;
+        let chain = [];
+
+        function generateSequence() {
+            sequence = ['A', 'U', 'G']; // Always start with Met
+            for(let i = 0; i < 60; i++) {
+                sequence.push(bases[Math.floor(Math.random() * 4)]);
+            }
+            // Add a stop codon near the end
+            sequence.push('U', 'A', 'A');
+            
+            mrnaBelt.innerHTML = sequence.map(b => `<div class="base-unit base-${b}">${b}</div>`).join('');
+        }
+
+        function updateBelt() {
+            const offset = -currentIndex * 44;
+            mrnaBelt.style.transform = `translateX(${offset}px)`;
+        }
+
+        function addToLog(codon, amino) {
+            const div = document.createElement('div');
+            div.className = 'flex justify-between p-2 rounded bg-white/5 border-l-2 border-indigo-500';
+            div.innerHTML = `<span>${codon}</span><span class="text-indigo-400">${amino}</span>`;
+            logContainer.prepend(div);
+        }
+
+        async function step() {
+            if (!isRunning || currentIndex + 3 > sequence.length) {
+                if(currentIndex + 3 > sequence.length) finalize();
+                return;
+            }
+
+            const codon = sequence.slice(currentIndex, currentIndex + 3).join('');
+            const data = codonMap[codon] || { name: 'Aa', color: '#94a3b8' };
+
+            // Highlight codon
+            const baseEls = mrnaBelt.querySelectorAll('.base-unit');
+            for(let i = 0; i < 3; i++) baseEls[currentIndex + i].classList.add('led-active');
+
+            if (data.name === 'STOP') {
+                finalize();
+                return;
+            }
+
+            // Create Amino Acid
+            const aa = document.createElement('div');
+            aa.className = 'amino-acid';
+            aa.style.backgroundColor = data.color;
+            aa.innerText = data.name;
+            proteinChain.appendChild(aa);
+            
+            chain.push(data.name);
+            chainCount.innerText = chain.length.toString().padStart(2, '0');
+            document.getElementById('progress-bar').style.width = `${(chain.length / 20) * 100}%`;
+            
+            addToLog(codon, data.name);
+
+            // Move belt
+            setTimeout(() => {
+                for(let i = 0; i < 3; i++) baseEls[currentIndex + i].classList.remove('led-active');
+                currentIndex += 3;
+                updateBelt();
+                
+                const speed = 2000 / parseFloat(speedSlider.value);
+                setTimeout(step, speed);
+            }, 600);
+        }
+
+        function finalize() {
+            isRunning = false;
+            actionBtn.innerText = 'Synthesis Complete';
+            actionBtn.className = "w-full py-4 bg-emerald-600 rounded-2xl font-semibold opacity-50 cursor-not-allowed";
+            addToLog('---', 'POLYPEPTIDE RELEASED');
+        }
+
+        actionBtn.addEventListener('click', () => {
+            if (!isRunning) {
+                isRunning = true;
+                actionBtn.innerText = 'Factory Running...';
+                actionBtn.classList.add('opacity-50');
+                logContainer.innerHTML = '';
+                step();
+            }
+        });
+
+        speedSlider.addEventListener('input', (e) => {
+            speedVal.innerText = e.target.value + 'x';
+        });
+
+        // Initialize
+        generateSequence();
+        updateBelt();
+    </script>
+</body>
+</html>

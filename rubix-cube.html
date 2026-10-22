@@ -1,0 +1,480 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>3D Rubik's Cube</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/controls/OrbitControls.js"></script>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Nunito:wght@700;900&display=swap');
+
+        body { 
+            margin: 0; overflow: hidden; background-color: #111827; 
+            font-family: 'Nunito', sans-serif; user-select: none; touch-action: none;
+        }
+
+        #game-canvas { display: block; width: 100vw; height: 100vh; outline: none; }
+
+        /* --- UI LAYER --- */
+        #ui-layer {
+            position: absolute; top: 0; left: 0; width: 100%; height: 100%;
+            pointer-events: none; display: flex; flex-direction: column;
+            justify-content: space-between; padding: 20px; box-sizing: border-box; z-index: 10;
+        }
+
+        .header {
+            text-align: center; pointer-events: auto;
+            background: rgba(17, 24, 39, 0.7); backdrop-filter: blur(8px);
+            padding: 15px 40px; border-radius: 16px; border: 2px solid #374151;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.5); margin: 0 auto;
+        }
+
+        h1 { margin: 0; font-size: 32px; color: #f3f4f6; letter-spacing: 2px; text-transform: uppercase;}
+        p { margin: 5px 0 0 0; color: #9ca3af; font-size: 14px; }
+
+        .controls-bar {
+            display: flex; justify-content: center; gap: 20px; pointer-events: auto;
+            margin-bottom: 20px;
+        }
+
+        .btn {
+            background: #3b82f6; color: white; border: none; padding: 15px 40px;
+            font-size: 20px; font-weight: 900; border-radius: 12px; cursor: pointer;
+            transition: all 0.2s; box-shadow: 0 6px 0 #1d4ed8; text-transform: uppercase;
+        }
+        .btn:hover { background: #60a5fa; transform: translateY(-2px); box-shadow: 0 8px 0 #1d4ed8;}
+        .btn:active { transform: translateY(6px); box-shadow: 0 0 0 #1d4ed8; }
+        .btn:disabled { background: #4b5563; box-shadow: 0 6px 0 #1f2937; cursor: not-allowed; transform: none; }
+        
+        .btn-red { background: #ef4444; box-shadow: 0 6px 0 #b91c1c; }
+        .btn-red:hover { background: #f87171; box-shadow: 0 8px 0 #b91c1c;}
+        .btn-red:active { box-shadow: 0 0 0 #b91c1c; }
+
+    </style>
+</head>
+<body>
+
+    <div id="ui-layer">
+        <div class="header">
+            <h1>Rubik's Cube 3D</h1>
+            <p>Drag on the cube to rotate layers. Drag background to rotate camera.</p>
+        </div>
+
+        <div class="controls-bar">
+            <button class="btn btn-red" id="btn-reset" onclick="resetCube()">Reset</button>
+            <button class="btn" id="btn-scramble" onclick="scrambleCube()">Scramble</button>
+        </div>
+    </div>
+
+    <canvas id="game-canvas"></canvas>
+
+    <script>
+        // --- THREE.JS GLOBALS ---
+        let scene, camera, renderer, controls;
+        let cubies = []; // Array of all 26 pieces
+        let pivot = new THREE.Group(); // Used for rotating slices
+        
+        // Raycasting and Interaction
+        let raycaster = new THREE.Raycaster();
+        let mouse = new THREE.Vector2();
+        let isDraggingCube = false;
+        
+        let dragStartMouse = new THREE.Vector2();
+        let dragStartIntersect = null;
+        let activeAxis = null; // 'x', 'y', or 'z'
+        let activeSliceValue = 0; // -1, 0, or 1
+        let activeSign = 1;
+
+        let animationQueue = [];
+        let isAnimating = false;
+        let isScrambling = false;
+
+        // Standard Rubik's Cube Colors
+        const COLORS = {
+            U: '#ffffff', // Up: White
+            D: '#fbbf24', // Down: Yellow
+            F: '#22c55e', // Front: Green
+            B: '#3b82f6', // Back: Blue
+            R: '#ef4444', // Right: Red
+            L: '#f97316', // Left: Orange
+            Core: '#111111' // Black Plastic
+        };
+
+        const CUBE_SPACING = 1.0;
+        const CUBE_SIZE = 0.96;
+
+        window.onload = init;
+
+        function init() {
+            // Setup Scene
+            scene = new THREE.Scene();
+            scene.add(pivot);
+
+            camera = new THREE.PerspectiveCamera(45, window.innerWidth / window.innerHeight, 0.1, 100);
+            camera.position.set(6, 5, 8);
+
+            renderer = new THREE.WebGLRenderer({ canvas: document.getElementById('game-canvas'), antialias: true });
+            renderer.setSize(window.innerWidth, window.innerHeight);
+            renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+
+            // Controls
+            controls = new THREE.OrbitControls(camera, renderer.domElement);
+            controls.enablePan = false;
+            controls.enableDamping = true;
+            controls.dampingFactor = 0.05;
+            controls.minDistance = 5;
+            controls.maxDistance = 20;
+
+            // Lights
+            const ambient = new THREE.AmbientLight(0xffffff, 0.8);
+            scene.add(ambient);
+            const dirLight = new THREE.DirectionalLight(0xffffff, 0.5);
+            dirLight.position.set(10, 20, 10);
+            scene.add(dirLight);
+
+            buildCube();
+
+            // Event Listeners
+            window.addEventListener('resize', onWindowResize);
+            
+            const canvas = renderer.domElement;
+            canvas.addEventListener('pointerdown', onPointerDown);
+            canvas.addEventListener('pointermove', onPointerMove);
+            window.addEventListener('pointerup', onPointerUp); // Window to catch release outside canvas
+
+            animate();
+        }
+
+        // --- CUBE GENERATION ---
+
+        function createStickerMaterial(colorHex) {
+            if (colorHex === COLORS.Core) {
+                return new THREE.MeshLambertMaterial({ color: COLORS.Core });
+            }
+            
+            // Create authentic plastic border sticker look using Canvas
+            const canvas = document.createElement('canvas');
+            canvas.width = 128; canvas.height = 128;
+            const ctx = canvas.getContext('2d');
+            
+            ctx.fillStyle = COLORS.Core;
+            ctx.fillRect(0, 0, 128, 128);
+            
+            // Draw colored sticker with rounded corners
+            ctx.fillStyle = colorHex;
+            ctx.beginPath();
+            ctx.roundRect(8, 8, 112, 112, 16);
+            ctx.fill();
+
+            const tex = new THREE.CanvasTexture(canvas);
+            tex.anisotropy = renderer.capabilities.getMaxAnisotropy();
+            return new THREE.MeshLambertMaterial({ map: tex, roughness: 0.2 });
+        }
+
+        // BoxGeometry face order: Right(x+), Left(x-), Top(y+), Bottom(y-), Front(z+), Back(z-)
+        function buildCube() {
+            // Clear existing
+            cubies.forEach(c => scene.remove(c));
+            cubies = [];
+
+            const geometry = new THREE.BoxGeometry(CUBE_SIZE, CUBE_SIZE, CUBE_SIZE);
+
+            // Pre-create materials
+            const mats = {
+                R: createStickerMaterial(COLORS.R), L: createStickerMaterial(COLORS.L),
+                U: createStickerMaterial(COLORS.U), D: createStickerMaterial(COLORS.D),
+                F: createStickerMaterial(COLORS.F), B: createStickerMaterial(COLORS.B),
+                C: createStickerMaterial(COLORS.Core)
+            };
+
+            for (let x = -1; x <= 1; x++) {
+                for (let y = -1; y <= 1; y++) {
+                    for (let z = -1; z <= 1; z++) {
+                        if (x === 0 && y === 0 && z === 0) continue; // Skip absolute core
+
+                        const materials = [
+                            x === 1 ? mats.R : mats.C,  // Right
+                            x === -1 ? mats.L : mats.C, // Left
+                            y === 1 ? mats.U : mats.C,  // Top
+                            y === -1 ? mats.D : mats.C, // Bottom
+                            z === 1 ? mats.F : mats.C,  // Front
+                            z === -1 ? mats.B : mats.C  // Back
+                        ];
+
+                        const cubie = new THREE.Mesh(geometry, materials);
+                        cubie.position.set(x * CUBE_SPACING, y * CUBE_SPACING, z * CUBE_SPACING);
+                        // Store initial logical positions to prevent drifting
+                        cubie.userData = { id: cubies.length };
+                        scene.add(cubie);
+                        cubies.push(cubie);
+                    }
+                }
+            }
+        }
+
+        function resetCube() {
+            if (isScrambling || isAnimating) return;
+            buildCube();
+        }
+
+        // --- INTERACTION LOGIC ---
+
+        function getMousePos(e) {
+            return {
+                x: (e.clientX / window.innerWidth) * 2 - 1,
+                y: -(e.clientY / window.innerHeight) * 2 + 1
+            };
+        }
+
+        function onPointerDown(e) {
+            if (isAnimating || isScrambling) return;
+
+            const pos = getMousePos(e);
+            mouse.x = pos.x; mouse.y = pos.y;
+            raycaster.setFromCamera(mouse, camera);
+
+            const intersects = raycaster.intersectObjects(cubies);
+
+            if (intersects.length > 0) {
+                // Clicked on a cubie! Prepare for slice drag.
+                controls.enabled = false; // Disable camera rotation
+                isDraggingCube = false;
+                
+                dragStartMouse.set(e.clientX, e.clientY);
+                dragStartIntersect = intersects[0];
+                activeAxis = null;
+            } else {
+                // Clicked background, standard camera orbit
+                controls.enabled = true;
+            }
+        }
+
+        function getScreenVector(worldVector, position) {
+            const posCopy = position.clone();
+            const proj1 = posCopy.project(camera);
+            
+            const pos2 = position.clone().add(worldVector);
+            const proj2 = pos2.project(camera);
+            
+            return new THREE.Vector2(proj2.x - proj1.x, proj2.y - proj1.y).normalize();
+        }
+
+        function onPointerMove(e) {
+            if (!dragStartIntersect || isAnimating || isScrambling) return;
+
+            const currentMouse = new THREE.Vector2(e.clientX, e.clientY);
+            const dragVec = new THREE.Vector2().subVectors(currentMouse, dragStartMouse);
+
+            // Wait for a small threshold to determine drag direction
+            if (!isDraggingCube && dragVec.length() > 10) {
+                isDraggingCube = true;
+
+                const cubie = dragStartIntersect.object;
+                // Get the world normal of the clicked face
+                const normal = dragStartIntersect.face.normal.clone().transformDirection(cubie.matrixWorld).round();
+                
+                // Determine possible axes of rotation (perpendicular to normal)
+                const xAxis = new THREE.Vector3(1,0,0);
+                const yAxis = new THREE.Vector3(0,1,0);
+                const zAxis = new THREE.Vector3(0,0,1);
+                
+                let possibleAxes = [];
+                if (Math.abs(normal.x) > 0.5) possibleAxes = [yAxis, zAxis];
+                else if (Math.abs(normal.y) > 0.5) possibleAxes = [xAxis, zAxis];
+                else if (Math.abs(normal.z) > 0.5) possibleAxes = [xAxis, yAxis];
+
+                // Project physical axes to screen to see which one the user is dragging along
+                let bestAxis = null;
+                let maxDot = -1;
+                let sign = 1;
+
+                // We actually want to find the axis the mouse is dragging PERPENDICULAR to, to rotate AROUND the other one.
+                // If dragging along projected Y-axis, we want to rotate around Z (or X depending on face).
+                // A simpler mapping: We test rotation around the possible axes. The rotation that moves the face in the direction of the drag is correct.
+                
+                const screenDragDir = new THREE.Vector2(dragVec.x, -dragVec.y).normalize(); // -y because screen y is inverted to NDC
+
+                possibleAxes.forEach(axis => {
+                    // Vector created by cross product of Normal and Axis of Rotation gives the direction of movement on the face
+                    const moveDirWorld = new THREE.Vector3().crossVectors(normal, axis);
+                    const screenMoveDir = getScreenVector(moveDirWorld, cubie.position);
+                    
+                    const dot = screenDragDir.dot(screenMoveDir);
+                    if (Math.abs(dot) > maxDot) {
+                        maxDot = Math.abs(dot);
+                        bestAxis = axis;
+                        sign = Math.sign(dot);
+                    }
+                });
+
+                // Lock in the rotation details
+                activeAxis = bestAxis.x ? 'x' : (bestAxis.y ? 'y' : 'z');
+                activeSliceValue = Math.round(cubie.position[activeAxis]);
+                activeSign = sign;
+
+                // Group the slice into the pivot
+                cubies.forEach(c => {
+                    if (Math.round(c.position[activeAxis]) === activeSliceValue) {
+                        pivot.attach(c);
+                    }
+                });
+            }
+
+            if (isDraggingCube && activeAxis) {
+                // Apply rotation based on drag distance
+                const sensitivity = 0.01;
+                let angle = dragVec.length() * sensitivity * activeSign;
+                
+                // Cap visual rotation during drag to 90 deg slightly
+                angle = Math.max(-Math.PI/2 - 0.2, Math.min(Math.PI/2 + 0.2, angle));
+                
+                pivot.rotation.set(0,0,0);
+                pivot.rotation[activeAxis] = angle;
+            }
+        }
+
+        function onPointerUp(e) {
+            if (!dragStartIntersect) return;
+
+            if (isDraggingCube && activeAxis) {
+                // Snap to nearest 90 degrees
+                let finalAngle = pivot.rotation[activeAxis];
+                let targetAngle = 0;
+
+                if (finalAngle > Math.PI/4) targetAngle = Math.PI/2;
+                else if (finalAngle < -Math.PI/4) targetAngle = -Math.PI/2;
+
+                queueAnimation(activeAxis, activeSliceValue, targetAngle, true); // true = finish current drag
+            } else {
+                // Clicked without dragging, re-enable
+                controls.enabled = true;
+            }
+
+            dragStartIntersect = null;
+            isDraggingCube = false;
+        }
+
+        // --- ANIMATION & ROTATION CORE ---
+
+        function queueAnimation(axis, sliceVal, targetAngle, isDragRelease = false) {
+            animationQueue.push({ axis, sliceVal, targetAngle, isDragRelease });
+            if (!isAnimating) processQueue();
+        }
+
+        function processQueue() {
+            if (animationQueue.length === 0) {
+                isAnimating = false;
+                controls.enabled = true;
+                return;
+            }
+
+            isAnimating = true;
+            const anim = animationQueue.shift();
+
+            // If not coming from a drag release, we need to assemble the pivot
+            if (!anim.isDragRelease) {
+                pivot.rotation.set(0,0,0);
+                cubies.forEach(c => {
+                    if (Math.round(c.position[anim.axis]) === anim.sliceVal) {
+                        pivot.attach(c);
+                    }
+                });
+            }
+
+            // Animate
+            const startAngle = pivot.rotation[anim.axis];
+            const duration = isScrambling ? 100 : 250; // Faster if scrambling
+            const startTime = performance.now();
+
+            function animLoop(time) {
+                const elapsed = time - startTime;
+                const t = Math.min(elapsed / duration, 1.0);
+                
+                // Sine Ease Out
+                const easeT = Math.sin(t * Math.PI / 2);
+
+                pivot.rotation[anim.axis] = startAngle + (anim.targetAngle - startAngle) * easeT;
+
+                if (t < 1.0) {
+                    requestAnimationFrame(animLoop);
+                } else {
+                    pivot.rotation[anim.axis] = anim.targetAngle;
+                    finalizeRotation();
+                }
+            }
+            requestAnimationFrame(animLoop);
+        }
+
+        function finalizeRotation() {
+            // Detach children back to scene and round coordinates to prevent floating point drift
+            const children = [...pivot.children];
+            children.forEach(c => {
+                scene.attach(c);
+                
+                c.position.x = Math.round(c.position.x);
+                c.position.y = Math.round(c.position.y);
+                c.position.z = Math.round(c.position.z);
+
+                // Round rotations (Quaternions mapped to Euler multiples of PI/2)
+                const e = new THREE.Euler().setFromQuaternion(c.quaternion);
+                e.x = Math.round(e.x / (Math.PI/2)) * (Math.PI/2);
+                e.y = Math.round(e.y / (Math.PI/2)) * (Math.PI/2);
+                e.z = Math.round(e.z / (Math.PI/2)) * (Math.PI/2);
+                c.quaternion.setFromEuler(e);
+            });
+
+            pivot.rotation.set(0,0,0);
+            processQueue(); // Next in queue
+        }
+
+        // --- SCRAMBLE LOGIC ---
+
+        function scrambleCube() {
+            if (isAnimating || isScrambling) return;
+            isScrambling = true;
+            controls.enabled = false;
+            
+            document.getElementById('btn-scramble').disabled = true;
+            document.getElementById('btn-reset').disabled = true;
+
+            const axes = ['x', 'y', 'z'];
+            const slices = [-1, 0, 1];
+            const angles = [Math.PI/2, -Math.PI/2, Math.PI];
+
+            for (let i = 0; i < 20; i++) {
+                const ax = axes[Math.floor(Math.random() * axes.length)];
+                const sl = slices[Math.floor(Math.random() * slices.length)];
+                const ang = angles[Math.floor(Math.random() * angles.length)];
+                queueAnimation(ax, sl, ang);
+            }
+
+            // Hook to re-enable UI when done
+            const checkDone = setInterval(() => {
+                if (!isAnimating && animationQueue.length === 0) {
+                    clearInterval(checkDone);
+                    isScrambling = false;
+                    document.getElementById('btn-scramble').disabled = false;
+                    document.getElementById('btn-reset').disabled = false;
+                }
+            }, 100);
+        }
+
+        // --- RENDER LOOP ---
+
+        function onWindowResize() {
+            camera.aspect = window.innerWidth / window.innerHeight;
+            camera.updateProjectionMatrix();
+            renderer.setSize(window.innerWidth, window.innerHeight);
+        }
+
+        function animate() {
+            requestAnimationFrame(animate);
+            if(controls.enabled) controls.update();
+            renderer.render(scene, camera);
+        }
+
+    </script>
+</body>
+</html>

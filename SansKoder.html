@@ -1,0 +1,1031 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>sansKoder</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Helvetica+Neue:wght@400;500;700&display=swap" rel="stylesheet">
+    
+    <style>
+        :root {
+            /* Scratch 3.0 Colors */
+            --b-motion: #4c97ff;
+            --b-looks: #9966ff;
+            --b-sound: #cf63cf;
+            --b-events: #ffbf00;
+            --b-control: #ffab19;
+            --b-sensing: #5cb1d6;
+            --b-operators: #59c059;
+            --b-vars: #ff8c1a;
+            
+            --bg-workspace: #f9f9f9;
+            --bg-palette: #ffffff;
+            --border-color: #e5e5e5;
+            --text-main: #575E75;
+        }
+
+        body {
+            font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif;
+            background-color: var(--bg-workspace);
+            color: var(--text-main);
+            margin: 0;
+            height: 100vh;
+            display: flex;
+            flex-direction: column;
+            overflow: hidden;
+            user-select: none; /* Prevent text selection while dragging */
+        }
+
+        /* Top Navigation Bar */
+        .top-bar {
+            background-color: #4c97ff;
+            height: 48px;
+            display: flex;
+            align-items: center;
+            padding: 0 16px;
+            color: white;
+            font-size: 14px;
+            font-weight: 700;
+            gap: 24px;
+            flex-shrink: 0;
+            z-index: 50;
+        }
+        .nav-btn {
+            cursor: pointer;
+            padding: 6px 12px;
+            border-radius: 4px;
+            transition: background 0.2s;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+        }
+        .nav-btn:hover { background-color: rgba(0,0,0,0.15); }
+
+        .category-list {
+            width: 72px;
+            background: #ffffff;
+            border-right: 1px solid var(--border-color);
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            padding-top: 12px;
+            gap: 16px;
+            overflow-y: auto;
+            flex-shrink: 0;
+        }
+        .category-item {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            cursor: pointer;
+            gap: 4px;
+            width: 100%;
+        }
+        .cat-circle {
+            width: 32px;
+            height: 32px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            border: 2px solid transparent;
+            transition: transform 0.1s;
+        }
+        .category-item:active .cat-circle { transform: scale(0.9); }
+        .category-item.active .cat-circle { border-color: rgba(0,0,0,0.2); box-shadow: 0 0 0 3px rgba(0,0,0,0.1); }
+        .cat-label { font-size: 10px; font-weight: 500; text-align: center; line-height: 1.1; }
+
+        .block-palette {
+            width: 280px;
+            background: #f9f9f9;
+            border-right: 1px solid var(--border-color);
+            padding: 16px;
+            overflow-y: auto;
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+            flex-shrink: 0;
+        }
+
+        .block {
+            border-radius: 4px;
+            padding: 6px 10px;
+            color: white;
+            font-weight: 500;
+            font-size: 13px;
+            cursor: grab;
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            box-shadow: inset 0 2px 0 rgba(255,255,255,0.2), inset 0 -2px 0 rgba(0,0,0,0.15), 0 1px 2px rgba(0,0,0,0.1);
+            width: max-content;
+            max-width: 100%;
+            transition: filter 0.1s;
+            position: relative;
+        }
+        
+        .block:active { cursor: grabbing; }
+        .block-running { filter: brightness(1.2); box-shadow: 0 0 8px 2px rgba(255,255,0,0.8); z-index: 10; }
+        
+        /* Inputs inside blocks */
+        .block-input-num {
+            background: white;
+            border-radius: 12px;
+            padding: 2px 6px;
+            color: #575E75;
+            font-size: 12px;
+            font-weight: bold;
+            width: 36px;
+            text-align: center;
+            border: 1px solid rgba(0,0,0,0.2);
+            box-shadow: inset 0 1px 2px rgba(0,0,0,0.1);
+            outline: none;
+        }
+        .block-input-text {
+            background: white;
+            border-radius: 4px;
+            padding: 2px 6px;
+            color: #575E75;
+            font-size: 12px;
+            font-weight: bold;
+            width: 50px;
+            text-align: center;
+            border: 1px solid rgba(0,0,0,0.2);
+            box-shadow: inset 0 1px 2px rgba(0,0,0,0.1);
+            outline: none;
+        }
+        .block-dropdown {
+            background: rgba(0,0,0,0.1);
+            border-radius: 12px;
+            padding: 2px 6px;
+            color: white;
+            font-size: 12px;
+            font-weight: bold;
+            border: 1px solid rgba(0,0,0,0.2);
+            cursor: pointer;
+            outline: none;
+            appearance: none;
+        }
+
+        /* Specific Block Shapes */
+        .block-reporter { border-radius: 16px; padding: 4px 12px; }
+        .block-boolean { 
+            clip-path: polygon(12px 0, calc(100% - 12px) 0, 100% 50%, calc(100% - 12px) 100%, 12px 100%, 0% 50%);
+            padding: 4px 16px;
+            border-radius: 0;
+            box-shadow: none;
+            background-color: inherit;
+            border: 1px solid rgba(0,0,0,0.15);
+        }
+        .block-hat { 
+            border-top-left-radius: 12px; 
+            border-top-right-radius: 12px; 
+        }
+        
+        .c-block-wrapper {
+            display: flex;
+            flex-direction: column;
+            width: max-content;
+            filter: drop-shadow(0 1px 2px rgba(0,0,0,0.1));
+        }
+        .c-block-header {
+            padding: 6px 10px;
+            color: white;
+            font-weight: 500;
+            font-size: 13px;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            border-top-left-radius: 4px;
+            border-top-right-radius: 4px;
+            cursor: grab;
+            box-shadow: inset 0 2px 0 rgba(255,255,255,0.2);
+        }
+        .c-block-body {
+            border-left: 16px solid;
+            padding-left: 4px;
+            min-height: 24px;
+            display: flex;
+            flex-direction: column;
+            align-items: flex-start;
+        }
+        .c-block-footer {
+            height: 16px;
+            border-bottom-left-radius: 4px;
+            border-bottom-right-radius: 4px;
+            box-shadow: inset 0 -2px 0 rgba(0,0,0,0.15);
+        }
+
+        .workspace {
+            flex: 1;
+            background-color: var(--bg-workspace);
+            background-image: radial-gradient(#d1d5db 1px, transparent 1px);
+            background-size: 24px 24px;
+            position: relative;
+            overflow: auto;
+            padding: 24px;
+        }
+        .dropzone {
+            min-height: 60px;
+            display: flex;
+            flex-direction: column;
+            align-items: flex-start;
+            padding-bottom: 80px; /* Space to drop at the end */
+        }
+        .nested-dropzone {
+            min-height: 24px;
+            padding-bottom: 8px;
+            width: 100%;
+        }
+
+        /* In the workspace, blocks should stack seamlessly (simulating snap) */
+        .workspace .block, .workspace .c-block-wrapper {
+            margin-bottom: 0;
+            /* Give a tiny negative margin to overlap borders and look fused */
+            margin-top: -1px; 
+        }
+        .workspace > .dropzone > :first-child { margin-top: 0; }
+
+        .drag-over-indicator {
+            border-top: 4px solid var(--b-motion);
+            margin-top: 2px;
+            margin-bottom: 2px;
+            border-radius: 2px;
+            width: 100%;
+            opacity: 0.8;
+        }
+
+        .stage-panel {
+            width: 480px;
+            background: #ffffff;
+            border-left: 1px solid var(--border-color);
+            display: flex;
+            flex-direction: column;
+            flex-shrink: 0;
+        }
+        .stage-header {
+            height: 44px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 0 16px;
+            border-bottom: 1px solid var(--border-color);
+            background: #f9f9f9;
+        }
+        .stage-controls { display: flex; gap: 12px; }
+        
+        /* Scratch Flag and Stop */
+        .flag-btn { cursor: pointer; color: #4cb748; transition: transform 0.1s; }
+        .flag-btn:active { transform: scale(0.9); }
+        .stop-btn { cursor: pointer; color: #ff4c4c; transition: transform 0.1s; }
+        .stop-btn:active { transform: scale(0.9); }
+
+        #stage-wrapper {
+            width: 100%;
+            height: 360px;
+            background: #ffffff;
+            border-bottom: 1px solid var(--border-color);
+            position: relative;
+            overflow: hidden;
+        }
+        canvas { display: block; width: 100%; height: 100%; }
+
+        .sprite-info {
+            padding: 12px 16px;
+            background: #f9f9f9;
+            border-bottom: 1px solid var(--border-color);
+            display: grid;
+            grid-template-columns: 1fr 1fr 1fr;
+            gap: 8px;
+            font-size: 12px;
+            color: #575E75;
+        }
+        .info-box {
+            background: white; border: 1px solid var(--border-color);
+            border-radius: 4px; padding: 4px 8px; display: flex; align-items: center; justify-content: space-between;
+        }
+
+        .tutorials-panel { flex: 1; overflow-y: auto; padding: 16px; background: #f9f9f9; }
+        .tut-card {
+            background: white; border: 1px solid var(--border-color); border-radius: 8px; padding: 12px;
+            margin-bottom: 12px; cursor: pointer; transition: all 0.1s; display: flex; align-items: center; gap: 12px;
+        }
+        .tut-card:hover { border-color: var(--b-motion); box-shadow: 0 2px 8px rgba(0,0,0,0.05); }
+        .tut-icon { width: 40px; height: 40px; background: #eef2ff; border-radius: 8px; display: flex; align-items: center; justify-content: center; font-size: 20px;}
+
+        ::-webkit-scrollbar { width: 8px; height: 8px; }
+        ::-webkit-scrollbar-track { background: #f1f1f1; }
+        ::-webkit-scrollbar-thumb { background: #c1c1c1; border-radius: 4px; }
+        ::-webkit-scrollbar-thumb:hover { background: #a8a8a8; }
+        
+        .sanskrit-text { font-weight: 700; font-size: 14px; }
+        .eng-hint { font-size: 11px; opacity: 0.8; margin-left: 2px; }
+    </style>
+</head>
+<body>
+
+    <header class="top-bar">
+        <div class="flex items-center gap-2">
+            <div class="font-black text-xl tracking-wider">sansKoder</div>
+        </div>
+        
+        <div class="flex gap-4 ml-8 text-sm font-normal">
+            <div class="nav-btn" onclick="triggerUpload()">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="17 8 12 3 7 8"></polyline><line x1="12" y1="3" x2="12" y2="15"></line></svg>
+                Load .txt
+            </div>
+            <input type="file" id="file-upload" accept=".txt" style="display:none" onchange="uploadWorkspace(event)">
+            
+            <div class="nav-btn" onclick="downloadWorkspace()">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="7 10 12 15 17 10"></polyline><line x1="12" y1="15" x2="12" y2="3"></line></svg>
+                Save .txt
+            </div>
+
+            <div class="nav-btn" onclick="clearWorkspace()">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="3 6 5 6 21 6"></polyline><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path></svg>
+                शुद्ध (Clear)
+            </div>
+        </div>
+    </header>
+
+    <main class="flex-1 flex overflow-hidden">
+        
+        <!-- Toolbox (Categories + Palette) -->
+        <div class="flex h-full flex-shrink-0 z-10 shadow-[2px_0_4px_rgba(0,0,0,0.02)]">
+            <!-- Categories -->
+            <div id="category-list" class="category-list">
+                <!-- Injected via JS -->
+            </div>
+            
+            <!-- Palette -->
+            <div class="block-palette" id="palette">
+                <!-- Injected via JS -->
+            </div>
+        </div>
+
+        <!-- Workspace -->
+        <div class="workspace" id="workspace-container">
+            <div id="workspace-dropzone" class="dropzone w-full">
+                <!-- Blocks are dropped here -->
+            </div>
+        </div>
+
+        <div class="stage-panel">
+            <div class="stage-header">
+                <div class="font-bold text-[#575E75]">रङ्गमञ्चः (Stage)</div>
+                <div class="stage-controls">
+                    <!-- Green Flag -->
+                    <svg class="flag-btn" onclick="runCode()" width="32" height="32" viewBox="0 0 24 24" fill="currentColor">
+                        <path d="M6 3h1v18H6V3zm2 2h10l-3 4 3 4H8V5z"/>
+                    </svg>
+                    <!-- Stop Sign -->
+                    <svg class="stop-btn" onclick="stopCode()" width="32" height="32" viewBox="0 0 24 24" fill="currentColor">
+                        <path d="M12 2C6.47 2 2 6.47 2 12s4.47 10 10 10 10-4.47 10-10S17.53 2 12 2zm4 11H8v-2h8v2z"/>
+                    </svg>
+                </div>
+            </div>
+            
+            <div id="stage-wrapper">
+                <canvas id="stage-canvas"></canvas>
+            </div>
+
+            <!-- Sprite Info -->
+            <div class="sprite-info">
+                <div class="info-box"><span>X</span> <span id="info-x" class="font-bold">0</span></div>
+                <div class="info-box"><span>Y</span> <span id="info-y" class="font-bold">0</span></div>
+                <div class="info-box"><span>Dir</span> <span id="info-dir" class="font-bold">90</span></div>
+            </div>
+
+            <!-- Tutorials -->
+            <div class="tutorials-panel">
+                <h3 class="font-bold text-sm mb-3">पाठाः (Tutorials)</h3>
+                
+                <div class="tut-card" onclick="loadTutorial(1)">
+                    <div class="tut-icon bg-blue-100 text-blue-500">🚶</div>
+                    <div>
+                        <div class="font-bold text-sm">१. गतिः (Basic Motion)</div>
+                        <div class="text-xs text-gray-500">Learn to move & turn.</div>
+                    </div>
+                </div>
+                
+                <div class="tut-card" onclick="loadTutorial(2)">
+                    <div class="tut-icon bg-orange-100 text-orange-500">🔁</div>
+                    <div>
+                        <div class="font-bold text-sm">२. चतुरस्रम् (Square Loop)</div>
+                        <div class="text-xs text-gray-500">Use repeat blocks to draw.</div>
+                    </div>
+                </div>
+
+                <div class="tut-card" onclick="loadTutorial(3)">
+                    <div class="tut-icon bg-green-100 text-green-500">⭐</div>
+                    <div>
+                        <div class="font-bold text-sm">३. तारा (Star Pattern)</div>
+                        <div class="text-xs text-gray-500">Complex geometry logic.</div>
+                    </div>
+                </div>
+
+                <div class="tut-card" onclick="loadTutorial(4)">
+                    <div class="tut-icon bg-purple-100 text-purple-500">🎭</div>
+                    <div>
+                        <div class="font-bold text-sm">४. अनन्तम् (Bounce)</div>
+                        <div class="text-xs text-gray-500">Forever loops & edge detection.</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+    </main>
+
+    <script>
+        const categories = [
+            { id: 'motion', name: 'गतिः', en: 'Motion', color: '#4c97ff', 
+              icon: '<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2"><circle cx="12" cy="12" r="10"></circle><path d="M12 8l4 4-4 4M8 12h8"></path></svg>' },
+            { id: 'looks', name: 'रूपम्', en: 'Looks', color: '#9966ff', 
+              icon: '<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"></path><circle cx="12" cy="12" r="3"></circle></svg>' },
+            { id: 'sound', name: 'ध्वनिः', en: 'Sound', color: '#cf63cf', 
+              icon: '<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2"><polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"></polygon><path d="M19.07 4.93a10 10 0 0 1 0 14.14M15.54 8.46a5 5 0 0 1 0 7.07"></path></svg>' },
+            { id: 'events', name: 'घटनाः', en: 'Events', color: '#ffbf00', 
+              icon: '<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2"><path d="M4 15s1-1 4-1 5 2 8 2 4-1 4-1V3s-1 1-4 1-5-2-8-2-4 1-4 1z"></path><line x1="4" y1="22" x2="4" y2="15"></line></svg>' },
+            { id: 'control', name: 'नियन्त्रण', en: 'Control', color: '#ffab19', 
+              icon: '<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2"><path d="M21.5 2v6h-6M2.5 22v-6h6M2 11.5a10 10 0 0 1 18.8-4.3M22 12.5a10 10 0 0 1-18.8 4.2"></path></svg>' },
+            { id: 'sensing', name: 'संवेदन', en: 'Sensing', color: '#5cb1d6', 
+              icon: '<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"></polygon></svg>' },
+            { id: 'operators', name: 'गणितम्', en: 'Operators', color: '#59c059', 
+              icon: '<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2"><line x1="12" y1="5" x2="12" y2="19"></line><line x1="5" y1="12" x2="19" y2="12"></line></svg>' },
+            { id: 'variables', name: 'चराः', en: 'Variables', color: '#ff8c1a', 
+              icon: '<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2"><line x1="8" y1="6" x2="21" y2="6"></line><line x1="8" y1="12" x2="21" y2="12"></line><line x1="8" y1="18" x2="21" y2="18"></line><line x1="3" y1="6" x2="3.01" y2="6"></line><line x1="3" y1="12" x2="3.01" y2="12"></line><line x1="3" y1="18" x2="3.01" y2="18"></line></svg>' }
+        ];
+
+        const blocksDef = [
+            // MOTION (गतिः)
+            { id: 'move', cat: 'motion', type: 'stack', text: 'गतिः (Move) [N:10] पदानि' },
+            { id: 'turn_r', cat: 'motion', type: 'stack', text: 'दक्षिणे भ्रम ↻ [N:15] अंशाः' },
+            { id: 'turn_l', cat: 'motion', type: 'stack', text: 'वामे भ्रम ↺ [N:15] अंशाः' },
+            { id: 'goto_xy', cat: 'motion', type: 'stack', text: 'गच्छ (Go) x: [N:0] y: [N:0]' },
+            { id: 'point_dir', cat: 'motion', type: 'stack', text: 'दिश (Point in dir) [N:90]' },
+            { id: 'change_x', cat: 'motion', type: 'stack', text: 'x परिवर्तय (Change) [N:10]' },
+            { id: 'set_x', cat: 'motion', type: 'stack', text: 'x स्थापय (Set to) [N:0]' },
+            { id: 'change_y', cat: 'motion', type: 'stack', text: 'y परिवर्तय (Change) [N:10]' },
+            { id: 'set_y', cat: 'motion', type: 'stack', text: 'y स्थापय (Set to) [N:0]' },
+            { id: 'bounce', cat: 'motion', type: 'stack', text: 'सीमान्त-प्रत्यावर्तनम् (Bounce)' },
+            { id: 'x_pos', cat: 'motion', type: 'reporter', text: 'x स्थानम् (x pos)' },
+            { id: 'y_pos', cat: 'motion', type: 'reporter', text: 'y स्थानम् (y pos)' },
+            
+            // LOOKS (रूपम्)
+            { id: 'say_sec', cat: 'looks', type: 'stack', text: 'वद (Say) [T:नमस्ते!] [N:2] क्षण (sec)' },
+            { id: 'say', cat: 'looks', type: 'stack', text: 'वद (Say) [T:नमस्ते!]' },
+            { id: 'show', cat: 'looks', type: 'stack', text: 'दर्शय (Show)' },
+            { id: 'hide', cat: 'looks', type: 'stack', text: 'गोपय (Hide)' },
+            { id: 'change_size', cat: 'looks', type: 'stack', text: 'आकारं परिवर्तय [N:10]' },
+            { id: 'set_size', cat: 'looks', type: 'stack', text: 'आकारं स्थापय [N:100] %' },
+            { id: 'clear_gfx', cat: 'looks', type: 'stack', text: 'रूपं शुद्धीकुरु (Clear pen)' },
+            
+            // SOUND (ध्वनिः)
+            { id: 'play_sound', cat: 'sound', type: 'stack', text: 'ध्वनिं वादय (Play sound) [D:Meow]' },
+            { id: 'stop_sounds', cat: 'sound', type: 'stack', text: 'सर्वध्वनिं निवर्तय (Stop sounds)' },
+            
+            // EVENTS (घटनाः)
+            { id: 'flag_clicked', cat: 'events', type: 'hat', text: 'यदा प्रारम्भ (When ⚑ Clicked)' },
+            
+            // CONTROL (नियन्त्रणम्)
+            { id: 'wait', cat: 'control', type: 'stack', text: 'प्रतीक्षस्व (Wait) [N:1] क्षण' },
+            { id: 'repeat', cat: 'control', type: 'c-block', text: 'पुनरावृत्ति (Repeat) [N:10] वारम्' },
+            { id: 'forever', cat: 'control', type: 'c-block', text: 'अनन्तम् (Forever)' },
+            { id: 'if', cat: 'control', type: 'c-block', text: 'यदि (If) [B] तर्हि (Then)' },
+            { id: 'stop_all', cat: 'control', type: 'stack', text: 'सर्वं निवर्तय (Stop all)' },
+            
+            // OPERATORS (गणितम्)
+            { id: 'add', cat: 'operators', type: 'reporter', text: '[N:0] + [N:0]' },
+            { id: 'sub', cat: 'operators', type: 'reporter', text: '[N:0] - [N:0]' },
+            { id: 'mul', cat: 'operators', type: 'reporter', text: '[N:0] × [N:0]' },
+            { id: 'div', cat: 'operators', type: 'reporter', text: '[N:0] ÷ [N:0]' },
+            { id: 'random', cat: 'operators', type: 'reporter', text: 'यादृच्छिक [N:1] तः [N:10]' },
+            { id: 'gt', cat: 'operators', type: 'boolean', text: '[N:0] > [N:50]' },
+            { id: 'lt', cat: 'operators', type: 'boolean', text: '[N:0] < [N:50]' },
+            { id: 'eq', cat: 'operators', type: 'boolean', text: '[N:0] = [N:50]' },
+            
+            // VARIABLES (चराः)
+            { id: 'set_var', cat: 'variables', type: 'stack', text: 'चरं स्थापय (Set var) [N:0]' },
+            { id: 'change_var', cat: 'variables', type: 'stack', text: 'चरं परिवर्तय (Change by) [N:1]' }
+        ];
+
+        let activeCategory = 'motion';
+        let draggedBlock = null;
+        let isDraggingFromPalette = false;
+        let programRunning = false;
+        let stopSignal = false;
+
+        const stage = document.getElementById('stage-canvas');
+        const ctx = stage.getContext('2d');
+        let pathHistory = [];
+
+        const sprite = {
+            x: 0, y: 0, dir: 90, size: 100, visible: true, sayText: ''
+        };
+
+        function init() {
+            stage.width = stage.parentElement.clientWidth;
+            stage.height = stage.parentElement.clientHeight;
+            
+            buildCategories();
+            renderPalette('motion');
+            setupDragAndDrop();
+            resetSprite(true);
+            
+            window.addEventListener('resize', () => {
+                stage.width = stage.parentElement.clientWidth;
+                stage.height = stage.parentElement.clientHeight;
+                drawStage();
+            });
+        }
+
+        function buildCategories() {
+            const list = document.getElementById('category-list');
+            categories.forEach(cat => {
+                const btn = document.createElement('div');
+                btn.className = `category-item ${cat.id === activeCategory ? 'active' : ''}`;
+                btn.dataset.id = cat.id;
+                
+                btn.innerHTML = `
+                    <div class="cat-circle" style="background-color: ${cat.color}">
+                        ${cat.icon}
+                    </div>
+                    <div class="cat-label text-[#575E75]">${cat.en}</div>
+                `;
+                
+                btn.onclick = () => {
+                    document.querySelectorAll('.category-item').forEach(el => el.classList.remove('active'));
+                    btn.classList.add('active');
+                    renderPalette(cat.id);
+                };
+                list.appendChild(btn);
+            });
+        }
+
+        function renderPalette(catId) {
+            activeCategory = catId;
+            const pal = document.getElementById('palette');
+            pal.innerHTML = '';
+            
+            blocksDef.filter(b => b.cat === catId).forEach(def => {
+                const el = createBlockDOM(def, true);
+                pal.appendChild(el);
+            });
+        }
+
+        function parseBlockText(text) {
+            const parts = [];
+            const regex = /(\[[NTBD]:[^\]]*\])|([^\[]+)/g;
+            let match;
+            while ((match = regex.exec(text)) !== null) {
+                if (match[1]) {
+                    const typeVal = match[1].substring(1, match[1].length - 1).split(':');
+                    parts.push({ type: 'input', dataType: typeVal[0], default: typeVal[1] || '' });
+                } else if (match[2]) {
+                    parts.push({ type: 'text', val: match[2].trim() });
+                }
+            }
+            return parts;
+        }
+
+        function createBlockDOM(def, isPalette) {
+            const catInfo = categories.find(c => c.id === def.cat);
+            
+            const wrapper = document.createElement('div');
+            wrapper.dataset.id = def.id;
+            wrapper.dataset.type = def.type;
+            wrapper.draggable = true;
+            
+            if (def.type === 'c-block') {
+                wrapper.className = 'c-block-wrapper';
+                
+                const header = document.createElement('div');
+                header.className = 'c-block-header';
+                header.style.backgroundColor = catInfo.color;
+                
+                const body = document.createElement('div');
+                body.className = 'c-block-body dropzone nested-dropzone';
+                body.style.borderColor = catInfo.color;
+                
+                const footer = document.createElement('div');
+                footer.className = 'c-block-footer';
+                footer.style.backgroundColor = catInfo.color;
+
+                buildBlockContent(header, def, catInfo, isPalette);
+                wrapper.appendChild(header);
+                wrapper.appendChild(body);
+                wrapper.appendChild(footer);
+                
+                if(!isPalette) setupDropzone(body);
+
+            } else {
+                wrapper.className = `block block-${def.type}`;
+                wrapper.style.backgroundColor = catInfo.color;
+                buildBlockContent(wrapper, def, catInfo, isPalette);
+            }
+
+            // Drag Events
+            wrapper.addEventListener('dragstart', (e) => {
+                e.stopPropagation();
+                draggedBlock = wrapper;
+                isDraggingFromPalette = isPalette;
+                e.dataTransfer.effectAllowed = isPalette ? 'copy' : 'move';
+                setTimeout(() => wrapper.style.opacity = '0.5', 0);
+            });
+            wrapper.addEventListener('dragend', (e) => {
+                e.stopPropagation();
+                wrapper.style.opacity = '1';
+                draggedBlock = null;
+                document.querySelectorAll('.drag-over').forEach(el => el.classList.remove('drag-over'));
+            });
+
+            return wrapper;
+        }
+
+        function buildBlockContent(container, def, catInfo, isPalette) {
+            const parts = parseBlockText(def.text);
+            parts.forEach(p => {
+                if (p.type === 'text') {
+                    if(p.val) {
+                        // Separate Sanskrit and English in parens
+                        const textMatch = p.val.match(/([^\(]+)(?:\(([^)]+)\))?(.*)/);
+                        const span = document.createElement('span');
+                        
+                        if(textMatch && textMatch[2]) {
+                            span.innerHTML = `<span class="sanskrit-text">${textMatch[1].trim()}</span> <span class="eng-hint">(${textMatch[2].trim()})</span> ${textMatch[3]}`;
+                        } else {
+                            span.innerHTML = `<span class="sanskrit-text">${p.val}</span>`;
+                        }
+                        container.appendChild(span);
+                    }
+                } else if (p.type === 'input') {
+                    if (p.dataType === 'N' || p.dataType === 'T') {
+                        const inp = document.createElement('input');
+                        inp.type = p.dataType === 'N' ? 'number' : 'text';
+                        inp.value = p.default;
+                        inp.className = p.dataType === 'N' ? 'block-input-num' : 'block-input-text';
+                        inp.onmousedown = (e) => e.stopPropagation(); 
+                        container.appendChild(inp);
+                    } else if (p.dataType === 'D') {
+                        const sel = document.createElement('select');
+                        sel.className = 'block-dropdown';
+                        const opt = document.createElement('option');
+                        opt.innerText = p.default;
+                        sel.appendChild(opt);
+                        sel.onmousedown = (e) => e.stopPropagation();
+                        container.appendChild(sel);
+                    } else if (p.dataType === 'B') {
+                        const boolHole = document.createElement('div');
+                        boolHole.className = 'w-8 h-4 bg-black bg-opacity-20 flex items-center justify-center text-[10px] text-white/50 block-boolean';
+                        container.appendChild(boolHole);
+                    }
+                }
+            });
+        }
+
+        function setupDragAndDrop() {
+            setupDropzone(document.getElementById('workspace-dropzone'));
+        }
+
+        function setupDropzone(zone) {
+            zone.addEventListener('dragover', (e) => {
+                e.preventDefault();
+                e.stopPropagation();
+                if(draggedBlock && ['stack','hat','c-block'].includes(draggedBlock.dataset.type)) {
+                    zone.classList.add('drag-over');
+                }
+            });
+            zone.addEventListener('dragleave', (e) => {
+                e.preventDefault();
+                e.stopPropagation();
+                zone.classList.remove('drag-over');
+            });
+            zone.addEventListener('drop', (e) => {
+                e.preventDefault();
+                e.stopPropagation();
+                zone.classList.remove('drag-over');
+                
+                if (!draggedBlock) return;
+                if(['reporter','boolean'].includes(draggedBlock.dataset.type)) return;
+
+                if (isDraggingFromPalette) {
+                    const def = blocksDef.find(b => b.id === draggedBlock.dataset.id);
+                    if(def) {
+                        const newEl = createBlockDOM(def, false);
+                        insertBlock(zone, newEl, e.clientY);
+                    }
+                } else {
+                    if(zone.closest('.c-block-wrapper') === draggedBlock) return; 
+                    insertBlock(zone, draggedBlock, e.clientY);
+                }
+            });
+        }
+
+        function insertBlock(container, block, y) {
+            const siblings = [...container.querySelectorAll(':scope > div.block, :scope > div.c-block-wrapper')].filter(el => el !== block);
+            const nextSibling = siblings.find(sibling => {
+                const box = sibling.getBoundingClientRect();
+                return y <= box.top + box.height / 2;
+            });
+            if (nextSibling) container.insertBefore(block, nextSibling);
+            else container.appendChild(block);
+        }
+
+        function serializeNode(node) {
+            const data = { id: node.dataset.id, inputs: [] };
+            let inputsContainer = node.classList.contains('c-block-wrapper') ? node.querySelector('.c-block-header') : node;
+            const inputs = inputsContainer.querySelectorAll('input, select');
+            inputs.forEach(inp => data.inputs.push(inp.value));
+
+            if (node.classList.contains('c-block-wrapper')) {
+                const body = node.querySelector('.c-block-body');
+                data.children = Array.from(body.children).map(serializeNode);
+            }
+            return data;
+        }
+
+        function downloadWorkspace() {
+            const workspace = document.getElementById('workspace-dropzone');
+            const nodes = Array.from(workspace.children).map(serializeNode);
+            
+            const jsonStr = JSON.stringify(nodes, null, 2);
+            const blob = new Blob([jsonStr], { type: "text/plain" });
+            const url = URL.createObjectURL(blob);
+            
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = "sansKoder_project.txt";
+            document.body.appendChild(a);
+            a.click();
+            document.body.removeChild(a);
+            URL.revokeObjectURL(url);
+        }
+
+        function triggerUpload() { document.getElementById('file-upload').click(); }
+
+        function uploadWorkspace(event) {
+            const file = event.target.files[0];
+            if (!file) return;
+
+            const reader = new FileReader();
+            reader.onload = function(e) {
+                try {
+                    const data = JSON.parse(e.target.result);
+                    clearWorkspace();
+                    deserializeNodes(data, document.getElementById('workspace-dropzone'));
+                } catch(err) {
+                    console.error("Invalid file format.");
+                }
+                event.target.value = '';
+            };
+            reader.readAsText(file);
+        }
+
+        function deserializeNodes(nodeDataArray, container) {
+            nodeDataArray.forEach(nodeData => {
+                const def = blocksDef.find(b => b.id === nodeData.id);
+                if (def) {
+                    const el = createBlockDOM(def, false);
+                    let inputsContainer = el.classList.contains('c-block-wrapper') ? el.querySelector('.c-block-header') : el;
+                    const inputs = inputsContainer.querySelectorAll('input, select');
+                    nodeData.inputs.forEach((val, idx) => { if(inputs[idx]) inputs[idx].value = val; });
+                    container.appendChild(el);
+                    if (nodeData.children && el.classList.contains('c-block-wrapper')) {
+                        deserializeNodes(nodeData.children, el.querySelector('.c-block-body'));
+                    }
+                }
+            });
+        }
+
+        function clearWorkspace() {
+            document.getElementById('workspace-dropzone').innerHTML = '';
+            resetSprite(true);
+        }
+
+        function resetSprite(clearDrawings = false) {
+            sprite.x = 0; sprite.y = 0; sprite.dir = 90; sprite.size = 100;
+            sprite.visible = true; sprite.sayText = '';
+            if(clearDrawings) pathHistory = [];
+            
+            drawStage();
+            updateInfo();
+        }
+
+        function updateInfo() {
+            document.getElementById('info-x').innerText = Math.round(sprite.x);
+            document.getElementById('info-y').innerText = Math.round(sprite.y);
+            document.getElementById('info-dir').innerText = Math.round(sprite.dir) + '°';
+        }
+
+        function drawStage() {
+            ctx.clearRect(0, 0, stage.width, stage.height);
+            const cx = stage.width / 2;
+            const cy = stage.height / 2;
+
+            // Draw Paths
+            ctx.beginPath();
+            if (pathHistory.length > 0) {
+                ctx.moveTo(cx + pathHistory[0].x, cy - pathHistory[0].y);
+                for(let i=1; i<pathHistory.length; i++) {
+                    if(pathHistory[i].jump) ctx.moveTo(cx + pathHistory[i].x, cy - pathHistory[i].y);
+                    else ctx.lineTo(cx + pathHistory[i].x, cy - pathHistory[i].y);
+                }
+            }
+            ctx.strokeStyle = '#4c97ff';
+            ctx.lineWidth = 3;
+            ctx.lineCap = 'round';
+            ctx.lineJoin = 'round';
+            ctx.stroke();
+
+            // Draw Sprite
+            if (sprite.visible) {
+                ctx.save();
+                ctx.translate(cx + sprite.x, cy - sprite.y);
+                ctx.rotate((sprite.dir - 90) * Math.PI / 180);
+                
+                const s = (sprite.size / 100) * 1.5; 
+                ctx.scale(s, s);
+
+                // Scratch Cat Colors (Orange & White)
+                ctx.fillStyle = '#ffab19';
+                ctx.beginPath(); ctx.arc(0, 0, 16, 0, Math.PI*2); ctx.fill();
+                ctx.lineWidth = 2; ctx.strokeStyle = '#d68f15'; ctx.stroke();
+                
+                // Direction Arrow
+                ctx.fillStyle = '#ffffff';
+                ctx.beginPath();
+                ctx.moveTo(0, -22); ctx.lineTo(-8, -10); ctx.lineTo(8, -10); ctx.closePath();
+                ctx.fill(); ctx.stroke();
+
+                if(sprite.sayText) {
+                    ctx.rotate(-(sprite.dir - 90) * Math.PI / 180);
+                    ctx.scale(1/s, 1/s);
+                    ctx.fillStyle = 'white';
+                    ctx.strokeStyle = '#e5e5e5';
+                    ctx.lineWidth = 1;
+                    ctx.beginPath();
+                    ctx.roundRect(20, -45, Math.max(80, sprite.sayText.length * 10), 30, 8);
+                    ctx.fill(); ctx.stroke();
+                    
+                    ctx.fillStyle = '#575E75';
+                    ctx.font = 'bold 12px Arial';
+                    ctx.fillText(sprite.sayText, 30, -26);
+                }
+
+                ctx.restore();
+            }
+        }
+
+        const sleep = ms => new Promise(r => setTimeout(r, ms));
+
+        async function runCode() {
+            if(programRunning) return;
+            programRunning = true;
+            stopSignal = false;
+            
+            resetSprite(false);
+            pathHistory.push({x: sprite.x, y: sprite.y, jump: true});
+            
+            try {
+                await executeContainer(document.getElementById('workspace-dropzone'));
+            } catch(e) {
+                if(e !== 'STOP') console.error(e);
+            }
+            programRunning = false;
+        }
+
+        function stopCode() {
+            stopSignal = true;
+            programRunning = false;
+            document.querySelectorAll('.block-running').forEach(el => el.classList.remove('block-running'));
+        }
+
+        async function executeContainer(container) {
+            const children = [...container.children];
+            for (let el of children) {
+                if (stopSignal) throw 'STOP';
+                await executeNode(el);
+            }
+        }
+
+        function getInputs(node) {
+            let inputs = [...(node.classList.contains('c-block-wrapper') ? 
+                node.querySelector('.c-block-header') : node).querySelectorAll('input, select')];
+            return inputs.map(inp => inp.type === 'number' ? parseFloat(inp.value) || 0 : inp.value);
+        }
+
+        async function executeNode(node) {
+            if(stopSignal) throw 'STOP';
+            const id = node.dataset.id;
+            const inputs = getInputs(node);
+
+            node.classList.add('block-running');
+            await sleep(30);
+
+            switch(id) {
+                case 'move':
+                    const dist = inputs[0];
+                    const rad = (sprite.dir - 90) * Math.PI / 180;
+                    sprite.x += dist * Math.cos(rad);
+                    sprite.y -= dist * Math.sin(rad); 
+                    pathHistory.push({x: sprite.x, y: sprite.y});
+                    break;
+                case 'turn_r': sprite.dir = (sprite.dir + inputs[0]) % 360; break;
+                case 'turn_l': sprite.dir = (sprite.dir - inputs[0]) % 360; break;
+                case 'goto_xy': 
+                    sprite.x = inputs[0]; sprite.y = inputs[1]; 
+                    pathHistory.push({x: sprite.x, y: sprite.y, jump: true}); 
+                    break;
+                case 'point_dir': sprite.dir = inputs[0]; break;
+                case 'change_x': sprite.x += inputs[0]; pathHistory.push({x: sprite.x, y: sprite.y}); break;
+                case 'set_x': sprite.x = inputs[0]; pathHistory.push({x: sprite.x, y: sprite.y}); break;
+                case 'change_y': sprite.y += inputs[0]; pathHistory.push({x: sprite.x, y: sprite.y}); break;
+                case 'set_y': sprite.y = inputs[0]; pathHistory.push({x: sprite.x, y: sprite.y}); break;
+                case 'bounce':
+                    const hw = stage.width/2; const hh = stage.height/2;
+                    if(sprite.x > hw || sprite.x < -hw || sprite.y > hh || sprite.y < -hh) {
+                        sprite.dir = (sprite.dir + 180) % 360;
+                        sprite.x = Math.max(-hw, Math.min(hw, sprite.x));
+                        sprite.y = Math.max(-hh, Math.min(hh, sprite.y));
+                        sprite.x += 10 * Math.cos((sprite.dir - 90) * Math.PI / 180);
+                        sprite.y -= 10 * Math.sin((sprite.dir - 90) * Math.PI / 180);
+                        pathHistory.push({x: sprite.x, y: sprite.y, jump: true});
+                    }
+                    break;
+                case 'say_sec':
+                    sprite.sayText = inputs[0]; drawStage();
+                    await sleep(inputs[1] * 1000);
+                    sprite.sayText = '';
+                    break;
+                case 'say': sprite.sayText = inputs[0]; break;
+                case 'show': sprite.visible = true; break;
+                case 'hide': sprite.visible = false; break;
+                case 'change_size': sprite.size += inputs[0]; break;
+                case 'set_size': sprite.size = inputs[0]; break;
+                case 'clear_gfx': pathHistory = [{x: sprite.x, y: sprite.y, jump: true}]; break;
+                case 'wait': await sleep(inputs[0] * 1000); break;
+                case 'repeat':
+                    const innerC = node.querySelector('.c-block-body');
+                    for(let i=0; i<inputs[0]; i++) {
+                        if(stopSignal) break;
+                        await executeContainer(innerC);
+                    }
+                    break;
+                case 'forever':
+                    const innerF = node.querySelector('.c-block-body');
+                    while(!stopSignal) { await executeContainer(innerF); await sleep(10); }
+                    break;
+                case 'stop_all': stopCode(); break;
+            }
+
+            drawStage();
+            updateInfo();
+            node.classList.remove('block-running');
+        }
+
+        function loadTutorial(id) {
+            clearWorkspace();
+            const zone = document.getElementById('workspace-dropzone');
+            
+            const add = (defId, parent, inps=[]) => {
+                const def = blocksDef.find(b => b.id === defId);
+                if(def) {
+                    const el = createBlockDOM(def, false);
+                    let domInputs = el.classList.contains('c-block-wrapper') ? 
+                                    el.querySelector('.c-block-header').querySelectorAll('input, select') : 
+                                    el.querySelectorAll('input, select');
+                    inps.forEach((val, idx) => { if(domInputs[idx]) domInputs[idx].value = val; });
+                    (parent === zone ? zone : parent.querySelector('.c-block-body')).appendChild(el);
+                    return el;
+                }
+            };
+
+            switch(id) {
+                case 1:
+                    add('flag_clicked', zone); add('goto_xy', zone, [0, 0]); add('clear_gfx', zone);
+                    add('point_dir', zone, [90]); add('move', zone, [80]); add('wait', zone, [1]);
+                    add('turn_r', zone, [90]); add('say_sec', zone, ['नमस्ते!', 2]);
+                    break;
+                case 2:
+                    add('flag_clicked', zone); add('goto_xy', zone, [-50, 50]); add('clear_gfx', zone);
+                    add('point_dir', zone, [90]);
+                    const loop = add('repeat', zone, [4]);
+                    add('move', loop, [100]); add('wait', loop, [0.5]); add('turn_r', loop, [90]);
+                    break;
+                case 3:
+                    add('flag_clicked', zone); add('goto_xy', zone, [0, 0]); add('clear_gfx', zone);
+                    const loop2 = add('repeat', zone, [36]);
+                    add('move', loop2, [80]); add('goto_xy', loop2, [0, 0]); add('turn_r', loop2, [10]);
+                    break;
+                case 4:
+                    add('flag_clicked', zone); add('point_dir', zone, [45]);
+                    const fl = add('forever', zone); add('move', fl, [15]); add('bounce', fl);
+                    break;
+            }
+        }
+
+        window.onload = init;
+    </script>
+</body>
+</html>

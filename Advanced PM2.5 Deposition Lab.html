@@ -1,0 +1,597 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Advanced PM2.5 Alveolar Deposition Lab</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;700&family=Inter:wght@300;400;600;700&display=swap');
+
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: #020617; /* Slate 950 */
+            color: #f8fafc;
+            overflow-x: hidden;
+            user-select: none;
+        }
+
+        .font-mono { font-family: 'JetBrains Mono', monospace; }
+
+        .glass-card {
+            background: rgba(15, 23, 42, 0.85);
+            backdrop-filter: blur(20px);
+            border: 1px solid rgba(255, 255, 255, 0.08);
+            box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.5);
+        }
+
+        .digital-readout {
+            background: #061021;
+            color: #10b981;
+            text-shadow: 0 0 12px rgba(16, 185, 129, 0.5);
+            border: 1px solid #1e293b;
+            transition: all 0.5s ease;
+        }
+
+        .readout-warning {
+            color: #fbbf24 !important;
+            text-shadow: 0 0 12px rgba(251, 191, 36, 0.6) !important;
+            border-color: rgba(251, 191, 36, 0.4) !important;
+        }
+
+        .readout-danger {
+            color: #f43f5e !important;
+            text-shadow: 0 0 15px rgba(244, 63, 94, 0.8) !important;
+            border-color: rgba(244, 63, 94, 0.5) !important;
+            background: rgba(244, 63, 94, 0.05) !important;
+        }
+
+        /* Medical Grid Background */
+        .lab-grid {
+            background-size: 40px 40px;
+            background-image: 
+                linear-gradient(to right, rgba(255, 255, 255, 0.02) 1px, transparent 1px),
+                linear-gradient(to bottom, rgba(255, 255, 255, 0.02) 1px, transparent 1px);
+        }
+
+        /* SVG Anatomy Styling */
+        .bronchiole-wall {
+            fill: #fecaca;
+            stroke: #f87171;
+            stroke-width: 4;
+            stroke-linejoin: round;
+        }
+
+        .alveoli-body {
+            fill: url(#healthy-tissue);
+            stroke: #f43f5e;
+            stroke-width: 3;
+            stroke-linejoin: round;
+        }
+
+        .alveoli-septa {
+            fill: none;
+            stroke: #fb7185;
+            stroke-width: 2;
+            stroke-linecap: round;
+            opacity: 0.7;
+        }
+
+        /* This mask overlays the healthy tissue and turns it black */
+        #anthracosis-mask {
+            fill: #1c1917; /* Very dark slate/black */
+            opacity: 0; /* Starts transparent */
+            transition: opacity 1s ease-out;
+            mix-blend-mode: multiply;
+        }
+
+        .capillary-venule { fill: none; stroke: #3b82f6; stroke-width: 5; opacity: 0.6; stroke-linecap: round; }
+        .capillary-arteriole { fill: none; stroke: #ef4444; stroke-width: 5; opacity: 0.6; stroke-linecap: round; }
+
+        /* Custom Slider */
+        input[type=range] {
+            -webkit-appearance: none;
+            background: transparent;
+            cursor: pointer;
+        }
+        input[type=range]::-webkit-slider-runnable-track {
+            background: linear-gradient(to right, #10b981, #fbbf24, #f97316, #f43f5e, #7f1d1d);
+            height: 8px;
+            border-radius: 4px;
+            border: 1px solid rgba(255,255,255,0.1);
+        }
+        input[type=range]::-webkit-slider-thumb {
+            -webkit-appearance: none;
+            height: 24px;
+            width: 24px;
+            border-radius: 50%;
+            background: #0f172a;
+            border: 3px solid #f8fafc;
+            margin-top: -8px;
+            box-shadow: 0 0 10px rgba(0,0,0,0.5);
+            transition: transform 0.1s;
+        }
+        input[type=range]::-webkit-slider-thumb:active { transform: scale(1.1); }
+    </style>
+</head>
+<body class="min-h-screen p-4 md:p-8 flex items-center justify-center">
+
+    <div class="max-w-7xl w-full grid grid-cols-1 lg:grid-cols-12 gap-8 items-stretch">
+        
+        <!-- Simulation Viewport -->
+        <div class="lg:col-span-8 flex flex-col gap-6">
+            <div class="glass-card rounded-3xl p-0 relative flex-grow min-h-[600px] flex flex-col overflow-hidden border border-slate-800 lab-grid">
+                
+                <!-- HUD Header -->
+                <div class="absolute top-6 left-8 flex items-center gap-3 z-30">
+                    <div id="status-dot" class="w-2.5 h-2.5 rounded-full bg-emerald-500 shadow-[0_0_10px_#10b981]"></div>
+                    <span class="text-[10px] font-bold text-slate-400 uppercase tracking-widest font-mono">Ventilation Phase: <span id="hud-mode" class="text-emerald-400">Inhalation</span></span>
+                </div>
+
+                <!-- Main Simulation Area -->
+                <div class="relative w-full h-full flex-grow flex items-center justify-center pt-10">
+                    
+                    <!-- Anatomy SVG -->
+                    <svg id="lung-svg" viewBox="0 0 800 600" class="w-full h-full absolute inset-0 z-10 overflow-visible">
+                        <defs>
+                            <!-- Healthy fleshy gradient -->
+                            <radialGradient id="healthy-tissue" cx="50%" cy="50%" r="50%" fx="30%" fy="30%">
+                                <stop offset="0%" stop-color="#fecaca" /> <!-- Rose 200 -->
+                                <stop offset="80%" stop-color="#fda4af" /> <!-- Rose 300 -->
+                                <stop offset="100%" stop-color="#fb7185" /> <!-- Rose 400 -->
+                            </radialGradient>
+                        </defs>
+
+                        <!-- The Entire Lung Unit (Groups for Breathing Animation) -->
+                        <g id="respiratory-unit" transform-origin="400 350">
+                            
+                            <!-- 1. The main tissue body (Bronchiole + Alveoli Outline) -->
+                            <!-- Crafted to look like a realistic biological cross section -->
+                            <path class="alveoli-body" d="
+                                M 370,50 
+                                V 180 
+                                C 300,190 250,230 250,290 
+                                C 200,320 210,400 250,440 
+                                C 270,500 350,540 400,520 
+                                C 450,540 530,500 550,440 
+                                C 590,400 600,320 550,290 
+                                C 550,230 500,190 430,180 
+                                V 50 Z" />
+
+                            <!-- 2. The Anthracosis Mask (Turns tissue black as PM2.5 accumulates) -->
+                            <path id="anthracosis-mask" d="
+                                M 370,50 
+                                V 180 
+                                C 300,190 250,230 250,290 
+                                C 200,320 210,400 250,440 
+                                C 270,500 350,540 400,520 
+                                C 450,540 530,500 550,440 
+                                C 590,400 600,320 550,290 
+                                C 550,230 500,190 430,180 
+                                V 50 Z" />
+
+                            <!-- 3. Internal Septa (The walls separating individual air sacs) -->
+                            <path class="alveoli-septa" d="M 250,290 Q 320,310 360,350" />
+                            <path class="alveoli-septa" d="M 550,290 Q 480,310 440,350" />
+                            <path class="alveoli-septa" d="M 250,440 Q 320,400 380,420" />
+                            <path class="alveoli-septa" d="M 550,440 Q 480,400 420,420" />
+                            <path class="alveoli-septa" d="M 400,520 Q 400,450 400,420" />
+                            <path class="alveoli-septa" d="M 360,350 Q 400,390 440,350" />
+
+                            <!-- 4. Capillary Network (Wraps around the outside) -->
+                            <g id="capillaries" opacity="0.8" style="transition: opacity 1s ease;">
+                                <!-- Deoxygenated (Blue) -->
+                                <path class="capillary-venule" d="M 280,180 Q 230,240 210,310 T 260,460 T 380,530" />
+                                <path class="capillary-venule" d="M 500,210 Q 560,260 580,340 T 520,480" />
+                                <!-- Oxygenated (Red) -->
+                                <path class="capillary-arteriole" d="M 240,200 Q 280,280 230,360 T 280,500 T 420,530" />
+                                <path class="capillary-arteriole" d="M 540,190 Q 500,270 560,380 T 480,510 T 400,530" />
+                            </g>
+
+                            <!-- White overlay to make the inside look "hollow" -->
+                            <path d="
+                                M 380,50 V 190 
+                                C 320,200 270,240 270,290 
+                                C 230,320 230,390 270,430 
+                                C 290,480 350,510 400,490 
+                                C 450,510 510,480 530,430 
+                                C 570,390 570,320 530,290 
+                                C 530,240 480,200 420,190 
+                                V 50 Z" 
+                                fill="rgba(255,255,255,0.15)" stroke="rgba(255,255,255,0.3)" stroke-width="1" pointer-events="none"/>
+                        </g>
+                    </svg>
+
+                    <!-- Dual Canvas System for Particles -->
+                    <!-- Active Canvas: Moving PM2.5 in the airstream -->
+                    <canvas id="active-canvas" class="absolute inset-0 w-full h-full z-20 pointer-events-none"></canvas>
+                    <!-- Lodged Canvas: Static soot permanently embedded in the tissue -->
+                    <canvas id="lodged-canvas" class="absolute inset-0 w-full h-full z-15 pointer-events-none"></canvas>
+
+                </div>
+
+                <!-- Footer Labels -->
+                <div class="absolute bottom-6 left-8 flex flex-col gap-1 z-30">
+                    <span class="text-[9px] font-mono text-slate-500 uppercase">Anatomy: Terminal Alveolar Sacs</span>
+                    <span class="text-[9px] font-mono text-slate-500 uppercase">Particulate Matter: PM 2.5 (Carbonaceous Soot)</span>
+                </div>
+            </div>
+
+            <!-- Environmental Controls -->
+            <div class="glass-card p-6 rounded-3xl flex flex-col gap-4">
+                <div class="flex justify-between items-end mb-2">
+                    <div>
+                        <div class="text-xs font-bold text-slate-200 uppercase tracking-widest flex items-center gap-2">
+                            <svg class="w-4 h-4 text-emerald-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 15a4 4 0 004 4h9a5 5 0 10-.1-9.999 5.002 5.002 0 10-9.78 2.096A4.001 4.001 0 003 15z"></path></svg>
+                            Air Quality Index (AQI)
+                        </div>
+                        <div id="aqi-desc" class="text-[10px] text-slate-400 font-mono mt-1">Pristine air. Minimal particulate density.</div>
+                    </div>
+                    <div class="text-right">
+                        <div id="aqi-val" class="text-4xl font-bold font-mono text-emerald-400 leading-none">15</div>
+                    </div>
+                </div>
+                
+                <input type="range" id="aqi-slider" min="0" max="500" value="15" class="w-full mt-2">
+                <div class="flex justify-between text-[9px] font-mono font-bold uppercase mt-1">
+                    <span class="text-emerald-400">0</span>
+                    <span class="text-yellow-400">100</span>
+                    <span class="text-orange-500">200</span>
+                    <span class="text-rose-500">300</span>
+                    <span class="text-red-800">500 (Toxic)</span>
+                </div>
+            </div>
+        </div>
+
+        <!-- Sidebar: Analytics & Data -->
+        <div class="lg:col-span-4 flex flex-col gap-6">
+            
+            <!-- Digital Readout -->
+            <div id="telemetry-panel" class="digital-readout rounded-3xl p-6 space-y-6 flex-grow">
+                <div class="flex justify-between items-center border-b border-current pb-3 opacity-60">
+                    <span class="text-[10px] font-bold tracking-tighter uppercase">Pulmonary Telemetry</span>
+                    <span class="text-xs font-mono animate-pulse">MONITORING</span>
+                </div>
+
+                <div class="space-y-6">
+                    <!-- Lodged Count -->
+                    <div class="space-y-1">
+                        <label class="text-[10px] uppercase font-bold opacity-60">Deposited PM2.5</label>
+                        <div class="flex items-baseline gap-2">
+                            <div id="data-count" class="text-6xl font-bold font-mono">0</div>
+                            <span class="text-xl font-mono font-bold opacity-60">μg</span>
+                        </div>
+                    </div>
+
+                    <div class="grid grid-cols-2 gap-4 pt-4 border-t border-current opacity-80">
+                        <div class="space-y-1">
+                            <label class="text-[9px] uppercase font-bold text-current">Gas Exchange</label>
+                            <div id="data-exchange" class="text-xl font-bold font-mono">100%</div>
+                        </div>
+                        <div class="space-y-1 text-right">
+                            <label class="text-[9px] uppercase font-bold text-current">Macrophage Load</label>
+                            <div id="data-macro" class="text-xl font-bold font-mono">NORMAL</div>
+                        </div>
+                    </div>
+
+                    <!-- Health Progress Bar -->
+                    <div class="p-4 bg-black/30 rounded-xl border border-current space-y-2">
+                        <div class="flex justify-between items-center">
+                            <label class="text-[9px] uppercase font-bold text-current">Alveolar Membrane Integrity</label>
+                            <span id="data-health-pct" class="text-[10px] font-mono">100%</span>
+                        </div>
+                        <div class="h-2 w-full bg-slate-900 rounded-full overflow-hidden">
+                            <div id="health-bar" class="h-full bg-emerald-500 transition-all duration-500" style="width: 100%"></div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Pathophysiology Card -->
+            <div class="glass-card p-6 rounded-3xl space-y-4 flex-grow flex flex-col">
+                <h3 class="text-xs font-bold text-slate-400 uppercase tracking-widest flex items-center gap-2">
+                    <svg class="w-4 h-4 text-rose-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"></path></svg>
+                    Anthracosis & Deposition
+                </h3>
+                
+                <div class="space-y-3 text-[11px] text-slate-300 leading-relaxed overflow-y-auto">
+                    <p>Unlike larger dust trapped by mucus in the throat, <strong>PM2.5</strong> particles are so small they ride the air current deep into the terminal alveoli.</p>
+                    
+                    <div class="p-3 bg-slate-900/50 rounded-xl border border-slate-800">
+                        <strong class="text-sky-400 block mb-1">Brownian Deposition</strong>
+                        In the terminal sacs, air velocity drops to near zero. Particles drift randomly until they collide with and permanently lodge into the moist membrane walls.
+                    </div>
+
+                    <div class="p-3 bg-slate-900/50 rounded-xl border border-slate-800">
+                        <strong class="text-rose-400 block mb-1">Tissue Necrosis</strong>
+                        Macrophages attempt to consume the soot but cannot digest carbon. Over time, the tissue physically darkens (Anthracosis), scars, and loses oxygen exchange capacity.
+                    </div>
+                </div>
+
+                <button id="btn-reset" class="mt-auto w-full py-3 bg-slate-800 hover:bg-slate-700 text-slate-400 rounded-xl text-[10px] font-bold uppercase tracking-widest border border-slate-700 transition-all shadow-inner">
+                    Administer Lavage (Reset Health)
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', () => {
+            const activeCanvas = document.getElementById('active-canvas');
+            const lodgedCanvas = document.getElementById('lodged-canvas');
+            const aCtx = activeCanvas.getContext('2d');
+            const lCtx = lodgedCanvas.getContext('2d');
+            
+            const aqiSlider = document.getElementById('aqi-slider');
+            const aqiVal = document.getElementById('aqi-val');
+            const aqiDesc = document.getElementById('aqi-desc');
+            const btnReset = document.getElementById('btn-reset');
+            
+            const dataCount = document.getElementById('data-count');
+            const dataExchange = document.getElementById('data-exchange');
+            const dataMacro = document.getElementById('data-macro');
+            const dataHealthPct = document.getElementById('data-health-pct');
+            const healthBar = document.getElementById('health-bar');
+            
+            const hudMode = document.getElementById('hud-mode');
+            const statusDot = document.getElementById('status-dot');
+            const telemetryPanel = document.getElementById('telemetry-panel');
+            const respUnit = document.getElementById('respiratory-unit');
+            const anthracosisMask = document.getElementById('anthracosis-mask');
+            const capillaries = document.getElementById('capillaries');
+
+            // --- State ---
+            let aqi = 15;
+            let lodgedCount = 0;
+            const MAX_LODGED = 15000; // Total capacity before 0% health
+            let activeParticles = [];
+            let clock = 0;
+
+            function resize() {
+                activeCanvas.width = activeCanvas.parentElement.clientWidth;
+                activeCanvas.height = activeCanvas.parentElement.clientHeight;
+                lodgedCanvas.width = lodgedCanvas.parentElement.clientWidth;
+                lodgedCanvas.height = lodgedCanvas.parentElement.clientHeight;
+            }
+            window.addEventListener('resize', resize);
+            resize();
+
+            // Coordinate mapping (SVG 800x600 to Canvas)
+            function getScale() {
+                return {
+                    x: activeCanvas.width / 800,
+                    y: activeCanvas.height / 600
+                };
+            }
+
+            // Defines the inner boundary of the alveoli for collision detection.
+            // Modeled roughly as an ellipse to match the custom SVG shape.
+            const BOUNDARY = {
+                cx: 400, cy: 370,
+                rx: 170, ry: 150 
+            };
+
+            class Particle {
+                constructor() {
+                    this.reset();
+                }
+                reset() {
+                    // Spawn at top bronchiole
+                    this.x = 400 + (Math.random() - 0.5) * 30; 
+                    this.y = -20;
+                    this.vx = (Math.random() - 0.5) * 2;
+                    this.vy = Math.random() * 2 + 1;
+                    // PM2.5 are tiny dots
+                    this.size = Math.random() * 1.5 + 0.5;
+                    this.active = true;
+                }
+                update(airflow, breathScale) {
+                    if (!this.active) return;
+
+                    // Brownian Motion (Random zig-zag)
+                    this.vx += (Math.random() - 0.5) * 1.2;
+                    this.vy += (Math.random() - 0.5) * 1.2;
+
+                    // Airflow pulls them down (inhale) or up (exhale)
+                    this.vy += airflow * 3.0;
+
+                    // Funnel effect inside the bronchiole (y < 200)
+                    if (this.y < 200) {
+                        if (this.x < 375) this.vx += 1.0;
+                        if (this.x > 425) this.vx -= 1.0;
+                    }
+
+                    // Air resistance
+                    this.vx *= 0.92;
+                    this.vy *= 0.92;
+
+                    this.x += this.vx;
+                    this.y += this.vy;
+
+                    // Exhaled out of the top
+                    if (this.y < -50) {
+                        this.reset();
+                        return;
+                    }
+
+                    // Collision Detection against the Alveolar Walls
+                    // If y > 200, we are inside the sacs.
+                    if (this.y > 200) {
+                        // Calculate normalized distance from the center of the bounding ellipse
+                        // accounting for the current breathing expansion scale.
+                        const scaledRx = BOUNDARY.rx * breathScale;
+                        const scaledRy = BOUNDARY.ry * breathScale;
+                        
+                        const dx = this.x - BOUNDARY.cx;
+                        const dy = this.y - BOUNDARY.cy;
+                        
+                        // Ellipse equation: (x^2 / a^2) + (y^2 / b^2) = 1
+                        const dist = (dx*dx) / (scaledRx*scaledRx) + (dy*dy) / (scaledRy*scaledRy);
+
+                        // dist >= 1 means it hit the boundary wall
+                        if (dist >= 0.9) {
+                            // High probability of lodging permanently due to moisture/mucus
+                            if (Math.random() > 0.15) {
+                                lodgeParticle(this.x, this.y);
+                                this.reset(); // Respawn a new particle at top to replace it
+                            } else {
+                                // Bounce back slightly
+                                this.vx *= -0.5;
+                                this.vy *= -0.5;
+                                this.x += this.vx * 2;
+                                this.y += this.vy * 2;
+                            }
+                        }
+                    }
+                }
+            }
+
+            function lodgeParticle(svgX, svgY) {
+                if (lodgedCount >= MAX_LODGED) return;
+                
+                lodgedCount++;
+                // Batch UI updates for performance
+                if (lodgedCount % 10 === 0) { 
+                    dataCount.textContent = lodgedCount.toLocaleString();
+                    updateHealthMetrics();
+                }
+
+                // Draw permanently on the static canvas
+                const scale = getScale();
+                lCtx.beginPath();
+                lCtx.arc(svgX * scale.x, svgY * scale.y, Math.random() * 1.2 + 0.8, 0, Math.PI * 2);
+                lCtx.fillStyle = 'rgba(15, 23, 42, 0.9)'; // Dark slate/soot color
+                lCtx.fill();
+            }
+
+            function updateHealthMetrics() {
+                const healthPct = Math.max(0, 1 - (lodgedCount / MAX_LODGED));
+                const displayHealth = Math.round(healthPct * 100);
+                
+                dataHealthPct.textContent = `${displayHealth}%`;
+                healthBar.style.width = `${displayHealth}%`;
+                dataExchange.textContent = `${displayHealth}%`;
+
+                // Update UI Themes based on damage
+                if (displayHealth < 30) {
+                    telemetryPanel.className = "digital-readout rounded-3xl p-6 space-y-6 readout-danger";
+                    dataMacro.textContent = "OVERWHELMED";
+                    dataMacro.className = "text-xl font-bold font-mono text-rose-500";
+                    healthBar.style.backgroundColor = "#f43f5e";
+                } else if (displayHealth < 70) {
+                    telemetryPanel.className = "digital-readout rounded-3xl p-6 space-y-6 readout-warning";
+                    dataMacro.textContent = "ELEVATED";
+                    dataMacro.className = "text-xl font-bold font-mono text-amber-500";
+                    healthBar.style.backgroundColor = "#fbbf24";
+                } else {
+                    telemetryPanel.className = "digital-readout rounded-3xl p-6 space-y-6";
+                    dataMacro.textContent = "NORMAL";
+                    dataMacro.className = "text-xl font-bold font-mono text-emerald-400";
+                    healthBar.style.backgroundColor = "#10b981";
+                }
+
+                // Increase the opacity of the black Anthracosis Mask over the SVG
+                // As health drops, the lung tissue turns black/grey.
+                const maskOpacity = 1 - healthPct;
+                anthracosisMask.style.opacity = maskOpacity * 0.9; // Cap at 0.9 to see some detail
+
+                // Capillaries die off/fade as tissue necroses
+                capillaries.style.opacity = Math.max(0.1, healthPct);
+            }
+
+            function animate() {
+                clock += 0.02; // Time step
+                const scale = getScale();
+                aCtx.clearRect(0, 0, activeCanvas.width, activeCanvas.height);
+
+                // Breathing Mechanics
+                // Sine wave: positive = inhale (pulls down), negative = exhale (pushes up)
+                const phase = clock * Math.PI / 2; // 4 second breath cycle
+                const airflow = Math.cos(phase); 
+                const breathScale = 1.0 + Math.sin(phase) * 0.08; // Expansion scale (1.0 to 1.08)
+                
+                respUnit.setAttribute('transform', `scale(${breathScale})`);
+
+                // HUD updates based on breath cycle
+                if (airflow > 0.1) {
+                    hudMode.textContent = "Inhalation";
+                    hudMode.className = "text-emerald-400";
+                    statusDot.className = "w-2.5 h-2.5 rounded-full bg-emerald-500 shadow-[0_0_10px_#10b981]";
+                } else if (airflow < -0.1) {
+                    hudMode.textContent = "Exhalation";
+                    hudMode.className = "text-sky-400";
+                    statusDot.className = "w-2.5 h-2.5 rounded-full bg-sky-500 shadow-[0_0_10px_#38bdf8]";
+                } else {
+                    hudMode.textContent = "Pause";
+                    hudMode.className = "text-slate-400";
+                    statusDot.className = "w-2.5 h-2.5 rounded-full bg-slate-500";
+                }
+
+                // Dynamic particle generation based on AQI
+                // Higher AQI means more particles in the active stream
+                const targetActive = Math.floor(aqi * 2);
+                
+                // Spawn new particles primarily during inhalation
+                if (airflow > 0 && activeParticles.length < targetActive) {
+                    for(let i=0; i<8; i++) activeParticles.push(new Particle());
+                }
+
+                // Update and draw moving particles
+                activeParticles.forEach((p, index) => {
+                    p.update(airflow, breathScale);
+                    
+                    if (p.active) {
+                        aCtx.beginPath();
+                        aCtx.arc(p.x * scale.x, p.y * scale.y, p.size * scale.x, 0, Math.PI * 2);
+                        aCtx.fillStyle = 'rgba(15, 23, 42, 0.9)'; // Dark soot
+                        aCtx.fill();
+                    } else {
+                        activeParticles.splice(index, 1);
+                    }
+                });
+
+                requestAnimationFrame(animate);
+            }
+
+            // --- Events ---
+            aqiSlider.addEventListener('input', (e) => {
+                aqi = parseInt(e.target.value);
+                aqiVal.textContent = aqi;
+
+                let desc, colorClass;
+                if (aqi <= 50) {
+                    desc = "Pristine air. Minimal particulate density.";
+                    colorClass = "text-emerald-400";
+                } else if (aqi <= 100) {
+                    desc = "Moderate. Sensitive individuals may experience irritation.";
+                    colorClass = "text-yellow-400";
+                } else if (aqi <= 200) {
+                    desc = "Unhealthy. Elevated PM2.5 deposition rates.";
+                    colorClass = "text-orange-500";
+                } else if (aqi <= 300) {
+                    desc = "Very Unhealthy. High risk of chronic accumulation.";
+                    colorClass = "text-rose-500";
+                } else {
+                    desc = "Hazardous. Extreme toxicity and rapid tissue degradation.";
+                    colorClass = "text-red-700";
+                }
+
+                aqiDesc.textContent = desc;
+                aqiVal.className = `text-4xl font-bold font-mono leading-none ${colorClass}`;
+            });
+
+            btnReset.addEventListener('click', () => {
+                lodgedCount = 0;
+                lCtx.clearRect(0, 0, lodgedCanvas.width, lodgedCanvas.height);
+                dataCount.textContent = "0";
+                activeParticles = []; 
+                updateHealthMetrics();
+            });
+
+            // Initialize
+            updateHealthMetrics();
+            animate();
+        });
+    </script>
+</body>
+</html>

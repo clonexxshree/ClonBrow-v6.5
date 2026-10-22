@@ -1,0 +1,1129 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Brain Research Centre | Clonexx</title>
+    
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Nunito:wght@400;700;900&display=swap" rel="stylesheet">
+    
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/cannon.js/0.6.2/cannon.min.js"></script>
+
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: { fontFamily: { sans: ['Nunito', 'sans-serif'] } }
+            }
+        }
+    </script>
+    
+    <style>
+        body { 
+            margin: 0; overflow: hidden; background-color: #87CEEB; /* Sky Blue */
+            font-family: 'Nunito', sans-serif; user-select: none; touch-action: none; 
+        }
+        canvas { display: block; width: 100vw; height: 100vh; }
+        
+        #ui-layer { position: absolute; inset: 0; pointer-events: none; z-index: 10; }
+        
+        .crosshair {
+            position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%);
+            width: 20px; height: 20px; transition: all 0.1s;
+        }
+        .crosshair::before, .crosshair::after {
+            content: ''; position: absolute; background: white; border-radius: 2px; box-shadow: 0 0 4px rgba(0,0,0,0.8);
+        }
+        .crosshair::before { top: 9px; left: 0; width: 20px; height: 2px; }
+        .crosshair::after { top: 0; left: 9px; width: 2px; height: 20px; }
+        .crosshair.active::before, .crosshair.active::after { background: #38bdf8; box-shadow: 0 0 10px #38bdf8; } 
+
+        #interaction-prompt {
+            position: absolute; bottom: 20%; left: 50%; transform: translateX(-50%);
+            background: #2563eb; color: white; padding: 15px 40px; border-radius: 15px;
+            font-size: 24px; font-weight: 900; border: 4px solid #1e3a8a;
+            box-shadow: 0px 8px 0px #1e3a8a; display: none; text-transform: uppercase; pointer-events: auto; cursor: pointer;
+            transition: transform 0.1s;
+        }
+        #interaction-prompt:active { transform: translate(-50%, 8px); box-shadow: 0px 0px 0px #1e3a8a; }
+
+        #desktop-hint {
+            position: absolute; top: 20px; left: 50%; transform: translateX(-50%);
+            background: rgba(0,0,0,0.6); color: white; padding: 10px 24px; border-radius: 20px;
+            font-size: 14px; font-weight: bold; pointer-events: none; z-index: 10;
+        }
+
+        #mobile-controls { position: absolute; inset: 0; pointer-events: none; display: none; z-index: 20; }
+        @media (hover: none) and (pointer: coarse) {
+            #mobile-controls { display: block; }
+            .crosshair { display: none; }
+            #desktop-hint { display: none; }
+        }
+        
+        #joystick-zone {
+            position: absolute; bottom: 40px; left: 40px; width: 140px; height: 140px;
+            background: rgba(255, 255, 255, 0.15); border: 4px solid rgba(255, 255, 255, 0.4);
+            border-radius: 50%; pointer-events: auto; touch-action: none;
+        }
+        #joystick-knob {
+            position: absolute; top: 50%; left: 50%; width: 60px; height: 60px;
+            background: #38bdf8; border: 4px solid #0284c7; border-radius: 50%;
+            transform: translate(-50%, -50%); pointer-events: none;
+        }
+
+        /* Modal Overlays */
+        #puzzle-overlay {
+            display: none; position: fixed; inset: 0; z-index: 100; 
+            background: rgba(15, 23, 42, 0.9); backdrop-filter: blur(12px);
+            align-items: center; justify-content: center; padding: 20px;
+        }
+        .puzzle-card {
+            background: white; border: 6px solid #1e293b; border-radius: 24px;
+            box-shadow: 8px 8px 0px #1e293b; width: 100%; max-width: 800px;
+            padding: 32px; display: flex; flex-col items-center; relative overflow-hidden;
+            max-height: 90vh; overflow-y: auto;
+        }
+
+        .hidden-view { display: none !important; }
+
+        /* Simon Buttons */
+        .simon-btn { width: 100px; height: 100px; border-radius: 20px; border: 6px solid #1e293b; box-shadow: 0 8px 0 #1e293b; transition: all 0.1s; opacity: 0.5; }
+        .simon-btn:active, .simon-btn.active { transform: translateY(8px); box-shadow: 0 0 0 #1e293b; opacity: 1; filter: brightness(1.5); }
+        
+        /* Active Recall Inputs */
+        .cloze-input {
+            background-color: #111827; /* Black tape look */
+            color: #111827;
+            border-radius: 4px;
+            padding: 2px 6px;
+            margin: 0 4px;
+            outline: none;
+            border: 2px solid #111827;
+            display: inline-block;
+            font-weight: 900;
+            transition: all 0.2s ease;
+            text-align: center;
+        }
+        .cloze-input:focus { background-color: white; color: #111827; border-color: #3b82f6; }
+        .cloze-input.correct { background-color: #4ade80; border-color: #16a34a; color: #16a34a; pointer-events: none; }
+        .cloze-input.incorrect { background-color: #f87171; border-color: #dc2626; color: white; animation: shake 0.3s; }
+
+        @keyframes shake {
+            0%, 100% { transform: translateX(0); }
+            25% { transform: translateX(-4px); }
+            75% { transform: translateX(4px); }
+        }
+
+        /* Jargon Highlight */
+        .jargon-word {
+            background-color: #fee2e2;
+            color: #dc2626;
+            border-bottom: 3px solid #dc2626;
+            border-radius: 4px;
+            padding: 0 4px;
+            font-weight: 800;
+        }
+        
+        /* Range Sliders for V=IR */
+        input[type=range] {
+            -webkit-appearance: none; width: 100%; background: transparent;
+        }
+        input[type=range]::-webkit-slider-thumb {
+            -webkit-appearance: none; height: 24px; width: 24px; border-radius: 50%;
+            background: #2563eb; cursor: pointer; margin-top: -8px; border: 4px solid #1e3a8a;
+        }
+        input[type=range]::-webkit-slider-runnable-track {
+            width: 100%; height: 8px; cursor: pointer; background: #cbd5e1; border-radius: 4px; border: 1px solid #94a3b8;
+        }
+
+        /* Moving Electrons Animation for UI */
+        .wire-container {
+            width: 100%; height: 20px; background: #334155; border-radius: 10px; position: relative; overflow: hidden; border: 2px solid #0f172a;
+        }
+        .electron {
+            position: absolute; top: 4px; width: 12px; height: 12px; background: #38bdf8; border-radius: 50%; box-shadow: 0 0 10px #38bdf8;
+            animation: flow linear infinite;
+        }
+        @keyframes flow { 0% { left: -20px; } 100% { left: 100%; } }
+    </style>
+</head>
+<body>
+
+    <!-- UI Layer -->
+    <div id="ui-layer">
+        <div class="crosshair" id="crosshair"></div>
+        <div id="desktop-hint">Click & Drag to look • WASD to move • Esc to free mouse</div>
+        <div id="interaction-prompt">ENTER</div>
+    </div>
+
+    <!-- Mobile Controls -->
+    <div id="mobile-controls">
+        <div id="joystick-zone"><div id="joystick-knob"></div></div>
+    </div>
+
+    <!-- Master Puzzle Modal -->
+    <div id="puzzle-overlay" class="flex-col">
+        <button onclick="closePuzzle()" class="absolute top-6 right-6 w-14 h-14 bg-red-500 hover:bg-red-600 text-white rounded-full border-4 border-slate-900 font-black text-2xl shadow-[4px_4px_0px_#1e293b] active:translate-y-1 active:shadow-none transition-all z-50">
+            <i class="fas fa-times"></i>
+        </button>
+
+        <!-- 1. ACTIVE RECALL ENGINE (Black Tape) -->
+        <div id="game-recall" class="puzzle-card hidden-view flex-col items-center w-full">
+            <h2 class="text-4xl font-black text-slate-800 mb-2 text-center">Active Recall Engine</h2>
+            <p class="text-slate-500 font-bold mb-6 text-center">Paste text, set intensity, and reconstruct the missing blocks.</p>
+            
+            <!-- Setup View -->
+            <div id="recall-setup" class="w-full flex flex-col gap-4">
+                <textarea id="recall-source" class="w-full h-40 border-4 border-slate-900 rounded-xl p-4 text-lg font-bold outline-none focus:border-blue-500 resize-none" placeholder="Paste a definition or paragraph here..."></textarea>
+                <div class="flex items-center gap-4 bg-slate-100 p-4 rounded-xl border-4 border-slate-900">
+                    <span class="font-black text-slate-700">Black Tape Intensity:</span>
+                    <input type="range" id="recall-intensity" min="10" max="70" value="30" class="flex-1">
+                    <span id="recall-val-display" class="font-black text-xl w-12 text-center">30%</span>
+                </div>
+                <button onclick="generateRecall()" class="w-full bg-slate-900 text-white text-xl font-black py-4 rounded-xl border-4 border-slate-700 shadow-[4px_4px_0px_#000] active:translate-y-1 active:shadow-none">Generate Test</button>
+            </div>
+
+            <!-- Test View -->
+            <div id="recall-test" class="w-full hidden flex-col gap-6">
+                <div class="bg-yellow-100 border-4 border-yellow-400 p-4 rounded-xl font-bold text-yellow-800 text-center">
+                    Fill in the black boxes to reconstruct the text!
+                </div>
+                <div id="recall-content" class="text-xl font-semibold leading-loose text-slate-800 bg-slate-50 p-6 rounded-xl border-4 border-slate-200 min-h-[200px]">
+                    <!-- Generated text goes here -->
+                </div>
+                <div class="flex gap-4">
+                    <button onclick="resetRecall()" class="flex-1 bg-gray-200 text-slate-800 text-xl font-black py-4 rounded-xl border-4 border-slate-900 shadow-[4px_4px_0px_#1e293b] active:translate-y-1 active:shadow-none">Back</button>
+                    <button onclick="checkRecall()" class="flex-1 bg-green-500 text-white text-xl font-black py-4 rounded-xl border-4 border-slate-900 shadow-[4px_4px_0px_#1e293b] active:translate-y-1 active:shadow-none">Verify Answers</button>
+                </div>
+            </div>
+        </div>
+
+        <!-- 2. FEYNMAN SIMPLIFIER (Child Emotion) -->
+        <div id="game-feynman" class="puzzle-card hidden-view flex-col items-center w-full">
+            <h2 class="text-4xl font-black text-slate-800 mb-2 text-center">Feynman Simplifier</h2>
+            <p class="text-slate-500 font-bold mb-6 text-center">Explain a concept to the child. Don't use big jargon!</p>
+            
+            <div class="w-full flex flex-col md:flex-row gap-6 mb-6">
+                <div class="flex-1">
+                    <div id="feynman-highlight-layer" class="absolute p-4 text-xl leading-relaxed text-transparent pointer-events-none whitespace-pre-wrap word-wrap break-word border-4 border-transparent z-10 w-full h-64"></div>
+                    <textarea id="feynman-input" class="w-full h-64 border-4 border-slate-900 rounded-xl p-4 text-xl font-medium outline-none focus:border-blue-500 resize-none relative z-20 bg-transparent text-slate-800 leading-relaxed" placeholder="Start typing your explanation..." oninput="analyzeFeynman()"></textarea>
+                </div>
+
+                <div class="w-full md:w-64 bg-slate-100 border-4 border-slate-900 rounded-xl p-6 flex flex-col items-center justify-center text-center shadow-inner shrink-0">
+                    <div id="child-face" class="text-8xl mb-4 transition-transform duration-300">😐</div>
+                    <h3 id="child-status" class="font-black text-2xl text-slate-800 mb-2">Waiting...</h3>
+                    <p id="child-desc" class="text-sm font-bold text-slate-500">Start explaining!</p>
+                    <div class="mt-4 bg-white border-2 border-slate-300 rounded-lg p-2 w-full">
+                        <div class="text-xs font-bold text-slate-400 uppercase">Jargon Count</div>
+                        <div id="jargon-score" class="text-2xl font-black text-red-500">0</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- 3. MEMORY MATRIX (Simon Says) -->
+        <div id="game-memory" class="puzzle-card hidden-view flex-col items-center">
+            <h2 class="text-4xl font-black text-slate-800 mb-2 text-center">Memory Matrix</h2>
+            <p class="text-slate-500 font-bold mb-8 text-center">Repeat the sequence. Boosts working memory.</p>
+            <div class="text-2xl font-black text-purple-600 mb-6 bg-purple-100 px-6 py-2 rounded-xl border-4 border-purple-300">Level: <span id="simon-level">1</span></div>
+            
+            <div class="grid grid-cols-2 gap-6 mb-8">
+                <button id="simon-0" class="simon-btn bg-red-500" onclick="simonInput(0)"></button>
+                <button id="simon-1" class="simon-btn bg-blue-500" onclick="simonInput(1)"></button>
+                <button id="simon-2" class="simon-btn bg-yellow-400" onclick="simonInput(2)"></button>
+                <button id="simon-3" class="simon-btn bg-green-500" onclick="simonInput(3)"></button>
+            </div>
+            <button onclick="startSimon()" id="simon-start" class="w-full bg-slate-900 text-white text-xl font-black py-4 rounded-xl border-4 border-slate-700 shadow-[4px_4px_0px_#000] active:translate-y-1 active:shadow-none">START SEQUENCE</button>
+        </div>
+
+        <!-- 4. STROOP TEST -->
+        <div id="game-stroop" class="puzzle-card hidden-view flex-col items-center w-full max-w-xl">
+            <h2 class="text-4xl font-black text-slate-800 mb-2 text-center">Stroop Test</h2>
+            <p class="text-slate-500 font-bold mb-6 text-center">Click the <span class="text-red-500">COLOR of the ink</span>, NOT the word!</p>
+            
+            <div class="w-full flex justify-between mb-4 font-black text-xl px-4">
+                <span class="text-blue-500">Score: <span id="stroop-score">0</span></span>
+                <span class="text-red-500">Time: <span id="stroop-time">30</span>s</span>
+            </div>
+
+            <div class="w-full h-40 bg-slate-100 border-4 border-slate-300 rounded-2xl flex items-center justify-center mb-8">
+                <h1 id="stroop-word" class="text-6xl font-black tracking-widest uppercase">READY</h1>
+            </div>
+
+            <div class="grid grid-cols-2 gap-4 w-full mb-6">
+                <button onclick="stroopInput('red')" class="bg-red-500 text-white font-black py-4 rounded-xl border-4 border-slate-900 shadow-[4px_4px_0px_#1e293b] active:translate-y-1 active:shadow-none">RED</button>
+                <button onclick="stroopInput('blue')" class="bg-blue-500 text-white font-black py-4 rounded-xl border-4 border-slate-900 shadow-[4px_4px_0px_#1e293b] active:translate-y-1 active:shadow-none">BLUE</button>
+                <button onclick="stroopInput('green')" class="bg-green-500 text-white font-black py-4 rounded-xl border-4 border-slate-900 shadow-[4px_4px_0px_#1e293b] active:translate-y-1 active:shadow-none">GREEN</button>
+                <button onclick="stroopInput('yellow')" class="bg-yellow-400 text-slate-900 font-black py-4 rounded-xl border-4 border-slate-900 shadow-[4px_4px_0px_#1e293b] active:translate-y-1 active:shadow-none">YELLOW</button>
+            </div>
+            <button onclick="startStroop()" id="stroop-start" class="w-full bg-slate-900 text-white text-xl font-black py-4 rounded-xl border-4 border-slate-700 shadow-[4px_4px_0px_#000] active:translate-y-1 active:shadow-none">START 30s RUSH</button>
+        </div>
+
+        <!-- 5. WINDMILL 1: V=IR INSPECTOR -->
+        <div id="game-windmill1" class="puzzle-card hidden-view flex-col items-center w-full max-w-xl">
+            <h2 class="text-4xl font-black text-slate-800 mb-2 text-center">Cognitive Velocity</h2>
+            <p class="text-slate-500 font-bold mb-6 text-center">Live telemetry from the routing engine.</p>
+            
+            <div class="w-full bg-slate-100 border-4 border-slate-900 rounded-xl p-6 shadow-inner mb-6 relative">
+                <div class="flex justify-between items-center mb-4">
+                    <span class="font-bold text-gray-500">Neural Drive (V)</span>
+                    <span id="ui-volt-val" class="font-black text-xl text-blue-600">120 mV</span>
+                </div>
+                <div class="flex justify-between items-center mb-4">
+                    <span class="font-bold text-gray-500">Friction (R)</span>
+                    <span id="ui-ohm-val" class="font-black text-xl text-red-500">10 Ω</span>
+                </div>
+                
+                <hr class="border-t-4 border-slate-300 my-4">
+                
+                <div class="flex justify-between items-center">
+                    <span class="font-black text-xl text-slate-800">Velocity (I)</span>
+                    <span id="ui-amp-val" class="font-black text-3xl text-green-500">12.0</span>
+                </div>
+                
+                <!-- Animated Wire UI -->
+                <div class="mt-6 wire-container">
+                    <div class="electron" style="animation-duration: 0.5s;"></div>
+                    <div class="electron" style="animation-duration: 0.5s; animation-delay: 0.25s;"></div>
+                </div>
+            </div>
+            
+            <div class="bg-blue-100 border-4 border-blue-400 p-4 rounded-xl font-bold text-blue-800 text-center w-full">
+                I = V / R <br>
+                <span class="text-sm font-normal">Learning Speed = Motivation / Distraction</span>
+            </div>
+        </div>
+
+        <!-- 6. WINDMILL 2: NEURAL ROUTER CONTROL -->
+        <div id="game-windmill2" class="puzzle-card hidden-view flex-col items-center w-full max-w-xl">
+            <h2 class="text-4xl font-black text-slate-800 mb-2 text-center">Neural Router Control</h2>
+            <p class="text-slate-500 font-bold mb-8 text-center">Adjust the parameters to change the remote windmill speed.</p>
+            
+            <div class="w-full flex flex-col gap-8">
+                <!-- Voltage Slider -->
+                <div class="bg-blue-50 border-4 border-blue-300 p-4 rounded-xl">
+                    <div class="flex justify-between items-center mb-2">
+                        <span class="font-black text-blue-800"><i class="fas fa-bolt"></i> Voltage (V)</span>
+                        <span id="ctrl-volt-display" class="font-black text-blue-600 bg-white px-2 py-1 rounded border-2 border-blue-300">120</span>
+                    </div>
+                    <p class="text-sm font-bold text-blue-600 mb-4">Represents Motivation & Drive</p>
+                    <input type="range" id="ctrl-volt" min="10" max="240" value="120" oninput="updateCircuit()">
+                </div>
+
+                <!-- Resistance Slider -->
+                <div class="bg-red-50 border-4 border-red-300 p-4 rounded-xl">
+                    <div class="flex justify-between items-center mb-2">
+                        <span class="font-black text-red-800"><i class="fas fa-shield-alt"></i> Resistance (R)</span>
+                        <span id="ctrl-ohm-display" class="font-black text-red-600 bg-white px-2 py-1 rounded border-2 border-red-300">10</span>
+                    </div>
+                    <p class="text-sm font-bold text-red-600 mb-4">Represents Cognitive Friction & Distractions</p>
+                    <input type="range" id="ctrl-ohm" min="1" max="50" value="10" oninput="updateCircuit()">
+                </div>
+            </div>
+            
+            <button onclick="closePuzzle()" class="mt-8 w-full bg-slate-900 text-white text-xl font-black py-4 rounded-xl border-4 border-slate-700 shadow-[4px_4px_0px_#000] active:translate-y-1 active:shadow-none">APPLY CHANGES & INSPECT</button>
+        </div>
+
+    </div>
+
+    <script>
+        // --- THREE.JS ENGINE SETUP ---
+        let scene, camera, renderer, raycaster;
+        let world, playerBody;
+        let interactables = [];
+        let animatables = [];
+        
+        let moveForward = false, moveBackward = false, moveLeft = false, moveRight = false;
+        let joystickVec = { x: 0, y: 0 };
+        
+        let camYaw = 0, camPitch = 0;
+        let isLocked = false, uiOpen = false;
+
+        const ISLAND_RADIUS = 70; 
+        let lastTime = 0;
+        
+        // Circuit Global Variables
+        let circuitV = 120;
+        let circuitR = 10;
+        let circuitI = 12; // V/R
+        let windmill1Rotor = null;
+        let powerCableMaterial = null;
+
+        window.onload = function() { init(); };
+
+        function init() {
+            world = new CANNON.World();
+            world.gravity.set(0, -30, 0); 
+            world.broadphase = new CANNON.NaiveBroadphase();
+
+            scene = new THREE.Scene();
+            scene.background = new THREE.Color(0x87CEEB); // Beautiful Sky Blue
+            scene.fog = new THREE.FogExp2(0x87CEEB, 0.004);
+
+            camera = new THREE.PerspectiveCamera(70, window.innerWidth / window.innerHeight, 0.1, 1000);
+            raycaster = new THREE.Raycaster();
+
+            renderer = new THREE.WebGLRenderer({ antialias: true, powerPreference: "high-performance" });
+            renderer.setSize(window.innerWidth, window.innerHeight);
+            renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+            renderer.shadowMap.enabled = true;
+            renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+            document.body.appendChild(renderer.domElement);
+
+            buildLighting();
+            buildPlayer();
+            buildIsland();
+            buildDenseForestAndRocks();
+            buildGrass();
+            buildPath();
+            buildCaves();
+            buildWindmillsAndWiring(); // Updated to include wiring
+            
+            setupControls();
+            window.addEventListener('resize', onWindowResize, false);
+            
+            // UI Listeners
+            document.getElementById('recall-intensity').addEventListener('input', (e) => {
+                document.getElementById('recall-val-display').innerText = e.target.value + '%';
+            });
+
+            document.getElementById('feynman-input').addEventListener('scroll', function() {
+                document.getElementById('feynman-highlight-layer').scrollTop = this.scrollTop;
+            });
+            
+            updateCircuitUI(); // Initialize circuit text
+
+            lastTime = performance.now();
+            requestAnimationFrame(animate);
+        }
+
+        function buildLighting() {
+            const ambient = new THREE.AmbientLight(0xffffff, 0.6);
+            scene.add(ambient);
+
+            const sunLight = new THREE.DirectionalLight(0xfff5b6, 1.5); // Warm sunlight
+            sunLight.position.set(100, 150, 50);
+            sunLight.castShadow = true;
+            sunLight.shadow.mapSize.width = 2048;
+            sunLight.shadow.mapSize.height = 2048;
+            sunLight.shadow.camera.near = 0.5;
+            sunLight.shadow.camera.far = 300;
+            const d = 100;
+            sunLight.shadow.camera.left = -d; sunLight.shadow.camera.right = d;
+            sunLight.shadow.camera.top = d; sunLight.shadow.camera.bottom = -d;
+            scene.add(sunLight);
+        }
+
+        function buildPlayer() {
+            const shape = new CANNON.Sphere(1);
+            playerBody = new CANNON.Body({ mass: 5, shape: shape });
+            playerBody.position.set(0, 5, 20); 
+            playerBody.linearDamping = 0.9;
+            world.addBody(playerBody);
+        }
+
+        function buildIsland() {
+            const islandGroup = new THREE.Group();
+
+            const dirtGeo = new THREE.CylinderGeometry(ISLAND_RADIUS, ISLAND_RADIUS - 15, 20, 64);
+            const dirtMat = new THREE.MeshStandardMaterial({ color: 0x5c4033, roughness: 1.0 }); 
+            const dirt = new THREE.Mesh(dirtGeo, dirtMat);
+            dirt.position.y = -10;
+            dirt.receiveShadow = true;
+            islandGroup.add(dirt);
+
+            const grassGeo = new THREE.CylinderGeometry(ISLAND_RADIUS + 0.5, ISLAND_RADIUS, 2, 64);
+            const grassMat = new THREE.MeshStandardMaterial({ color: 0x22c55e, roughness: 0.9 }); 
+            const grass = new THREE.Mesh(grassGeo, grassMat);
+            grass.position.y = 1;
+            grass.receiveShadow = true;
+            islandGroup.add(grass);
+
+            scene.add(islandGroup);
+
+            const groundShape = new CANNON.Box(new CANNON.Vec3(ISLAND_RADIUS, 50, ISLAND_RADIUS));
+            const groundBody = new CANNON.Body({ mass: 0, shape: groundShape });
+            groundBody.position.set(0, -48, 0);
+            world.addBody(groundBody);
+        }
+
+        function buildGrass() {
+            const grassCount = 60000; 
+            const bladeGeo = new THREE.PlaneGeometry(0.2, 0.8, 1, 3);
+            bladeGeo.translate(0, 0.4, 0); 
+            
+            const pos = bladeGeo.attributes.position.array;
+            for (let i = 0; i < pos.length; i += 3) {
+                const y = pos[i + 1];
+                if (y > 0.2) { pos[i] *= (0.8 - y); pos[i+2] += y * 0.2; }
+            }
+            bladeGeo.computeVertexNormals();
+            
+            const grassMat = new THREE.MeshStandardMaterial({ color: 0x16a34a, roughness: 0.6, side: THREE.DoubleSide });
+            const instancedGrass = new THREE.InstancedMesh(bladeGeo, grassMat, grassCount);
+            
+            const dummy = new THREE.Object3D();
+            let addedCount = 0;
+
+            for (let i = 0; i < grassCount; i++) {
+                let r = Math.sqrt(Math.random()) * (ISLAND_RADIUS - 2);
+                let theta = Math.random() * Math.PI * 2;
+                let x = Math.cos(theta) * r;
+                let z = Math.sin(theta) * r;
+
+                if (Math.abs(x) < 4 || Math.abs(z) < 4) continue; 
+                // Clear path for wire
+                if (Math.abs(z - (-30)) < 3 && x > -30 && x < 30) continue;
+
+                dummy.position.set(x, 2, z);
+                dummy.rotation.y = Math.random() * Math.PI;
+                dummy.rotation.x = (Math.random() - 0.5) * 0.3;
+                dummy.rotation.z = (Math.random() - 0.5) * 0.3;
+                dummy.scale.setScalar(0.6 + Math.random() * 0.6);
+                dummy.updateMatrix();
+                instancedGrass.setMatrixAt(addedCount, dummy.matrix);
+                
+                instancedGrass.setColorAt(addedCount, new THREE.Color().setHSL(0.3 + Math.random()*0.1, 0.8, 0.4 + Math.random()*0.2));
+                addedCount++;
+            }
+            instancedGrass.count = addedCount;
+            scene.add(instancedGrass);
+        }
+
+        function buildPath() {
+            const pathGroup = new THREE.Group();
+            const stoneGeo = new THREE.CylinderGeometry(1.8, 1.8, 0.4, 6);
+            const stoneMat = new THREE.MeshStandardMaterial({ color: 0x9ca3af, roughness: 0.9, flatShading: true }); 
+
+            const directions = [{x: 0, z: -1}, {x: 1, z: 0}, {x: 0, z: 1}, {x: -1, z: 0}];
+
+            directions.forEach(dir => {
+                for(let i = 6; i < 50; i += 3.5) {
+                    const stone = new THREE.Mesh(stoneGeo, stoneMat);
+                    stone.position.set(dir.x * i + (Math.random()-0.5), 2.2, dir.z * i + (Math.random()-0.5));
+                    stone.rotation.y = Math.random() * Math.PI;
+                    stone.rotation.x = (Math.random() - 0.5) * 0.1;
+                    stone.scale.setScalar(0.8 + Math.random() * 0.4);
+                    stone.receiveShadow = true; stone.castShadow = true;
+                    pathGroup.add(stone);
+                }
+            });
+            scene.add(pathGroup);
+        }
+
+        function buildDenseForestAndRocks() {
+            const treeGroup = new THREE.Group();
+            const trunkGeo = new THREE.CylinderGeometry(0.8, 1.2, 7, 6);
+            const trunkMat = new THREE.MeshStandardMaterial({ color: 0x5c4033, flatShading: true }); 
+            const leavesGeo = new THREE.DodecahedronGeometry(4, 0);
+            const leavesMat = new THREE.MeshStandardMaterial({ color: 0x15803d, flatShading: true }); 
+
+            const rockGroup = new THREE.Group();
+            const rockGeo = new THREE.DodecahedronGeometry(2.5, 0);
+            const rockMat = new THREE.MeshStandardMaterial({ color: 0x64748b, flatShading: true }); 
+
+            for(let i = 0; i < 250; i++) { 
+                let r = 12 + Math.random() * (ISLAND_RADIUS - 14); 
+                let t = Math.random() * Math.PI * 2;
+                let x = Math.cos(t)*r; let z = Math.sin(t)*r;
+                
+                if (Math.abs(x) < 6 || Math.abs(z) < 6) continue; 
+                if (Math.hypot(x - (-30), z - (-30)) < 12) continue; 
+                if (Math.hypot(x - 30, z - (-30)) < 12) continue; 
+                // Clear path for wire
+                if (Math.abs(z - (-30)) < 4 && x > -30 && x < 30) continue;
+
+                if (Math.random() > 0.4) {
+                    const tree = new THREE.Group();
+                    const trunk = new THREE.Mesh(trunkGeo, trunkMat);
+                    trunk.position.y = 3.5; trunk.castShadow = true; tree.add(trunk);
+                    
+                    const l1 = new THREE.Mesh(leavesGeo, leavesMat);
+                    l1.position.y = 7; l1.castShadow = true; tree.add(l1);
+                    
+                    const l2 = new THREE.Mesh(leavesGeo, leavesMat);
+                    l2.position.set(1.5, 5.5, 1.5); l2.scale.setScalar(0.7); l2.castShadow = true; tree.add(l2);
+
+                    const l3 = new THREE.Mesh(leavesGeo, leavesMat);
+                    l3.position.set(-1.5, 5.5, -1.5); l3.scale.setScalar(0.7); l3.castShadow = true; tree.add(l3);
+
+                    const scale = 0.6 + Math.random() * 0.6;
+                    tree.scale.setScalar(scale);
+                    tree.position.set(x, 2, z);
+                    tree.rotation.y = Math.random() * Math.PI;
+                    treeGroup.add(tree);
+
+                    const treeBody = new CANNON.Body({ mass: 0, shape: new CANNON.Box(new CANNON.Vec3(1 * scale, 5 * scale, 1 * scale)) });
+                    treeBody.position.set(x, 2 + (5 * scale), z);
+                    world.addBody(treeBody);
+                } else {
+                    const rock = new THREE.Mesh(rockGeo, rockMat);
+                    rock.position.set(x, 2.2, z);
+                    rock.scale.set(0.5 + Math.random(), 0.3 + Math.random()*0.5, 0.5 + Math.random());
+                    rock.rotation.set(Math.random(), Math.random(), Math.random());
+                    rock.castShadow = true; rockGroup.add(rock);
+                }
+            }
+            scene.add(treeGroup);
+            scene.add(rockGroup);
+        }
+
+        function buildCaves() {
+            const cavesData = [
+                { pos: new THREE.Vector3(0, 2, -50), color: 0x3b82f6, title: "ENTER ACTIVE RECALL", game: "recall" },
+                { pos: new THREE.Vector3(50, 2, 0), color: 0xef4444, title: "ENTER FEYNMAN SIMPLIFIER", game: "feynman" }, 
+                { pos: new THREE.Vector3(0, 2, 50), color: 0xf59e0b, title: "ENTER MEMORY MATRIX", game: "memory" }, 
+                { pos: new THREE.Vector3(-50, 2, 0), color: 0x10b981, title: "ENTER STROOP TEST", game: "stroop" } 
+            ];
+
+            const rockGeo = new THREE.DodecahedronGeometry(3.5, 0); 
+            const rockMat = new THREE.MeshStandardMaterial({ color: 0x475569, roughness: 0.9, flatShading: true }); 
+            
+            cavesData.forEach(data => {
+                const caveGroup = new THREE.Group();
+                
+                for(let i = -2; i <= 14; i++) { 
+                    const angle = (i / 12) * Math.PI;
+                    const r = 7.5; 
+                    const rock = new THREE.Mesh(rockGeo, rockMat);
+                    rock.position.set(Math.cos(angle) * r, Math.sin(angle) * r, 0);
+                    rock.position.z += (Math.random() - 0.5) * 2;
+                    rock.rotation.set(Math.random(), Math.random(), Math.random());
+                    rock.scale.setScalar(0.9 + Math.random() * 0.6);
+                    caveGroup.add(rock);
+                }
+
+                const voidGeo = new THREE.CircleGeometry(6.8, 32);
+                const voidMat = new THREE.MeshBasicMaterial({ color: 0x000000, side: THREE.DoubleSide });
+                const caveVoid = new THREE.Mesh(voidGeo, voidMat);
+                caveVoid.position.set(0, 5, -2.0);
+                caveGroup.add(caveVoid);
+
+                const portalGeo = new THREE.CircleGeometry(6.5, 32);
+                const portalMat = new THREE.MeshBasicMaterial({ color: data.color, transparent: true, opacity: 0.6, side: THREE.DoubleSide });
+                const portal = new THREE.Mesh(portalGeo, portalMat);
+                portal.position.set(0, 5, -1.5);
+                caveGroup.add(portal);
+
+                caveGroup.position.copy(data.pos);
+                caveGroup.lookAt(0, 2, 0);
+                scene.add(caveGroup);
+
+                const wallShape = new CANNON.Box(new CANNON.Vec3(8, 10, 2));
+                const wallBody = new CANNON.Body({ mass: 0, shape: wallShape });
+                wallBody.position.copy(data.pos);
+                const lookVec = new THREE.Vector3(0,0,0).sub(data.pos).normalize();
+                const angle = Math.atan2(lookVec.x, lookVec.z);
+                wallBody.quaternion.setFromAxisAngle(new CANNON.Vec3(0,1,0), angle);
+                world.addBody(wallBody);
+
+                const hitGeo = new THREE.BoxGeometry(14, 14, 10);
+                const hitMat = new THREE.MeshBasicMaterial({ visible: false });
+                const hitbox = new THREE.Mesh(hitGeo, hitMat);
+                hitbox.position.copy(data.pos);
+                hitbox.position.y = 7;
+                scene.add(hitbox);
+                
+                interactables.push({ mesh: hitbox, prompt: data.title, game: data.game });
+            });
+        }
+
+        function buildWindmillsAndWiring() {
+            // Windmill 1: The Rotor (V=IR Inspector)
+            const w1Group = new THREE.Group();
+            const w1Base = new THREE.Mesh(new THREE.CylinderGeometry(3, 4, 15, 12), new THREE.MeshStandardMaterial({ color: 0xe2e8f0, flatShading: true }));
+            w1Base.position.y = 7.5; w1Base.castShadow = true; w1Base.receiveShadow = true;
+            w1Group.add(w1Base);
+
+            windmill1Rotor = new THREE.Group();
+            windmill1Rotor.position.set(0, 14, 3);
+            const w1Hub = new THREE.Mesh(new THREE.CylinderGeometry(1, 1, 2, 8), new THREE.MeshStandardMaterial({ color: 0x475569 }));
+            w1Hub.rotation.x = Math.PI / 2;
+            windmill1Rotor.add(w1Hub);
+
+            const bladeMat = new THREE.MeshStandardMaterial({ color: 0x8b4513 });
+            for(let i=0; i<4; i++) {
+                const blade = new THREE.Mesh(new THREE.BoxGeometry(1, 12, 0.2), bladeMat);
+                blade.position.y = 6;
+                const pivot = new THREE.Group(); pivot.rotation.z = (Math.PI / 2) * i;
+                pivot.add(blade); windmill1Rotor.add(pivot);
+            }
+            w1Group.add(windmill1Rotor);
+            
+            w1Group.position.set(-30, 2, -30);
+            w1Group.rotation.y = Math.PI / 4;
+            scene.add(w1Group);
+
+            // Hitbox for Windmill 1
+            const hit1 = new THREE.Mesh(new THREE.BoxGeometry(12, 15, 12), new THREE.MeshBasicMaterial({visible:false}));
+            hit1.position.set(-30, 9.5, -30); scene.add(hit1);
+            interactables.push({ mesh: hit1, prompt: "INSPECT V=IR ROTOR", game: 'windmill1' });
+
+            // Windmill 2: The Router (Control Board)
+            const w2Group = new THREE.Group();
+            const w2Base = new THREE.Mesh(new THREE.CylinderGeometry(3, 4, 15, 12), new THREE.MeshStandardMaterial({ color: 0x1e293b, flatShading: true }));
+            w2Base.position.y = 7.5; w2Base.castShadow = true; w2Base.receiveShadow = true;
+            w2Group.add(w2Base);
+
+            const w2Rotor = new THREE.Group();
+            w2Rotor.position.set(0, 14, 3);
+            const core = new THREE.Mesh(new THREE.DodecahedronGeometry(1.5, 0), new THREE.MeshStandardMaterial({ color: 0x38bdf8, emissive: 0x0284c7, flatShading: true }));
+            w2Rotor.add(core); animatables.push({ mesh: core, speed: 0.05, axis: 'x' });
+            
+            const w2BladeMat = new THREE.MeshStandardMaterial({ color: 0xbae6fd, transparent: true, opacity: 0.7 });
+            for(let i=0; i<4; i++) {
+                const blade = new THREE.Mesh(new THREE.BoxGeometry(1, 12, 0.2), w2BladeMat);
+                blade.position.y = 6;
+                const pivot = new THREE.Group(); pivot.rotation.z = (Math.PI / 2) * i;
+                pivot.add(blade); w2Rotor.add(pivot);
+            }
+            w2Group.add(w2Rotor); animatables.push({ mesh: w2Rotor, speed: -0.02, axis: 'z' });
+
+            w2Group.position.set(30, 2, -30);
+            w2Group.rotation.y = -Math.PI / 4;
+            scene.add(w2Group);
+
+            // Hitbox for Windmill 2
+            const hit2 = new THREE.Mesh(new THREE.BoxGeometry(12, 15, 12), new THREE.MeshBasicMaterial({visible:false}));
+            hit2.position.set(30, 9.5, -30); scene.add(hit2);
+            interactables.push({ mesh: hit2, prompt: "ACCESS NEURAL ROUTER", game: 'windmill2' });
+
+            // Glowing Power Cable Connecting Them
+            const cableGeo = new THREE.CylinderGeometry(0.3, 0.3, 60, 8);
+            cableGeo.rotateZ(Math.PI / 2); // Lay flat
+            
+            // Create a striped texture programmatically
+            const canvas = document.createElement('canvas'); canvas.width = 128; canvas.height = 128;
+            const context = canvas.getContext('2d');
+            context.fillStyle = '#1e3a8a'; context.fillRect(0, 0, 128, 128);
+            context.fillStyle = '#38bdf8'; context.fillRect(0, 0, 64, 128);
+            const texture = new THREE.CanvasTexture(canvas);
+            texture.wrapS = THREE.RepeatWrapping; texture.wrapT = THREE.RepeatWrapping;
+            texture.repeat.set(20, 1);
+
+            powerCableMaterial = new THREE.MeshStandardMaterial({ map: texture, emissive: 0x0284c7, emissiveIntensity: 0.5 });
+            const cable = new THREE.Mesh(cableGeo, powerCableMaterial);
+            cable.position.set(0, 2.2, -30); // Connects x=-30 to x=30
+            scene.add(cable);
+
+            // Add physics columns to prevent walking through windmills
+            const shape1 = new CANNON.Cylinder(3, 4, 15, 12);
+            const q = new CANNON.Quaternion(); q.setFromAxisAngle(new CANNON.Vec3(1,0,0), -Math.PI/2);
+            
+            const b1 = new CANNON.Body({ mass: 0 }); b1.addShape(shape1, new CANNON.Vec3(0,0,0), q); b1.position.set(-30, 9.5, -30); world.addBody(b1);
+            const b2 = new CANNON.Body({ mass: 0 }); b2.addShape(shape1, new CANNON.Vec3(0,0,0), q); b2.position.set(30, 9.5, -30); world.addBody(b2);
+        }
+
+        function setupControls() {
+            document.addEventListener('keydown', (e) => {
+                if (uiOpen) return;
+                switch(e.code) {
+                    case 'KeyW': case 'ArrowUp': moveForward = true; break;
+                    case 'KeyA': case 'ArrowLeft': moveLeft = true; break;
+                    case 'KeyS': case 'ArrowDown': moveBackward = true; break;
+                    case 'KeyD': case 'ArrowRight': moveRight = true; break;
+                    case 'Space': if(playerBody.position.y < 7) playerBody.velocity.y = 12; break;
+                }
+            });
+            document.addEventListener('keyup', (e) => {
+                switch(e.code) {
+                    case 'KeyW': case 'ArrowUp': moveForward = false; break;
+                    case 'KeyA': case 'ArrowLeft': moveLeft = false; break;
+                    case 'KeyS': case 'ArrowDown': moveBackward = false; break;
+                    case 'KeyD': case 'ArrowRight': moveRight = false; break;
+                }
+            });
+
+            document.addEventListener('mousedown', (e) => {
+                if (uiOpen || e.target.id === 'interaction-prompt') return;
+                if (document.pointerLockElement !== document.body) document.body.requestPointerLock();
+            });
+
+            document.addEventListener('pointerlockchange', () => {
+                isLocked = (document.pointerLockElement === document.body);
+            });
+            
+            document.addEventListener('mousemove', (e) => {
+                if (!isLocked || uiOpen) return;
+                const movX = Number(e.movementX) || 0;
+                const movY = Number(e.movementY) || 0;
+                camYaw -= movX * 0.003;
+                camPitch -= movY * 0.003;
+                camPitch = Math.max(-Math.PI/2 + 0.1, Math.min(Math.PI/2 - 0.1, camPitch));
+            });
+
+            const joystickZone = document.getElementById('joystick-zone');
+            const joystickKnob = document.getElementById('joystick-knob');
+            let moveTouchId = null;
+
+            joystickZone.addEventListener('touchstart', (e) => { e.preventDefault(); moveTouchId = e.changedTouches[0].identifier; }, {passive: false});
+            document.addEventListener('touchmove', (e) => {
+                if(uiOpen) return;
+                for(let i=0; i<e.changedTouches.length; i++) {
+                    const touch = e.changedTouches[i];
+                    if(touch.identifier === moveTouchId) {
+                        const rect = joystickZone.getBoundingClientRect();
+                        const cx = rect.left + rect.width/2; const cy = rect.top + rect.height/2;
+                        let dx = touch.clientX - cx; let dy = touch.clientY - cy;
+                        const dist = Math.min(Math.sqrt(dx*dx + dy*dy), 40);
+                        const angle = Math.atan2(dy, dx);
+                        const kx = Math.cos(angle)*dist; const ky = Math.sin(angle)*dist;
+                        joystickKnob.style.transform = `translate(calc(-50% + ${kx}px), calc(-50% + ${ky}px))`;
+                        joystickVec = { x: kx/40, y: ky/40 };
+                    } else if (!document.getElementById('interaction-prompt').contains(e.target)) {
+                        camYaw -= (touch.clientX - (touch.lastX || touch.clientX)) * 0.005;
+                        camPitch -= (touch.clientY - (touch.lastY || touch.clientY)) * 0.005;
+                        camPitch = Math.max(-Math.PI/2 + 0.1, Math.min(Math.PI/2 - 0.1, camPitch));
+                        touch.lastX = touch.clientX; touch.lastY = touch.clientY;
+                    }
+                }
+            }, {passive: false});
+
+            const endTouch = (e) => {
+                for(let i=0; i<e.changedTouches.length; i++) {
+                    if(e.changedTouches[i].identifier === moveTouchId) {
+                        moveTouchId = null; joystickVec = {x:0, y:0};
+                        joystickKnob.style.transform = 'translate(-50%, -50%)';
+                    }
+                }
+            };
+            document.addEventListener('touchend', endTouch); document.addEventListener('touchcancel', endTouch);
+
+            document.getElementById('interaction-prompt').addEventListener('click', () => {
+                const prompt = document.getElementById('interaction-prompt');
+                if (prompt.dataset.game) openPuzzle(prompt.dataset.game);
+            });
+        }
+
+        function openPuzzle(gameId) {
+            uiOpen = true;
+            document.exitPointerLock();
+            moveForward = false; moveBackward = false; moveLeft = false; moveRight = false;
+            playerBody.velocity.set(0,0,0);
+            
+            document.getElementById('puzzle-overlay').style.display = 'flex';
+            document.querySelectorAll('.puzzle-card').forEach(el => el.classList.add('hidden-view'));
+            document.getElementById(`game-${gameId}`).classList.remove('hidden-view');
+
+            if (gameId === 'recall') resetRecall();
+            if (gameId === 'feynman') resetFeynman();
+            if (gameId === 'memory') resetSimon();
+            if (gameId === 'stroop') resetStroop();
+            if (gameId === 'windmill1' || gameId === 'windmill2') updateCircuitUI();
+        }
+
+        function closePuzzle() {
+            uiOpen = false;
+            document.getElementById('puzzle-overlay').style.display = 'none';
+            clearInterval(stroopTimer); 
+        }
+
+        function onWindowResize() {
+            camera.aspect = window.innerWidth / window.innerHeight;
+            camera.updateProjectionMatrix();
+            renderer.setSize(window.innerWidth, window.innerHeight);
+        }
+
+        function animate(time) {
+            requestAnimationFrame(animate);
+            
+            let dt = (time - lastTime) / 1000;
+            lastTime = time;
+            if(dt > 0.1) dt = 0.1; 
+            
+            world.step(1/60, dt, 3);
+
+            if (isNaN(playerBody.position.x) || playerBody.position.y < -30) {
+                playerBody.position.set(0, 5, 20);
+                playerBody.velocity.set(0, 0, 0);
+            }
+
+            if (!uiOpen) {
+                const speed = 15.0;
+                let inputX = Number(moveRight) - Number(moveLeft) + joystickVec.x;
+                let inputZ = Number(moveBackward) - Number(moveForward) + joystickVec.y;
+                
+                const inputVec = new THREE.Vector3(inputX, 0, inputZ);
+                if (inputVec.lengthSq() > 0) inputVec.normalize();
+                inputVec.applyAxisAngle(new THREE.Vector3(0, 1, 0), camYaw);
+                
+                playerBody.velocity.x = inputVec.x * speed;
+                playerBody.velocity.z = inputVec.z * speed;
+            }
+
+            camera.position.copy(playerBody.position);
+            camera.position.y += 2; 
+            camera.rotation.set(camPitch, camYaw, 0, 'YXZ');
+
+            animatables.forEach(a => a.mesh.rotation[a.axis] += a.speed);
+
+            // Circuit Animations based on Current (I)
+            if (windmill1Rotor) {
+                windmill1Rotor.rotation.z += circuitI * 0.005; // Rotor spins based on V/R
+            }
+            if (powerCableMaterial) {
+                powerCableMaterial.map.offset.x -= circuitI * 0.002; // Texture flows based on current
+            }
+
+            if (!uiOpen) {
+                const prompt = document.getElementById('interaction-prompt');
+                const crosshair = document.getElementById('crosshair');
+                raycaster.setFromCamera(new THREE.Vector2(0,0), camera);
+                const intersects = raycaster.intersectObjects(interactables.map(i => i.mesh));
+                
+                if (intersects.length > 0 && intersects[0].distance < 15) {
+                    const hitData = interactables.find(i => i.mesh === intersects[0].object);
+                    if (hitData) {
+                        prompt.innerText = hitData.prompt;
+                        prompt.dataset.game = hitData.game;
+                        prompt.style.display = 'block';
+                        crosshair.classList.add('active');
+                    }
+                } else {
+                    prompt.style.display = 'none';
+                    crosshair.classList.remove('active');
+                }
+            }
+
+            renderer.render(scene, camera);
+        }
+
+        // ==========================================
+        // MINI-GAMES LOGIC
+        // ==========================================
+
+        function updateCircuit() {
+            circuitV = parseInt(document.getElementById('ctrl-volt').value);
+            circuitR = parseInt(document.getElementById('ctrl-ohm').value);
+            circuitI = circuitV / circuitR;
+            updateCircuitUI();
+        }
+
+        function updateCircuitUI() {
+            document.getElementById('ctrl-volt-display').innerText = circuitV;
+            document.getElementById('ctrl-ohm-display').innerText = circuitR;
+            
+            document.getElementById('ui-volt-val').innerText = circuitV + " mV";
+            document.getElementById('ui-ohm-val').innerText = circuitR + " Ω";
+            document.getElementById('ui-amp-val').innerText = circuitI.toFixed(1);
+
+            // Update electron animation speed in UI
+            const duration = Math.max(0.1, 5 / circuitI); 
+            document.querySelectorAll('.electron').forEach(el => el.style.animationDuration = duration + 's');
+        }
+
+        const recallStopWords = new Set(['the','a','an','and','or','but','in','on','at','to','for','with','is','are','am','was','were','be','it','we','they','this','that','of','from','as','by']);
+
+        function resetRecall() {
+            document.getElementById('recall-setup').classList.remove('hidden');
+            document.getElementById('recall-setup').classList.add('flex');
+            document.getElementById('recall-test').classList.add('hidden');
+            document.getElementById('recall-test').classList.remove('flex');
+        }
+
+        function generateRecall() {
+            const raw = document.getElementById('recall-source').value.trim();
+            if(!raw) return;
+            const intensity = parseInt(document.getElementById('recall-intensity').value);
+            
+            document.getElementById('recall-setup').classList.add('hidden');
+            document.getElementById('recall-setup').classList.remove('flex');
+            document.getElementById('recall-test').classList.remove('hidden');
+            document.getElementById('recall-test').classList.add('flex');
+
+            const contentDiv = document.getElementById('recall-content');
+            let output = "";
+            const tokens = raw.match(/[\w']+|[^\w]+/g) || [];
+
+            tokens.forEach((token, index) => {
+                const isWord = /[\w']+/.test(token);
+                if (isWord) {
+                    const lowerWord = token.toLowerCase();
+                    if (recallStopWords.has(lowerWord) || token.length <= 2) {
+                        output += token;
+                    } else {
+                        const pseudoRandom = ((lowerWord.charCodeAt(0) * index * 13) % 100);
+                        if (pseudoRandom < intensity) {
+                            const widthEm = (token.length * 0.6) + 1;
+                            output += `<input type="text" class="cloze-input shadow-inner recall-input" style="width: ${widthEm}em;" data-answer="${lowerWord}" autocomplete="off" spellcheck="false">`;
+                        } else { output += token; }
+                    }
+                } else { output += token.replace(/\n/g, '<br>'); }
+            });
+            contentDiv.innerHTML = output;
+        }
+
+        function checkRecall() {
+            const inputs = document.querySelectorAll('.recall-input');
+            if(inputs.length === 0) return;
+            inputs.forEach(input => {
+                input.classList.remove('correct', 'incorrect');
+                const userAnswer = input.value.toLowerCase().trim();
+                const correctAnswer = input.dataset.answer;
+                if (userAnswer === correctAnswer) {
+                    input.classList.add('correct'); input.value = correctAnswer; 
+                } else {
+                    input.classList.add('incorrect');
+                }
+            });
+        }
+
+        function resetFeynman() {
+            document.getElementById('feynman-input').value = "";
+            analyzeFeynman();
+        }
+
+        function countFeynmanSyllables(word) {
+            word = word.toLowerCase().replace(/[^a-z]/g, '');
+            if (word.length <= 3) return 1;
+            word = word.replace(/(?:[^laeiouy]es|ed|[^laeiouy]e)$/, '');
+            word = word.replace(/^y/, '');
+            const syllables = word.match(/[aeiouy]{1,2}/g);
+            return syllables ? syllables.length : 1;
+        }
+
+        function analyzeFeynman() {
+            const rawText = document.getElementById('feynman-input').value;
+            const highlightLayer = document.getElementById('feynman-highlight-layer');
+            const face = document.getElementById('child-face');
+            const status = document.getElementById('child-status');
+            const desc = document.getElementById('child-desc');
+            const scoreDisplay = document.getElementById('jargon-score');
+
+            if (!rawText.trim()) {
+                highlightLayer.innerHTML = '';
+                face.innerText = '😐'; status.innerText = 'Waiting...'; desc.innerText = 'Start explaining!'; scoreDisplay.innerText = '0';
+                return;
+            }
+
+            let jargonCount = 0;
+            let highlightedHTML = '';
+            let totalSyllables = 0;
+
+            const tokens = rawText.split(/(\s+)/);
+            const words = tokens.filter(t => t.trim().length > 0 && /[a-zA-Z]/.test(t));
+            const totalWords = words.length;
+            const sentences = rawText.split(/[.!?]+/).filter(s => s.trim().length > 0).length || 1;
+
+            tokens.forEach(token => {
+                if (/[a-zA-Z]/.test(token)) {
+                    const cleanWord = token.replace(/[^a-zA-Z]/g, '');
+                    const syl = countFeynmanSyllables(cleanWord);
+                    totalSyllables += syl;
+
+                    if (syl >= 3 && cleanWord.length > 7) {
+                        highlightedHTML += `<span class="jargon-word">${token}</span>`;
+                        jargonCount++;
+                    } else {
+                        highlightedHTML += token; 
+                    }
+                } else {
+                    highlightedHTML += token.replace(/\n/g, '<br>');
+                }
+            });
+
+            highlightLayer.innerHTML = highlightedHTML + '<br>';
+            scoreDisplay.innerText = jargonCount;
+
+            const gradeLevel = (0.39 * (totalWords / sentences)) + (11.8 * (totalSyllables / totalWords)) - 15.59;
+
+            if (gradeLevel > 12 || jargonCount > (totalWords * 0.15)) {
+                face.innerText = '😵‍💫'; status.innerText = 'I\'m lost!'; desc.innerText = 'Too many big words! Make it simpler.';
+                status.className = 'font-black text-2xl text-red-500 mb-2';
+            } else if (gradeLevel <= 8 && jargonCount === 0 && totalWords > 5) {
+                face.innerText = '🤩'; status.innerText = 'I get it!'; desc.innerText = 'Perfectly simple explanation.';
+                status.className = 'font-black text-2xl text-green-500 mb-2';
+            } else {
+                face.innerText = '🤔'; status.innerText = 'Hmm...'; desc.innerText = 'I kinda understand, but it could be simpler.';
+                status.className = 'font-black text-2xl text-yellow-500 mb-2';
+            }
+        }
+
+        let simonSeq = [], simonStep = 0, simonPlaying = false;
+        function resetSimon() {
+            simonSeq = []; simonStep = 0; simonPlaying = false;
+            document.getElementById('simon-level').innerText = '1';
+            document.getElementById('simon-start').disabled = false;
+        }
+
+        async function startSimon() {
+            document.getElementById('simon-start').disabled = true;
+            simonSeq.push(Math.floor(Math.random() * 4));
+            document.getElementById('simon-level').innerText = simonSeq.length;
+            simonStep = 0;
+            simonPlaying = false;
+            
+            await new Promise(r => setTimeout(r, 500));
+            for (let i = 0; i < simonSeq.length; i++) {
+                const btn = document.getElementById(`simon-${simonSeq[i]}`);
+                btn.classList.add('active');
+                await new Promise(r => setTimeout(r, 400));
+                btn.classList.remove('active');
+                await new Promise(r => setTimeout(r, 200));
+            }
+            simonPlaying = true;
+        }
+
+        function simonInput(val) {
+            if (!simonPlaying) return;
+            if (val === simonSeq[simonStep]) {
+                simonStep++;
+                if (simonStep >= simonSeq.length) {
+                    simonPlaying = false; setTimeout(startSimon, 1000);
+                }
+            } else {
+                alert("Sequence Broken! Reached Level: " + simonSeq.length);
+                resetSimon();
+            }
+        }
+
+        let stroopTimer, stroopTime = 30, stroopScore = 0, stroopPlaying = false;
+        const sColors = ['red', 'blue', 'green', 'yellow'];
+
+        function resetStroop() {
+            clearInterval(stroopTimer); stroopPlaying = false; stroopTime = 30; stroopScore = 0;
+            document.getElementById('stroop-time').innerText = stroopTime;
+            document.getElementById('stroop-score').innerText = stroopScore;
+            document.getElementById('stroop-word').innerText = "READY";
+            document.getElementById('stroop-word').style.color = "black";
+            document.getElementById('stroop-start').disabled = false;
+        }
+
+        function startStroop() {
+            resetStroop(); stroopPlaying = true;
+            document.getElementById('stroop-start').disabled = true;
+            nextStroop();
+            stroopTimer = setInterval(() => {
+                stroopTime--; document.getElementById('stroop-time').innerText = stroopTime;
+                if (stroopTime <= 0) {
+                    clearInterval(stroopTimer); stroopPlaying = false;
+                    document.getElementById('stroop-word').innerText = "TIME UP!";
+                    document.getElementById('stroop-word').style.color = "black";
+                    document.getElementById('stroop-start').disabled = false;
+                }
+            }, 1000);
+        }
+
+        function nextStroop() {
+            const wordIdx = Math.floor(Math.random() * 4);
+            let colorIdx = Math.floor(Math.random() * 4);
+            if (Math.random() > 0.5) colorIdx = (wordIdx + 1 + Math.floor(Math.random()*3)) % 4;
+            const el = document.getElementById('stroop-word');
+            el.innerText = sColors[wordIdx]; el.style.color = sColors[colorIdx]; el.dataset.ans = sColors[colorIdx];
+        }
+
+        function stroopInput(color) {
+            if (!stroopPlaying) return;
+            const el = document.getElementById('stroop-word');
+            if (color === el.dataset.ans) {
+                stroopScore++; document.getElementById('stroop-score').innerText = stroopScore; nextStroop();
+            } else {
+                stroopScore = Math.max(0, stroopScore - 1); document.getElementById('stroop-score').innerText = stroopScore;
+            }
+        }
+
+    </script>
+</body>
+</html>

@@ -1,0 +1,392 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Mendelian Genetics Lab: Punnett Square</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;700&family=Inter:wght@300;400;600;700&display=swap');
+
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: #020617;
+            color: #f8fafc;
+            overflow-x: hidden;
+            user-select: none;
+        }
+
+        .font-mono { font-family: 'JetBrains Mono', monospace; }
+
+        .glass-card {
+            background: rgba(15, 23, 42, 0.75);
+            backdrop-filter: blur(16px);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.5);
+        }
+
+        .digital-readout {
+            background: #061021;
+            color: #10b981; /* Emerald base */
+            text-shadow: 0 0 10px rgba(16, 185, 129, 0.4);
+            border: 1px solid #1e293b;
+            transition: all 0.3s ease;
+        }
+
+        /* Punnett Grid Styles */
+        .punnett-cell {
+            aspect-ratio: 1 / 1;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            background: rgba(30, 41, 59, 0.5);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            transition: all 0.3s ease;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .punnett-cell:hover {
+            background: rgba(51, 65, 85, 0.6);
+            border-color: #38bdf8;
+        }
+
+        .allele-header {
+            color: #94a3b8;
+            font-weight: 700;
+            font-family: 'JetBrains Mono', monospace;
+        }
+
+        /* Trait Colors */
+        .eye-brown { fill: #78350f; stroke: #92400e; }
+        .eye-blue { fill: #38bdf8; stroke: #0ea5e9; }
+        
+        .blood-icon { fill: #f43f5e; opacity: 0.8; }
+
+        /* Animation */
+        .fade-in { animation: fadeIn 0.5s ease-out forwards; }
+        @keyframes fadeIn {
+            from { opacity: 0; transform: scale(0.9); }
+            to { opacity: 1; transform: scale(1); }
+        }
+
+        /* Selection Button */
+        .btn-toggle {
+            transition: all 0.3s ease;
+            border: 1px solid #334155;
+        }
+        .btn-toggle.active {
+            background: #1e40af;
+            border-color: #3b82f6;
+            color: white;
+            box-shadow: 0 0 15px rgba(59, 130, 246, 0.4);
+        }
+
+        .physics-grid {
+            background-size: 50px 50px;
+            background-image: 
+                linear-gradient(to right, rgba(56, 189, 248, 0.03) 1px, transparent 1px),
+                linear-gradient(to bottom, rgba(56, 189, 248, 0.03) 1px, transparent 1px);
+        }
+
+        select {
+            background: #0f172a;
+            border: 1px solid #334155;
+            color: #f1f5f9;
+            padding: 8px;
+            border-radius: 8px;
+            cursor: pointer;
+            outline: none;
+        }
+        select:hover { border-color: #475569; }
+    </style>
+</head>
+<body class="min-h-screen p-4 md:p-8 flex items-center justify-center">
+
+    <div class="max-w-7xl w-full grid grid-cols-1 lg:grid-cols-12 gap-8 items-stretch">
+        
+        <!-- Simulation Viewport -->
+        <div class="lg:col-span-8 flex flex-col gap-6">
+            <div id="sim-viewport" class="glass-card rounded-3xl p-0 relative flex-grow min-h-[550px] flex flex-col overflow-hidden border border-slate-800 physics-grid">
+                
+                <!-- HUD Header -->
+                <div class="absolute top-6 left-8 flex items-center gap-3 z-30">
+                    <div id="status-dot" class="w-2.5 h-2.5 rounded-full bg-emerald-500 shadow-[0_0_10px_#10b981]"></div>
+                    <span id="status-text" class="text-[10px] font-bold text-slate-400 uppercase tracking-widest font-mono">Genetic Probability: <span id="hud-mode" class="text-emerald-400">Stable Analysis</span></span>
+                </div>
+
+                <!-- Main Visualization Area -->
+                <div class="relative w-full flex-grow flex items-center justify-center p-12">
+                    
+                    <!-- Punnett Grid Layout -->
+                    <div class="grid grid-cols-3 grid-rows-3 w-full max-w-[450px] gap-2 fade-in" id="punnett-grid">
+                        <!-- Top Left (Empty) -->
+                        <div></div>
+                        
+                        <!-- Parent 2 Alleles (Top Row) -->
+                        <div class="flex items-center justify-center text-2xl font-bold allele-header" id="p2-a1">?</div>
+                        <div class="flex items-center justify-center text-2xl font-bold allele-header" id="p2-a2">?</div>
+
+                        <!-- Parent 1 Allele 1 -->
+                        <div class="flex items-center justify-center text-2xl font-bold allele-header" id="p1-a1">?</div>
+                        <div class="punnett-cell rounded-tl-xl" id="cell-0-0"></div>
+                        <div class="punnett-cell rounded-tr-xl" id="cell-0-1"></div>
+
+                        <!-- Parent 1 Allele 2 -->
+                        <div class="flex items-center justify-center text-2xl font-bold allele-header" id="p1-a2">?</div>
+                        <div class="punnett-cell rounded-bl-xl" id="cell-1-0"></div>
+                        <div class="punnett-cell rounded-br-xl" id="cell-1-1"></div>
+                    </div>
+
+                </div>
+
+                <!-- Tags -->
+                <div class="absolute bottom-6 left-8 flex flex-col gap-1 z-30">
+                    <span class="text-[9px] font-mono text-slate-500 uppercase">Model: Mendelian Independent Assortment</span>
+                    <span class="text-[9px] font-mono text-slate-500 uppercase">Variable: Parental Alleles (Genotypes)</span>
+                </div>
+            </div>
+
+            <!-- Controls Panel -->
+            <div class="glass-card p-6 rounded-3xl grid grid-cols-1 md:grid-cols-3 gap-6">
+                <!-- Trait Select -->
+                <div class="space-y-3">
+                    <label class="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Target Trait</label>
+                    <div class="flex gap-2">
+                        <button class="btn-toggle active flex-1 py-2 rounded-lg text-xs font-bold" data-trait="eye">Eyes</button>
+                        <button class="btn-toggle flex-1 py-2 rounded-lg text-xs font-bold" data-trait="blood">Blood</button>
+                    </div>
+                </div>
+
+                <!-- Parent 1 -->
+                <div class="space-y-3">
+                    <label class="text-[10px] font-bold text-slate-400 uppercase tracking-widest flex items-center gap-2">
+                        <span class="w-2 h-2 rounded-full bg-blue-500"></span>
+                        Parent 1 (Genotype)
+                    </label>
+                    <select id="p1-select" class="w-full font-mono text-sm"></select>
+                </div>
+
+                <!-- Parent 2 -->
+                <div class="space-y-3">
+                    <label class="text-[10px] font-bold text-slate-400 uppercase tracking-widest flex items-center gap-2">
+                        <span class="w-2 h-2 rounded-full bg-rose-500"></span>
+                        Parent 2 (Genotype)
+                    </label>
+                    <select id="p2-select" class="w-full font-mono text-sm"></select>
+                </div>
+            </div>
+        </div>
+
+        <!-- Sidebar: Analytics & Results -->
+        <div class="lg:col-span-4 flex flex-col gap-6">
+            
+            <!-- Digital Readout: Phenotypes -->
+            <div id="telemetry-panel" class="digital-readout rounded-3xl p-6 space-y-6 flex-grow">
+                <div class="flex justify-between items-center border-b border-current pb-3 opacity-60">
+                    <span class="text-[10px] font-bold tracking-tighter uppercase">Offspring Probabilities</span>
+                    <span class="text-xs font-mono animate-pulse">CALCULATING</span>
+                </div>
+
+                <div class="space-y-6" id="phenotype-list">
+                    <!-- Probability bars will be injected here -->
+                </div>
+
+                <div class="pt-6 border-t border-current opacity-40">
+                    <div class="text-[9px] uppercase font-bold mb-2">Genetic Legend</div>
+                    <div id="legend-list" class="space-y-1 text-[10px] font-mono"></div>
+                </div>
+            </div>
+
+            <!-- Pathophysiology Card -->
+            <div class="glass-card p-6 rounded-3xl space-y-4">
+                <h3 class="text-xs font-bold text-slate-400 uppercase tracking-widest flex items-center gap-2">
+                    <svg class="w-4 h-4 text-sky-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"></path></svg>
+                    Inheritance Mechanics
+                </h3>
+                <div class="text-[11px] text-slate-300 leading-relaxed space-y-2">
+                    <p id="trait-desc">
+                        Eye color is modeled here as a simple dominant/recessive trait. In reality, it is polygenic, but the $B$ (Brown) allele shows classic dominance over $b$ (Blue).
+                    </p>
+                    <div class="p-3 bg-slate-900/50 rounded-xl border border-slate-800">
+                        <div class="text-sky-400 font-bold mb-1">Key Terms</div>
+                        <ul class="text-[10px] text-slate-400 list-disc pl-4">
+                            <li><strong>Genotype:</strong> The actual genetic code (alleles).</li>
+                            <li><strong>Phenotype:</strong> The observable physical trait.</li>
+                        </ul>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', () => {
+            const p1Select = document.getElementById('p1-select');
+            const p2Select = document.getElementById('p2-select');
+            const traitBtns = document.querySelectorAll('.btn-toggle');
+            const phenotypeList = document.getElementById('phenotype-list');
+            const legendList = document.getElementById('legend-list');
+            const traitDesc = document.getElementById('trait-desc');
+
+            // --- State ---
+            let currentTrait = 'eye'; // 'eye' or 'blood'
+
+            const TRAITS = {
+                eye: {
+                    name: 'Eye Color',
+                    desc: 'Brown ($B$) is dominant over blue ($b$). Offspring require two $b$ alleles to express the blue phenotype.',
+                    genotypes: [
+                        { val: 'BB', display: 'Homozygous Brown (BB)', alleles: ['B', 'B'] },
+                        { val: 'Bb', display: 'Heterozygous Brown (Bb)', alleles: ['B', 'b'] },
+                        { val: 'bb', display: 'Homozygous Blue (bb)', alleles: ['b', 'b'] }
+                    ],
+                    legend: [
+                        'B: Dominant Allele (Brown)',
+                        'b: Recessive Allele (Blue)'
+                    ],
+                    getPhenotype: (g) => g.includes('B') ? 'Brown Eyes' : 'Blue Eyes',
+                    getIcon: (p) => p === 'Brown Eyes' ? 'eye-brown' : 'eye-blue'
+                },
+                blood: {
+                    name: 'ABO Blood Type',
+                    desc: 'A case of multiple alleles and co-dominance. $I^A$ and $I^B$ are both dominant over $i$ (Type O), but co-dominant with each other.',
+                    genotypes: [
+                        { val: 'AA', display: 'Type A (AA)', alleles: ['A', 'A'] },
+                        { val: 'AO', display: 'Type A (AO)', alleles: ['A', 'O'] },
+                        { val: 'BB', display: 'Type B (BB)', alleles: ['B', 'B'] },
+                        { val: 'BO', display: 'Type B (BO)', alleles: ['B', 'O'] },
+                        { val: 'AB', display: 'Type AB (AB)', alleles: ['A', 'B'] },
+                        { val: 'OO', display: 'Type O (OO)', alleles: ['O', 'O'] }
+                    ],
+                    legend: [
+                        'A/B: Co-dominant Alleles',
+                        'O: Recessive Allele'
+                    ],
+                    getPhenotype: (g) => {
+                        if (g.includes('A') && g.includes('B')) return 'Type AB';
+                        if (g.includes('A')) return 'Type A';
+                        if (g.includes('B')) return 'Type B';
+                        return 'Type O';
+                    },
+                    getIcon: (p) => 'blood-icon'
+                }
+            };
+
+            function initSelects() {
+                const trait = TRAITS[currentTrait];
+                p1Select.innerHTML = '';
+                p2Select.innerHTML = '';
+                
+                trait.genotypes.forEach(g => {
+                    const opt1 = new Option(g.display, g.val);
+                    const opt2 = new Option(g.display, g.val);
+                    p1Select.add(opt1);
+                    p2Select.add(opt2);
+                });
+
+                // Default selections
+                p1Select.value = trait.genotypes[1].val; // Hetero
+                p2Select.value = trait.genotypes[1].val; // Hetero
+
+                legendList.innerHTML = trait.legend.map(l => `<div>• ${l}</div>`).join('');
+                traitDesc.textContent = trait.desc;
+                
+                updateSimulation();
+            }
+
+            function getOffspringSVG(traitType, phenotype) {
+                if (traitType === 'eye') {
+                    const colorClass = phenotype === 'Brown Eyes' ? 'eye-brown' : 'eye-blue';
+                    return `
+                        <svg viewBox="0 0 100 60" class="w-12 h-auto">
+                            <path d="M 10 30 Q 50 0 90 30 Q 50 60 10 30 Z" fill="#1e293b" stroke="#475569" stroke-width="2" />
+                            <circle cx="50" cy="30" r="15" class="${colorClass}" stroke-width="2" />
+                            <circle cx="50" cy="30" r="6" fill="#000" />
+                        </svg>
+                    `;
+                } else {
+                    return `
+                        <svg viewBox="0 0 100 100" class="w-10 h-auto">
+                            <path d="M 50 10 C 20 40 20 80 50 90 C 80 80 80 40 50 10 Z" class="blood-icon" />
+                            <text x="50" y="65" text-anchor="middle" fill="#fff" font-size="24" font-weight="bold" font-family="monospace">${phenotype.replace('Type ', '')}</text>
+                        </svg>
+                    `;
+                }
+            }
+
+            function updateSimulation() {
+                const trait = TRAITS[currentTrait];
+                const g1Val = p1Select.value;
+                const g2Val = p2Select.value;
+
+                const a1 = trait.genotypes.find(g => g.val === g1Val).alleles;
+                const a2 = trait.genotypes.find(g => g.val === g2Val).alleles;
+
+                // Update Header Alleles
+                document.getElementById('p1-a1').textContent = a1[0];
+                document.getElementById('p1-a2').textContent = a1[1];
+                document.getElementById('p2-a1').textContent = a2[0];
+                document.getElementById('p2-a2').textContent = a2[1];
+
+                const results = [];
+                const phenotypeCounts = {};
+
+                // Calculate 4 combinations
+                for (let r = 0; r < 2; r++) {
+                    for (let c = 0; c < 2; c++) {
+                        // Sort alleles for consistent genotype (e.g., aB -> Ba)
+                        const combo = [a1[r], a2[c]].sort().join('');
+                        const pheno = trait.getPhenotype(combo);
+                        
+                        const cell = document.getElementById(`cell-${r}-${c}`);
+                        cell.innerHTML = `
+                            <div class="text-lg font-mono font-bold text-white mb-1">${combo}</div>
+                            ${getOffspringSVG(currentTrait, pheno)}
+                            <div class="text-[8px] uppercase font-bold text-slate-500 mt-1">${pheno}</div>
+                        `;
+
+                        results.push(combo);
+                        phenotypeCounts[pheno] = (phenotypeCounts[pheno] || 0) + 1;
+                    }
+                }
+
+                // Update Side Panel Probabilities
+                phenotypeList.innerHTML = '';
+                Object.entries(phenotypeCounts).forEach(([name, count]) => {
+                    const pct = (count / 4) * 100;
+                    const item = document.createElement('div');
+                    item.className = 'space-y-2';
+                    item.innerHTML = `
+                        <div class="flex justify-between items-end">
+                            <label class="text-[10px] uppercase font-bold opacity-60">${name}</label>
+                            <div class="text-2xl font-bold font-mono">${pct}%</div>
+                        </div>
+                        <div class="h-2 w-full bg-slate-900 rounded-full overflow-hidden">
+                            <div class="h-full bg-current transition-all duration-500" style="width: ${pct}%"></div>
+                        </div>
+                    `;
+                    phenotypeList.appendChild(item);
+                });
+            }
+
+            // --- Events ---
+            p1Select.addEventListener('change', updateSimulation);
+            p2Select.addEventListener('change', updateSimulation);
+
+            traitBtns.forEach(btn => {
+                btn.addEventListener('click', (e) => {
+                    traitBtns.forEach(b => b.classList.remove('active'));
+                    e.target.classList.add('active');
+                    currentTrait = e.target.dataset.trait;
+                    initSelects();
+                });
+            });
+
+            // Init
+            initSelects();
+        });
+    </script>
+</body>
+</html>

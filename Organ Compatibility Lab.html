@@ -1,0 +1,666 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Transplant Command Center</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;600;800;900&family=JetBrains+Mono:wght@500;800&display=swap');
+        
+        :root {
+            --bg-base: #020617;
+            --panel-bg: #0f172a;
+            --brand-cyan: #06b6d4;
+            --brand-green: #10b981;
+            --brand-red: #ef4444;
+            --brand-amber: #f59e0b;
+        }
+
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: var(--bg-base);
+            color: #f8fafc;
+            overflow: hidden;
+            user-select: none;
+            background-image: 
+                radial-gradient(circle at 50% 0%, rgba(6, 182, 212, 0.08) 0%, transparent 50%),
+                radial-gradient(circle at 50% 100%, rgba(16, 185, 129, 0.03) 0%, transparent 50%);
+        }
+
+        /* Sci-Fi Grid Background */
+        .bg-grid {
+            position: absolute;
+            inset: 0;
+            background-size: 30px 30px;
+            background-image: linear-gradient(to right, rgba(255, 255, 255, 0.02) 1px, transparent 1px),
+                              linear-gradient(to bottom, rgba(255, 255, 255, 0.02) 1px, transparent 1px);
+            z-index: -1;
+            mask-image: radial-gradient(ellipse at center, black 50%, transparent 90%);
+        }
+
+        .glass-panel {
+            background: rgba(15, 23, 42, 0.7);
+            backdrop-filter: blur(20px);
+            border: 1px solid rgba(255,255,255,0.05);
+            box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.5);
+        }
+
+        /* Organ Animations & Drag Styles */
+        @keyframes float {
+            0%, 100% { transform: translateY(0) scale(1); filter: drop-shadow(0 5px 10px rgba(6, 182, 212, 0.3)); }
+            50% { transform: translateY(-6px) scale(1.02); filter: drop-shadow(0 15px 20px rgba(6, 182, 212, 0.5)); }
+        }
+        
+        .floating-organ {
+            animation: float 4s ease-in-out infinite;
+            cursor: grab;
+            transition: all 0.2s;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+        
+        .floating-organ:active {
+            cursor: grabbing;
+            transform: scale(0.9);
+        }
+
+        .organ-svg {
+            width: 75px;  /* Properly sized down */
+            height: 75px; /* Properly sized down */
+            stroke-width: 1.5;
+            fill: currentColor;
+            fill-opacity: 0.15;
+            stroke: currentColor;
+            transition: all 0.3s ease;
+        }
+
+        /* Cooler Box Effect */
+        .cooler-box {
+            background: radial-gradient(circle at center, rgba(56, 189, 248, 0.15) 0%, rgba(15, 23, 42, 0.9) 80%);
+            box-shadow: inset 0 0 40px rgba(56, 189, 248, 0.1), inset 0 -2px 10px rgba(255,255,255,0.05);
+            position: relative;
+            overflow: hidden;
+        }
+        .cooler-box::after {
+            content: '';
+            position: absolute;
+            bottom: -50%; left: -50%; width: 200%; height: 100%;
+            background: linear-gradient(to top, rgba(255, 255, 255, 0.03), transparent);
+            animation: mist 10s linear infinite;
+            pointer-events: none;
+        }
+        @keyframes mist {
+            0% { transform: translateY(0) translateX(0) rotate(0); }
+            100% { transform: translateY(-50%) translateX(10%) rotate(5deg); }
+        }
+
+        /* Body Silhouette Drop Zone */
+        .body-silhouette {
+            fill: rgba(15, 23, 42, 0.8);
+            stroke: rgba(148, 163, 184, 0.15);
+            stroke-width: 1.5;
+            transition: all 0.3s ease;
+        }
+
+        .drop-zone-active .body-silhouette {
+            fill: rgba(16, 185, 129, 0.05);
+            stroke: rgba(16, 185, 129, 0.4);
+            filter: drop-shadow(0 0 15px rgba(16, 185, 129, 0.2));
+        }
+
+        .ghost-organ {
+            stroke-dasharray: 3 3;
+            fill: none;
+            stroke: rgba(255,255,255,0.3);
+            opacity: 0.6;
+            animation: pulse-ghost 2s infinite;
+        }
+        @keyframes pulse-ghost {
+            0%, 100% { opacity: 0.3; transform: scale(0.95); }
+            50% { opacity: 0.6; transform: scale(1); }
+        }
+
+        /* Target Reticle */
+        .target-reticle {
+            stroke: rgba(255,255,255,0.1);
+            stroke-width: 1;
+            fill: none;
+            stroke-dasharray: 2 4;
+            transition: all 0.3s ease;
+        }
+        .drop-zone-active .target-reticle {
+            stroke: rgba(16, 185, 129, 0.5);
+            animation: spin-slow 10s linear infinite;
+        }
+        @keyframes spin-slow {
+            100% { transform: rotate(360deg); }
+        }
+
+        /* UI Tags */
+        .hla-tag {
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 0.70rem;
+            font-weight: 800;
+            padding: 4px 8px;
+            border-radius: 6px;
+            background: rgba(255, 255, 255, 0.03);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+        .hla-match {
+            background: rgba(16, 185, 129, 0.15);
+            border-color: var(--brand-green);
+            color: #34d399;
+            box-shadow: 0 0 10px rgba(16, 185, 129, 0.2);
+            transform: scale(1.05);
+        }
+
+        /* Scrollbar */
+        ::-webkit-scrollbar { width: 4px; }
+        ::-webkit-scrollbar-track { background: rgba(0,0,0,0.2); border-radius: 4px; }
+        ::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.1); border-radius: 4px; }
+        ::-webkit-scrollbar-thumb:hover { background: rgba(255,255,255,0.2); }
+
+        #particle-canvas {
+            position: absolute;
+            inset: 0;
+            pointer-events: none;
+            z-index: 50;
+        }
+    </style>
+</head>
+<body class="flex flex-col h-screen">
+
+    <div class="bg-grid"></div>
+    <canvas id="particle-canvas"></canvas>
+
+    <!-- Top Navigation Bar -->
+    <header class="h-16 glass-panel border-b border-white/5 flex justify-between items-center px-8 z-40">
+        <div class="flex items-center gap-3">
+            <div class="w-8 h-8 bg-cyan-500/10 border border-cyan-500/30 rounded-lg flex items-center justify-center">
+                <svg class="w-4 h-4 text-cyan-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19.428 15.428a2 2 0 00-1.022-.547l-2.387-.477a6 6 0 00-3.86.517l-.318.158a6 6 0 01-3.86.517L6.05 15.21a2 2 0 00-1.806.547M8 4h8l-1 1v5.172a2 2 0 00.586 1.414l5 5c1.26 1.26.367 3.414-1.415 3.414H4.828c-1.782 0-2.674-2.154-1.414-3.414l5-5A2 2 0 009 10.172V5L8 4z"></path></svg>
+            </div>
+            <div>
+                <h1 class="text-xl font-black tracking-tighter text-white leading-none uppercase italic">Transplant <span class="text-cyan-400">Control</span></h1>
+            </div>
+        </div>
+
+        <div class="flex items-center gap-6">
+            <div class="flex items-center gap-3 bg-black/40 px-4 py-1.5 rounded-full border border-white/5">
+                <span class="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Successful Grafts</span>
+                <span id="scoreVal" class="text-xl font-black text-emerald-400">0</span>
+            </div>
+        </div>
+    </header>
+
+    <!-- Main Workspace -->
+    <main class="flex-1 flex overflow-hidden z-30 p-4 gap-4">
+        
+        <!-- Column 1: Patient Registry (Waitlist) -->
+        <aside class="w-1/4 glass-panel rounded-2xl flex flex-col overflow-hidden">
+            <div class="p-4 border-b border-white/5 bg-slate-900/30 flex justify-between items-center">
+                <h2 class="text-xs font-black uppercase tracking-widest text-slate-300 flex items-center gap-2">
+                    <span class="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse"></span>
+                    Active Registry
+                </h2>
+                <span class="text-[9px] text-slate-500 font-mono">5 PENDING</span>
+            </div>
+            <div id="patientQueue" class="flex-1 overflow-y-auto p-3 space-y-2">
+                <!-- Patient Cards Generated Here -->
+            </div>
+        </aside>
+
+        <!-- Column 2: Donor Cooler (Source) -->
+        <section class="w-[30%] glass-panel rounded-2xl flex flex-col overflow-hidden relative border-t-2 border-t-cyan-500">
+            <div class="p-4 border-b border-white/5 bg-slate-900/30 flex justify-between items-center">
+                <h2 class="text-xs font-black uppercase tracking-widest text-cyan-400">Preservation Unit</h2>
+                <div id="donorId" class="font-mono text-[10px] font-bold text-slate-400 bg-black/40 px-2 py-1 rounded">#D-AWAITING</div>
+            </div>
+            
+            <div class="flex-1 flex flex-col p-5 items-center justify-start">
+                
+                <!-- Cooler Visual -->
+                <div class="w-full h-40 cooler-box rounded-xl border border-cyan-500/20 flex flex-col items-center justify-center mb-5 shadow-inner relative">
+                    <div class="absolute top-2 left-3 text-[9px] font-mono text-cyan-500/70 tracking-wider">TEMP: 4.0°C</div>
+                    <div class="absolute top-2 right-3 text-[9px] font-mono text-cyan-500/70 tracking-wider">VIABLE</div>
+                    
+                    <div id="donorOrganVisual" class="floating-organ text-slate-500 mt-2" draggable="true">
+                        <svg class="w-10 h-10 opacity-20" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
+                    </div>
+                </div>
+
+                <!-- Donor Stats -->
+                <div class="w-full grid grid-cols-2 gap-3 mb-5">
+                    <div class="bg-black/30 rounded-lg p-3 border border-white/5 flex justify-between items-center">
+                        <span class="text-[9px] text-slate-500 font-bold uppercase tracking-widest">Type</span>
+                        <span id="donorType" class="text-sm font-black text-white">---</span>
+                    </div>
+                    <div class="bg-black/30 rounded-lg p-3 border border-white/5 flex justify-between items-center">
+                        <span class="text-[9px] text-slate-500 font-bold uppercase tracking-widest">Blood</span>
+                        <span id="donorBlood" class="text-sm font-black text-red-400">---</span>
+                    </div>
+                </div>
+
+                <div class="w-full bg-black/30 rounded-lg p-4 border border-white/5">
+                    <span class="text-[9px] text-slate-500 font-bold uppercase tracking-widest block text-center mb-2">Donor HLA Profile</span>
+                    <div id="donorHla" class="flex flex-wrap justify-center gap-1.5 min-h-[25px]">
+                        <!-- HLA Tags -->
+                    </div>
+                </div>
+            </div>
+
+            <button id="btnReject" class="m-5 mt-0 py-3 bg-red-500/10 hover:bg-red-500 hover:text-white text-red-500 font-black uppercase tracking-[0.2em] text-[10px] rounded-lg border border-red-500/20 transition-all duration-300">
+                Discard Specimen
+            </button>
+        </section>
+
+        <!-- Column 3: Surgical Bay (Destination) -->
+        <section class="flex-1 glass-panel rounded-2xl flex flex-col overflow-hidden relative border-t-2 border-t-emerald-500">
+            <div class="p-4 border-b border-white/5 bg-slate-900/30 flex justify-between items-center">
+                <h2 class="text-xs font-black uppercase tracking-widest text-emerald-400">Surgical Bay</h2>
+                <div id="patientNameHeader" class="font-mono text-[10px] font-bold text-slate-400 bg-black/40 px-2 py-1 rounded">AWAITING SELECTION</div>
+            </div>
+
+            <div id="activePatientCard" class="flex-1 flex flex-col relative bg-slate-900/20">
+                <!-- Empty State -->
+                <div class="absolute inset-0 flex flex-col items-center justify-center opacity-40 z-10" id="emptySurgicalState">
+                    <svg class="w-12 h-12 text-slate-500 mb-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"></path></svg>
+                    <p class="text-xs font-bold uppercase tracking-widest text-slate-400">Select Patient Profile</p>
+                </div>
+
+                <!-- Active Patient Content (Hidden initially) -->
+                <div id="activeSurgicalState" class="hidden flex-1 flex flex-col p-5 h-full">
+                    
+                    <!-- Top Stats -->
+                    <div class="flex gap-3 mb-4">
+                        <div id="aboPanel" class="flex-1 bg-black/30 rounded-lg p-3 border border-white/5 flex justify-between items-center transition-colors duration-300">
+                            <span class="text-[9px] text-slate-500 font-bold uppercase tracking-widest">ABO Match</span>
+                            <span id="aboStatus" class="font-black uppercase text-xs">--</span>
+                        </div>
+                        <div class="flex-1 bg-black/30 rounded-lg p-3 border border-white/5 flex justify-between items-center">
+                            <span class="text-[9px] text-slate-500 font-bold uppercase tracking-widest">Patient Blood</span>
+                            <span id="patientBlood" class="text-sm font-black text-white bg-slate-800 px-2 py-0.5 rounded">--</span>
+                        </div>
+                    </div>
+
+                    <!-- Main Body & Dropzone -->
+                    <div class="flex-1 relative flex items-center justify-center bg-black/20 rounded-xl border border-white/5 mb-4 overflow-hidden" id="dropZoneTarget">
+                        
+                        <!-- High-Tech Anatomical Grid -->
+                        <div class="absolute inset-0" style="background-image: linear-gradient(rgba(255,255,255,0.02) 1px, transparent 1px), linear-gradient(90deg, rgba(255,255,255,0.02) 1px, transparent 1px); background-size: 20px 20px;"></div>
+
+                        <!-- Human Torso SVG (Medical Scan style) -->
+                        <svg viewBox="0 0 200 300" class="h-[95%] absolute bottom-0 left-1/2 -translate-x-1/2 opacity-70 pointer-events-none">
+                            <path class="body-silhouette" d="M70 40 C70 15, 130 15, 130 40 L130 50 C160 55, 180 70, 190 110 L190 300 L10 300 L10 110 C20 70, 40 55, 70 50 Z"/>
+                            <!-- Center Line -->
+                            <line x1="100" y1="50" x2="100" y2="300" stroke="rgba(255,255,255,0.05)" stroke-dasharray="2 2" stroke-width="1" />
+                            <!-- Target Reticle Base -->
+                            <circle cx="100" cy="140" r="45" class="target-reticle" />
+                            <circle cx="100" cy="140" r="30" fill="none" stroke="rgba(255,255,255,0.03)" stroke-width="10" />
+                        </svg>
+
+                        <!-- Ghost Organ Drop Target (Perfectly Sized) -->
+                        <div id="ghostOrganContainer" class="absolute top-[40%] left-1/2 -translate-x-1/2 -translate-y-1/2 w-[75px] h-[75px] flex items-center justify-center">
+                            <!-- SVG Injected via JS -->
+                        </div>
+                        
+                        <div class="absolute bottom-3 text-[9px] font-black text-emerald-500/40 uppercase tracking-[0.3em] bg-slate-950/80 px-4 py-1.5 rounded-full border border-emerald-500/20 backdrop-blur-sm pointer-events-none">
+                            Drop Organ in Cavity
+                        </div>
+                    </div>
+
+                    <!-- HLA Comparison -->
+                    <div class="bg-black/30 rounded-lg p-4 border border-white/5">
+                        <div class="flex justify-between items-end mb-2">
+                            <span class="text-[9px] text-slate-500 font-bold uppercase tracking-widest">Patient HLA Profile</span>
+                            <span id="hlaStatus" class="text-[10px] font-black uppercase text-cyan-400">-- Match</span>
+                        </div>
+                        <div id="patientHla" class="flex flex-wrap justify-center gap-1.5">
+                            <!-- HLA Tags -->
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+    </main>
+
+    <!-- Notification Toast -->
+    <div id="toast" class="absolute top-20 left-1/2 -translate-x-1/2 px-6 py-3 rounded-xl font-bold text-sm transform -translate-y-24 opacity-0 transition-all duration-400 shadow-2xl z-50 flex items-center gap-3 border-l-4 backdrop-blur-xl pointer-events-none">
+        <span id="toastIcon" class="text-xl"></span>
+        <span id="toastMsg" class="uppercase tracking-widest text-white text-xs"></span>
+    </div>
+
+    <script>
+        // DOM Elements
+        const patientQueue = document.getElementById('patientQueue');
+        const donorOrganVisual = document.getElementById('donorOrganVisual');
+        const donorBlood = document.getElementById('donorBlood');
+        const donorHla = document.getElementById('donorHla');
+        const donorId = document.getElementById('donorId');
+        const donorType = document.getElementById('donorType');
+        
+        const emptySurgicalState = document.getElementById('emptySurgicalState');
+        const activeSurgicalState = document.getElementById('activeSurgicalState');
+        const patientNameHeader = document.getElementById('patientNameHeader');
+        const dropZoneTarget = document.getElementById('dropZoneTarget');
+        const ghostOrganContainer = document.getElementById('ghostOrganContainer');
+        const patientBlood = document.getElementById('patientBlood');
+        const patientHla = document.getElementById('patientHla');
+        const aboPanel = document.getElementById('aboPanel');
+        const aboStatus = document.getElementById('aboStatus');
+        const hlaStatus = document.getElementById('hlaStatus');
+        
+        const btnReject = document.getElementById('btnReject');
+        const scoreVal = document.getElementById('scoreVal');
+        const toast = document.getElementById('toast');
+        const toastMsg = document.getElementById('toastMsg');
+        const toastIcon = document.getElementById('toastIcon');
+        const particleCanvas = document.getElementById('particle-canvas');
+        const pCtx = particleCanvas.getContext('2d');
+
+        // Medical Icons / SVGs
+        const organData = {
+            'Heart': {
+                color: 'text-rose-500',
+                svg: `<svg viewBox="0 0 24 24" class="organ-svg"><path stroke-linecap="round" stroke-linejoin="round" d="M21 8.25c0-2.485-2.099-4.5-4.688-4.5-1.935 0-3.597 1.126-4.312 2.733-.715-1.607-2.377-2.733-4.313-2.733C5.1 3.75 3 5.765 3 8.25c0 7.22 9 12 9 12s9-4.78 9-12z" /></svg>`
+            },
+            'Kidney': {
+                color: 'text-amber-500',
+                svg: `<svg viewBox="0 0 24 24" class="organ-svg"><path stroke-linecap="round" stroke-linejoin="round" d="M12 2C8 2 5 6 5 10c0 4 3 10 7 10s7-6 7-10c0-4-3-8-7-8z" /><path stroke-linecap="round" stroke-linejoin="round" d="M12 6c-1 0-2 1-2 2s1 2 2 2" /></svg>`
+            },
+            'Liver': {
+                color: 'text-orange-600',
+                svg: `<svg viewBox="0 0 24 24" class="organ-svg"><path stroke-linecap="round" stroke-linejoin="round" d="M4 12c0-4 4-8 12-8 2 0 4 1 4 3 0 4-4 12-12 12-3 0-4-3-4-7z" /></svg>`
+            },
+            'Lung': {
+                color: 'text-sky-300',
+                svg: `<svg viewBox="0 0 24 24" class="organ-svg"><path stroke-linecap="round" stroke-linejoin="round" d="M6 5c-2 3-2 8 0 12 1 2 4 4 6 0 2 4 5 2 6 0 2-4 2-9 0-12-2-2-4 0-6 2-2-2-4-4-6-2z M18 5c2 3 2 8 0 12-1 2-4 4-6 0-2-4-5-2-6 0-2-4-2-9 0-12 2-2 4 0 6 2 2-2 4-4 6-2z M12 2v4" /></svg>`
+            }
+        };
+
+        const organTypes = Object.keys(organData);
+        const bloodTypes = ['A', 'B', 'AB', 'O'];
+        const hlaMarkers = ['A1', 'A2', 'B8', 'B27', 'B44', 'DR1', 'DR4', 'DR15', 'DQ2', 'DQ8'];
+        
+        let patients = [];
+        let currentDonor = null;
+        let selectedPatient = null;
+        let score = 0;
+        let particles = [];
+
+        // Resize Canvas
+        function resize() {
+            particleCanvas.width = window.innerWidth;
+            particleCanvas.height = window.innerHeight;
+        }
+        window.addEventListener('resize', resize);
+        resize();
+
+        // Particle System for Surgery Success
+        class Particle {
+            constructor(x, y, color) {
+                this.x = x; this.y = y;
+                this.vx = (Math.random() - 0.5) * 12;
+                this.vy = (Math.random() - 0.5) * 12;
+                this.life = 1.0;
+                this.color = color;
+                this.size = Math.random() * 3 + 1;
+            }
+            update() {
+                this.x += this.vx; this.y += this.vy;
+                this.vy += 0.15; // gravity
+                this.life -= 0.03;
+            }
+            draw() {
+                pCtx.globalAlpha = Math.max(0, this.life);
+                pCtx.fillStyle = this.color;
+                pCtx.beginPath(); pCtx.arc(this.x, this.y, this.size, 0, Math.PI*2); pCtx.fill();
+                pCtx.globalAlpha = 1.0;
+            }
+        }
+
+        function fireParticles(x, y) {
+            for(let i=0; i<30; i++) particles.push(new Particle(x, y, i%2===0 ? '#10b981' : '#38bdf8'));
+        }
+
+        function animateParticles() {
+            pCtx.clearRect(0, 0, particleCanvas.width, particleCanvas.height);
+            for(let i=particles.length-1; i>=0; i--) {
+                particles[i].update();
+                particles[i].draw();
+                if(particles[i].life <= 0) particles.splice(i, 1);
+            }
+            requestAnimationFrame(animateParticles);
+        }
+        animateParticles();
+
+        // Compatibility Rules
+        const compatibility = {
+            'A': ['A', 'O'],
+            'B': ['B', 'O'],
+            'AB': ['A', 'B', 'AB', 'O'],
+            'O': ['O']
+        };
+
+        function generateHLA() {
+            let shuffled = hlaMarkers.sort(() => 0.5 - Math.random());
+            return shuffled.slice(0, 6).sort();
+        }
+
+        function createPatient() {
+            return {
+                id: Math.floor(1000 + Math.random() * 9000),
+                name: ['Sarah M.', 'James T.', 'Elena R.', 'Marcus W.', 'Priya K.', 'Leo D.', 'Chen X.', 'Maya L.'][Math.floor(Math.random()*8)],
+                organ: organTypes[Math.floor(Math.random() * organTypes.length)],
+                blood: bloodTypes[Math.floor(Math.random() * bloodTypes.length)],
+                hla: generateHLA(),
+                criticality: Math.floor(Math.random() * 100)
+            };
+        }
+
+        function createDonor() {
+            return {
+                id: Math.floor(1000 + Math.random() * 9000),
+                organ: organTypes[Math.floor(Math.random() * organTypes.length)],
+                blood: bloodTypes[Math.floor(Math.random() * bloodTypes.length)],
+                hla: generateHLA()
+            };
+        }
+
+        function refreshQueue() {
+            while (patients.length < 5) {
+                patients.push(createPatient());
+            }
+            patients.sort((a, b) => b.criticality - a.criticality);
+            renderQueue();
+        }
+
+        function renderQueue() {
+            patientQueue.innerHTML = '';
+            patients.forEach(p => {
+                const isSelected = selectedPatient?.id === p.id;
+                const card = document.createElement('div');
+                card.className = `p-3 rounded-xl cursor-pointer transition-all border ${isSelected ? 'border-cyan-500 bg-slate-800 shadow-[0_0_10px_rgba(6,182,212,0.15)]' : 'border-white/5 bg-black/20 hover:bg-slate-800 hover:border-white/10'} flex items-center gap-3`;
+                card.onclick = () => selectPatient(p);
+                
+                card.innerHTML = `
+                    <div class="flex-shrink-0 w-8 h-8 rounded-lg bg-black/40 flex items-center justify-center border border-white/5 ${organData[p.organ].color}">
+                        ${organData[p.organ].svg.replace('class="organ-svg"', 'class="w-5 h-5 fill-current opacity-60"')}
+                    </div>
+                    <div class="flex-1">
+                        <div class="flex justify-between items-center mb-0.5">
+                            <span class="font-bold text-white text-xs tracking-wide">${p.name}</span>
+                            <span class="text-[8px] font-black uppercase px-1.5 py-0.5 rounded ${p.criticality > 80 ? 'bg-red-500/20 text-red-400 border border-red-500/30' : 'bg-slate-700/50 text-slate-400 border border-slate-600'}">${p.criticality > 80 ? 'CRIT' : 'STAB'}</span>
+                        </div>
+                        <div class="flex justify-between items-center text-[10px]">
+                            <span class="text-slate-400">${p.organ}</span>
+                            <span class="font-bold text-red-400">Type ${p.blood}</span>
+                        </div>
+                    </div>
+                `;
+                patientQueue.appendChild(card);
+            });
+        }
+
+        function spawnDonor() {
+            currentDonor = createDonor();
+            donorId.textContent = `#D-${currentDonor.id}`;
+            donorType.textContent = currentDonor.organ;
+            donorBlood.textContent = currentDonor.blood;
+            
+            // Set up Draggable Visual
+            donorOrganVisual.innerHTML = organData[currentDonor.organ].svg;
+            donorOrganVisual.className = `floating-organ ${organData[currentDonor.organ].color}`;
+            donorOrganVisual.draggable = true;
+            
+            donorHla.innerHTML = '';
+            currentDonor.hla.forEach(m => {
+                const span = document.createElement('span');
+                span.className = 'hla-tag text-slate-300';
+                span.textContent = m;
+                donorHla.appendChild(span);
+            });
+            
+            selectedPatient = null;
+            updateSurgicalBay();
+            renderQueue();
+        }
+
+        function selectPatient(p) {
+            selectedPatient = p;
+            renderQueue();
+            updateSurgicalBay();
+        }
+
+        function updateSurgicalBay() {
+            if (!selectedPatient) {
+                emptySurgicalState.classList.remove('hidden');
+                activeSurgicalState.classList.add('hidden');
+                patientNameHeader.textContent = "AWAITING SELECTION";
+                return;
+            }
+
+            emptySurgicalState.classList.add('hidden');
+            activeSurgicalState.classList.remove('hidden');
+            
+            patientNameHeader.textContent = `${selectedPatient.name} | #P-${selectedPatient.id}`;
+            patientBlood.textContent = selectedPatient.blood;
+
+            // Calculate Matches
+            const isAboCompat = compatibility[selectedPatient.blood].includes(currentDonor.blood);
+            const hlaMatches = selectedPatient.hla.filter(m => currentDonor.hla.includes(m)).length;
+            const hlaPercent = Math.round((hlaMatches / 6) * 100);
+
+            // Update ABO Panel
+            aboStatus.textContent = isAboCompat ? "Compatible" : "Lethal Risk";
+            aboStatus.className = `font-black uppercase text-[10px] ${isAboCompat ? 'text-emerald-400' : 'text-red-400'}`;
+            aboPanel.className = `flex-1 bg-black/30 rounded-lg p-3 border flex justify-between items-center transition-colors duration-300 ${isAboCompat ? 'border-emerald-500/30' : 'border-red-500/30'}`;
+
+            // Update HLA Status
+            hlaStatus.textContent = `${hlaPercent}% Match`;
+            hlaStatus.className = `text-[10px] font-black uppercase ${hlaMatches >= 4 ? 'text-emerald-400' : 'text-amber-400'}`;
+
+            // Render Patient HLA with dynamic highlighting based on donor
+            patientHla.innerHTML = '';
+            selectedPatient.hla.forEach(m => {
+                const isMatch = currentDonor.hla.includes(m);
+                const span = document.createElement('span');
+                span.className = `hla-tag ${isMatch ? 'hla-match' : 'text-slate-500'}`;
+                span.textContent = m;
+                patientHla.appendChild(span);
+            });
+
+            // Set up Ghost Organ in Drop Zone (using smaller, perfectly centered sizing)
+            const ghostSvg = organData[selectedPatient.organ].svg.replace('organ-svg', 'w-full h-full ghost-organ');
+            ghostOrganContainer.innerHTML = ghostSvg;
+        }
+
+        function showToast(success, title, msg) {
+            toast.className = `absolute top-16 left-1/2 -translate-x-1/2 px-6 py-3 rounded-xl font-bold transform translate-y-0 opacity-100 transition-all duration-400 shadow-2xl z-50 flex items-center gap-3 border-l-4 ${success ? 'bg-emerald-900/90 border-emerald-400 text-white' : 'bg-red-900/90 border-red-400 text-white'} backdrop-blur-md`;
+            toastMsg.innerHTML = `<div class="text-sm font-black">${title}</div><div class="text-[10px] font-normal opacity-80 mt-0.5">${msg}</div>`;
+            toastIcon.innerHTML = success ? '✓' : '⚠️';
+            
+            setTimeout(() => {
+                toast.classList.remove('translate-y-0', 'opacity-100');
+                toast.classList.add('-translate-y-24', 'opacity-0');
+            }, 3000);
+        }
+
+        // --- DRAG AND DROP --- //
+
+        donorOrganVisual.addEventListener('dragstart', (e) => {
+            if(!selectedPatient) {
+                e.preventDefault();
+                showToast(false, "Action Blocked", "Select a patient from the active registry first.");
+                return;
+            }
+            e.dataTransfer.setData('text/plain', 'organ');
+            setTimeout(() => donorOrganVisual.style.opacity = '0.3', 0);
+        });
+
+        donorOrganVisual.addEventListener('dragend', () => {
+            donorOrganVisual.style.opacity = '1';
+        });
+
+        dropZoneTarget.addEventListener('dragover', (e) => {
+            if (!selectedPatient) return;
+            e.preventDefault();
+            dropZoneTarget.classList.add('drop-zone-active');
+        });
+
+        dropZoneTarget.addEventListener('dragleave', () => {
+            dropZoneTarget.classList.remove('drop-zone-active');
+        });
+
+        dropZoneTarget.addEventListener('drop', (e) => {
+            e.preventDefault();
+            dropZoneTarget.classList.remove('drop-zone-active');
+            
+            if (!selectedPatient || !currentDonor) return;
+
+            const isAboCompat = compatibility[selectedPatient.blood].includes(currentDonor.blood);
+            const isOrganMatch = selectedPatient.organ === currentDonor.organ;
+            const hlaMatches = selectedPatient.hla.filter(m => currentDonor.hla.includes(m)).length;
+            
+            if (!isOrganMatch) {
+                showToast(false, "Surgical Error", `Cannot transplant ${currentDonor.organ} into a patient needing a ${selectedPatient.organ}.`);
+                return;
+            }
+
+            if (!isAboCompat) {
+                showToast(false, "Hyperacute Rejection", "ABO incompatibility. Antibodies attacked the graft immediately.");
+                // penalty
+            } else {
+                score += 1;
+                showToast(true, "Transplant Successful", `${hlaMatches}/6 HLA match. The graft is perfusing well.`);
+                
+                // Visual Effects
+                const rect = ghostOrganContainer.getBoundingClientRect();
+                fireParticles(rect.left + rect.width/2, rect.top + rect.height/2);
+                
+                dropZoneTarget.style.backgroundColor = "rgba(16,185,129,0.15)";
+                setTimeout(() => dropZoneTarget.style.backgroundColor = "", 300);
+
+                patients = patients.filter(p => p.id !== selectedPatient.id);
+            }
+
+            scoreVal.textContent = score;
+            refreshQueue();
+            spawnDonor();
+        });
+
+        btnReject.onclick = () => {
+            showToast(true, "Specimen Discarded", "Donor organ rejected. Generating next available specimen.");
+            spawnDonor();
+        };
+
+        // Initialize
+        refreshQueue();
+        spawnDonor();
+
+    </script>
+</body>
+</html>

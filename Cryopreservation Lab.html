@@ -1,0 +1,537 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Cryobiology | Flash Freeze Simulator</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;600;800&family=JetBrains+Mono&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --bg-deep: #020617;
+            --cell-membrane: #818cf8;
+            --cell-core: #c084fc;
+            --ice-color: #bae6fd;
+            --danger-color: #ef4444;
+        }
+
+        body {
+            font-family: 'Plus Jakarta Sans', sans-serif;
+            background-color: var(--bg-deep);
+            color: #f8fafc;
+            overflow: hidden;
+            margin: 0;
+            background-image: radial-gradient(circle at 50% 50%, rgba(56, 189, 248, 0.05) 0%, transparent 70%);
+        }
+
+        .glass {
+            background: rgba(15, 23, 42, 0.6);
+            backdrop-filter: blur(16px);
+            border: 1px solid rgba(255, 255, 255, 0.08);
+            box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.5);
+        }
+
+        canvas {
+            display: block;
+            border-radius: 1.5rem;
+        }
+
+        .temp-glow {
+            transition: all 0.3s ease;
+        }
+
+        .temp-cold {
+            color: #38bdf8;
+            text-shadow: 0 0 15px rgba(56, 189, 248, 0.5);
+        }
+        
+        .temp-warm {
+            color: #fb7185;
+            text-shadow: 0 0 15px rgba(251, 113, 133, 0.5);
+        }
+
+        /* Tooltip style */
+        .hud-label {
+            position: absolute;
+            font-size: 10px;
+            text-transform: uppercase;
+            letter-spacing: 0.2em;
+            color: rgba(255, 255, 255, 0.5);
+            font-weight: bold;
+            pointer-events: none;
+        }
+
+        .slider-cyan {
+            accent-color: #06b6d4;
+        }
+    </style>
+</head>
+<body class="flex items-center justify-center min-h-screen">
+
+    <main class="w-full max-w-7xl flex flex-col gap-6 px-6 h-[90vh] py-6 relative z-10">
+        
+        <!-- Header -->
+        <header class="flex justify-between items-end">
+            <div>
+                <p class="text-[10px] font-bold tracking-[0.4em] text-cyan-400 uppercase mb-1">Cellular Preservation Protocol</p>
+                <h1 class="text-3xl font-extralight tracking-tight text-white">Cryo <span class="font-semibold text-cyan-400">Dynamics Lab</span></h1>
+            </div>
+            <div class="flex gap-4">
+                <div class="glass px-6 py-2 rounded-full text-[10px] font-bold uppercase tracking-widest flex items-center gap-4 border-cyan-500/20">
+                    <span class="flex items-center gap-2">
+                        <span class="w-2 h-2 rounded-full bg-cyan-400"></span> Vitrification (Safe)
+                    </span>
+                    <span class="text-slate-600">|</span>
+                    <span class="flex items-center gap-2">
+                        <span class="w-2 h-2 rounded-full bg-rose-500"></span> Crystallization (Lethal)
+                    </span>
+                </div>
+            </div>
+        </header>
+
+        <div class="flex-grow flex gap-6">
+            <!-- Left Panel: Controls -->
+            <div class="w-1/3 flex flex-col gap-4 flex-shrink-0">
+                <div class="glass rounded-3xl p-6 flex flex-col gap-6 h-full relative overflow-hidden">
+                    
+                    <!-- Temp Display -->
+                    <div class="p-6 rounded-2xl text-center bg-black/40 border border-white/5">
+                        <label class="text-[10px] text-slate-400 uppercase tracking-widest font-bold block mb-2">Chamber Temperature</label>
+                        <div class="flex justify-center items-start gap-1">
+                            <span id="temp-display" class="text-7xl font-mono font-light temp-glow temp-warm tracking-tighter">37</span>
+                            <span class="text-2xl font-light text-slate-500 mt-2">°C</span>
+                        </div>
+                    </div>
+
+                    <!-- Viability Metric -->
+                    <div class="p-5 border border-white/5 rounded-2xl text-center transition-all duration-300" id="viability-card">
+                        <div class="flex justify-between text-[10px] uppercase font-bold text-slate-400 mb-2">
+                            <span>Cell Membrane Integrity</span>
+                            <span id="viability-val" class="text-emerald-400">100%</span>
+                        </div>
+                        <div class="w-full bg-slate-900 h-2 rounded-full overflow-hidden">
+                            <div id="viability-bar" class="h-full bg-emerald-500 w-full transition-all duration-300"></div>
+                        </div>
+                        <p id="status-msg" class="text-[9px] font-mono text-emerald-500/80 uppercase tracking-widest mt-3">Nominal State</p>
+                    </div>
+
+                    <!-- Controls -->
+                    <div class="space-y-6 mt-2">
+                        <div class="space-y-3">
+                            <div class="flex justify-between text-[10px] font-bold uppercase text-slate-400">
+                                <span>Cooling Rate Setup</span>
+                                <span id="rate-label" class="text-rose-400">-1°C / sec (Slow)</span>
+                            </div>
+                            <input type="range" id="rate-slider" min="1" max="100" value="1" class="w-full slider-cyan">
+                            <div class="flex justify-between text-[8px] text-slate-600 font-mono mt-1">
+                                <span>Slow Freeze (Damaging)</span>
+                                <span>Flash Freeze (Safe)</span>
+                            </div>
+                        </div>
+
+                        <button id="freeze-btn" class="w-full py-4 bg-cyan-600 hover:bg-cyan-500 text-white text-xs font-bold uppercase tracking-widest rounded-xl transition-all shadow-[0_0_15px_rgba(6,182,212,0.3)]">
+                            Initiate Freezing Protocol
+                        </button>
+                        
+                        <button id="thaw-btn" class="w-full py-3 border border-white/5 hover:bg-white/10 text-slate-300 text-xs font-bold uppercase tracking-widest rounded-xl transition-all opacity-50 cursor-not-allowed" disabled>
+                            Thaw / Reset Chamber
+                        </button>
+                    </div>
+
+                    <!-- Clinical Note -->
+                    <div class="mt-auto p-4 bg-cyan-500/5 border border-cyan-500/10 rounded-xl">
+                        <p class="text-[11px] text-slate-400 leading-relaxed italic">
+                            <span class="text-cyan-400 font-bold uppercase block mb-1">Physics of Cryopreservation:</span>
+                            Slow cooling allows water molecules time to arrange into large, sharp crystalline lattices that puncture cell walls. Flash freezing (vitrification) drops temperature so rapidly that water forms an amorphous glass, preventing structural damage.
+                        </p>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Right Panel: Simulation Canvas -->
+            <div class="flex-grow glass rounded-[2.5rem] relative overflow-hidden flex flex-col bg-[#050b14] border border-cyan-900/20" id="canvas-wrapper">
+                <canvas id="sim-canvas" class="w-full h-full"></canvas>
+                
+                <div class="hud-label top-6 left-6 text-cyan-500">Microscopic View: 400x</div>
+                <div id="freeze-overlay" class="absolute inset-0 bg-cyan-100/0 pointer-events-none transition-colors duration-500 mix-blend-overlay"></div>
+            </div>
+        </div>
+    </main>
+
+    <script>
+        const canvas = document.getElementById('sim-canvas');
+        const ctx = canvas.getContext('2d');
+        const canvasWrapper = document.getElementById('canvas-wrapper');
+        const freezeOverlay = document.getElementById('freeze-overlay');
+        
+        // UI Elements
+        const tempDisplay = document.getElementById('temp-display');
+        const rateSlider = document.getElementById('rate-slider');
+        const rateLabel = document.getElementById('rate-label');
+        const freezeBtn = document.getElementById('freeze-btn');
+        const thawBtn = document.getElementById('thaw-btn');
+        const viabilityVal = document.getElementById('viability-val');
+        const viabilityBar = document.getElementById('viability-bar');
+        const statusMsg = document.getElementById('status-msg');
+        
+        // Simulation State
+        let temperature = 37.0; // Starts at body temp
+        const targetTemp = -196.0; // Liquid Nitrogen
+        let isFreezing = false;
+        let coolingRate = 1; // degrees per frame
+        let cellIntegrity = 100;
+        let animationId;
+        
+        // Entities
+        let cell;
+        let crystals = [];
+        let microFrost = [];
+
+        function resize() {
+            canvas.width = canvasWrapper.clientWidth;
+            canvas.height = canvasWrapper.clientHeight;
+            initSim();
+        }
+
+        window.addEventListener('resize', resize);
+
+        class Cell {
+            constructor(x, y) {
+                this.x = x;
+                this.y = y;
+                this.baseRadius = 100;
+                this.radius = 100;
+                this.pulse = 0;
+            }
+
+            draw() {
+                // Throbbing effect when alive and warm
+                if (cellIntegrity > 0 && temperature > 0) {
+                    this.pulse += 0.05;
+                    this.radius = this.baseRadius + Math.sin(this.pulse) * 3;
+                } else {
+                    this.radius = this.baseRadius; // Freeze movement
+                }
+
+                const isDead = cellIntegrity <= 0;
+
+                // Cytoplasm
+                ctx.beginPath();
+                ctx.arc(this.x, this.y, this.radius, 0, Math.PI * 2);
+                ctx.fillStyle = isDead ? 'rgba(15, 23, 42, 0.5)' : `rgba(129, 140, 248, ${0.1 + (cellIntegrity/100)*0.2})`;
+                ctx.fill();
+
+                // Membrane
+                ctx.beginPath();
+                ctx.arc(this.x, this.y, this.radius, 0, Math.PI * 2);
+                ctx.lineWidth = 4;
+                ctx.strokeStyle = isDead ? '#ef4444' : '#818cf8'; // Red if ruptured
+                
+                // If damaged, draw jagged line
+                if (cellIntegrity < 100 && cellIntegrity > 0) {
+                    ctx.setLineDash([10, 100 - cellIntegrity]);
+                    ctx.strokeStyle = '#fb7185';
+                } else {
+                    ctx.setLineDash([]);
+                }
+                
+                if(isDead) {
+                    ctx.shadowBlur = 20;
+                    ctx.shadowColor = 'rgba(239, 68, 68, 0.5)';
+                } else {
+                    ctx.shadowBlur = 15;
+                    ctx.shadowColor = 'rgba(129, 140, 248, 0.4)';
+                }
+                
+                ctx.stroke();
+                ctx.shadowBlur = 0; // reset
+
+                // Nucleus
+                ctx.beginPath();
+                ctx.arc(this.x, this.y + 10, this.radius * 0.3, 0, Math.PI * 2);
+                ctx.fillStyle = isDead ? '#334155' : '#c084fc';
+                ctx.fill();
+            }
+        }
+
+        class IceCrystal {
+            constructor(x, y) {
+                this.x = x;
+                this.y = y;
+                this.spikes = [];
+                const numSpikes = 5 + Math.floor(Math.random() * 5);
+                for (let i = 0; i < numSpikes; i++) {
+                    this.spikes.push({
+                        angle: (Math.PI * 2 / numSpikes) * i + (Math.random() - 0.5),
+                        length: 5,
+                        maxLength: 100 + Math.random() * 200,
+                        growthRate: 1 + Math.random() * 3
+                    });
+                }
+            }
+
+            update() {
+                let isGrowing = false;
+                this.spikes.forEach(spike => {
+                    if (spike.length < spike.maxLength) {
+                        spike.length += spike.growthRate;
+                        isGrowing = true;
+
+                        // Collision detection with cell membrane
+                        const tipX = this.x + Math.cos(spike.angle) * spike.length;
+                        const tipY = this.y + Math.sin(spike.angle) * spike.length;
+                        
+                        const distToCell = Math.hypot(tipX - cell.x, tipY - cell.y);
+                        
+                        if (distToCell < cell.radius && cellIntegrity > 0) {
+                            // Pierce the membrane!
+                            cellIntegrity -= 0.5;
+                            createRuptureEffect(tipX, tipY);
+                        }
+                    }
+                });
+                return isGrowing;
+            }
+
+            draw() {
+                ctx.strokeStyle = '#bae6fd';
+                ctx.fillStyle = 'rgba(186, 230, 253, 0.2)';
+                ctx.lineWidth = 2;
+                ctx.lineJoin = 'miter';
+
+                ctx.beginPath();
+                this.spikes.forEach((spike, index) => {
+                    const tipX = this.x + Math.cos(spike.angle) * spike.length;
+                    const tipY = this.y + Math.sin(spike.angle) * spike.length;
+                    
+                    if (index === 0) ctx.moveTo(tipX, tipY);
+                    else ctx.lineTo(tipX, tipY);
+                    
+                    // Draw central lines
+                    ctx.moveTo(this.x, this.y);
+                    ctx.lineTo(tipX, tipY);
+                });
+                ctx.closePath();
+                ctx.stroke();
+                ctx.fill();
+            }
+        }
+
+        let ruptureParticles = [];
+        function createRuptureEffect(x, y) {
+            if(Math.random() > 0.3) return; // limit particles
+            ruptureParticles.push({
+                x: x, y: y,
+                vx: (Math.random() - 0.5) * 4,
+                vy: (Math.random() - 0.5) * 4,
+                life: 1.0
+            });
+        }
+
+        function drawRuptures() {
+            for (let i = ruptureParticles.length - 1; i >= 0; i--) {
+                const p = ruptureParticles[i];
+                p.x += p.vx;
+                p.y += p.vy;
+                p.life -= 0.05;
+
+                ctx.fillStyle = `rgba(239, 68, 68, ${p.life})`; // Red leak
+                ctx.beginPath();
+                ctx.arc(p.x, p.y, 2, 0, Math.PI * 2);
+                ctx.fill();
+
+                if (p.life <= 0) ruptureParticles.splice(i, 1);
+            }
+        }
+
+        function initSim() {
+            cell = new Cell(canvas.width / 2, canvas.height / 2);
+            crystals = [];
+            microFrost = [];
+            ruptureParticles = [];
+            temperature = 37.0;
+            cellIntegrity = 100;
+            updateHUD();
+            drawStatic();
+        }
+
+        function spawnCrystals() {
+            // Spawn around the edges pointing inward
+            const count = 6;
+            for(let i=0; i<count; i++) {
+                const angle = (Math.PI * 2 / count) * i;
+                const dist = Math.min(canvas.width, canvas.height) / 2 + 50;
+                crystals.push(new IceCrystal(
+                    canvas.width/2 + Math.cos(angle) * dist,
+                    canvas.height/2 + Math.sin(angle) * dist
+                ));
+            }
+        }
+
+        function generateMicroFrost() {
+            // For flash freeze: tiny dots instantly covering background
+            for(let i=0; i<500; i++) {
+                microFrost.push({
+                    x: Math.random() * canvas.width,
+                    y: Math.random() * canvas.height,
+                    size: Math.random() * 1.5,
+                    opacity: Math.random() * 0.5
+                });
+            }
+        }
+
+        function drawStatic() {
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+            cell.draw();
+        }
+
+        function animate() {
+            if (!isFreezing) return;
+
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+            // 1. Temperature Logic
+            temperature -= coolingRate;
+            if (temperature <= targetTemp) {
+                temperature = targetTemp;
+                isFreezing = false;
+                thawBtn.disabled = false;
+                thawBtn.classList.remove('opacity-50', 'cursor-not-allowed');
+            }
+
+            // 2. Ice Formation Trigger
+            if (temperature < 0) {
+                if (coolingRate < 10) {
+                    // Slow Freeze
+                    if (crystals.length === 0) spawnCrystals();
+                } else {
+                    // Flash Freeze
+                    if (microFrost.length === 0) generateMicroFrost();
+                    freezeOverlay.style.backgroundColor = 'rgba(186, 230, 253, 0.3)'; // Instantly frost screen
+                }
+            }
+
+            // 3. Draw Micro Frost (Flash)
+            ctx.fillStyle = '#ffffff';
+            microFrost.forEach(f => {
+                ctx.globalAlpha = f.opacity;
+                ctx.beginPath();
+                ctx.arc(f.x, f.y, f.size, 0, Math.PI*2);
+                ctx.fill();
+            });
+            ctx.globalAlpha = 1.0;
+
+            // 4. Update & Draw Large Crystals (Slow)
+            crystals.forEach(c => {
+                c.update();
+                c.draw();
+            });
+
+            // 5. Draw Cell
+            cell.draw();
+            drawRuptures();
+
+            updateHUD();
+
+            if (isFreezing) {
+                animationId = requestAnimationFrame(animate);
+            } else {
+                drawStatic(); // Final frame
+                
+                // Post-freeze diagnostic
+                if(cellIntegrity <= 0) {
+                    statusMsg.innerText = "CATASTROPHIC MEMBRANE RUPTURE";
+                    statusMsg.className = "text-[9px] font-mono text-rose-500 uppercase tracking-widest mt-3 font-bold";
+                } else {
+                    statusMsg.innerText = "VITRIFICATION SUCCESSFUL. CELL INTACT.";
+                    statusMsg.className = "text-[9px] font-mono text-cyan-400 uppercase tracking-widest mt-3 font-bold";
+                }
+            }
+        }
+
+        function updateHUD() {
+            tempDisplay.innerText = Math.round(temperature);
+            
+            // Color temp
+            if (temperature > 0) {
+                tempDisplay.className = "text-7xl font-mono font-light temp-glow temp-warm tracking-tighter";
+            } else {
+                tempDisplay.className = "text-7xl font-mono font-light temp-glow temp-cold tracking-tighter";
+            }
+
+            // Integrity
+            if(cellIntegrity < 0) cellIntegrity = 0;
+            const integrityDisplay = Math.ceil(cellIntegrity);
+            viabilityVal.innerText = `${integrityDisplay}%`;
+            viabilityBar.style.width = `${integrityDisplay}%`;
+
+            if (cellIntegrity < 50) {
+                viabilityVal.className = "text-rose-500";
+                viabilityBar.className = "h-full bg-rose-500 w-full transition-all shadow-[0_0_10px_#ef4444]";
+                if(isFreezing) {
+                    statusMsg.innerText = "Ice crystal puncturing detected...";
+                    statusMsg.className = "text-[9px] font-mono text-rose-400 uppercase tracking-widest mt-3";
+                }
+            } else {
+                viabilityVal.className = "text-emerald-400";
+                viabilityBar.className = "h-full bg-emerald-500 w-full transition-all duration-300";
+            }
+        }
+
+        // Event Listeners
+        rateSlider.addEventListener('input', (e) => {
+            const val = e.target.value;
+            if (val < 30) {
+                coolingRate = 1; // Slow
+                rateLabel.innerText = "-1°C / sec (Slow Freeze)";
+                rateLabel.className = "text-rose-400";
+                rateSlider.className = "w-full accent-rose-500";
+            } else if (val < 70) {
+                coolingRate = 5; // Med
+                rateLabel.innerText = "-15°C / sec (Medium)";
+                rateLabel.className = "text-amber-400";
+                rateSlider.className = "w-full accent-amber-500";
+            } else {
+                coolingRate = 20; // Flash
+                rateLabel.innerText = "-1000°C / sec (Flash Freeze)";
+                rateLabel.className = "text-cyan-400";
+                rateSlider.className = "w-full accent-cyan-500";
+            }
+        });
+
+        freezeBtn.addEventListener('click', () => {
+            if (isFreezing || temperature <= targetTemp) return;
+            isFreezing = true;
+            freezeBtn.disabled = true;
+            freezeBtn.classList.add('opacity-50', 'cursor-not-allowed');
+            rateSlider.disabled = true;
+            
+            statusMsg.innerText = "Cooling Sequence Engaged";
+            statusMsg.className = "text-[9px] font-mono text-slate-400 uppercase tracking-widest mt-3";
+            
+            animate();
+        });
+
+        thawBtn.addEventListener('click', () => {
+            cancelAnimationFrame(animationId);
+            isFreezing = false;
+            freezeOverlay.style.backgroundColor = 'transparent';
+            
+            freezeBtn.disabled = false;
+            freezeBtn.classList.remove('opacity-50', 'cursor-not-allowed');
+            rateSlider.disabled = false;
+            
+            thawBtn.disabled = true;
+            thawBtn.classList.add('opacity-50', 'cursor-not-allowed');
+            
+            statusMsg.innerText = "Nominal State";
+            statusMsg.className = "text-[9px] font-mono text-emerald-500/80 uppercase tracking-widest mt-3";
+            
+            initSim();
+        });
+
+        // Initialize
+        setTimeout(resize, 100); // Wait for DOM layout
+    </script>
+</body>
+</html>

@@ -1,0 +1,481 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Physics Lab - 2D Eye Optics</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        body, html {
+            margin: 0;
+            padding: 0;
+            width: 100%;
+            height: 100%;
+            overflow: hidden;
+            background-color: #020617; /* Slate 950 */
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+            touch-action: none;
+            user-select: none;
+        }
+        
+        #sim-canvas {
+            display: block;
+            width: 100%;
+            height: 100%;
+            cursor: grab;
+        }
+        #sim-canvas:active {
+            cursor: grabbing;
+        }
+
+        /* Premium Minimalist Sliders */
+        input[type=range] {
+            -webkit-appearance: none;
+            width: 100%;
+            background: transparent;
+        }
+        input[type=range]::-webkit-slider-thumb {
+            -webkit-appearance: none;
+            height: 18px;
+            width: 18px;
+            border-radius: 50%;
+            background: #ffffff;
+            cursor: pointer;
+            margin-top: -7px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.6);
+            transition: transform 0.1s ease;
+            border: 1px solid rgba(255,255,255,0.2);
+        }
+        input[type=range]::-webkit-slider-thumb:hover {
+            transform: scale(1.15);
+        }
+        input[type=range]::-webkit-slider-runnable-track {
+            width: 100%;
+            height: 4px;
+            cursor: pointer;
+            background: rgba(255, 255, 255, 0.15);
+            border-radius: 2px;
+            box-shadow: inset 0 1px 2px rgba(0,0,0,0.5);
+        }
+        
+        /* Deep Glassmorphism Panel */
+        .glass-panel {
+            background: linear-gradient(145deg, rgba(15, 23, 42, 0.85) 0%, rgba(2, 6, 23, 0.95) 100%);
+            backdrop-filter: blur(30px);
+            -webkit-backdrop-filter: blur(30px);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            border-top: 1px solid rgba(255, 255, 255, 0.2);
+            box-shadow: 0 30px 60px -12px rgba(0, 0, 0, 0.8), inset 0 1px 10px rgba(255, 255, 255, 0.05);
+        }
+
+        .scroll-area::-webkit-scrollbar { width: 4px; }
+        .scroll-area::-webkit-scrollbar-thumb { background: rgba(255, 255, 255, 0.2); border-radius: 4px; }
+    </style>
+</head>
+<body>
+
+    <!-- Main UI Overlay -->
+    <div class="absolute top-5 left-5 md:top-8 md:left-8 z-10 w-[360px] glass-panel p-6 rounded-[1.5rem] pointer-events-auto flex flex-col max-h-[92vh]">
+        
+        <!-- Header -->
+        <div class="mb-5 border-b border-white/10 pb-5 shrink-0 flex items-center justify-between">
+            <div>
+                <h1 class="text-2xl font-bold tracking-tight text-white mb-1">Eye Optics</h1>
+                <p class="text-[11px] font-medium text-blue-400 uppercase tracking-widest">Interactive 2D Biology</p>
+            </div>
+            <div class="w-10 h-10 rounded-full bg-blue-500/20 flex items-center justify-center text-blue-400 shadow-[0_0_15px_rgba(59,130,246,0.3)]">
+                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"></path><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"></path></svg>
+            </div>
+        </div>
+
+        <div class="scroll-area overflow-y-auto pr-2 pb-2 space-y-7">
+            
+            <div class="bg-black/30 p-4 rounded-xl border border-white/5 shadow-inner">
+                <p class="text-xs text-gray-400 leading-relaxed">
+                    <strong class="text-white">Image Projection:</strong> As light enters the eye, the biological lens converges the rays. This physical crossing causes the image on the retina to be <span class="text-orange-400 font-bold">Inverted</span>.
+                </p>
+            </div>
+
+            <!-- Optics Controls -->
+            <div class="space-y-6">
+                <!-- Focal Length / Accommodation -->
+                <div class="space-y-3">
+                    <div class="flex justify-between items-end">
+                        <label class="text-[11px] font-semibold text-emerald-400 uppercase tracking-widest">Lens Accommodation</label>
+                        <span id="lens-display" class="text-[11px] font-mono bg-emerald-500/10 px-2 py-1 rounded text-emerald-300">Normal</span>
+                    </div>
+                    <input type="range" id="lens-slider" min="40" max="110" step="1" value="70" style="accent-color: #10b981;">
+                    <div class="flex justify-between text-[9px] text-gray-600 uppercase font-bold tracking-widest px-1">
+                        <span>Far Vision</span>
+                        <span>Near Vision</span>
+                    </div>
+                </div>
+
+                <!-- Toggle rays -->
+                <div class="pt-4 border-t border-white/10 space-y-4">
+                    <label class="flex items-center justify-between cursor-pointer group">
+                        <div>
+                            <div class="text-[13px] font-bold text-white">Show Light Rays</div>
+                            <div class="text-[10px] text-gray-500 uppercase tracking-widest">Visualize Ray-Tracing</div>
+                        </div>
+                        <div class="relative">
+                            <input type="checkbox" id="toggle-rays" class="sr-only peer" checked>
+                            <div class="w-12 h-6 bg-gray-700 rounded-full shadow-inner transition-colors peer-checked:bg-blue-500"></div>
+                            <div class="dot absolute left-1 top-1 bg-white w-4 h-4 rounded-full transition-all peer-checked:translate-x-6 shadow-sm"></div>
+                        </div>
+                    </label>
+                </div>
+            </div>
+
+            <!-- Anatomy Info -->
+            <div id="anatomy-info" class="space-y-3 pt-4 border-t border-white/10">
+                <label class="text-[10px] font-bold uppercase tracking-widest text-gray-500">Structure Anatomy</label>
+                <div class="bg-blue-500/5 p-4 rounded-xl border border-blue-500/20">
+                    <h3 id="anatomy-name" class="text-sm font-bold text-blue-300 mb-1">Human Eye</h3>
+                    <p id="anatomy-desc" class="text-xs text-gray-400 leading-relaxed italic">Drag the arrow or click structural components to begin exploration.</p>
+                </div>
+            </div>
+        </div>
+        
+        <div class="pt-4 border-t border-white/10 text-[11px] text-gray-500 font-medium text-center shrink-0 mt-4">
+            Drag the <span class="text-blue-400 font-bold">Blue Arrow</span> to change distance
+        </div>
+    </div>
+
+    <!-- Live Optics HUD (Bottom Right) -->
+    <div class="absolute bottom-6 right-6 z-10 glass-panel p-5 rounded-2xl pointer-events-none min-w-[200px]">
+        <div class="text-[10px] font-bold uppercase tracking-widest text-gray-500 mb-3 border-b border-white/10 pb-2">Retinal Projection</div>
+        <div class="space-y-3">
+            <div class="flex justify-between items-center">
+                <span class="text-sm text-gray-300 font-medium">Image Type</span>
+                <span class="text-xs font-bold text-orange-400">Real & Inverted</span>
+            </div>
+            <div class="flex justify-between items-center">
+                <span id="dist-label" class="text-sm text-gray-300 font-medium">Object Distance</span>
+                <span id="dist-value" class="text-xs font-mono font-bold text-white">0.0m</span>
+            </div>
+        </div>
+    </div>
+
+    <!-- 2D Physics Canvas -->
+    <canvas id="sim-canvas"></canvas>
+
+    <script>
+        const canvas = document.getElementById('sim-canvas');
+        const ctx = canvas.getContext('2d');
+
+        // --- LAYOUT ENGINE ---
+        let cx, cy;
+        let sidebarWidth = 380;
+        const eyeRadius = 160;
+
+        function resize() {
+            canvas.width = window.innerWidth;
+            canvas.height = window.innerHeight;
+            
+            sidebarWidth = window.innerWidth >= 768 ? 380 : 20;
+            // Center the eye in the available workspace (right of UI)
+            const availableWidth = canvas.width - (sidebarWidth + 40);
+            cx = sidebarWidth + 40 + availableWidth * 0.65;
+            cy = window.innerHeight / 2;
+
+            // Ensure object doesn't get lost on resize
+            const minX = sidebarWidth + 80;
+            const maxX = cx - 180;
+            if (objectArrow.x < minX) objectArrow.x = minX;
+            if (objectArrow.x > maxX) objectArrow.x = maxX;
+            objectArrow.y = cy;
+        }
+
+        // --- STATE ---
+        let lensThickness = 70; 
+        let showRays = true;
+        const objectArrow = { x: 0, y: 0, h: 100, isDragging: false };
+
+        // Initialize state
+        resize();
+        objectArrow.x = cx - 400; // Default position
+        objectArrow.y = cy;
+
+        window.addEventListener('resize', resize);
+
+        // UI Binding
+        const lensSlider = document.getElementById('lens-slider');
+        const toggleRays = document.getElementById('toggle-rays');
+        const lensDisplay = document.getElementById('lens-display');
+        const anatomyName = document.getElementById('anatomy-name');
+        const anatomyDesc = document.getElementById('anatomy-desc');
+        const distValue = document.getElementById('dist-value');
+
+        lensSlider.addEventListener('input', (e) => {
+            lensThickness = parseInt(e.target.value);
+            if(lensThickness < 55) lensDisplay.innerText = "Thin (Far Focus)";
+            else if(lensThickness > 85) lensDisplay.innerText = "Thick (Near Focus)";
+            else lensDisplay.innerText = "Normal";
+        });
+
+        toggleRays.addEventListener('change', (e) => { showRays = e.target.checked; });
+
+        // --- DRAWING FUNCTIONS ---
+
+        function drawEyeAnatomy() {
+            // 1. Sclera (White shell)
+            ctx.lineWidth = 3;
+            ctx.strokeStyle = '#475569';
+            const scleraGrad = ctx.createRadialGradient(cx + 40, cy, 50, cx, cy, eyeRadius);
+            scleraGrad.addColorStop(0, 'rgba(30, 41, 59, 0.4)');
+            scleraGrad.addColorStop(1, 'rgba(15, 23, 42, 0.9)');
+            ctx.fillStyle = scleraGrad;
+            ctx.beginPath();
+            ctx.arc(cx, cy, eyeRadius, Math.PI * 1.62, Math.PI * 0.38, false);
+            ctx.stroke(); ctx.fill();
+
+            // 2. Cornea (Focusing lens)
+            ctx.strokeStyle = '#38bdf8';
+            ctx.lineWidth = 4;
+            ctx.beginPath();
+            ctx.arc(cx - 130, cy, 90, -Math.PI * 0.35, Math.PI * 0.35, false);
+            ctx.stroke();
+
+            // 3. Iris (Aperture)
+            ctx.lineWidth = 12;
+            ctx.strokeStyle = '#1e293b';
+            ctx.beginPath();
+            ctx.moveTo(cx - 100, cy - 80); ctx.lineTo(cx - 100, cy - 25); 
+            ctx.moveTo(cx - 100, cy + 25); ctx.lineTo(cx - 100, cy + 80);
+            ctx.stroke();
+
+            // 4. Biological Lens
+            ctx.save();
+            ctx.translate(cx - 80, cy);
+            const aspect = lensThickness / 70;
+            ctx.scale(0.4 / aspect, aspect);
+            
+            // Glass material
+            const lensGrad = ctx.createLinearGradient(-70, 0, 70, 0);
+            lensGrad.addColorStop(0, 'rgba(255, 255, 255, 0.4)');
+            lensGrad.addColorStop(0.5, 'rgba(255, 255, 255, 0.1)');
+            lensGrad.addColorStop(1, 'rgba(255, 255, 255, 0.4)');
+            
+            ctx.beginPath(); ctx.arc(0, 0, 70, 0, Math.PI * 2);
+            ctx.fillStyle = lensGrad;
+            ctx.strokeStyle = 'rgba(255, 255, 255, 0.8)';
+            ctx.lineWidth = 5;
+            ctx.fill(); ctx.stroke();
+            ctx.restore();
+
+            // 5. Retina (Sensor layer) - Glowing red
+            ctx.lineWidth = 5;
+            ctx.strokeStyle = '#ef4444';
+            ctx.shadowColor = '#ef4444';
+            ctx.shadowBlur = 10;
+            ctx.beginPath();
+            ctx.arc(cx, cy, eyeRadius - 8, Math.PI * 1.7, Math.PI * 0.3, false);
+            ctx.stroke();
+            ctx.shadowBlur = 0;
+
+            // 6. Optic Nerve
+            ctx.fillStyle = '#1e293b';
+            ctx.beginPath();
+            ctx.roundRect(cx + eyeRadius - 10, cy - 20, 60, 40, 5);
+            ctx.fill();
+        }
+
+        function drawObject() {
+            ctx.save();
+            ctx.translate(objectArrow.x, objectArrow.y);
+            
+            if (objectArrow.isDragging) {
+                ctx.shadowColor = '#3b82f6';
+                ctx.shadowBlur = 25;
+            }
+
+            // Blue Source Arrow
+            ctx.fillStyle = '#3b82f6';
+            ctx.beginPath();
+            ctx.moveTo(0, -objectArrow.h/2); // Tip
+            ctx.lineTo(15, -objectArrow.h/2 + 25);
+            ctx.lineTo(6, -objectArrow.h/2 + 25);
+            ctx.lineTo(6, objectArrow.h/2); 
+            ctx.lineTo(-6, objectArrow.h/2);
+            ctx.lineTo(-6, -objectArrow.h/2 + 25);
+            ctx.lineTo(-15, -objectArrow.h/2 + 25);
+            ctx.closePath();
+            ctx.fill();
+
+            // Object Label
+            ctx.fillStyle = 'white';
+            ctx.font = 'bold 11px Inter';
+            ctx.textAlign = 'center';
+            ctx.fillText("OBJECT", 0, -objectArrow.h/2 - 15);
+
+            ctx.restore();
+            
+            // Distance Calculation
+            const distM = Math.abs(objectArrow.x - (cx - 130)) / 100;
+            distValue.innerText = distM.toFixed(1) + " m";
+        }
+
+        function drawRayTracing() {
+            if (!showRays) return;
+
+            const startX = objectArrow.x;
+            const topY = cy - objectArrow.h/2;
+            const bottomY = cy + objectArrow.h/2;
+
+            const corneaX = cx - 100;
+            const lensX = cx - 80;
+            const retinaX = cx + eyeRadius - 12;
+
+            ctx.lineWidth = 2;
+            
+            function traceRay(sy, color) {
+                ctx.strokeStyle = color;
+                ctx.setLineDash([5, 5]);
+                ctx.beginPath();
+                ctx.moveTo(startX, sy);
+                
+                // 1. Ray to Cornea (Entrance)
+                ctx.lineTo(corneaX, sy);
+                
+                // 2. Initial refraction (Converge slightly)
+                const cRef = (cy - sy) * 0.15;
+                const midY = sy + cRef;
+                ctx.lineTo(lensX, midY);
+
+                // 3. Lens refraction (The Flip)
+                // Lens power increases with thickness
+                const lensPower = lensThickness / 60;
+                const distFactor = 400 / (cx - startX); // Nearer objects need more bending
+                const finalY = cy + (cy - midY) * (1.1 * lensPower * distFactor);
+
+                ctx.lineTo(retinaX, finalY);
+                ctx.stroke();
+                return finalY;
+            }
+
+            const finalTopY = traceRay(topY, '#3b82f6'); 
+            const finalBottomY = traceRay(bottomY, '#ef4444'); 
+            
+            ctx.setLineDash([]);
+
+            // Draw Projected Inverted Image
+            ctx.save();
+            ctx.translate(retinaX, cy);
+            const projH = Math.abs(finalTopY - finalBottomY);
+            
+            ctx.fillStyle = '#f97316';
+            ctx.globalAlpha = 0.9;
+            ctx.beginPath();
+            // Inverted Logic: Tip points DOWN
+            ctx.moveTo(0, projH/2); // Tip
+            ctx.lineTo(10, projH/2 - 15);
+            ctx.lineTo(4, projH/2 - 15);
+            ctx.lineTo(4, -projH/2);
+            ctx.lineTo(-4, -projH/2);
+            ctx.lineTo(-4, projH/2 - 15);
+            ctx.lineTo(-10, projH/2 - 15);
+            ctx.closePath();
+            ctx.fill();
+
+            ctx.shadowBlur = 0;
+            ctx.font = 'bold 10px Inter';
+            ctx.textAlign = 'left';
+            ctx.fillText("INVERTED IMAGE", 18, 5);
+            ctx.restore();
+        }
+
+        // --- INTERACTION ---
+        function getMousePos(e) {
+            const rect = canvas.getBoundingClientRect();
+            const clientX = e.touches ? e.touches[0].clientX : e.clientX;
+            const clientY = e.touches ? e.touches[0].clientY : e.clientY;
+            return { x: clientX - rect.left, y: clientY - rect.top };
+        }
+
+        const anatomyParts = [
+            { name: "Cornea", x: cx - 130, y: cy, r: 80, desc: "The transparent outer layer that performs the majority of the eye's initial light focusing." },
+            { name: "Pupil & Iris", x: cx - 100, y: cy, r: 70, desc: "The iris acts like a camera aperture, adjusting the pupil size to control how much light enters." },
+            { name: "Crystalline Lens", x: cx - 80, y: cy, r: 60, desc: "This flexible convex lens fine-tunes the focal point so that the image lands perfectly sharp on the retina." },
+            { name: "Retina", x: cx + 120, y: cy, r: 120, desc: "The sensory lining where the light is projected. It converts optical images into electrical brain signals." }
+        ];
+
+        window.addEventListener('mousedown', (e) => {
+            if(e.target.closest('.glass-panel')) return;
+            const pos = getMousePos(e);
+
+            // Drag check
+            const d = Math.hypot(pos.x - objectArrow.x, pos.y - objectArrow.y);
+            if (d < 80) {
+                objectArrow.isDragging = true;
+                return;
+            }
+
+            // Anatomy check
+            for (let p of anatomyParts) {
+                if (Math.hypot(pos.x - p.x, pos.y - p.y) < p.r) {
+                    anatomyName.innerText = p.name;
+                    anatomyDesc.innerText = p.desc;
+                    break;
+                }
+            }
+        });
+
+        window.addEventListener('mousemove', (e) => {
+            const pos = getMousePos(e);
+            
+            if (objectArrow.isDragging) {
+                let nx = pos.x;
+                // STRICT BOUNDARIES - No more going out of frame
+                const minX = sidebarWidth + 80;
+                const maxX = cx - 180;
+                if (nx < minX) nx = minX;
+                if (nx > maxX) nx = maxX;
+                objectArrow.x = nx;
+            } else {
+                let overPart = false;
+                for (let p of anatomyParts) {
+                    if (Math.hypot(pos.x - p.x, pos.y - p.y) < p.r) {
+                        canvas.style.cursor = 'help';
+                        overPart = true;
+                        break;
+                    }
+                }
+                if (!overPart) {
+                    const d = Math.hypot(pos.x - objectArrow.x, pos.y - objectArrow.y);
+                    canvas.style.cursor = d < 80 ? 'grab' : 'default';
+                }
+            }
+        });
+
+        window.addEventListener('mouseup', () => { objectArrow.isDragging = false; });
+
+        function render() {
+            ctx.fillStyle = '#020617';
+            ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+            // Tech Grid
+            ctx.strokeStyle = 'rgba(255, 255, 255, 0.02)';
+            ctx.lineWidth = 1;
+            ctx.beginPath();
+            for(let i=0; i<canvas.width; i+=60) { ctx.moveTo(i,0); ctx.lineTo(i,canvas.height); }
+            for(let i=0; i<canvas.height; i+=60) { ctx.moveTo(0,i); ctx.lineTo(canvas.width,i); }
+            ctx.stroke();
+
+            drawEyeAnatomy();
+            drawRayTracing();
+            drawObject();
+
+            requestAnimationFrame(render);
+        }
+        render();
+
+        // Touch
+        canvas.addEventListener('touchstart', (e) => { e.preventDefault(); window.dispatchEvent(new MouseEvent('mousedown', {clientX: e.touches[0].clientX, clientY: e.touches[0].clientY})); }, {passive: false});
+        canvas.addEventListener('touchmove', (e) => { e.preventDefault(); window.dispatchEvent(new MouseEvent('mousemove', {clientX: e.touches[0].clientX, clientY: e.touches[0].clientY})); }, {passive: false});
+        window.addEventListener('touchend', () => window.dispatchEvent(new MouseEvent('mouseup')));
+
+    </script>
+</body>
+</html>

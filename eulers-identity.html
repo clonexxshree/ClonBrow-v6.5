@@ -1,0 +1,900 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Math Lab - Advanced Systems</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Fira+Code:wght@400;500&display=swap" rel="stylesheet">
+    <style>
+        body, html {
+            margin: 0; padding: 0; width: 100%; height: 100%; overflow: hidden;
+            background-color: #020617; font-family: 'Inter', sans-serif;
+            touch-action: none; user-select: none;
+        }
+
+        .main-shell { display: flex; width: 100%; height: 100%; }
+        
+        .workspace { 
+            flex-grow: 1; 
+            position: relative; 
+            overflow: hidden; 
+            background: radial-gradient(circle at center, #0f172a 0%, #020617 100%);
+        }
+        
+        #canvas-2d, #canvas-3d {
+            position: absolute; top: 0; left: 0; width: 100%; height: 100%;
+        }
+        #canvas-2d { z-index: 10; cursor: default; }
+        #canvas-3d { z-index: 5; }
+
+        .glass-panel {
+            background: linear-gradient(145deg, rgba(15, 23, 42, 0.9) 0%, rgba(2, 6, 23, 0.98) 100%);
+            backdrop-filter: blur(40px); -webkit-backdrop-filter: blur(40px);
+            border-right: 1px solid rgba(255, 255, 255, 0.1);
+            box-shadow: 20px 0 50px rgba(0, 0, 0, 0.5);
+            display: flex; flex-direction: column; padding: 2rem; z-index: 100; width: 380px;
+        }
+
+        @media (max-width: 1024px) {
+            .glass-panel { width: 100%; height: 42%; border-right: none; border-bottom: 1px solid rgba(255,255,255,0.1); padding: 1rem; }
+            .main-shell { flex-direction: column; }
+        }
+
+        .tab-btn { transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1); }
+        .tab-btn.active { background-color: #ffffff; color: #020617; box-shadow: 0 4px 12px rgba(0,0,0,0.4); }
+
+        input[type=range] { -webkit-appearance: none; width: 100%; background: transparent; }
+        input[type=range]::-webkit-slider-thumb {
+            -webkit-appearance: none; height: 20px; width: 20px; border-radius: 50%;
+            background: #ffffff; cursor: pointer; margin-top: -8px;
+            box-shadow: 0 4px 10px rgba(0,0,0,0.5); border: 1px solid rgba(255,255,255,0.2);
+            transition: transform 0.2s cubic-bezier(0.2, 0.8, 0.2, 1);
+        }
+        input[type=range]::-webkit-slider-thumb:hover { transform: scale(1.15); }
+        input[type=range]::-webkit-slider-runnable-track {
+            width: 100%; height: 4px; cursor: pointer; background: rgba(255, 255, 255, 0.15); border-radius: 2px;
+        }
+
+        .formula-box { font-family: 'Fira Code', monospace; }
+        .scroll-area::-webkit-scrollbar { width: 4px; }
+        .scroll-area::-webkit-scrollbar-thumb { background: rgba(255, 255, 255, 0.2); border-radius: 4px; }
+
+        #loading-screen {
+            position: absolute; inset: 0; background: #020617; display: flex; flex-direction: column;
+            align-items: center; justify-content: center; color: white; z-index: 150; transition: opacity 0.6s ease;
+        }
+    </style>
+    <!-- Import Maps for Three.js -->
+    <script type="importmap">
+        {
+            "imports": {
+                "three": "https://cdn.jsdelivr.net/npm/three@0.160.0/build/three.module.js",
+                "three/addons/": "https://cdn.jsdelivr.net/npm/three@0.160.0/examples/jsm/"
+            }
+        }
+    </script>
+</head>
+<body>
+
+    <div id="loading-screen">
+        <div class="flex flex-col items-center gap-5">
+            <svg class="animate-spin h-10 w-10 text-indigo-500" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="3"></circle><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path></svg>
+            <span class="text-xs font-bold tracking-widest text-gray-400 uppercase italic text-center">Initializing Dual Engine...</span>
+        </div>
+    </div>
+
+    <div class="main-shell">
+        <!-- UI Panel -->
+        <div class="glass-panel shrink-0">
+            <div class="mb-6 border-b border-white/10 pb-6 shrink-0 flex items-center justify-between">
+                <div>
+                    <h1 class="text-2xl font-bold tracking-tight text-white mb-1">Math Lab</h1>
+                    <p class="text-[11px] font-medium text-indigo-400 uppercase tracking-widest">Advanced Systems</p>
+                </div>
+                <div class="w-10 h-10 rounded-full bg-indigo-500/20 flex items-center justify-center text-indigo-400 shadow-[0_0_15px_rgba(99,102,241,0.3)]">
+                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M14 10l-2 1m0 0l-2-1m2 1v2.5M20 7l-2 1m2-1l-2-1m2 1v2.5M14 4l-2-1-2 1M4 7l2-1M4 7l2 1M4 7v2.5M12 21l-2-1m2 1l2-1m-2 1v-2.5M6 18l-2-1v-2.5M18 18l2-1v-2.5"></path></svg>
+                </div>
+            </div>
+
+            <!-- Tab Navigation (Grid) -->
+            <div class="grid grid-cols-2 p-1 bg-black/40 rounded-xl shadow-inner gap-1 mb-6 shrink-0 border border-white/5">
+                <button data-tab="euler" class="tab-btn active py-2 text-[10px] font-bold uppercase tracking-wider rounded-lg text-gray-400">Euler's Identity</button>
+                <button data-tab="planes" class="tab-btn py-2 text-[10px] font-bold uppercase tracking-wider rounded-lg text-gray-400">3D Planes</button>
+                <button data-tab="linprog" class="tab-btn py-2 text-[10px] font-bold uppercase tracking-wider rounded-lg text-gray-400">Linear Prog.</button>
+                <button data-tab="galton" class="tab-btn py-2 text-[10px] font-bold uppercase tracking-wider rounded-lg text-gray-400">Galton Board</button>
+                <button data-tab="parametric" class="tab-btn py-2 text-[10px] font-bold uppercase tracking-wider rounded-lg text-gray-400 col-span-2">Parametric Spirograph</button>
+            </div>
+
+            <div class="scroll-area overflow-y-auto pr-2 pb-2 flex-1 space-y-7">
+                
+                <div class="bg-black/30 p-4 rounded-xl border border-white/5 shadow-inner">
+                    <h2 id="info-title" class="text-sm font-bold text-white mb-2 italic">Euler's Identity</h2>
+                    <div id="formula-display" class="formula-box bg-white/5 p-2 rounded text-[11px] text-cyan-300 mb-3 border border-white/10 text-center">
+                        e^(iπ) + 1 = 0
+                    </div>
+                    <p id="info-desc" class="text-xs text-gray-400 leading-relaxed">
+                        Watch the spiral of $e^{it}$ wrap around the complex unit circle. When time ($t$) reaches $\pi$, the vector points exactly at $-1$.
+                    </p>
+                </div>
+
+                <!-- 1. EULER CONTROLS -->
+                <div id="controls-euler" class="space-y-6">
+                    <div class="space-y-2">
+                        <div class="flex justify-between items-end">
+                            <label class="text-[11px] font-semibold text-cyan-400 uppercase tracking-widest">Time / Angle (t)</label>
+                            <span id="euler-t-disp" class="text-[11px] font-mono bg-cyan-500/10 px-2 py-1 rounded text-cyan-300">0.00</span>
+                        </div>
+                        <input type="range" id="euler-t" min="0" max="3.14159" step="0.01" value="0" class="w-full" style="accent-color: #22d3ee;">
+                        <div class="flex justify-between text-[9px] font-bold text-gray-500 uppercase tracking-widest px-1">
+                            <span>0</span>
+                            <span>π (3.14)</span>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- 2. 3D PLANES CONTROLS -->
+                <div id="controls-planes" class="space-y-6 hidden">
+                    <div class="space-y-4">
+                        <div class="space-y-2">
+                            <div class="flex justify-between items-end">
+                                <label class="text-[11px] font-semibold text-purple-400 uppercase tracking-widest">Rotate Plane X</label>
+                                <span id="plane-rotx-disp" class="text-[11px] font-mono bg-purple-500/10 px-2 py-1 rounded text-purple-300">45°</span>
+                            </div>
+                            <input type="range" id="plane-rotx" min="-90" max="90" step="1" value="45" class="w-full" style="accent-color: #c084fc;">
+                        </div>
+                        <div class="space-y-2 pt-2 border-t border-white/10">
+                            <div class="flex justify-between items-end">
+                                <label class="text-[11px] font-semibold text-pink-400 uppercase tracking-widest">Rotate Plane Z</label>
+                                <span id="plane-rotz-disp" class="text-[11px] font-mono bg-pink-500/10 px-2 py-1 rounded text-pink-300">0°</span>
+                            </div>
+                            <input type="range" id="plane-rotz" min="-90" max="90" step="1" value="0" class="w-full" style="accent-color: #f472b6;">
+                        </div>
+                    </div>
+                </div>
+
+                <!-- 3. LINEAR PROGRAMMING CONTROLS -->
+                <div id="controls-linprog" class="space-y-6 hidden">
+                    <div class="space-y-4">
+                        <label class="text-[10px] font-bold uppercase tracking-widest text-gray-500">Business Objective: Maximize Profit</label>
+                        <div class="space-y-3">
+                            <div class="flex justify-between items-end">
+                                <label class="text-[11px] font-semibold text-emerald-400 uppercase tracking-widest">Profit per Unit X ($A$)</label>
+                                <span id="lp-a-disp" class="text-[11px] font-mono bg-emerald-500/10 px-2 py-1 rounded text-emerald-300">$20</span>
+                            </div>
+                            <input type="range" id="lp-a" min="5" max="50" step="1" value="20" class="w-full" style="accent-color: #10b981;">
+                        </div>
+                        <div class="space-y-3 pt-2 border-t border-white/10">
+                            <div class="flex justify-between items-end">
+                                <label class="text-[11px] font-semibold text-emerald-400 uppercase tracking-widest">Profit per Unit Y ($B$)</label>
+                                <span id="lp-b-disp" class="text-[11px] font-mono bg-emerald-500/10 px-2 py-1 rounded text-emerald-300">$30</span>
+                            </div>
+                            <input type="range" id="lp-b" min="5" max="50" step="1" value="30" class="w-full" style="accent-color: #10b981;">
+                        </div>
+                    </div>
+                </div>
+
+                <!-- 4. GALTON BOARD CONTROLS -->
+                <div id="controls-galton" class="space-y-6 hidden">
+                    <div class="space-y-4">
+                        <button id="btn-drop-balls" class="w-full py-3 bg-indigo-600 hover:bg-indigo-500 text-white text-xs font-bold uppercase tracking-widest rounded-xl transition-all shadow-lg shadow-indigo-900/40">Drop 200 Balls</button>
+                        <button id="btn-reset-galton" class="w-full py-2 bg-white/5 hover:bg-white/10 text-gray-300 text-xs font-bold uppercase tracking-widest rounded-xl transition-all border border-white/5">Clear Bins</button>
+                    </div>
+                </div>
+
+                <!-- 5. PARAMETRIC CONTROLS -->
+                <div id="controls-parametric" class="space-y-6 hidden">
+                    <div class="space-y-4">
+                        <div class="space-y-2">
+                            <div class="flex justify-between items-end">
+                                <label class="text-[11px] font-semibold text-yellow-400 uppercase tracking-widest">Inner Radius (r)</label>
+                                <span id="para-r-disp" class="text-[11px] font-mono bg-yellow-500/10 px-2 py-1 rounded text-yellow-300">52</span>
+                            </div>
+                            <input type="range" id="para-r" min="10" max="150" step="1" value="52" class="w-full" style="accent-color: #facc15;">
+                        </div>
+                        <div class="space-y-2 pt-2 border-t border-white/10">
+                            <div class="flex justify-between items-end">
+                                <label class="text-[11px] font-semibold text-orange-400 uppercase tracking-widest">Pen Offset (d)</label>
+                                <span id="para-d-disp" class="text-[11px] font-mono bg-orange-500/10 px-2 py-1 rounded text-orange-300">70</span>
+                            </div>
+                            <input type="range" id="para-d" min="10" max="200" step="1" value="70" class="w-full" style="accent-color: #f97316;">
+                        </div>
+                        <div class="pt-2">
+                            <button id="btn-para-trace" class="w-full py-2 bg-yellow-600 hover:bg-yellow-500 text-white text-xs font-bold uppercase tracking-widest rounded-xl transition-all shadow-lg shadow-yellow-900/40">Trace Path</button>
+                        </div>
+                    </div>
+                </div>
+
+            </div>
+            
+            <div class="pt-6 border-t border-white/5 text-[10px] text-gray-600 font-medium text-center shrink-0 mt-4 uppercase tracking-widest">
+                Dual 2D/3D Mathematics Engine
+            </div>
+        </div>
+
+        <!-- Simulation Workspace -->
+        <div class="workspace" id="workspace">
+            
+            <div id="canvas-3d"></div>
+            <canvas id="canvas-2d"></canvas>
+            
+            <!-- Contextual HUD -->
+            <div id="hud" class="absolute bottom-8 right-8 z-20 glass-panel !w-[280px] !p-5 !border !rounded-2xl pointer-events-none shadow-2xl transition-opacity duration-300">
+                <div class="text-[10px] font-bold uppercase tracking-widest text-gray-500 mb-3 border-b border-white/5 pb-1">Mathematical Result</div>
+                <div class="space-y-3">
+                    <div class="flex justify-between items-center">
+                        <span class="text-[12px] text-gray-400 font-medium" id="hud-label-1">Data 1</span>
+                        <span id="hud-val-1" class="text-base font-mono font-bold text-white">---</span>
+                    </div>
+                    <div class="flex justify-between items-center">
+                        <span class="text-[12px] text-gray-400 font-medium" id="hud-label-2">Data 2</span>
+                        <span id="hud-val-2" class="text-base font-mono font-bold text-white">---</span>
+                    </div>
+                    <div id="hud-status" class="pt-2 text-center text-[12px] font-bold tracking-widest text-indigo-400 hidden border-t border-white/5 font-mono">
+                        RESULT
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- MAIN ENGINE SCRIPT -->
+    <script type="module">
+        import * as THREE from 'three';
+        import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
+
+        // --- DOM Elements ---
+        const canvas2D = document.getElementById('canvas-2d');
+        const ctx = canvas2D.getContext('2d');
+        const container3D = document.getElementById('canvas-3d');
+        const workspace = document.getElementById('workspace');
+
+        // --- GLOBAL STATE ---
+        let currentMode = 'euler'; 
+        let cx, cy, wsWidth, wsHeight;
+        let lastTime = 0;
+        let globalTime = 0;
+
+        const M = {
+            euler: { t: 0 },
+            planes: { rotX: 45, rotZ: 0 },
+            lp: { A: 20, B: 30 },
+            galton: { balls: [], bins: new Array(15).fill(0), isDropping: false },
+            para: { R: 150, r: 52, d: 70, t: 0, path: [], isTracing: true }
+        };
+
+        // --- 2D CANVAS SETUP ---
+        function resize2D() {
+            canvas2D.width = workspace.clientWidth;
+            canvas2D.height = workspace.clientHeight;
+            wsWidth = canvas2D.width;
+            wsHeight = canvas2D.height;
+            cx = wsWidth / 2;
+            cy = wsHeight / 2;
+            
+            // Recenter Parametric path if window resizes
+            if (currentMode === 'parametric' && M.para.path.length > 0) {
+                M.para.path = [];
+                M.para.t = 0;
+            }
+        }
+        window.addEventListener('resize', resize2D);
+
+        // --- 3D SCENE SETUP (For Intersecting Planes) ---
+        const scene = new THREE.Scene();
+        scene.background = new THREE.Color(0x020617);
+        
+        const camera = new THREE.PerspectiveCamera(45, workspace.clientWidth / workspace.clientHeight, 0.1, 500);
+        camera.position.set(15, 15, 20);
+
+        const renderer = new THREE.WebGLRenderer({ antialias: true, alpha: false });
+        renderer.setSize(workspace.clientWidth, workspace.clientHeight);
+        renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+        container3D.appendChild(renderer.domElement);
+
+        const controls = new OrbitControls(camera, renderer.domElement);
+        controls.enableDamping = true;
+        controls.dampingFactor = 0.05;
+
+        // Lights
+        const ambientLight = new THREE.AmbientLight(0xffffff, 0.4);
+        scene.add(ambientLight);
+        const dirLight = new THREE.DirectionalLight(0xffffff, 1.5);
+        dirLight.position.set(10, 20, 10);
+        scene.add(dirLight);
+
+        // --- 3D: PLANES MODULE ---
+        const planesGroup = new THREE.Group();
+        scene.add(planesGroup);
+
+        // Coordinate Axes (X, Y, Z)
+        const axesHelper = new THREE.AxesHelper(10);
+        planesGroup.add(axesHelper);
+
+        // Plane 1: Floor (y = 0)
+        const plane1Geo = new THREE.PlaneGeometry(20, 20);
+        const plane1Mat = new THREE.MeshBasicMaterial({ color: 0x3b82f6, transparent: true, opacity: 0.3, side: THREE.DoubleSide });
+        const plane1 = new THREE.Mesh(plane1Geo, plane1Mat);
+        plane1.rotation.x = Math.PI / 2;
+        planesGroup.add(plane1);
+        
+        // Grid on floor
+        const gridHelper = new THREE.GridHelper(20, 20, 0x3b82f6, 0x1e3a8a);
+        planesGroup.add(gridHelper);
+
+        // Plane 2: Intersecting Wall
+        const plane2Mat = new THREE.MeshBasicMaterial({ color: 0xf472b6, transparent: true, opacity: 0.5, side: THREE.DoubleSide });
+        const plane2 = new THREE.Mesh(plane1Geo, plane2Mat);
+        planesGroup.add(plane2);
+
+        // Intersection Line (Cylinder)
+        const intersectLineMat = new THREE.MeshBasicMaterial({ color: 0xfacc15 });
+        const intersectLine = new THREE.Mesh(new THREE.CylinderGeometry(0.1, 0.1, 30, 16), intersectLineMat);
+        planesGroup.add(intersectLine);
+
+        function updatePlanes3D() {
+            // Apply rotations to Plane 2
+            plane2.rotation.set(0, 0, 0); // Reset
+            plane2.rotateX(M.planes.rotX * Math.PI / 180);
+            plane2.rotateZ(M.planes.rotZ * Math.PI / 180);
+
+            // Plane 1 Normal is (0, 1, 0)
+            const n1 = new THREE.Vector3(0, 1, 0);
+            
+            // Plane 2 Normal
+            const n2 = new THREE.Vector3(0, 0, 1); // Default normal facing Z
+            n2.applyEuler(plane2.rotation);
+
+            // Direction of intersection line is cross product of normals
+            const lineDir = new THREE.Vector3().crossVectors(n1, n2).normalize();
+
+            // Align the intersection cylinder with the lineDir
+            // Default cylinder points along Y axis. We need to rotate it to point along lineDir.
+            const axis = new THREE.Vector3(0, 1, 0);
+            const quaternion = new THREE.Quaternion().setFromUnitVectors(axis, lineDir);
+            intersectLine.setRotationFromQuaternion(quaternion);
+
+            document.getElementById('hud-label-1').innerText = "Plane 2 Normal Vector";
+            document.getElementById('hud-val-1').innerText = `(${n2.x.toFixed(2)}, ${n2.y.toFixed(2)}, ${n2.z.toFixed(2)})`;
+            document.getElementById('hud-val-1').style.color = "#f472b6";
+            
+            document.getElementById('hud-label-2').innerText = "Intersection Line Vector";
+            document.getElementById('hud-val-2').innerText = `(${lineDir.x.toFixed(2)}, ${lineDir.y.toFixed(2)}, ${lineDir.z.toFixed(2)})`;
+            document.getElementById('hud-val-2').style.color = "#facc15";
+            
+            const st = document.getElementById('hud-status');
+            st.innerText = "L = n₁ × n₂";
+            st.classList.remove('hidden');
+        }
+
+        // --- 2D CANVAS: EULER'S IDENTITY ---
+        function drawEuler() {
+            const gridScale = Math.min(wsWidth, wsHeight) * 0.25;
+            
+            ctx.save();
+            ctx.translate(cx, cy);
+
+            // Axes
+            ctx.strokeStyle = 'rgba(255,255,255,0.1)'; ctx.lineWidth = 2;
+            ctx.beginPath(); ctx.moveTo(-600, 0); ctx.lineTo(600, 0); ctx.stroke(); // Real
+            ctx.beginPath(); ctx.moveTo(0, -600); ctx.lineTo(0, 600); ctx.stroke(); // Imaginary
+
+            ctx.fillStyle = '#64748b'; ctx.font = 'bold 12px Inter';
+            ctx.fillText("Real (1)", gridScale + 10, -10);
+            ctx.fillText("Real (-1)", -gridScale - 50, -10);
+            ctx.fillText("Imaginary (i)", 10, -gridScale - 10);
+
+            // Unit Circle
+            ctx.strokeStyle = 'rgba(255,255,255,0.05)'; ctx.lineWidth = 2;
+            ctx.beginPath(); ctx.arc(0, 0, gridScale, 0, Math.PI*2); ctx.stroke();
+
+            const t = M.euler.t;
+            
+            // Calculate e^(it) = cos(t) + i*sin(t)
+            const re = Math.cos(t);
+            const im = Math.sin(t);
+            
+            const px = re * gridScale;
+            const py = -im * gridScale; // Canvas Y inverted
+
+            // Draw spiral arc history
+            if (t > 0) {
+                ctx.strokeStyle = '#22d3ee'; ctx.lineWidth = 4; ctx.shadowBlur = 15; ctx.shadowColor = '#22d3ee';
+                ctx.beginPath();
+                // Draw arc counter-clockwise from 0 to t
+                ctx.arc(0, 0, gridScale, 0, -t, true);
+                ctx.stroke();
+                ctx.shadowBlur = 0;
+            }
+
+            // Target Vector
+            ctx.strokeStyle = '#ffffff'; ctx.lineWidth = 2;
+            ctx.beginPath(); ctx.moveTo(0,0); ctx.lineTo(px, py); ctx.stroke();
+            
+            // Point Orb
+            ctx.fillStyle = '#22d3ee'; ctx.shadowBlur = 10; ctx.shadowColor = '#22d3ee';
+            ctx.beginPath(); ctx.arc(px, py, 8, 0, Math.PI*2); ctx.fill(); ctx.shadowBlur = 0;
+
+            // Highlight the exact match at Pi
+            if (Math.abs(t - Math.PI) < 0.02) {
+                ctx.fillStyle = '#10b981'; ctx.shadowBlur = 20; ctx.shadowColor = '#10b981';
+                ctx.beginPath(); ctx.arc(-gridScale, 0, 12, 0, Math.PI*2); ctx.fill(); ctx.shadowBlur = 0;
+                
+                // Add the "+ 1 = 0" vector returning to origin
+                ctx.strokeStyle = '#10b981'; ctx.lineWidth = 4; ctx.setLineDash([5,5]);
+                ctx.beginPath(); ctx.moveTo(-gridScale, 20); ctx.lineTo(0, 20); ctx.stroke(); ctx.setLineDash([]);
+                ctx.fillStyle = '#10b981'; ctx.font = 'bold 16px Fira Code'; ctx.fillText("+ 1", -gridScale/2, 40);
+            }
+
+            ctx.restore();
+
+            document.getElementById('hud-label-1').innerText = "Value of e^(it)";
+            document.getElementById('hud-val-1').innerText = `${re.toFixed(2)} + ${im.toFixed(2)}i`;
+            document.getElementById('hud-val-1').style.color = "#22d3ee";
+            
+            document.getElementById('hud-label-2').innerText = "Angle (t)";
+            document.getElementById('hud-val-2').innerText = t.toFixed(2) + " rad";
+            document.getElementById('hud-val-2').style.color = "#ffffff";
+            
+            const st = document.getElementById('hud-status');
+            if (Math.abs(t - Math.PI) < 0.02) {
+                st.innerText = "e^(iπ) + 1 = 0";
+                st.style.color = "#10b981";
+                st.classList.remove('hidden');
+            } else {
+                st.classList.add('hidden');
+            }
+        }
+
+        // --- 2D CANVAS: LINEAR PROGRAMMING ---
+        function drawLinearProg() {
+            const scale = 30; // pixels per unit
+            
+            ctx.save();
+            // Origin at bottom left
+            const ox = cx - 200;
+            const oy = cy + 200;
+            ctx.translate(ox, oy);
+
+            // Grid
+            ctx.strokeStyle = 'rgba(255,255,255,0.05)'; ctx.lineWidth = 1;
+            for(let i = 0; i <= 15; i++) {
+                ctx.beginPath(); ctx.moveTo(i*scale, 0); ctx.lineTo(i*scale, -15*scale); ctx.stroke();
+                ctx.beginPath(); ctx.moveTo(0, -i*scale); ctx.lineTo(15*scale, -i*scale); ctx.stroke();
+            }
+
+            // Axes
+            ctx.strokeStyle = 'rgba(255,255,255,0.3)'; ctx.lineWidth = 2;
+            ctx.beginPath(); ctx.moveTo(0, 0); ctx.lineTo(15*scale, 0); ctx.stroke(); // X
+            ctx.beginPath(); ctx.moveTo(0, 0); ctx.lineTo(0, -15*scale); ctx.stroke(); // Y
+            
+            ctx.fillStyle = '#94a3b8'; ctx.font = '12px Inter';
+            ctx.fillText("Product X", 15*scale + 10, 15);
+            ctx.fillText("Product Y", -60, -15*scale - 10);
+
+            // Constraints:
+            // 1. x >= 0, y >= 0
+            // 2. x + 2y <= 12   => y = -0.5x + 6    (x-int 12, y-int 6)
+            // 3. 3x + y <= 15   => y = -3x + 15     (x-int 5, y-int 15)
+
+            // Constraint Lines
+            ctx.strokeStyle = '#ef4444'; ctx.lineWidth = 2;
+            ctx.beginPath(); ctx.moveTo(12*scale, 0); ctx.lineTo(0, -6*scale); ctx.stroke();
+            ctx.strokeStyle = '#3b82f6';
+            ctx.beginPath(); ctx.moveTo(5*scale, 0); ctx.lineTo(0, -15*scale); ctx.stroke();
+
+            // Feasible Region Vertices
+            // V1: (0,0)
+            // V2: (5,0)
+            // V3: Intersection of x+2y=12 and 3x+y=15
+            // Multiply 2nd by 2: 6x+2y=30. Subtract 1st: 5x = 18 => x = 3.6
+            // y = 15 - 3(3.6) = 15 - 10.8 = 4.2
+            // V3: (3.6, 4.2)
+            // V4: (0,6)
+            
+            const vertices = [
+                {x: 0, y: 0},
+                {x: 5, y: 0},
+                {x: 3.6, y: 4.2},
+                {x: 0, y: 6}
+            ];
+
+            // Fill Feasible Region
+            ctx.fillStyle = 'rgba(16, 185, 129, 0.3)';
+            ctx.beginPath();
+            ctx.moveTo(vertices[0].x * scale, -vertices[0].y * scale);
+            for(let i=1; i<vertices.length; i++) ctx.lineTo(vertices[i].x * scale, -vertices[i].y * scale);
+            ctx.closePath();
+            ctx.fill();
+
+            // Objective Function: P = Ax + By
+            const A = M.lp.A;
+            const B = M.lp.B;
+
+            // Find Max Profit
+            let maxProfit = -1;
+            let optimalV = null;
+
+            vertices.forEach(v => {
+                const profit = A * v.x + B * v.y;
+                if (profit > maxProfit) {
+                    maxProfit = profit;
+                    optimalV = v;
+                }
+            });
+
+            // Draw Objective Line (Ax + By = maxProfit)
+            // y = -(A/B)x + maxProfit/B
+            const objColor = '#facc15';
+            ctx.strokeStyle = objColor; ctx.lineWidth = 3; ctx.setLineDash([8, 8]);
+            
+            const x0 = 0; const y0 = maxProfit / B;
+            const y1 = 0; const x1 = maxProfit / A;
+            
+            ctx.beginPath();
+            ctx.moveTo(x0 * scale, -y0 * scale);
+            ctx.lineTo(x1 * scale, -y1 * scale);
+            ctx.stroke(); ctx.setLineDash([]);
+
+            // Highlight Optimal Vertex
+            ctx.fillStyle = objColor; ctx.shadowBlur = 15; ctx.shadowColor = objColor;
+            ctx.beginPath(); ctx.arc(optimalV.x * scale, -optimalV.y * scale, 8, 0, Math.PI*2); ctx.fill();
+            ctx.shadowBlur = 0;
+
+            ctx.restore();
+
+            // HUD
+            document.getElementById('hud-label-1').innerText = "Max Profit (P)";
+            document.getElementById('hud-val-1').innerText = `$${maxProfit.toFixed(2)}`;
+            document.getElementById('hud-val-1').style.color = "#10b981";
+            
+            document.getElementById('hud-label-2').innerText = "Optimal Production";
+            document.getElementById('hud-val-2').innerText = `X=${optimalV.x.toFixed(1)}, Y=${optimalV.y.toFixed(1)}`;
+            document.getElementById('hud-val-2').style.color = "#facc15";
+            
+            const st = document.getElementById('hud-status');
+            st.innerText = "Objective Function Maximized";
+            st.style.color = "#10b981";
+            st.classList.remove('hidden');
+        }
+
+        // --- 2D CANVAS: GALTON BOARD ---
+        function initGalton() {
+            M.galton.balls = [];
+            M.galton.bins.fill(0);
+            M.galton.isDropping = true;
+            
+            // Spawn 200 balls staggered
+            for(let i=0; i<200; i++) {
+                setTimeout(() => {
+                    if (currentMode === 'galton') {
+                        M.galton.balls.push({
+                            x: cx + (Math.random() - 0.5) * 5, // Slight random offset at top
+                            y: cy - 250,
+                            vx: 0, vy: 0
+                        });
+                    }
+                }, i * 40); // Drop one every 40ms
+            }
+        }
+
+        function drawGalton(dt) {
+            const pegRadius = 4;
+            const rows = 12;
+            const spacingY = 25;
+            const spacingX = 30;
+            const startY = cy - 200;
+            const binStartY = startY + rows * spacingY + 20;
+            const numBins = 15;
+            const binW = spacingX;
+            const binStartX = cx - (numBins * binW) / 2;
+
+            // Physics Update for Balls
+            const gravity = 1500 * dt;
+            M.galton.balls.forEach(b => {
+                b.vy += gravity * dt;
+                b.x += b.vx * dt;
+                b.y += b.vy * dt;
+
+                // Air friction
+                b.vx *= 0.95;
+
+                // Collision with pegs
+                for (let r = 0; r < rows; r++) {
+                    const pegsInRow = r + 1;
+                    const rStartX = cx - (pegsInRow - 1) * (spacingX / 2);
+                    const rY = startY + r * spacingY;
+
+                    // Only check nearby rows
+                    if (Math.abs(b.y - rY) < 15) {
+                        for (let c = 0; c < pegsInRow; c++) {
+                            const pX = rStartX + c * spacingX;
+                            const dx = b.x - pX;
+                            const dy = b.y - rY;
+                            const distSq = dx*dx + dy*dy;
+                            
+                            if (distSq < (pegRadius + 4)*(pegRadius + 4)) {
+                                // Bounce
+                                const dist = Math.sqrt(distSq);
+                                const nx = dx / dist;
+                                const ny = dy / dist;
+                                
+                                // Deflect left or right randomly if hit exactly on top
+                                let nudge = 0;
+                                if (Math.abs(nx) < 0.1) nudge = (Math.random() > 0.5 ? 1 : -1) * 20;
+
+                                b.vx += (nx * 50 + nudge);
+                                b.vy = Math.min(b.vy, 0); // Reset downward velocity
+                                b.y -= 2; // Anti-stick
+                            }
+                        }
+                    }
+                }
+
+                // Sorting into bins
+                if (b.y > binStartY) {
+                    let binIdx = Math.floor((b.x - binStartX) / binW);
+                    if (binIdx < 0) binIdx = 0;
+                    if (binIdx >= numBins) binIdx = numBins - 1;
+                    
+                    M.galton.bins[binIdx]++;
+                    b.dead = true;
+                }
+            });
+
+            // Clean up dead balls
+            M.galton.balls = M.galton.balls.filter(b => !b.dead);
+
+            // Draw Pegs
+            ctx.fillStyle = '#64748b';
+            for (let r = 0; r < rows; r++) {
+                const pegsInRow = r + 1;
+                const rStartX = cx - (pegsInRow - 1) * (spacingX / 2);
+                const rY = startY + r * spacingY;
+                for (let c = 0; c < pegsInRow; c++) {
+                    ctx.beginPath(); ctx.arc(rStartX + c * spacingX, rY, pegRadius, 0, Math.PI*2); ctx.fill();
+                }
+            }
+
+            // Draw Bins (Histogram)
+            ctx.fillStyle = 'rgba(99, 102, 241, 0.6)';
+            ctx.strokeStyle = '#6366f1'; ctx.lineWidth = 1;
+            const maxCount = Math.max(...M.galton.bins, 10); // Minimum scale height
+            
+            for (let i = 0; i < numBins; i++) {
+                const h = (M.galton.bins[i] / maxCount) * 150;
+                const bx = binStartX + i * binW;
+                ctx.beginPath(); ctx.roundRect(bx + 2, binStartY, binW - 4, h, [0,0,4,4]); 
+                ctx.fill(); ctx.stroke();
+            }
+
+            // Draw Perfect Bell Curve Overlay
+            ctx.strokeStyle = 'rgba(250, 204, 21, 0.5)'; // Yellow
+            ctx.lineWidth = 3;
+            ctx.beginPath();
+            for (let x = binStartX; x <= binStartX + numBins * binW; x += 5) {
+                // Gaussian formula approximation
+                const meanX = cx;
+                const stdDev = 60; // Approximate visual spread
+                const exponent = -Math.pow(x - meanX, 2) / (2 * Math.pow(stdDev, 2));
+                const yVal = Math.exp(exponent) * 150; // Scale to match histogram visually
+                if (x === binStartX) ctx.moveTo(x, binStartY + yVal);
+                else ctx.lineTo(x, binStartY + yVal);
+            }
+            ctx.stroke();
+
+            // Draw Balls
+            ctx.fillStyle = '#38bdf8';
+            ctx.shadowBlur = 10; ctx.shadowColor = '#38bdf8';
+            M.galton.balls.forEach(b => {
+                ctx.beginPath(); ctx.arc(b.x, b.y, 4, 0, Math.PI*2); ctx.fill();
+            });
+            ctx.shadowBlur = 0;
+
+            // HUD
+            const totalDropped = M.galton.bins.reduce((a,b) => a+b, 0);
+            document.getElementById('hud-label-1').innerText = "Balls Collected";
+            document.getElementById('hud-val-1').innerText = totalDropped;
+            document.getElementById('hud-val-1').style.color = "#6366f1";
+            
+            document.getElementById('hud-label-2').innerText = "Distribution Shape";
+            document.getElementById('hud-val-2').innerText = totalDropped > 50 ? "Normal (Bell)" : "Forming...";
+            document.getElementById('hud-val-2').style.color = "#facc15";
+            
+            const st = document.getElementById('hud-status');
+            st.innerText = "Central Limit Theorem";
+            st.classList.remove('hidden');
+        }
+
+        // --- 2D CANVAS: PARAMETRIC (SPIROGRAPH) ---
+        function drawParametric(dt) {
+            const R = M.para.R;
+            const r = M.para.r;
+            const d = M.para.d;
+
+            if (M.para.isTracing && M.para.t < Math.PI * 100) { // Let it trace many loops
+                // Increase speed for visual satisfaction
+                const step = 0.1;
+                for(let i=0; i<3; i++) {
+                    M.para.t += step;
+                    const t = M.para.t;
+                    
+                    // Hypotrochoid formula
+                    const x = (R - r) * Math.cos(t) + d * Math.cos(((R - r) / r) * t);
+                    const y = (R - r) * Math.sin(t) - d * Math.sin(((R - r) / r) * t); // -y for canvas
+                    
+                    M.para.path.push({x: cx + x, y: cy + y});
+                }
+            }
+
+            ctx.save();
+
+            // Draw Path
+            if (M.para.path.length > 1) {
+                ctx.beginPath();
+                ctx.strokeStyle = '#a855f7'; // Purple trace
+                ctx.lineWidth = 2;
+                ctx.moveTo(M.para.path[0].x, M.para.path[0].y);
+                for (let i = 1; i < M.para.path.length; i++) {
+                    ctx.lineTo(M.para.path[i].x, M.para.path[i].y);
+                }
+                ctx.stroke();
+            }
+
+            // Draw Mechanics (Inner moving circle)
+            const t = M.para.t;
+            const center_x = cx + (R - r) * Math.cos(t);
+            const center_y = cy + (R - r) * Math.sin(t);
+            
+            const pen_x = (R - r) * Math.cos(t) + d * Math.cos(((R - r) / r) * t);
+            const pen_y = (R - r) * Math.sin(t) - d * Math.sin(((R - r) / r) * t);
+
+            // Fixed Outer Boundary
+            ctx.strokeStyle = 'rgba(255,255,255,0.1)'; ctx.lineWidth = 2;
+            ctx.beginPath(); ctx.arc(cx, cy, R, 0, Math.PI*2); ctx.stroke();
+
+            // Moving Inner Circle
+            ctx.strokeStyle = 'rgba(56, 189, 248, 0.5)';
+            ctx.beginPath(); ctx.arc(center_x, center_y, r, 0, Math.PI*2); ctx.stroke();
+
+            // Line from center of inner circle to pen
+            ctx.beginPath(); ctx.moveTo(center_x, center_y); ctx.lineTo(cx + pen_x, cy + pen_y); ctx.stroke();
+            ctx.fillStyle = '#f97316'; ctx.beginPath(); ctx.arc(center_x, center_y, 3, 0, Math.PI*2); ctx.fill();
+
+            // Drawing Pen Tip
+            ctx.fillStyle = '#f472b6'; ctx.shadowBlur = 10; ctx.shadowColor = '#f472b6';
+            ctx.beginPath(); ctx.arc(cx + pen_x, cy + pen_y, 5, 0, Math.PI*2); ctx.fill(); ctx.shadowBlur = 0;
+
+            ctx.restore();
+
+            // HUD
+            document.getElementById('hud-label-1').innerText = "Current Time (t)";
+            document.getElementById('hud-val-1').innerText = M.para.t.toFixed(1);
+            document.getElementById('hud-val-1').style.color = "#f472b6";
+            
+            document.getElementById('hud-label-2').innerText = "Coordinates";
+            document.getElementById('hud-val-2').innerText = `(${pen_x.toFixed(0)}, ${pen_y.toFixed(0)})`;
+            document.getElementById('hud-val-2').style.color = "#ffffff";
+            
+            const st = document.getElementById('hud-status');
+            st.innerText = "x(t) and y(t) mapped dynamically";
+            st.style.color = "#a855f7";
+            st.classList.remove('hidden');
+        }
+
+        // --- MASTER RENDER LOOP ---
+        resize2D();
+
+        function renderLoop(timestamp) {
+            const dt = (timestamp - lastTime) / 1000 || 0.016;
+            lastTime = timestamp;
+            globalTime += dt;
+
+            if (currentMode === 'planes') {
+                canvas2D.style.display = 'none';
+                container3D.style.display = 'block';
+                updatePlanes3D();
+                controls.update();
+                renderer.render(scene, camera);
+            } else {
+                canvas2D.style.display = 'block';
+                container3D.style.display = 'none';
+                
+                ctx.fillStyle = '#020617';
+                ctx.fillRect(0, 0, wsWidth, wsHeight);
+
+                // Subtle Grid background for 2D modes
+                if (currentMode !== 'linprog') {
+                    ctx.strokeStyle = 'rgba(255,255,255,0.02)'; ctx.lineWidth = 1;
+                    ctx.beginPath();
+                    for(let i=0; i<canvas2D.width; i+=50) { ctx.moveTo(i,0); ctx.lineTo(i,canvas2D.height); }
+                    for(let i=0; i<canvas2D.height; i+=50) { ctx.moveTo(0,i); ctx.lineTo(canvas2D.width,i); }
+                    ctx.stroke();
+                }
+
+                if (currentMode === 'euler') drawEuler();
+                if (currentMode === 'linprog') drawLinearProg();
+                if (currentMode === 'galton') drawGalton(dt);
+                if (currentMode === 'parametric') drawParametric(dt);
+            }
+
+            requestAnimationFrame(renderLoop);
+        }
+
+        // --- UI BINDINGS & TAB SWITCHING ---
+        const bindSlider = (id, obj, key, displayId, suffix="") => {
+            const el = document.getElementById(id);
+            if(!el) return;
+            el.addEventListener('input', (e) => {
+                obj[key] = parseFloat(e.target.value);
+                if(displayId) document.getElementById(displayId).innerText = (el.step.includes('.') && el.step !== "1" ? obj[key].toFixed(2) : obj[key]) + suffix;
+                
+                // If parametric parameters change, clear path
+                if (currentMode === 'parametric' && (key === 'R' || key === 'r' || key === 'd')) {
+                    M.para.path = [];
+                    M.para.t = 0;
+                }
+            });
+        };
+
+        bindSlider('euler-t', M.euler, 't', 'euler-t-disp');
+        
+        bindSlider('plane-rotx', M.planes, 'rotX', 'plane-rotx-disp', '°');
+        bindSlider('plane-rotz', M.planes, 'rotZ', 'plane-rotz-disp', '°');
+
+        bindSlider('lp-a', M.lp, 'A', 'lp-a-disp', '', true);
+        bindSlider('lp-b', M.lp, 'B', 'lp-b-disp', '', true);
+        document.getElementById('lp-a').addEventListener('input', (e) => document.getElementById('lp-a-disp').innerText = `$${e.target.value}`);
+        document.getElementById('lp-b').addEventListener('input', (e) => document.getElementById('lp-b-disp').innerText = `$${e.target.value}`);
+
+        document.getElementById('btn-drop-balls').onclick = initGalton;
+        document.getElementById('btn-reset-galton').onclick = () => { M.galton.bins.fill(0); M.galton.balls = []; };
+
+        bindSlider('para-r', M.para, 'r', 'para-r-disp');
+        bindSlider('para-d', M.para, 'd', 'para-d-disp');
+        document.getElementById('btn-para-trace').onclick = () => { M.para.path = []; M.para.t = 0; M.para.isTracing = true; };
+
+        const tabs = document.querySelectorAll('.tab-btn');
+        tabs.forEach(btn => {
+            btn.addEventListener('click', (e) => {
+                tabs.forEach(t => { t.classList.remove('active'); t.classList.add('text-gray-400'); });
+                e.target.classList.add('active'); e.target.classList.remove('text-gray-400');
+                
+                currentMode = btn.dataset.tab;
+
+                const info = {
+                    euler: { title: "Euler's Identity", formula: "e^(iπ) + 1 = 0", desc: "Watch the spiral of $e^{it}$ wrap around the complex unit circle. When time ($t$) reaches $\\pi$, the vector points exactly at $-1$." },
+                    planes: { title: "3D Geometry", formula: "L = n₁ × n₂", desc: "Visualizing intersecting planes in 3D space. The line of intersection is determined by the cross product of the two planes' normal vectors." },
+                    linprog: { title: "Linear Programming", formula: "Max: P = Ax + By", desc: "Graphing inequality constraints creates a visual 'feasible region' (green). The optimal business solution always falls exactly on one of the outer vertices!" },
+                    galton: { title: "Normal Distribution", formula: "Central Limit Theorem", desc: "Dropping virtual balls through a pegboard. Each 50/50 bounce forces the chaotic system to naturally organize into a perfect Gaussian Bell Curve." },
+                    parametric: { title: "Parametric Equations", formula: "x = f(t), y = g(t)", desc: "Tracing complex, spirograph-like paths. The X and Y coordinates are completely independent of each other, both driven entirely by a hidden time variable '$t$'." }
+                };
+
+                document.getElementById('info-title').innerText = info[currentMode].title;
+                document.getElementById('info-desc').innerHTML = info[currentMode].desc;
+                document.getElementById('formula-display').innerText = info[currentMode].formula;
+                
+                ['euler', 'planes', 'linprog', 'galton', 'parametric'].forEach(id => document.getElementById(`controls-${id}`).classList.add('hidden'));
+                document.getElementById(`controls-${currentMode}`).classList.remove('hidden');
+                
+                document.getElementById('hud').style.opacity = '0'; 
+                setTimeout(() => document.getElementById('hud').style.opacity = '1', 100);
+
+                if (currentMode === 'planes') {
+                    camera.position.set(15, 15, 20); controls.target.set(0, 0, 0);
+                } else if (currentMode === 'parametric' && M.para.path.length === 0) {
+                    M.para.path = []; M.para.t = 0;
+                }
+            });
+        });
+
+        // Initialize
+        setTimeout(() => {
+            const ls = document.getElementById('loading-screen');
+            if(ls) { ls.style.opacity = '0'; setTimeout(() => ls.style.display = 'none', 600); }
+            requestAnimationFrame(renderLoop);
+        }, 500);
+
+    </script>
+</body>
+</html>

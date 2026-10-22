@@ -1,0 +1,342 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>CLONMED Lab Viewer - 5 Tab Display</title>
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body { 
+      font-family: 'Segoe UI', Arial, sans-serif; 
+      background: #0a0a0a; 
+      color: #fff;
+      height: 100vh;
+      overflow: hidden;
+    }
+    .header {
+      background: #1a1a1a;
+      padding: 15px 20px;
+      border-bottom: 1px solid #333;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+    .header h1 {
+      font-size: 18px;
+      font-weight: 400;
+      color: #fff;
+    }
+    .header .query-display {
+      font-size: 13px;
+      color: #888;
+      max-width: 400px;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+    }
+    .header .status {
+      font-size: 12px;
+      padding: 4px 12px;
+      border-radius: 20px;
+      background: #333;
+    }
+    .header .status.connected { background: #22c55e; color: #000; }
+    .header .status.waiting { background: #eab308; color: #000; }
+    .tabs {
+      display: flex;
+      background: #1a1a1a;
+      border-bottom: 1px solid #333;
+    }
+    .tab {
+      flex: 1;
+      padding: 15px 10px;
+      cursor: pointer;
+      border: none;
+      background: transparent;
+      color: #888;
+      font-size: 12px;
+      transition: all 0.2s;
+      text-align: center;
+    }
+    .tab:hover { color: #fff; background: #252525; }
+    .tab.active { 
+      color: #fff; 
+      background: #0a0a0a;
+      border-bottom: 2px solid #3b82f6;
+    }
+    .tab .badge {
+      display: inline-block;
+      margin-left: 5px;
+      padding: 2px 6px;
+      background: #3b82f6;
+      color: #fff;
+      border-radius: 10px;
+      font-size: 10px;
+    }
+    .content {
+      height: calc(100vh - 110px);
+      position: relative;
+    }
+    .frame-container {
+      display: none;
+      width: 100%;
+      height: 100%;
+    }
+    .frame-container.active { display: block; }
+    iframe {
+      width: 100%;
+      height: 100%;
+      border: none;
+      background: #fff;
+    }
+    .placeholder {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      height: 100%;
+      color: #666;
+      text-align: center;
+      padding: 40px;
+    }
+    .placeholder h2 {
+      font-weight: 300;
+      margin-bottom: 20px;
+      color: #888;
+    }
+    .placeholder p {
+      font-size: 14px;
+      max-width: 500px;
+      line-height: 1.6;
+    }
+    .action-buttons {
+      display: flex;
+      gap: 10px;
+    }
+    .btn {
+      background: #333;
+      color: #fff;
+      border: none;
+      padding: 8px 16px;
+      border-radius: 4px;
+      cursor: pointer;
+      font-size: 12px;
+      transition: all 0.2s;
+    }
+    .btn:hover { background: #444; }
+    .btn.primary { background: #3b82f6; }
+    .btn.primary:hover { background: #2563eb; }
+    .loading {
+      display: inline-block;
+      width: 20px;
+      height: 20px;
+      border: 2px solid #333;
+      border-top-color: #3b82f6;
+      border-radius: 50%;
+      animation: spin 1s linear infinite;
+      margin-right: 10px;
+    }
+    @keyframes spin { to { transform: rotate(360deg); } }
+  </style>
+</head>
+<body>
+  <div class="header">
+    <div>
+      <h1>CLONMED Lab Viewer</h1>
+      <div class="query-display" id="queryDisplay">Waiting for MCP query...</div>
+    </div>
+    <div style="display: flex; gap: 15px; align-items: center;">
+      <span class="status waiting" id="connectionStatus">Waiting</span>
+      <div class="action-buttons">
+        <button class="btn" onclick="refreshAll()">Refresh</button>
+        <button class="btn primary" onclick="openAllExternal()">Open All Tabs</button>
+      </div>
+    </div>
+  </div>
+
+  <div class="tabs">
+    <button class="tab active" onclick="showTab(0, this)">
+      Report <span class="badge" id="badge-report">-</span>
+    </button>
+    <button class="tab" onclick="showTab(1, this)">
+      Lab 1 <span class="badge" id="badge-lab1">-</span>
+    </button>
+    <button class="tab" onclick="showTab(2, this)">
+      Lab 2 <span class="badge" id="badge-lab2">-</span>
+    </button>
+    <button class="tab" onclick="showTab(3, this)">
+      Lab 3 <span class="badge" id="badge-lab3">-</span>
+    </button>
+    <button class="tab" onclick="showTab(4, this)">
+      Portal <span class="badge" id="badge-portal">-</span>
+    </button>
+  </div>
+
+  <div class="content">
+    <!-- Report Tab -->
+    <div class="frame-container active" id="tab-0">
+      <div class="placeholder" id="placeholder-report">
+        <div class="loading"></div>
+        <h2>Waiting for Report</h2>
+        <p>Send a query via MCP server. The report will appear here automatically.</p>
+      </div>
+      <iframe id="frame-report" src="about:blank" style="display: none;"></iframe>
+    </div>
+    
+    <!-- Lab 1 Tab -->
+    <div class="frame-container" id="tab-1">
+      <div class="placeholder" id="placeholder-lab1">
+        <h2>Primary Lab</h2>
+        <p>Best matching simulation will appear here.</p>
+      </div>
+      <iframe id="frame-lab1" src="about:blank" style="display: none;"></iframe>
+    </div>
+    
+    <!-- Lab 2 Tab -->
+    <div class="frame-container" id="tab-2">
+      <div class="placeholder" id="placeholder-lab2">
+        <h2>Secondary Lab</h2>
+        <p>Second best match will appear here.</p>
+      </div>
+      <iframe id="frame-lab2" src="about:blank" style="display: none;"></iframe>
+    </div>
+    
+    <!-- Lab 3 Tab -->
+    <div class="frame-container" id="tab-3">
+      <div class="placeholder" id="placeholder-lab3">
+        <h2>Tertiary Lab</h2>
+        <p>Third recommendation will appear here.</p>
+      </div>
+      <iframe id="frame-lab3" src="about:blank" style="display: none;"></iframe>
+    </div>
+    
+    <!-- Portal Tab -->
+    <div class="frame-container" id="tab-4">
+      <iframe id="frame-portal" src="https://super-crisp-af6236.netlify.app/"></iframe>
+    </div>
+  </div>
+
+  <script>
+    const BASE_URL = window.location.origin;
+    let currentData = null;
+    
+    function showTab(index, btn) {
+      document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+      document.querySelectorAll('.frame-container').forEach(c => c.classList.remove('active'));
+      
+      if (btn) btn.classList.add('active');
+      else document.querySelectorAll('.tab')[index].classList.add('active');
+      document.getElementById('tab-' + index).classList.add('active');
+    }
+
+    function updateDisplay(data) {
+      currentData = data;
+      
+      // Update query display
+      if (data.query) {
+        document.getElementById('queryDisplay').textContent = `Query: "${data.query}"`;
+      }
+      
+      // Update badges
+      if (data.labs) {
+        document.getElementById('badge-lab1').textContent = data.labs[0]?.match_score + '%' || '-';
+        document.getElementById('badge-lab2').textContent = data.labs[1]?.match_score + '%' || '-';
+        document.getElementById('badge-lab3').textContent = data.labs[2]?.match_score + '%' || '-';
+      }
+      document.getElementById('badge-report').textContent = '✓';
+      document.getElementById('badge-portal').textContent = '✓';
+      
+      // Update iframes
+      if (data.report_url) {
+        document.getElementById('placeholder-report').style.display = 'none';
+        document.getElementById('frame-report').style.display = 'block';
+        document.getElementById('frame-report').src = data.report_url;
+      }
+      
+      if (data.labs) {
+        data.labs.forEach((lab, i) => {
+          const placeholder = document.getElementById('placeholder-lab' + (i + 1));
+          const frame = document.getElementById('frame-lab' + (i + 1));
+          if (placeholder) placeholder.style.display = 'none';
+          if (frame && lab.url) {
+            frame.style.display = 'block';
+            frame.src = lab.url;
+          }
+        });
+      }
+      
+      // Update status
+      document.getElementById('connectionStatus').textContent = 'Loaded';
+      document.getElementById('connectionStatus').className = 'status connected';
+    }
+
+    function openAllExternal() {
+      const urls = [];
+      if (currentData?.report_url) urls.push(currentData.report_url);
+      if (currentData?.labs) {
+        currentData.labs.forEach(lab => { if (lab.url) urls.push(lab.url); });
+      }
+      urls.push('https://super-crisp-af6236.netlify.app/');
+      
+      urls.forEach((url, i) => {
+        setTimeout(() => window.open(url, '_blank'), i * 400);
+      });
+    }
+
+    function refreshAll() {
+      if (currentData) {
+        updateDisplay(currentData);
+      }
+    }
+
+    // WebSocket connection to receive real-time updates
+    let ws;
+    function connectWebSocket() {
+      const protocol = window.location.protocol === 'https:' ? 'wss://' : 'ws://';
+      ws = new WebSocket(protocol + window.location.host);
+      
+      ws.onopen = () => {
+        console.log('[VIEWER] Connected to server');
+        document.getElementById('connectionStatus').textContent = 'Connected';
+        document.getElementById('connectionStatus').className = 'status connected';
+      };
+      
+      ws.onmessage = (event) => {
+        const data = JSON.parse(event.data);
+        console.log('[VIEWER] Received:', data.type);
+        
+        if (data.type === 'update-viewer') {
+          updateDisplay(data.payload);
+        }
+      };
+      
+      ws.onclose = () => {
+        console.log('[VIEWER] Disconnected, retrying...');
+        document.getElementById('connectionStatus').textContent = 'Reconnecting...';
+        document.getElementById('connectionStatus').className = 'status waiting';
+        setTimeout(connectWebSocket, 3000);
+      };
+    }
+
+    // Also check for URL params (direct access)
+    const params = new URLSearchParams(window.location.search);
+    const hasParams = params.has('query') || params.has('lab1');
+    
+    if (hasParams) {
+      // Load from URL params
+      updateDisplay({
+        query: params.get('query') || 'Direct Access',
+        report_url: params.get('report') || null,
+        labs: [
+          { url: params.get('lab1') ? BASE_URL + '/labs/' + encodeURIComponent(params.get('lab1')) : null, match_score: 95 },
+          { url: params.get('lab2') ? BASE_URL + '/labs/' + encodeURIComponent(params.get('lab2')) : null, match_score: 80 },
+          { url: params.get('lab3') ? BASE_URL + '/labs/' + encodeURIComponent(params.get('lab3')) : null, match_score: 65 }
+        ].filter(l => l.url)
+      });
+    }
+
+    // Connect WebSocket
+    connectWebSocket();
+  </script>
+</body>
+</html>
