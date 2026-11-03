@@ -171,13 +171,7 @@
 
     <script>
         document.addEventListener('DOMContentLoaded', () => {
-            // FIX: Using SessionStorage strictly. No local storage.
-            const token = sessionStorage.getItem('clonexx_token');
-            
-            if (!token) {
-                window.location.href = 'ClonexxAI.html'; 
-                return;
-            }
+            const LOCAL_API = 'http://127.0.0.1:8000';
 
             const chatInput = document.getElementById('chat-input');
             const chatContainer = document.getElementById('chat-container');
@@ -188,7 +182,7 @@
             
             let isGenerating = false;
             let isFirstMessage = true;
-            let currentSessionId = 'session_' + Date.now().toString(); 
+            let currentSessionId = 'session_' + Date.now().toString();
             let sessionChatsLoaded = {}; 
 
             window.toggleSidebar = () => {
@@ -201,9 +195,7 @@
 
             async function loadUserProfile() {
                 try {
-                    const res = await fetch('https://shreeClonexx.pythonanywhere.com/api/user', {
-                        headers: { 'Authorization': `Bearer ${token}` }
-                    });
+                    const res = await fetch(`${LOCAL_API}/api/user`);
                     if (res.ok) {
                         const data = await res.json();
                         document.getElementById('user-profile-name').textContent = data.user.fullName;
@@ -217,9 +209,7 @@
 
             async function loadChatHistory() {
                 try {
-                    const res = await fetch('https://shreeClonexx.pythonanywhere.com/api/chats', {
-                        headers: { 'Authorization': `Bearer ${token}` }
-                    });
+                    const res = await fetch(`${LOCAL_API}/api/chats`);
                     if (res.ok) {
                         const data = await res.json();
                         if (data.chats && data.chats.length > 0) {
@@ -241,7 +231,7 @@
                                     historyDiv.className = "p-2 rounded-lg hover:bg-black/5 text-sm font-medium text-gray-700 truncate cursor-pointer transition-colors";
                                     
                                     const chatTitle = firstUserMsg.content.length > 35 ? firstUserMsg.content.substring(0, 35) + '...' : firstUserMsg.content;
-                                    historyDiv.innerHTML = `<i class="ph ph-chat-teardrop text-gray-400 mr-2"></i>${chatTitle}`;
+                                    historyDiv.textContent = chatTitle;
                                     
                                     historyDiv.addEventListener('click', () => {
                                         loadSpecificSession(sId);
@@ -275,17 +265,16 @@
 
             async function saveMessageToDB(sender, content) {
                 try {
-                    await fetch('https://shreeClonexx.pythonanywhere.com/api/chats', {
+                    await fetch(`${LOCAL_API}/api/chats`, {
                         method: 'POST',
-                        headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
+                        headers: { 'Content-Type': 'application/json' },
                         body: JSON.stringify({ session_id: currentSessionId, sender, content })
                     });
                 } catch (e) { }
             }
 
             window.logout = () => {
-                sessionStorage.clear();
-                window.location.href = 'ClonexxAI.html'; 
+                showToast('Local mode', 'No remote account is connected.', 'ph-info', 'text-gray-500');
             };
 
             loadUserProfile();
@@ -345,7 +334,7 @@
                     newHistory.className = "p-2 rounded-lg hover:bg-black/5 text-sm font-medium text-gray-700 truncate cursor-pointer transition-colors fade-in-up";
                     
                     const chatTitle = message.length > 35 ? message.substring(0, 35) + '...' : message;
-                    newHistory.innerHTML = `<i class="ph ph-chat-teardrop text-gray-400 mr-2"></i>${chatTitle}`;
+                    newHistory.textContent = chatTitle;
                     
                     const clickSessionId = currentSessionId;
                     newHistory.addEventListener('click', () => {
@@ -370,17 +359,16 @@
                 try {
                     const targetModel = selectedModelSpan.textContent.trim();
                     
-                    const response = await fetch('http://localhost:8000/api/chat', {
+                    const response = await fetch(`${LOCAL_API}/api/chat`, {
                         method: 'POST', 
                         headers: { 'Content-Type': 'application/json' },
-                        body: JSON.stringify({ message: message, model: targetModel })
+                        body: JSON.stringify({ message: message, model: targetModel, session_id: currentSessionId })
                     });
                     
                     removeTypingIndicator();
 
-                    if (!response.ok) throw new Error(`HTTP ${response.status}`);
-                    
                     const data = await response.json();
+                    if (!response.ok) throw new Error(data.error || `HTTP ${response.status}`);
                     
                     if (data.reply) {
                         appendMessage(data.reply, 'ai');
@@ -388,7 +376,7 @@
                     }
                 } catch (err) {
                     removeTypingIndicator();
-                    appendMessage(`[Connection Error]: Cannot reach Python server on port 8000. Is ../Backend/main_gateway.py running?`, 'ai');
+                    appendMessage(`**Local AI unavailable:** ${err.message}. Start Ollama and the Clonexx server, then try again.`, 'ai');
                 } finally {
                     isGenerating = false;
                 }

@@ -1,0 +1,486 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Clonexx AI - Sovereign Chat</title>
+    
+    <script src="https://cdn.tailwindcss.com?plugins=typography"></script>
+    <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
+    <script src="https://unpkg.com/@phosphor-icons/web"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Bodoni+Moda:ital,opsz,wght@0,6..96,400..900;1,6..96,400..900&family=Inter:wght@300;400;500;600;700&family=Fira+Code:wght@400;500;600&display=swap" rel="stylesheet">
+    
+    <script>
+        window.addEventListener('DOMContentLoaded', () => {
+            if(window.tailwind) {
+                tailwind.config = { theme: { extend: { fontFamily: { sans: ['Inter', 'sans-serif'], bodoni: ['Bodoni Moda', 'serif'], mono: ['Fira Code', 'monospace'] } } } }
+            }
+            marked.use({ breaks: true, gfm: true });
+        });
+    </script>
+
+    <style>
+        body { margin: 0; overflow: hidden; background-color: #f8f9fa; color: #1f2937; -webkit-font-smoothing: antialiased; }
+        .video-bg { position: fixed; inset: 0; z-index: -1; width: 100vw; height: 100vh; object-fit: cover; }
+        .video-overlay { position: fixed; inset: 0; z-index: 0; background: rgba(245, 247, 250, 0.65); backdrop-filter: blur(16px); -webkit-backdrop-filter: blur(16px); }
+        .glass-panel { background: rgba(255, 255, 255, 0.55); backdrop-filter: blur(32px); -webkit-backdrop-filter: blur(32px); border: 1px solid rgba(255, 255, 255, 0.6); border-bottom-color: rgba(0, 0, 0, 0.05); border-right-color: rgba(0, 0, 0, 0.05); }
+        .glass-bubble-user { background: rgba(0, 0, 0, 0.03); border: 1px solid rgba(0, 0, 0, 0.02); }
+        .fade-in-up { animation: fadeInUp 0.4s ease-out forwards; }
+        @keyframes fadeInUp { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+        .typing-dot { animation: typing 1.4s infinite ease-in-out both; }
+        .typing-dot:nth-child(1) { animation-delay: -0.32s; } .typing-dot:nth-child(2) { animation-delay: -0.16s; }
+        @keyframes typing { 0%, 80%, 100% { transform: scale(0); opacity: 0.3; } 40% { transform: scale(1); opacity: 1; } }
+        ::-webkit-scrollbar { width: 6px; height: 6px; } ::-webkit-scrollbar-track { background: transparent; } ::-webkit-scrollbar-thumb { background: rgba(0,0,0,0.15); border-radius: 10px; } ::-webkit-scrollbar-thumb:hover { background: rgba(0,0,0,0.25); }
+        .chat-input-container:focus-within { border-color: rgba(0, 0, 0, 0.15); background: rgba(255, 255, 255, 0.9); }
+        
+        .custom-prose { width: 100%; max-width: 100%; font-family: 'Inter', sans-serif; color: #1f2937; }
+        .custom-prose p { margin-bottom: 0.75em; line-height: 1.5; font-size: 15px; } 
+        .custom-prose h1, .custom-prose h2, .custom-prose h3 { font-weight: 600; color: #111827; margin-top: 1em; margin-bottom: 0.5em; text-transform: none; line-height: 1.3; }
+        .custom-prose code { color: #0284c7; background-color: rgba(0,0,0,0.05); padding: 0.1em 0.3em; border-radius: 0.25rem; font-size: 0.85em; font-family: 'Fira Code', monospace; }
+        .custom-prose pre { background-color: #0f172a; color: #f8f8f2; padding: 1em; border-radius: 0.5rem; overflow-x: auto; margin-bottom: 1em; font-family: 'Fira Code', monospace; font-size: 0.85em; }
+    </style>
+</head>
+<body class="flex h-screen text-gray-800 font-sans antialiased selection:bg-black/10">
+
+    <video autoplay loop muted playsinline class="video-bg"><source src="https://d8j0ntlcm91z4.cloudfront.net/user_38xzZboKViGWJOttwIXH07lWA1P/hf_20260417_061226_74f0749c-a22d-42b3-895e-5d6203bc741c.mp4" type="video/mp4"></video>
+    <div class="video-overlay"></div>
+
+    <aside id="sidebar-menu" class="w-64 h-full glass-panel border-r border-black/5 flex flex-col z-50 relative hidden md:flex shrink-0 transition-all duration-300">
+        <div class="h-16 flex items-center px-6 border-b border-black/5 shrink-0 justify-between">
+            <h1 class="font-bodoni text-2xl font-light tracking-tight italic text-gray-900">Clonexx<span class="font-bold">AI</span></h1>
+            <button onclick="toggleSidebar()" class="md:hidden text-gray-500 hover:text-red-500"><i class="ph ph-x text-xl"></i></button>
+        </div>
+
+        <div class="p-4 shrink-0">
+            <button onclick="createNewChat()" class="flex items-center justify-between w-full p-3 rounded-xl bg-black/5 hover:bg-black/10 transition-all group cursor-pointer border border-transparent hover:border-black/5">
+                <span class="font-medium text-sm flex items-center gap-2 text-gray-700"><i class="ph ph-plus text-lg transition-transform duration-300"></i> New Chat</span>
+            </button>
+        </div>
+
+        <div class="px-4 py-2 flex-1 overflow-y-auto space-y-6">
+            <div>
+                <p class="text-sm font-semibold text-gray-700 mb-2 px-2">Ecosystem</p>
+                <div class="space-y-0.5">
+                    <a href="clonmage.html" class="flex items-center gap-2.5 px-3 py-2 rounded-xl text-sm font-medium text-gray-700 hover:bg-black/5 transition-colors"><i class="ph ph-image text-lg text-purple-500"></i> Clonmage v1</a>
+                    <a href="slideso.html" class="flex items-center gap-2.5 px-3 py-2 rounded-xl text-sm font-medium text-gray-700 hover:bg-black/5 transition-colors"><i class="ph ph-presentation-chart text-lg text-orange-500"></i> Slideso (PGM)</a>
+                    <a href="bcg.html" class="flex items-center gap-2.5 px-3 py-2 rounded-xl text-sm font-medium text-gray-700 hover:bg-black/5 transition-colors"><i class="ph ph-buildings text-lg text-blue-500"></i> BcG v1</a>
+                    <a href="lityl.html" class="flex items-center gap-2.5 px-3 py-2 rounded-xl text-sm font-medium text-gray-700 hover:bg-black/5 transition-colors"><i class="ph ph-student text-lg text-green-500"></i> Lityl</a>
+                </div>
+            </div>
+            <div>
+                <p class="text-sm font-semibold text-gray-700 mb-2 px-2">Workspace</p>
+                <div class="space-y-0.5">
+                    <a href="formi.html" class="flex items-center gap-2.5 px-3 py-2 rounded-xl text-sm font-medium text-gray-700 hover:bg-black/5 transition-colors"><i class="ph ph-textbox text-lg text-pink-500"></i> Formi</a>
+                    <a href="datastore.html" class="flex items-center gap-2.5 px-3 py-2 rounded-xl text-sm font-medium text-gray-700 hover:bg-black/5 transition-colors"><i class="ph ph-database text-lg text-indigo-500"></i> Data Store (.dscl)</a>
+                    <a href="worder.html" class="flex items-center gap-2.5 px-3 py-2 rounded-xl text-sm font-medium text-gray-700 hover:bg-black/5 transition-colors"><i class="ph ph-file-text text-lg text-cyan-500"></i> Worder</a>
+                    <a href="webdi.html" class="flex items-center gap-2.5 px-3 py-2 rounded-xl text-sm font-medium text-gray-700 hover:bg-black/5 transition-colors"><i class="ph ph-browser text-lg text-teal-500"></i> Webdi</a>
+                    <a href="twoaisers.html" class="flex items-center gap-2.5 px-3 py-2 rounded-xl text-sm font-medium text-gray-700 hover:bg-black/5 transition-colors"><i class="ph ph-users-three text-lg text-rose-500"></i> TwoAisers</a>
+                    <a href="terminal.html" class="flex items-center gap-2.5 px-3 py-2 rounded-xl text-sm font-medium text-gray-700 hover:bg-black/5 transition-colors"><i class="ph ph-terminal text-lg text-gray-800"></i> Terminal</a>
+                </div>
+            </div>
+            <div>
+                <p class="text-sm font-semibold text-gray-700 mb-2 px-2">Recent Chats</p>
+                <div id="chat-history-list" class="space-y-1"></div>
+            </div>
+        </div>
+        
+        <div class="p-4 border-t border-black/5 shrink-0">
+            <div onclick="logout()" class="flex items-center gap-3 p-2 rounded-xl hover:bg-black/5 transition-colors cursor-pointer" title="Logout">
+                <div class="w-8 h-8 rounded-full bg-gray-200 border border-black/5 flex items-center justify-center"><i class="ph-fill ph-user text-gray-500 text-sm"></i></div>
+                <div class="flex-1 min-w-0">
+                    <p id="user-profile-name" class="text-sm font-medium text-gray-800 truncate">Loading...</p>
+                    <p id="user-profile-email" class="text-xs text-gray-500 truncate">Connecting to DB...</p>
+                </div>
+                <i class="ph ph-sign-out text-gray-400"></i>
+            </div>
+        </div>
+    </aside>
+
+    <div class="flex-1 flex flex-col h-full relative z-10 min-w-0 transition-all duration-500">
+        <header class="md:hidden h-16 glass-panel border-b border-black/5 flex items-center justify-between px-4 shrink-0">
+            <button onclick="toggleSidebar()" class="p-2 text-gray-500 hover:text-gray-800"><i class="ph ph-list text-2xl"></i></button>
+            <h1 class="font-bodoni text-xl font-light tracking-tight italic text-gray-900">Clonexx<span class="font-bold">AI</span></h1>
+            <button onclick="createNewChat()" class="p-2 text-gray-500 hover:text-gray-800"><i class="ph ph-plus text-xl"></i></button>
+        </header>
+
+        <div id="chat-container" class="flex-1 overflow-y-auto p-4 md:p-8 space-y-6 hidden flex-col"></div>
+
+        <div id="bottom-zone" class="w-full p-3 sm:p-4 md:p-6 flex flex-col justify-center h-full transition-all duration-500 pb-6 sm:pb-8 shrink-0">
+            <div id="welcome-text" class="text-center mb-6 md:mb-8 transition-opacity duration-300 px-4">
+                <h2 class="text-2xl sm:text-3xl md:text-4xl font-normal text-gray-800 tracking-tight">Welcome to your OS, <span id="welcome-name"></span></h2>
+            </div>
+            
+            <div class="max-w-3xl mx-auto w-full relative pointer-events-auto z-50">
+                <div class="chat-input-container relative flex items-end rounded-3xl glass-panel border border-black/10">
+                    <button type="button" class="p-3 md:p-4 text-gray-500 hover:text-gray-900 transition-colors rounded-l-3xl shrink-0"><i class="ph ph-paperclip text-lg md:text-xl"></i></button>
+                    
+                    <textarea id="chat-input" rows="1" maxlength="100000" placeholder="Ask Clonexx..." class="w-full bg-transparent text-gray-800 placeholder-gray-400 border-none focus:ring-0 resize-none py-3.5 md:py-4 px-2 max-h-32 text-[15px] md:text-base outline-none scrollbar-hide" style="min-height: 52px;"></textarea>
+                    
+                    <div class="flex items-center gap-0.5 md:gap-1 p-1.5 md:p-2 shrink-0">
+                        <button id="canvas-toggle-btn" type="button" class="flex items-center gap-1.5 px-2.5 sm:px-3 py-1.5 sm:py-2 hover:bg-black/5 rounded-xl text-xs sm:text-sm text-gray-600 transition-colors font-medium border border-transparent" title="Auto-render documents in Canvas">
+                            <i class="ph ph-layout text-base text-gray-700"></i><span class="hidden sm:inline">Canvas</span><span id="canvas-indicator" class="w-2.5 h-2.5 rounded-full bg-gray-300"></span>
+                        </button>
+                        <div class="relative shrink-0">
+                            <button id="model-selector-btn" type="button" class="flex items-center gap-1 px-2.5 sm:px-3 py-1.5 sm:py-2 hover:bg-black/5 rounded-xl text-xs sm:text-sm text-gray-600 font-medium">
+                                <span id="selected-model">Pro</span> <i class="ph ph-caret-down text-[10px] sm:text-xs"></i>
+                            </button>
+                            <div id="model-dropdown" class="absolute bottom-full right-0 mb-2 w-40 glass-panel rounded-2xl border border-black/5 opacity-0 pointer-events-none transform -translate-y-2 transition-all duration-200 z-[100] shadow-sm">
+                                <div class="p-1.5 flex flex-col gap-0.5">
+                                    <button type="button" class="model-option w-full text-left px-3 py-2 rounded-xl hover:bg-black/5 text-sm font-medium text-gray-700" data-model="Standard">Standard</button>
+                                    <button type="button" class="model-option w-full text-left px-3 py-2 rounded-xl hover:bg-black/5 text-sm font-medium text-gray-700" data-model="Thinking">Thinking</button>
+                                    <button type="button" class="model-option w-full text-left px-3 py-2 rounded-xl text-sm font-medium text-gray-700 bg-black/5" data-model="Pro">Pro <i class="ph-bold ph-check float-right mt-0.5 text-gray-500"></i></button>
+                                </div>
+                            </div>
+                        </div>
+                        <button type="button" id="send-btn" onclick="handleSendMessage()" class="p-2 text-gray-500 hover:text-gray-900 rounded-xl hover:bg-black/5"><i class="ph-bold ph-paper-plane-right text-xl"></i></button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Canvas Panel -->
+    <section id="canvas-panel" class="hidden w-0 lg:w-0 opacity-0 h-full border-l border-black/5 flex flex-col glass-panel transition-all duration-500 relative z-20 overflow-hidden shrink-0">
+        <div class="h-16 flex items-center justify-between px-6 border-b border-black/5 shrink-0 bg-white/40">
+            <div class="flex items-center gap-2 min-w-0">
+                <div class="p-2 rounded-lg bg-black/5 text-gray-700 flex items-center justify-center shrink-0"><i id="canvas-file-icon" class="ph ph-file-text text-lg"></i></div>
+                <div class="min-w-0"><h3 id="canvas-title" class="text-sm font-semibold text-gray-800 truncate">Document</h3></div>
+            </div>
+            <div class="flex items-center gap-1 pl-4">
+                <button onclick="copyCanvasCode()" class="p-2 rounded-xl hover:bg-black/5 text-gray-600 hover:text-black transition-colors" title="Copy"><i class="ph ph-copy text-lg"></i></button>
+                <button onclick="downloadCanvasFile()" class="p-2 rounded-xl hover:bg-black/5 text-gray-600 hover:text-black transition-colors" title="Download"><i class="ph ph-download-simple text-lg"></i></button>
+                <button onclick="closeCanvas()" class="p-2 rounded-xl hover:bg-black/5 text-gray-500 hover:text-red-600 transition-colors" title="Close"><i class="ph ph-x text-lg"></i></button>
+            </div>
+        </div>
+        <div class="flex-1 relative overflow-hidden bg-[#fafafa] flex flex-col w-full h-full">
+            <div id="canvas-preview-viewport" class="absolute inset-0 bg-transparent flex flex-col w-full h-full overflow-y-auto">
+                <div id="canvas-markdown-container" class="hidden w-full pb-20 pt-8 px-6 md:px-12 bg-white min-h-full shadow-sm">
+                    <article id="canvas-markdown-content" class="custom-prose max-w-4xl mx-auto"></article>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <div id="toast" class="toast glass-panel border border-black/5 rounded-xl p-4 flex items-center gap-3">
+        <div class="w-8 h-8 rounded-full bg-black/5 flex items-center justify-center"><i id="toast-icon" class="ph ph-check text-gray-700 text-lg"></i></div>
+        <div class="min-w-[150px]">
+            <p id="toast-title" class="text-sm font-semibold text-gray-800">Success</p>
+            <p id="toast-message" class="text-xs text-gray-600">Action completed.</p>
+        </div>
+    </div>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', () => {
+            const LOCAL_API = 'http://127.0.0.1:8000';
+
+            const chatInput = document.getElementById('chat-input');
+            const chatContainer = document.getElementById('chat-container');
+            const bottomZone = document.getElementById('bottom-zone');
+            const welcomeText = document.getElementById('welcome-text');
+            const historyList = document.getElementById('chat-history-list');
+            const selectedModelSpan = document.getElementById('selected-model');
+            
+            let isGenerating = false;
+            let isFirstMessage = true;
+            let currentSessionId = 'session_' + Date.now().toString();
+            let sessionChatsLoaded = {}; 
+
+            window.toggleSidebar = () => {
+                const sidebar = document.getElementById('sidebar-menu');
+                sidebar.classList.toggle('hidden');
+                sidebar.classList.toggle('absolute');
+                sidebar.classList.toggle('bg-white');
+                sidebar.classList.toggle('shadow-2xl');
+            };
+
+            async function loadUserProfile() {
+                try {
+                    const res = await fetch(`${LOCAL_API}/api/user`);
+                    if (res.ok) {
+                        const data = await res.json();
+                        document.getElementById('user-profile-name').textContent = data.user.fullName;
+                        document.getElementById('user-profile-email').textContent = data.user.email;
+                        document.getElementById('welcome-name').textContent = data.user.fullName.split(' ')[0];
+                    }
+                } catch (e) {
+                    document.getElementById('user-profile-name').textContent = "Database Error";
+                }
+            }
+
+            async function loadChatHistory() {
+                try {
+                    const res = await fetch(`${LOCAL_API}/api/chats`);
+                    if (res.ok) {
+                        const data = await res.json();
+                        if (data.chats && data.chats.length > 0) {
+                            historyList.innerHTML = '';
+                            sessionChatsLoaded = {};
+                            
+                            data.chats.forEach(chat => {
+                                const sId = chat.session_id || 'Legacy_Chats';
+                                if (!sessionChatsLoaded[sId]) sessionChatsLoaded[sId] = [];
+                                sessionChatsLoaded[sId].push(chat);
+                            });
+
+                            Object.keys(sessionChatsLoaded).reverse().forEach(sId => {
+                                const sessionMsgs = sessionChatsLoaded[sId];
+                                const firstUserMsg = sessionMsgs.find(c => c.sender === 'user');
+                                
+                                if (firstUserMsg) {
+                                    const historyDiv = document.createElement('div');
+                                    historyDiv.className = "p-2 rounded-lg hover:bg-black/5 text-sm font-medium text-gray-700 truncate cursor-pointer transition-colors";
+                                    
+                                    const chatTitle = firstUserMsg.content.length > 35 ? firstUserMsg.content.substring(0, 35) + '...' : firstUserMsg.content;
+                                    historyDiv.textContent = chatTitle;
+                                    
+                                    historyDiv.addEventListener('click', () => {
+                                        loadSpecificSession(sId);
+                                        const sidebar = document.getElementById('sidebar-menu');
+                                        if (sidebar && !sidebar.classList.contains('hidden') && window.innerWidth < 768) {
+                                            toggleSidebar();
+                                        }
+                                    });
+                                    historyList.appendChild(historyDiv);
+                                }
+                            });
+                        }
+                    }
+                } catch (e) { console.warn("Failed to fetch history from DB"); }
+            }
+
+            function loadSpecificSession(sId) {
+                currentSessionId = sId;
+                isFirstMessage = false; 
+                chatContainer.innerHTML = ''; 
+                welcomeText.style.display = 'none';
+                bottomZone.classList.remove('justify-center', 'h-full');
+                bottomZone.classList.add('mt-auto');
+                chatContainer.classList.remove('hidden');
+                chatContainer.classList.add('flex');
+                
+                const msgs = sessionChatsLoaded[sId] || [];
+                msgs.forEach(chat => appendMessage(chat.content, chat.sender));
+                scrollToBottom();
+            }
+
+            async function saveMessageToDB(sender, content) {
+                try {
+                    await fetch(`${LOCAL_API}/api/chats`, {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ session_id: currentSessionId, sender, content })
+                    });
+                } catch (e) { }
+            }
+
+            window.logout = () => {
+                showToast('Local mode', 'No remote account is connected.', 'ph-info', 'text-gray-500');
+            };
+
+            loadUserProfile();
+            loadChatHistory();
+
+            let isCanvasEnabled = false;
+            const canvasToggleBtn = document.getElementById('canvas-toggle-btn');
+            const canvasIndicator = document.getElementById('canvas-indicator');
+
+            canvasToggleBtn.addEventListener('click', () => {
+                isCanvasEnabled = !isCanvasEnabled;
+                if (isCanvasEnabled) {
+                    canvasIndicator.classList.replace('bg-gray-300', 'bg-green-500');
+                    showToast('Canvas Activated', 'Complex responses will pop out.', 'ph-layout', 'text-green-500');
+                } else {
+                    canvasIndicator.classList.replace('bg-green-500', 'bg-gray-300');
+                    showToast('Canvas Deactivated', 'All output restricted to chat.', 'ph-prohibit', 'text-gray-500');
+                    closeCanvas();
+                }
+            });
+
+            window.createNewChat = () => {
+                currentSessionId = 'session_' + Date.now().toString(); 
+                isFirstMessage = true; 
+                
+                chatContainer.innerHTML = ''; 
+                chatContainer.classList.add('hidden');
+                chatContainer.classList.remove('flex');
+                welcomeText.style.display = 'block'; 
+                setTimeout(() => { welcomeText.style.opacity = '1'; }, 10);
+                bottomZone.classList.add('justify-center', 'h-full'); 
+                bottomZone.classList.remove('mt-auto');
+                chatInput.value = ''; 
+                chatInput.style.height = '52px'; 
+                
+                const sidebar = document.getElementById('sidebar-menu');
+                if (sidebar && !sidebar.classList.contains('hidden') && window.innerWidth < 768) {
+                    toggleSidebar();
+                }
+            };
+
+            window.handleSendMessage = async () => {
+                const message = chatInput.value.trim();
+                if (!message || isGenerating) return;
+
+                isGenerating = true;
+
+                if (isFirstMessage) {
+                    welcomeText.style.opacity = '0'; 
+                    setTimeout(() => { welcomeText.style.display = 'none'; }, 300);
+                    bottomZone.classList.remove('justify-center', 'h-full'); 
+                    bottomZone.classList.add('mt-auto');
+                    chatContainer.classList.remove('hidden'); 
+                    chatContainer.classList.add('flex');
+                    
+                    const newHistory = document.createElement('div');
+                    newHistory.className = "p-2 rounded-lg hover:bg-black/5 text-sm font-medium text-gray-700 truncate cursor-pointer transition-colors fade-in-up";
+                    
+                    const chatTitle = message.length > 35 ? message.substring(0, 35) + '...' : message;
+                    newHistory.textContent = chatTitle;
+                    
+                    const clickSessionId = currentSessionId;
+                    newHistory.addEventListener('click', () => {
+                        loadSpecificSession(clickSessionId);
+                        const sidebar = document.getElementById('sidebar-menu');
+                        if (sidebar && !sidebar.classList.contains('hidden') && window.innerWidth < 768) {
+                            toggleSidebar();
+                        }
+                    });
+                    
+                    historyList.insertBefore(newHistory, historyList.firstChild);
+                    isFirstMessage = false;
+                }
+
+                appendMessage(message, 'user');
+                chatInput.value = ''; 
+                chatInput.style.height = '52px';
+                showTypingIndicator();
+                
+                await saveMessageToDB('user', message);
+                
+                try {
+                    const targetModel = selectedModelSpan.textContent.trim();
+                    
+                    const response = await fetch(`${LOCAL_API}/api/chat`, {
+                        method: 'POST', 
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ message: message, model: targetModel, session_id: currentSessionId })
+                    });
+                    
+                    removeTypingIndicator();
+
+                    const data = await response.json();
+                    if (!response.ok) throw new Error(data.error || `HTTP ${response.status}`);
+                    
+                    if (data.reply) {
+                        appendMessage(data.reply, 'ai');
+                        await saveMessageToDB('ai', data.reply);
+                    }
+                } catch (err) {
+                    removeTypingIndicator();
+                    appendMessage(`**Local AI unavailable:** ${err.message}. Start Ollama and the Clonexx server, then try again.`, 'ai');
+                } finally {
+                    isGenerating = false;
+                }
+            };
+
+            chatInput.addEventListener('keydown', (e) => {
+                if (e.key === 'Enter' && !e.shiftKey) {
+                    e.preventDefault();
+                    handleSendMessage();
+                }
+            });
+
+            function appendMessage(text, sender) {
+                const isUser = sender === 'user';
+                let formattedText = text;
+                
+                if (!isUser) { 
+                    try { formattedText = marked.parse(text); } 
+                    catch(e) { formattedText = text; }
+                }
+
+                const div = document.createElement('div');
+                div.className = `flex fade-in-up max-w-4xl mx-auto w-full ${isUser ? 'justify-end' : 'justify-start'}`;
+                const bubbleClass = isUser ? 'glass-bubble-user p-3.5 md:p-5 rounded-3xl rounded-br-sm' : 'py-2 pl-1 w-full';
+
+                const actionButtons = isUser ? '' : `
+                    <div class="flex items-center gap-1 mt-1 opacity-0 group-hover:opacity-100 transition-opacity duration-300">
+                        <button onclick="copyToClipboard(this)" class="p-1.5 rounded-lg hover:bg-black/5 text-gray-400 hover:text-gray-700 transition-colors" title="Copy"><i class="ph ph-copy text-base"></i></button>
+                        <button onclick="toggleLike(this, 'like')" class="action-btn-like p-1.5 rounded-lg hover:bg-black/5 text-gray-400 hover:text-green-600 transition-colors" title="Like"><i class="ph ph-thumbs-up text-base"></i></button>
+                        <button onclick="toggleLike(this, 'dislike')" class="action-btn-dislike p-1.5 rounded-lg hover:bg-black/5 text-gray-400 hover:text-red-600 transition-colors" title="Dislike"><i class="ph ph-thumbs-down text-base"></i></button>
+                    </div>`;
+
+                div.innerHTML = `
+                    <div class="flex-1 ${isUser ? 'flex justify-end' : ''} group min-w-0">
+                        <div class="${bubbleClass} inline-block max-w-[95%] md:max-w-[85%] text-left">
+                            <div class="msg-content custom-prose text-[15px] max-w-none">${formattedText}</div>
+                        </div>
+                        ${actionButtons}
+                    </div>
+                `;
+                chatContainer.appendChild(div); scrollToBottom();
+            }
+
+            window.toggleLike = (btn, type) => {
+                const container = btn.closest('.flex');
+                const likeIcon = container.querySelector('.action-btn-like i');
+                const dislikeIcon = container.querySelector('.action-btn-dislike i');
+                
+                if (type === 'like') {
+                    likeIcon.classList.replace('ph', 'ph-fill');
+                    dislikeIcon.classList.replace('ph-fill', 'ph');
+                } else {
+                    dislikeIcon.classList.replace('ph', 'ph-fill');
+                    likeIcon.classList.replace('ph-fill', 'ph');
+                }
+            };
+
+            function showTypingIndicator() {
+                const div = document.createElement('div'); div.id = 'typing-indicator';
+                div.className = `flex fade-in-up max-w-4xl mx-auto w-full justify-start`;
+                div.innerHTML = `<div class="py-3 pl-1 inline-flex gap-1.5"><div class="w-1.5 h-1.5 bg-gray-400 rounded-full typing-dot"></div><div class="w-1.5 h-1.5 bg-gray-400 rounded-full typing-dot"></div><div class="w-1.5 h-1.5 bg-gray-400 rounded-full typing-dot"></div></div>`;
+                chatContainer.appendChild(div); scrollToBottom();
+            }
+
+            function removeTypingIndicator() { const ind = document.getElementById('typing-indicator'); if (ind) ind.remove(); }
+            function scrollToBottom() { chatContainer.scrollTo({ top: chatContainer.scrollHeight, behavior: 'smooth' }); }
+
+            window.showToast = (title, msg, iconClass, colorClass) => {
+                const toast = document.getElementById('toast');
+                document.getElementById('toast-title').textContent = title; document.getElementById('toast-message').textContent = msg;
+                document.getElementById('toast-icon').className = `ph ${iconClass} text-lg ${colorClass}`;
+                toast.classList.add('show'); setTimeout(() => toast.classList.remove('show'), 3000);
+            };
+
+            window.copyToClipboard = (btn) => {
+                const msg = btn.closest('.group').querySelector('.msg-content').innerText;
+                const temp = document.createElement("textarea"); temp.value = msg;
+                document.body.appendChild(temp); temp.select(); document.execCommand('copy'); document.body.removeChild(temp);
+                showToast('Copied', 'Message copied to clipboard.', 'ph-check-circle', 'text-green-500');
+            };
+
+            document.getElementById('model-selector-btn').addEventListener('click', (e) => {
+                e.stopPropagation();
+                document.getElementById('model-dropdown').classList.toggle('opacity-0');
+                document.getElementById('model-dropdown').classList.toggle('pointer-events-none');
+                document.getElementById('model-dropdown').classList.toggle('-translate-y-2');
+            });
+            document.addEventListener('click', () => {
+                document.getElementById('model-dropdown').classList.add('opacity-0', 'pointer-events-none', '-translate-y-2');
+            });
+
+            const modelOptions = document.querySelectorAll('.model-option');
+            modelOptions.forEach(option => {
+                option.addEventListener('click', (e) => {
+                    e.stopPropagation();
+                    const modelName = option.getAttribute('data-model');
+                    document.getElementById('selected-model').textContent = modelName;
+                    modelOptions.forEach(opt => { opt.classList.remove('bg-black/5'); const i = opt.querySelector('i'); if(i) i.remove(); });
+                    option.classList.add('bg-black/5');
+                    option.innerHTML = `${modelName} <i class="ph-bold ph-check float-right mt-0.5 text-gray-500"></i>`;
+                    document.getElementById('model-dropdown').classList.add('opacity-0', 'pointer-events-none', '-translate-y-2');
+                });
+            });
+        });
+    </script>
+</body>
+</html>

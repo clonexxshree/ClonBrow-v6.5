@@ -1,0 +1,532 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Rocket Lab | CRC</title>
+    
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;600;700;900&display=swap" rel="stylesheet">
+    
+    <!-- Matter.js for 2D Rocket Physics -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/matter-js/0.19.0/matter.min.js"></script>
+
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    fontFamily: { sans: ['Space Grotesk', 'sans-serif'] },
+                    colors: {
+                        space: { 900: '#0b0f19', 800: '#151b2b', 700: '#1f293d' },
+                        neon: { blue: '#00f0ff', purple: '#8a2be2', red: '#ff003c' }
+                    }
+                }
+            }
+        }
+    </script>
+    
+    <style>
+        body {
+            background-color: #0b0f19;
+            color: #e2e8f0;
+            font-family: 'Space Grotesk', sans-serif;
+            margin: 0; overflow: hidden;
+            background-image: 
+                radial-gradient(circle at 15% 50%, rgba(0, 240, 255, 0.05), transparent 25%),
+                radial-gradient(circle at 85% 30%, rgba(138, 43, 226, 0.05), transparent 25%);
+        }
+
+        .glass-panel {
+            background: rgba(21, 27, 43, 0.7);
+            backdrop-filter: blur(12px);
+            border: 1px solid rgba(0, 240, 255, 0.2);
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.5);
+        }
+
+        .module-btn {
+            transition: all 0.2s ease;
+            border-left: 4px solid transparent;
+        }
+        .module-btn:hover { background: rgba(0, 240, 255, 0.1); border-left-color: #8a2be2; }
+        .module-btn.active { background: rgba(0, 240, 255, 0.15); border-left-color: #00f0ff; color: #00f0ff; font-weight: bold; }
+
+        .action-btn {
+            background: linear-gradient(45deg, #8a2be2, #00f0ff);
+            color: white; font-weight: 900; text-transform: uppercase;
+            letter-spacing: 1px; border: none; border-radius: 8px;
+            transition: all 0.2s ease; cursor: pointer;
+            box-shadow: 0 0 15px rgba(0, 240, 255, 0.3);
+        }
+        .action-btn:hover { box-shadow: 0 0 25px rgba(0, 240, 255, 0.6); transform: translateY(-2px); }
+        .action-btn:active { transform: translateY(1px); }
+
+        .btn-red { background: linear-gradient(45deg, #ff003c, #ff4b4b); box-shadow: 0 0 15px rgba(255, 0, 60, 0.3); }
+        .btn-red:hover { box-shadow: 0 0 25px rgba(255, 0, 60, 0.6); }
+
+        /* Starfield background for sandbox */
+        #sandbox-container {
+            position: relative; width: 100%; height: 100%;
+            background-color: #050810; overflow: hidden;
+            border-radius: 12px; border: 1px solid rgba(0, 240, 255, 0.3);
+        }
+        
+        .star {
+            position: absolute; background: white; border-radius: 50%;
+            animation: twinkle infinite alternate ease-in-out;
+        }
+        @keyframes twinkle { 0% { opacity: 0.2; } 100% { opacity: 1; box-shadow: 0 0 4px white; } }
+
+        /* Custom Scrollbar */
+        ::-webkit-scrollbar { width: 8px; }
+        ::-webkit-scrollbar-track { background: rgba(21, 27, 43, 0.5); }
+        ::-webkit-scrollbar-thumb { background: rgba(0, 240, 255, 0.3); border-radius: 4px; }
+        ::-webkit-scrollbar-thumb:hover { background: rgba(0, 240, 255, 0.6); }
+
+        #fire-overlay {
+            position: absolute; bottom: 0; left: 0; width: 100%; height: 20%;
+            background: linear-gradient(to top, rgba(255, 69, 0, 0.4), transparent);
+            pointer-events: none; opacity: 0; transition: opacity 0.3s; z-index: 10;
+        }
+    </style>
+</head>
+<body class="flex flex-col h-screen">
+
+    <header class="h-16 glass-panel border-b-0 flex items-center justify-between px-6 z-20 shrink-0">
+        <div class="flex items-center gap-4">
+            <a href="laber.html" class="w-10 h-10 rounded-full bg-space-800 flex items-center justify-center text-neon-blue hover:bg-space-700 transition-colors border border-neon-blue/30">
+                <i class="fas fa-arrow-left"></i>
+            </a>
+            <h1 class="text-2xl font-black tracking-widest text-white drop-shadow-[0_0_8px_rgba(0,240,255,0.8)]">
+                <i class="fas fa-rocket text-neon-blue mr-2"></i> ROCKET LAB
+            </h1>
+        </div>
+        <div class="text-xs font-bold text-neon-purple tracking-widest uppercase border border-neon-purple px-3 py-1 rounded-full bg-neon-purple/10">
+            Clonexx Aerospace
+        </div>
+    </header>
+
+    <div class="flex-1 flex overflow-hidden">
+        
+        <aside class="w-72 glass-panel border-r-0 flex flex-col z-10 shrink-0">
+            <div class="p-4 border-b border-white/10">
+                <h3 class="text-xs font-bold text-slate-400 uppercase tracking-widest mb-1">Curriculum</h3>
+                <p class="text-sm text-white font-semibold">Aerospace Engineering</p>
+            </div>
+            
+            <div class="flex-1 overflow-y-auto py-2 flex flex-col" id="module-list">
+                <!-- Modules injected by JS -->
+            </div>
+
+            <div class="p-4 border-t border-white/10 mt-auto bg-space-800/50">
+                <button onclick="openSandbox()" id="btn-sandbox" class="w-full action-btn py-3 flex items-center justify-center gap-2">
+                    <i class="fas fa-tools"></i> Assembly Bay
+                </button>
+            </div>
+        </aside>
+
+        <main class="flex-1 relative overflow-hidden flex flex-col p-6 lg:p-8">
+            
+            <!-- Learning Module View -->
+            <div id="learning-view" class="glass-panel w-full h-full rounded-2xl p-8 overflow-y-auto flex flex-col">
+                <div class="max-w-3xl mx-auto w-full">
+                    <div class="inline-block px-3 py-1 bg-neon-blue/20 text-neon-blue border border-neon-blue/50 rounded-full text-xs font-bold uppercase tracking-widest mb-6" id="mod-number">
+                        Module 1
+                    </div>
+                    <h2 class="text-4xl font-black text-white mb-6" id="mod-title">Introduction to Rocketry</h2>
+                    
+                    <div id="mod-content" class="text-lg text-slate-300 leading-relaxed space-y-6">
+                        <!-- Content goes here -->
+                    </div>
+                    
+                    <div class="mt-12 flex justify-between items-center border-t border-white/10 pt-6">
+                        <button onclick="prevModule()" class="text-neon-blue hover:text-white font-bold transition-colors"><i class="fas fa-chevron-left mr-2"></i> Previous</button>
+                        <button onclick="nextModule()" class="text-neon-blue hover:text-white font-bold transition-colors">Next <i class="fas fa-chevron-right ml-2"></i></button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Sandbox View -->
+            <div id="sandbox-view" class="hidden w-full h-full flex gap-6">
+                <!-- Toolbar -->
+                <div class="w-48 glass-panel rounded-2xl p-4 flex flex-col gap-4 shrink-0">
+                    <h3 class="text-xs font-bold text-slate-400 uppercase tracking-widest text-center border-b border-white/10 pb-2">Inventory</h3>
+                    
+                    <button onclick="spawnPart('nose')" class="bg-space-800 border border-white/20 p-3 rounded-xl hover:bg-space-700 transition-colors flex flex-col items-center gap-2 group">
+                        <svg width="40" height="40" viewBox="0 0 100 100"><polygon points="50,10 90,90 10,90" fill="#ef4444" stroke="#fff" stroke-width="4"/></svg>
+                        <span class="text-xs font-bold group-hover:text-neon-blue">Nose Cone</span>
+                    </button>
+                    
+                    <button onclick="spawnPart('hull')" class="bg-space-800 border border-white/20 p-3 rounded-xl hover:bg-space-700 transition-colors flex flex-col items-center gap-2 group">
+                        <svg width="40" height="60" viewBox="0 0 100 150"><rect x="20" y="10" width="60" height="130" fill="#e2e8f0" stroke="#fff" stroke-width="4"/></svg>
+                        <span class="text-xs font-bold group-hover:text-neon-blue">Fuel Tank</span>
+                    </button>
+
+                    <button onclick="spawnPart('engine')" class="bg-space-800 border border-white/20 p-3 rounded-xl hover:bg-space-700 transition-colors flex flex-col items-center gap-2 group">
+                        <svg width="40" height="40" viewBox="0 0 100 100">
+                            <rect x="30" y="10" width="40" height="40" fill="#94a3b8" stroke="#fff" stroke-width="4"/>
+                            <polygon points="30,50 70,50 85,90 15,90" fill="#f97316" stroke="#fff" stroke-width="4"/>
+                        </svg>
+                        <span class="text-xs font-bold group-hover:text-neon-blue">Engine</span>
+                    </button>
+
+                    <div class="mt-auto flex flex-col gap-3">
+                        <div class="text-center">
+                            <div class="text-[10px] font-bold text-slate-400 uppercase">Fuel Level</div>
+                            <div class="w-full bg-space-900 rounded-full h-2 mt-1 border border-white/20 overflow-hidden">
+                                <div id="fuel-bar" class="bg-neon-blue h-full w-full transition-all"></div>
+                            </div>
+                        </div>
+                        <button onclick="launchRocket()" id="btn-launch" class="action-btn py-3 w-full">LAUNCH</button>
+                        <button onclick="resetSandbox()" class="action-btn btn-red py-2 w-full text-xs">Clear Bay</button>
+                    </div>
+                </div>
+
+                <!-- Canvas Area -->
+                <div class="flex-1 relative" id="sandbox-container">
+                    <!-- Stars generated via JS -->
+                    <div id="fire-overlay"></div>
+                    <div class="absolute top-4 left-4 z-10 bg-space-900/80 border border-white/20 p-4 rounded-xl backdrop-blur text-sm max-w-sm pointer-events-none">
+                        <h4 class="font-bold text-neon-blue mb-1"><i class="fas fa-info-circle"></i> Instructions</h4>
+                        <p class="text-slate-300 text-xs leading-relaxed">Spawn parts from the inventory. Use your mouse to drag and carefully stack them in the center. An engine MUST be at the bottom. Balance the center of mass, then hit LAUNCH!</p>
+                    </div>
+                </div>
+            </div>
+
+        </main>
+    </div>
+
+    <script>
+        // --- EDUCATIONAL DATA ---
+        const modules = [
+            {
+                title: "What is a Rocket?",
+                content: `
+                    <p><strong class="text-neon-blue">A rocket</strong> is a vehicle, missile, or aircraft that obtains thrust from a rocket engine. Unlike airplanes, which use the surrounding air to provide lift and thrust, rockets carry their own oxygen (oxidizer) along with their fuel.</p>
+                    <p>This unique capability allows rockets to operate in the vacuum of space, where there is no air. The word "rocket" comes from the Italian word <i>rocchetta</i>, meaning "little fuse".</p>
+                    <div class="bg-space-800 p-4 rounded-lg border border-white/10 mt-4">
+                        <h4 class="font-bold text-white mb-2"><i class="fas fa-lightbulb text-yellow-400 mr-2"></i> Key Takeaway</h4>
+                        <p class="text-sm">Rockets don't need air to push against; they push against their own exhaust gases!</p>
+                    </div>
+                `
+            },
+            {
+                title: "Newton's Third Law",
+                content: `
+                    <p>The entire principle of rocketry is based on <strong class="text-neon-purple">Sir Isaac Newton's Third Law of Motion</strong>, which states:</p>
+                    <blockquote class="border-l-4 border-neon-purple pl-4 my-4 italic text-white text-xl py-2">
+                        "For every action, there is an equal and opposite reaction."
+                    </blockquote>
+                    <p>When a rocket engine ignites, it burns fuel and creates massive amounts of hot, expanding gas. This gas is forced out of the bottom of the engine nozzle at incredibly high speeds (The Action).</p>
+                    <p>Because the gas is being pushed downward, the physics of the universe dictate that the rocket itself must be pushed upward with the exact same amount of force (The Reaction).</p>
+                `
+            },
+            {
+                title: "Thrust & Propulsion",
+                content: `
+                    <p><strong class="text-neon-blue">Thrust</strong> is the mechanical force that pushes a rocket through the air and space. Thrust is generated by the propulsion system of the rocket.</p>
+                    <p>To generate thrust, a rocket needs two main chemical components:</p>
+                    <ul class="list-disc pl-6 space-y-2 mt-2">
+                        <li><strong class="text-white">Fuel:</strong> The substance that burns (like liquid hydrogen or refined kerosene).</li>
+                        <li><strong class="text-white">Oxidizer:</strong> The substance that allows the fuel to burn in the vacuum of space (like liquid oxygen).</li>
+                    </ul>
+                    <p class="mt-4">These two are mixed in a combustion chamber and ignited. The shape of the bell nozzle at the bottom focuses the exploding gases downward to maximize the lifting force.</p>
+                `
+            },
+            {
+                title: "Aerodynamics & Drag",
+                content: `
+                    <p>While rockets operate in the vacuum of space, they first have to fight their way through Earth's atmosphere. This introduces the problem of <strong class="text-red-400">Aerodynamic Drag</strong> (air resistance).</p>
+                    <p>To minimize drag, rockets are designed to be highly aerodynamic:</p>
+                    <ul class="list-disc pl-6 space-y-2 mt-2">
+                        <li><strong class="text-white">Nose Cone:</strong> The pointy top of the rocket slices through the dense lower atmosphere, parting the air smoothly around the vehicle.</li>
+                        <li><strong class="text-white">Fins:</strong> Placed at the bottom of the rocket, fins keep the rocket stable and flying straight. Without them, the rocket would tumble out of control immediately after launch.</li>
+                    </ul>
+                `
+            },
+            {
+                title: "Payload & Fairing",
+                content: `
+                    <p>The entire reason we build a rocket is to carry something into space. This cargo is called the <strong class="text-neon-blue">Payload</strong>.</p>
+                    <p>A payload can be anything: a communications satellite, a space telescope like James Webb, supplies for the International Space Station, or human astronauts.</p>
+                    <p>Because payloads are highly sensitive and fragile, they are protected inside a <strong class="text-white">Payload Fairing</strong>. This is a clam-shell protective shield at the very top of the rocket. Once the rocket exits the thickest part of the atmosphere and aerodynamic heat is no longer an issue, the fairing splits open and falls away to save weight.</p>
+                `
+            },
+            {
+                title: "The Magic of Staging",
+                content: `
+                    <p>To get to orbit, a rocket needs to reach speeds of over 17,500 mph. To do this, it needs a LOT of fuel. But fuel tanks are heavy, and carrying empty metal tanks all the way to space is inefficient.</p>
+                    <p>The solution is <strong class="text-neon-purple">Staging</strong>.</p>
+                    <p>Rockets are built in stacked sections. The large bottom section (First Stage) holds the massive engines and fuel needed to lift the rocket off the launch pad. Once it runs out of fuel, the rocket intentionally drops the heavy, empty First Stage back to Earth.</p>
+                    <p>A smaller, second engine (Second Stage) then ignites to push the much lighter payload the rest of the way into orbit.</p>
+                `
+            },
+            {
+                title: "Orbital Mechanics",
+                content: `
+                    <p>Getting to space isn't just about going straight up. If a rocket only went straight up, gravity would eventually pull it straight back down.</p>
+                    <p>To stay in space, a rocket must achieve an <strong class="text-neon-blue">Orbit</strong>.</p>
+                    <p>Shortly after launching upward, the rocket begins to tilt sideways in a maneuver called a <i>Gravity Turn</i>. The goal is to accelerate sideways so incredibly fast that as gravity pulls the rocket down, the Earth curves away underneath it at the exact same rate. The rocket is essentially in a state of continuous free-fall around the planet!</p>
+                `
+            },
+            {
+                title: "Center of Mass & Stability",
+                content: `
+                    <p>For a rocket to fly straight, the physical forces acting on it must be perfectly balanced.</p>
+                    <p>The <strong class="text-white">Center of Mass (CG)</strong> is the exact balance point of the rocket. Think of it like balancing a pencil on your finger. The heavy engines at the bottom and the payload at the top must be aligned.</p>
+                    <p>If the rocket is unbalanced, or if an engine pushes slightly off-center, the rocket will flip over and crash. In the Assembly Bay sandbox, you will need to stack your rocket parts carefully to ensure the Center of Mass is directly above the engine thrust!</p>
+                `
+            }
+        ];
+
+        let currentModuleIndex = 0;
+
+        // --- UI LOGIC ---
+        function initUI() {
+            const list = document.getElementById('module-list');
+            modules.forEach((mod, index) => {
+                const btn = document.createElement('button');
+                btn.className = `module-btn w-full text-left px-6 py-4 text-sm font-medium text-slate-300 border-b border-white/5`;
+                btn.innerHTML = `<span class="opacity-50 mr-2">0${index + 1}</span> ${mod.title}`;
+                btn.onclick = () => loadModule(index);
+                list.appendChild(btn);
+            });
+            loadModule(0);
+        }
+
+        function loadModule(index) {
+            currentModuleIndex = index;
+            
+            // Hide sandbox, show learning view
+            document.getElementById('sandbox-view').classList.add('hidden');
+            document.getElementById('learning-view').classList.remove('hidden');
+            
+            // Update buttons
+            const btns = document.querySelectorAll('.module-btn');
+            btns.forEach(b => b.classList.remove('active'));
+            btns[index].classList.add('active');
+            document.getElementById('btn-sandbox').classList.remove('active');
+
+            // Update content
+            document.getElementById('mod-number').innerText = `Module ${index + 1}`;
+            document.getElementById('mod-title').innerText = modules[index].title;
+            document.getElementById('mod-content').innerHTML = modules[index].content;
+        }
+
+        function nextModule() { if (currentModuleIndex < modules.length - 1) loadModule(currentModuleIndex + 1); }
+        function prevModule() { if (currentModuleIndex > 0) loadModule(currentModuleIndex - 1); }
+
+        function openSandbox() {
+            document.getElementById('learning-view').classList.add('hidden');
+            document.getElementById('sandbox-view').classList.remove('hidden');
+            
+            const btns = document.querySelectorAll('.module-btn');
+            btns.forEach(b => b.classList.remove('active'));
+            document.getElementById('btn-sandbox').classList.add('active');
+
+            if (!physicsInitialized) initPhysics();
+        }
+
+        // --- MATTER.JS PHYSICS SANDBOX ---
+        
+        let engine, render, runner, world;
+        let physicsInitialized = false;
+        let isLaunching = false;
+        let fuel = 100;
+        let launchInterval;
+        let exhaustParticles = [];
+
+        function initPhysics() {
+            const container = document.getElementById('sandbox-container');
+            
+            // Generate Stars
+            for(let i=0; i<50; i++) {
+                const star = document.createElement('div');
+                star.className = 'star';
+                star.style.width = Math.random() * 3 + 'px';
+                star.style.height = star.style.width;
+                star.style.left = Math.random() * 100 + '%';
+                star.style.top = Math.random() * 100 + '%';
+                star.style.animationDuration = (Math.random() * 2 + 1) + 's';
+                container.appendChild(star);
+            }
+
+            // Init Matter
+            engine = Matter.Engine.create();
+            world = engine.world;
+
+            render = Matter.Render.create({
+                element: container,
+                engine: engine,
+                options: {
+                    width: container.clientWidth,
+                    height: container.clientHeight,
+                    wireframes: false,
+                    background: 'transparent'
+                }
+            });
+
+            // Boundaries
+            const w = render.options.width;
+            const h = render.options.height;
+            const thick = 60;
+
+            const ground = Matter.Bodies.rectangle(w/2, h + thick/2 - 10, w, thick, { 
+                isStatic: true, render: { fillStyle: '#1f293d' }, friction: 1.0 
+            });
+            // Launch Pad block
+            const pad = Matter.Bodies.rectangle(w/2, h - 20, 200, 40, { 
+                isStatic: true, render: { fillStyle: '#334155' }, friction: 1.0 
+            });
+            const leftWall = Matter.Bodies.rectangle(-thick/2, h/2, thick, h*2, { isStatic: true });
+            const rightWall = Matter.Bodies.rectangle(w + thick/2, h/2, thick, h*2, { isStatic: true });
+
+            Matter.Composite.add(world, [ground, pad, leftWall, rightWall]);
+
+            // Mouse Control
+            const mouse = Matter.Mouse.create(render.canvas);
+            const mouseConstraint = Matter.MouseConstraint.create(engine, {
+                mouse: mouse,
+                constraint: { stiffness: 0.2, render: { visible: false } }
+            });
+            Matter.Composite.add(world, mouseConstraint);
+            render.mouse = mouse;
+
+            // Engine Launch Event Hook
+            Matter.Events.on(engine, 'beforeUpdate', applyThrust);
+
+            Matter.Render.run(render);
+            runner = Matter.Runner.create();
+            Matter.Runner.run(runner, engine);
+
+            window.addEventListener('resize', () => {
+                if(render) {
+                    render.canvas.width = container.clientWidth;
+                    render.canvas.height = container.clientHeight;
+                    Matter.Body.setPosition(ground, { x: container.clientWidth/2, y: container.clientHeight + thick/2 - 10 });
+                    Matter.Body.setPosition(pad, { x: container.clientWidth/2, y: container.clientHeight - 20 });
+                    Matter.Body.setPosition(rightWall, { x: container.clientWidth + thick/2, y: container.clientHeight/2 });
+                }
+            });
+
+            physicsInitialized = true;
+        }
+
+        function spawnPart(type) {
+            if(!physicsInitialized) return;
+            if(isLaunching) return; // Prevent building while flying
+
+            const w = render.options.width;
+            const spawnX = 100 + Math.random() * 50;
+            const spawnY = 100;
+
+            let body;
+            if (type === 'nose') {
+                body = Matter.Bodies.polygon(spawnX, spawnY, 3, 30, {
+                    render: { fillStyle: '#ef4444' }, mass: 0.5, friction: 0.8
+                });
+                Matter.Body.setAngle(body, -Math.PI/2); // Point up
+            } 
+            else if (type === 'hull') {
+                body = Matter.Bodies.rectangle(spawnX, spawnY, 60, 120, {
+                    render: { fillStyle: '#e2e8f0' }, mass: 2.0, friction: 0.8
+                });
+            } 
+            else if (type === 'engine') {
+                // Compound body for engine looks cool
+                const main = Matter.Bodies.rectangle(spawnX, spawnY, 50, 40, { render: { fillStyle: '#94a3b8' }});
+                const bell = Matter.Bodies.trapezoid(spawnX, spawnY + 30, 60, 30, 0.5, { render: { fillStyle: '#f97316' }});
+                body = Matter.Body.create({
+                    parts: [main, bell], mass: 3.0, friction: 0.9, label: 'engine'
+                });
+            }
+
+            Matter.Composite.add(world, body);
+        }
+
+        function resetSandbox() {
+            if(!physicsInitialized) return;
+            isLaunching = false;
+            fuel = 100;
+            updateFuelBar();
+            document.getElementById('fire-overlay').style.opacity = '0';
+            document.getElementById('btn-launch').innerText = "LAUNCH";
+            
+            const bodies = Matter.Composite.allBodies(world);
+            const toRemove = bodies.filter(b => !b.isStatic && !b.isParticle);
+            Matter.Composite.remove(world, toRemove);
+        }
+
+        function launchRocket() {
+            if(!physicsInitialized) return;
+            const engines = Matter.Composite.allBodies(world).filter(b => b.label === 'engine');
+            
+            if (engines.length === 0) {
+                alert("You need an engine to launch! Spawn one from the inventory.");
+                return;
+            }
+
+            isLaunching = !isLaunching;
+            const btn = document.getElementById('btn-launch');
+            
+            if (isLaunching) {
+                btn.innerText = "ABORT";
+                btn.classList.add('btn-red');
+                document.getElementById('fire-overlay').style.opacity = '1';
+            } else {
+                btn.innerText = "LAUNCH";
+                btn.classList.remove('btn-red');
+                document.getElementById('fire-overlay').style.opacity = '0';
+            }
+        }
+
+        function applyThrust() {
+            if (!isLaunching || fuel <= 0) {
+                if(fuel <= 0 && isLaunching) {
+                    isLaunching = false;
+                    document.getElementById('btn-launch').innerText = "OUT OF FUEL";
+                    document.getElementById('fire-overlay').style.opacity = '0';
+                }
+                return;
+            }
+
+            const engines = Matter.Composite.allBodies(world).filter(b => b.label === 'engine');
+            
+            engines.forEach(engine => {
+                // Apply upward force at the center of the engine block
+                // Force magnitude scales slightly with mass to ensure it lifts, but requires balance
+                const forceMagnitude = 0.015; 
+                Matter.Body.applyForce(engine, engine.position, { x: 0, y: -forceMagnitude });
+                
+                // Exhaust particles visual effect
+                if (Math.random() > 0.5) {
+                    const p = Matter.Bodies.circle(engine.position.x + (Math.random()-0.5)*20, engine.position.y + 40, Math.random()*8+2, {
+                        render: { fillStyle: Math.random() > 0.5 ? '#f97316' : '#eab308' },
+                        isSensor: true, isParticle: true, frictionAir: 0.1
+                    });
+                    Matter.Body.setVelocity(p, { x: (Math.random()-0.5)*2, y: 5 + Math.random()*5 });
+                    Matter.Composite.add(world, p);
+                    
+                    // Remove particle after a short time
+                    setTimeout(() => { Matter.Composite.remove(world, p); }, 500);
+                }
+            });
+
+            // Consume fuel
+            fuel -= 0.1;
+            updateFuelBar();
+        }
+
+        function updateFuelBar() {
+            const bar = document.getElementById('fuel-bar');
+            bar.style.width = Math.max(0, fuel) + '%';
+            if (fuel < 30) bar.style.backgroundColor = '#ff003c';
+            else bar.style.backgroundColor = '#00f0ff';
+        }
+
+        // Run Init
+        window.onload = initUI;
+
+    </script>
+</body>
+</html>

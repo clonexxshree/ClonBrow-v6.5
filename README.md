@@ -6,6 +6,8 @@ ClonBrow is a collection of standalone browser prototypes, learning labs, games,
 
 Open [`index.html`](index.html) in a browser, or enable GitHub Pages for this repository to publish the interactive catalog. The individual HTML pages stay at the repository root because their local links, assets, and the API catalog use those paths.
 
+GitHub Pages project sites are served under `/<repository-name>/` (for example, `/htmlprototypes/`). Keep page links relative so they continue to work under that prefix.
+
 The collection also includes a static portal at [`clonbrow-api.html`](clonbrow-api.html) and the main tools page at [`main.html`](main.html).
 
 ## Run the local API

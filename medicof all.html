@@ -13,22 +13,16 @@
 
     <!-- Custom styling for animations and scrollbar -->
     <style>
-        @import url('https://fonts.googleapis.com/css2?family=Fredoka+One&family=Nunito:wght@400;700;900&display=swap');
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Manrope:wght@500;600;700;800&display=swap');
 
         body {
             font-family: 'Nunito', sans-serif;
             background-color: #0ea5e9; /* Sky blue matching the screenshot */
             color: #ffffff;
-            cursor: none; /* Hide default cursor for gooey effect */
             overflow: hidden;
             /* Dotted background pattern */
             background-image: radial-gradient(circle at 2px 2px, rgba(255,255,255,0.2) 1px, transparent 0);
             background-size: 40px 40px;
-        }
-
-        /* Ensure links/buttons hide native cursor */
-        a, button, input {
-            cursor: none !important;
         }
 
         /* Mobile specific adjustments to restore native touch behaviors */
@@ -40,30 +34,30 @@
             a, button, input, .brutalist-card {
                 cursor: pointer !important;
             }
-            #fluid-cursor {
-                display: none !important; /* Hide fluid cursor on touch devices */
-            }
         }
 
         /* Custom Brutalist Scrollbar */
         ::-webkit-scrollbar {
-            width: 8px; /* Slightly thinner for mobile */
+            width: 8px;
+            height: 8px;
         }
         @media (min-width: 768px) {
             ::-webkit-scrollbar {
-                width: 12px;
+                width: 8px;
             }
         }
         ::-webkit-scrollbar-track {
-            background: #ffffff;
-            border-left: 4px solid #000;
+            background: transparent;
         }
         ::-webkit-scrollbar-thumb {
-            background: #000000;
-            border-left: 4px solid #000;
+            background: #cbd5df;
+            border: 2px solid transparent;
+            border-radius: 8px;
+            background-clip: padding-box;
         }
         ::-webkit-scrollbar-thumb:hover {
-            background: #333333;
+            background: #9aabba;
+            background-clip: padding-box;
         }
 
         /* Animations */
@@ -118,29 +112,239 @@
             }
         }
 
+        :root {
+            color-scheme: light;
+            --ink: #172b3a;
+            --muted: #647789;
+            --line: #e3eaf0;
+            --surface: #ffffff;
+            --canvas: #f3f6f9;
+            --teal: #167c72;
+            --teal-soft: #e9f5f3;
+        }
+
+        body.flex.h-screen {
+            background: var(--canvas) !important;
+            color: var(--ink) !important;
+            cursor: auto !important;
+            font-family: 'Inter', sans-serif !important;
+        }
+
+        a, button, input {
+            cursor: pointer !important;
+        }
+
+        #sidebar {
+            background: var(--surface) !important;
+            border-right: 1px solid var(--line) !important;
+            box-shadow: 8px 0 24px rgba(23, 43, 58, 0.04) !important;
+        }
+
+        #sidebar h1,
+        #sidebar p,
+        #sidebar i,
+        #current-category-title,
+        #current-category-desc,
+        #modal-title {
+            font-family: 'Manrope', sans-serif !important;
+            text-shadow: none !important;
+        }
+
+        #sidebar h1 {
+            color: var(--ink) !important;
+            font-size: 1.65rem !important;
+            font-weight: 800 !important;
+            filter: none !important;
+        }
+
+        #sidebar > div:first-child p {
+            border: 0 !important;
+            padding-bottom: 0 !important;
+        }
+
+        #brand-icon {
+            color: var(--teal) !important;
+            stroke-width: 2px !important;
+        }
+
+        #sidebar nav {
+            gap: 6px !important;
+        }
+
+        .category-btn {
+            border: 1px solid transparent !important;
+            border-radius: 12px !important;
+            box-shadow: none !important;
+            color: #536678 !important;
+            font-family: 'Inter', sans-serif !important;
+            font-size: 0.875rem !important;
+            font-weight: 600 !important;
+            letter-spacing: 0 !important;
+            text-transform: none !important;
+            transform: none !important;
+        }
+
+        .category-btn:hover,
+        .category-btn.active {
+            background: var(--teal-soft) !important;
+            border-color: transparent !important;
+            color: var(--teal) !important;
+            box-shadow: none !important;
+            transform: none !important;
+        }
+
+        #sidebar > div:last-child {
+            background: var(--surface) !important;
+            border-top: 1px solid var(--line) !important;
+        }
+
+        #sidebar > div:last-child > div > div:first-child {
+            background: var(--teal-soft) !important;
+            border: 0 !important;
+            box-shadow: none !important;
+            color: var(--teal) !important;
+        }
+
+        main {
+            background: var(--canvas) !important;
+        }
+
+        main > header {
+            align-items: center !important;
+            background: var(--surface) !important;
+            border-bottom: 1px solid var(--line);
+            padding: 24px 32px !important;
+        }
+
+        #current-category-title {
+            color: var(--ink) !important;
+            font-size: clamp(1.35rem, 2.4vw, 1.9rem) !important;
+            font-weight: 800 !important;
+            letter-spacing: -0.04em !important;
+            line-height: 1.2 !important;
+            text-transform: none !important;
+        }
+
+        #current-category-desc {
+            color: var(--muted) !important;
+            font-weight: 400 !important;
+            text-shadow: none !important;
+        }
+
+        main > header > div:last-child {
+            border: 1px solid var(--line) !important;
+            border-radius: 12px !important;
+            box-shadow: none !important;
+        }
+
+        main > header input {
+            color: var(--ink) !important;
+            font-family: 'Inter', sans-serif !important;
+            font-size: 0.9rem !important;
+            font-weight: 400 !important;
+        }
+
+        #grid-container .brutalist-card {
+            background: var(--surface) !important;
+            border: 1px solid var(--line) !important;
+            border-radius: 16px !important;
+            box-shadow: 0 4px 14px rgba(23, 43, 58, 0.04) !important;
+            height: auto !important;
+            min-height: 270px;
+            transition: transform 160ms ease, box-shadow 160ms ease, border-color 160ms ease !important;
+        }
+
+        #grid-container .brutalist-card:hover {
+            border-color: #c6d9d7 !important;
+            box-shadow: 0 12px 28px rgba(23, 43, 58, 0.1) !important;
+            transform: translateY(-3px) !important;
+        }
+
+        #grid-container .brutalist-card > div:first-child {
+            background: #f7fafb !important;
+            border-bottom: 1px solid var(--line) !important;
+            height: 170px !important;
+        }
+
+        #grid-container .brutalist-card > div:first-child img {
+            display: none !important;
+        }
+
+        #grid-container .brutalist-card .module-icon {
+            color: var(--teal) !important;
+            height: 52px !important;
+            stroke-width: 1.5px !important;
+            width: 52px !important;
+        }
+
+        #grid-container .brutalist-card > div:first-child > div {
+            background: var(--teal-soft) !important;
+            border: 0 !important;
+            border-radius: 20px !important;
+            box-shadow: none !important;
+            color: var(--teal) !important;
+            font-size: 0.65rem !important;
+            letter-spacing: 0.08em !important;
+        }
+
+        #grid-container .brutalist-card > div:last-child {
+            background: var(--surface) !important;
+            height: auto !important;
+            min-height: 96px;
+            padding: 16px 18px !important;
+        }
+
+        #grid-container .brutalist-card h3 {
+            color: var(--ink) !important;
+            font-family: 'Manrope', sans-serif !important;
+            font-size: 0.98rem !important;
+            font-weight: 700 !important;
+            letter-spacing: -0.02em !important;
+            text-transform: none !important;
+        }
+
+        #grid-container .brutalist-card p {
+            color: var(--teal) !important;
+            font-family: 'Inter', sans-serif !important;
+            font-size: 0.72rem !important;
+            font-weight: 600 !important;
+            letter-spacing: 0.02em !important;
+            text-transform: none !important;
+        }
+
+        #module-modal-content {
+            border: 1px solid var(--line) !important;
+            border-radius: 18px !important;
+            box-shadow: 0 24px 70px rgba(8, 24, 38, 0.24) !important;
+        }
+
+        #module-modal-content > div:first-child {
+            background: var(--surface) !important;
+            border-bottom: 1px solid var(--line) !important;
+        }
+
+        #modal-title,
+        #module-modal-content button {
+            font-family: 'Inter', sans-serif !important;
+        }
+
+        @media (max-width: 767px) {
+            main > header {
+                padding: 18px 16px !important;
+            }
+
+            #grid-container .brutalist-card {
+                min-height: 245px;
+            }
+
+            #grid-container .brutalist-card > div:first-child {
+                height: 150px !important;
+            }
+        }
+
     </style>
 </head>
 <body class="flex h-screen selection:bg-[#FBBF24] selection:text-black">
-
-    <!-- SVG Filter for the Fluid Cursor (Gooey Effect) -->
-    <svg style="width:0; height:0; position:absolute;">
-        <defs>
-            <filter id="goo">
-                <feGaussianBlur in="SourceGraphic" stdDeviation="8" result="blur" />
-                <feColorMatrix in="blur" mode="matrix" values="
-                    1 0 0 0 0  
-                    0 1 0 0 0  
-                    0 0 1 0 0  
-                    0 0 0 18 -7" result="goo" />
-                <feBlend in="SourceGraphic" in2="goo" />
-            </filter>
-        </defs>
-    </svg>
-
-    <!-- Liquid Ink Cursor Container -->
-    <div id="fluid-cursor" class="fixed inset-0 pointer-events-none z-[9999]" style="filter: url(#goo);">
-        <!-- Trailing droplets will be dynamically injected here by JS -->
-    </div>
 
     <!-- Mobile Sidebar Overlay -->
     <div id="sidebar-overlay" class="fixed inset-0 bg-black/60 backdrop-blur-sm z-40 hidden md:hidden transition-opacity"></div>
@@ -154,7 +358,7 @@
                     <i data-lucide="activity" class="text-black w-8 h-8 md:w-10 md:h-10 stroke-[3px]" id="brand-icon"></i>
                     <h1 class="text-3xl md:text-4xl font-['Fredoka_One'] tracking-tight text-black drop-shadow-[0_3px_0_#ccc]">CLONMED</h1>
                 </div>
-                <p class="text-xs md:text-sm text-black uppercase tracking-widest font-black ml-10 md:ml-12 border-b-4 border-black inline-block pb-1">OS Command</p>
+                <p class="text-xs md:text-sm text-black uppercase tracking-widest font-black ml-10 md:ml-12 border-b-4 border-black inline-block pb-1">Clinical Simulation Suite</p>
             </div>
             <!-- Mobile Close Sidebar Button -->
             <button id="close-sidebar" class="md:hidden p-1.5 border-4 border-black rounded-xl bg-gray-100 shadow-[2px_2px_0_#000] active:translate-y-1 active:shadow-none transition-all">
@@ -255,7 +459,7 @@
                     "../html-prototypes/Audiology Lab.html", "../html-prototypes/Breathalyzer Simulation.html", "../html-prototypes/Centrifuge Separation Lab.html", 
                     "../html-prototypes/Chromatography Lab.html", "Digital hospital.html", "../html-prototypes/EEG Wave Superposition Lab.html", 
                     "../html-prototypes/ELISA Microplate Simulator.html", "../html-prototypes/Endoscopy Fiber Optics Lab.html", "../html-prototypes/MRI Proton Alignment Lab.html", 
-                    "../html-prototypes/PCR Thermal Cycling.html", "../html-prototypes/Pulse Oximetry Lab.html", "Radio-Isotope Mapping.html", 
+                    "../html-prototypes/PCR Thermal Cycling.html", "../html-prototypes/Pulse Oximetry Lab.html", "Radio-isotope Mapping.html",
                     "../html-prototypes/Spectrophotometer Simulation.html", "../html-prototypes/Telemedicine Latency Lab.html", "../html-prototypes/Ultrasound Echo Lab.html", 
                     "../html-prototypes/Urinalysis Dipstick Simulation.html", "../html-prototypes/X-Ray Density Map Lab.html"
                 ]
@@ -267,10 +471,10 @@
                 imageUrl: 'https://res.cloudinary.com/ds93qby5a/image/upload/v1777378608/7f900cb6-55c8-4779-a8af-12fd67c634fd-Photoroom_ldxk25.png',
                 files: [
                     "../html-prototypes/3D Bioprinting Lab.html", "../html-prototypes/3D Surgery Simulator.html", "../html-prototypes/Blood cancer surgery.html", 
-                    "Blood system reboot recovery.html", "../html-prototypes/Clinical Protocol Bariatric Resection Gastric Sleeve.html", 
+                    "blood system reboot recovery.html", "../html-prototypes/Clinical Protocol Bariatric Resection Gastric Sleeve.html",
                     "../html-prototypes/CRISPR Gene Splicer.html", "../html-prototypes/Cryopreservation Lab.html", "../html-prototypes/Cryosurgery Lab.html", 
                     "../html-prototypes/Defibrillator Lab.html", "../html-prototypes/IV Titration Engine.html", "../html-prototypes/Laparoscopic Precision Lab.html", 
-                    "Nanorobot Targeted Delivery.html", "../html-prototypes/Neural Resection Simulator.html", "../html-prototypes/Radioactive Seed Implant Lab.html", 
+                    "Nanobot Targeted Delivery.html", "../html-prototypes/Neural Resection Simulator.html", "../html-prototypes/Radioactive Seed Implant Lab.html",
                     "../html-prototypes/Sustained-Release Tablet.html", "../html-prototypes/Suture Tension Lab.html", "../html-prototypes/Tourniquet Pressure Lab.html", 
                     "../html-prototypes/Vascular Embolization Simulator.html"
                 ]
@@ -306,12 +510,12 @@
                     "../html-prototypes/Gastric Absorption Engine.html", "../html-prototypes/Gene Drive Evolution.html", "../html-prototypes/Glomerular Sieve Lab.html", 
                     "../html-prototypes/Half-Life Visualizer.html", "../html-prototypes/Kidney Filtration.html", "../html-prototypes/Ligament Elasticity Lab.html", 
                     "../html-prototypes/Lock & Key Visualizer.html", "../html-prototypes/Lymph Node Filtration Lab.html", "../html-prototypes/Melanin Photoprotection Lab.html", 
-                    "Metabolism Lab.html", "../html-prototypes/Muscle Fatigue & Lactic Acid.html", "../html-prototypes/Myelin Insulation Lab.html", 
+                    "Metabs.html", "../html-prototypes/Muscle Fatigue & Lactic Acid.html", "../html-prototypes/Myelin Insulation Lab.html",
                     "../html-prototypes/Na K Action Potential.html", "../html-prototypes/Neural Resistance Lab.html", "../html-prototypes/Neuroplasticity Lab.html", 
-                    "../html-prototypes/Organ Compatibility Lab.html", "../html-prototypes/Phagocytosis Lab.html", "../html-prototypes/Poiseuille's Law Lab.html", 
+                    "../html-prototypes/Organ Compatibility Lab.html", "../html-prototypes/Phagocytosis Lab.html", "../html-prototypes/Poiseuille_s Law Lab.html",
                     "../html-prototypes/Prosthetic Force Multiplier.html", "../html-prototypes/Protein Synthesis Factory.html", "../html-prototypes/Punnett Square Sim.html", 
                     "../html-prototypes/Radiation Physics Lab.html", "../html-prototypes/Reflex Arc Timer Lab.html", "../html-prototypes/Refractive Optics Lab.html", 
-                    "../html-prototypes/Serotonin Level Balancer.html", "../html-prototypes/Spirometry & Boyle's Law Lab.html", "../html-prototypes/Stability & COG Lab.html", 
+                    "../html-prototypes/Serotonin Level Balancer.html", "../html-prototypes/Spirometry & Boyle_s Law Lab.html", "../html-prototypes/Stability & COG Lab.html",
                     "../html-prototypes/Surface Tension & Alveoli Lab.html", "../html-prototypes/Synaptic Delay Lab.html", "../html-prototypes/Telomere Aging Lab.html", 
                     "../html-prototypes/Vaccine Memory Lab.html"
                 ]
@@ -335,6 +539,10 @@
                 ]
             }
         ];
+
+        database.forEach(category => {
+            category.files = category.files.map(file => file.replace(/^\.\.\/html-prototypes\//, ''));
+        });
 
         function formatDisplayName(filename) {
             return filename.replace('.html', '');
@@ -367,11 +575,20 @@
         if(closeSidebarBtn) closeSidebarBtn.addEventListener('click', toggleSidebar);
 
         function initSidebar() {
+            const categoryIcons = {
+                diagnostics: 'scan-search',
+                surgical: 'scissors',
+                pathologies: 'heart-pulse',
+                biophysics: 'activity',
+                mathematics: 'calculator',
+                physics: 'atom'
+            };
+
             database.forEach((category, index) => {
                 const btn = document.createElement('button');
                 btn.className = `category-btn w-full text-left px-4 md:px-5 py-3 md:py-4 rounded-2xl mb-3 flex items-center gap-3 md:gap-4 text-sm md:text-md font-black text-gray-600 uppercase tracking-wide group`;
                 btn.innerHTML = `
-                    <img src="${category.imageUrl}" alt="${category.name} icon" class="w-8 h-8 md:w-10 md:h-10 object-contain drop-shadow-[0_4px_0_rgba(0,0,0,0.2)] group-hover:scale-110 transition-transform">
+                    <i data-lucide="${categoryIcons[category.id] || 'activity'}" class="w-8 h-8 md:w-10 md:h-10"></i>
                     ${category.name}
                 `;
                 btn.onclick = () => selectCategory(category.id, btn);
@@ -422,7 +639,8 @@
                 card.innerHTML = `
                     <!-- Thumbnail Area -->
                     <div class="h-[65%] w-full relative overflow-hidden flex justify-center items-end border-b-4 border-black pt-4 bg-[#f8fafc]">
-                        <img src="${category.imageUrl}" alt="Category Symbol" class="z-10 w-[60%] md:w-[65%] h-full object-contain object-bottom drop-shadow-[0_8px_0_rgba(0,0,0,0.6)] transition-transform duration-200 ease-out group-hover:scale-110 ${facingClass}">
+                        <img src="${category.imageUrl}" alt="" aria-hidden="true">
+                        <i data-lucide="activity" class="module-icon z-10"></i>
 
                         <!-- Brutalist Badge -->
                         <div class="absolute top-3 right-3 md:top-4 md:right-4 bg-black border-2 border-white text-[10px] md:text-[12px] font-black uppercase tracking-widest px-2 md:px-3 py-1 md:py-1.5 rounded-lg z-20 flex items-center gap-1.5 md:gap-2 shadow-[2px_2px_0_#fff] text-white">
@@ -440,21 +658,6 @@
                     </div>
                 `;
                 
-                // Active Hover Physics - Mobile safe
-                card.addEventListener('mouseenter', () => {
-                    if(window.matchMedia("(hover: hover)").matches) {
-                        card.style.transform = `translate(-4px, -4px)`;
-                        card.style.boxShadow = `12px 12px 0px #000000`;
-                    }
-                });
-
-                card.addEventListener('mouseleave', () => {
-                    if(window.matchMedia("(hover: hover)").matches) {
-                        card.style.transform = `translate(0, 0)`;
-                        card.style.boxShadow = `6px 6px 0px #000000`;
-                    }
-                });
-
                 gridContainer.appendChild(card);
             });
 
@@ -507,70 +710,6 @@
                     card.style.display = 'none';
                 }
             });
-        });
-
-        /* -----------------------------------------------------
-           Fluid "Ink" Cursor Logic (Gooey SVG Tracker)
-           ----------------------------------------------------- */
-        const fluidContainer = document.getElementById('fluid-cursor');
-        
-        // Configuration
-        const NUM_TRAIL_DOTS = 12; // Number of tracking ink droplets
-        const trailDots = [];
-        
-        let targetMouseX = window.innerWidth / 2;
-        let targetMouseY = window.innerHeight / 2;
-
-        // Build the physical DOM elements for the fluid trail
-        for (let i = 0; i < NUM_TRAIL_DOTS; i++) {
-            let dot = document.createElement('div');
-            // Brutalist twist: make the drops solid black ink
-            let size = i === 0 ? 'w-6 h-6' : 'w-5 h-5';
-            dot.className = `absolute ${size} bg-black rounded-full left-0 top-0 -ml-3 -mt-3 will-change-transform`;
-            fluidContainer.appendChild(dot);
-            trailDots.push({ el: dot, x: targetMouseX, y: targetMouseY });
-        }
-
-        // Track literal mouse position (only active on non-touch devices via CSS override)
-        window.addEventListener('mousemove', (e) => {
-            targetMouseX = e.clientX;
-            targetMouseY = e.clientY;
-        });
-
-        // Animation loop for fluid drag physics
-        function animateFluidCursor() {
-            trailDots.forEach((dot, index) => {
-                let chaseX = index === 0 ? targetMouseX : trailDots[index - 1].x;
-                let chaseY = index === 0 ? targetMouseY : trailDots[index - 1].y;
-                
-                let spring = index === 0 ? 0.5 : 0.3;
-                
-                dot.x += (chaseX - dot.x) * spring;
-                dot.y += (chaseY - dot.y) * spring;
-                
-                let scale = 1 - (index / NUM_TRAIL_DOTS) * 0.6;
-                
-                dot.el.style.transform = `translate(${dot.x}px, ${dot.y}px) scale(${scale})`;
-            });
-
-            requestAnimationFrame(animateFluidCursor);
-        }
-        
-        animateFluidCursor();
-
-        // Interactive cursor state for buttons and cards
-        document.addEventListener('mouseover', (e) => {
-            // Check if device supports hover before scaling fluid cursor
-            if (window.matchMedia("(hover: hover)").matches && e.target.closest('.brutalist-card, button, input')) {
-                trailDots[0].el.classList.replace('bg-black', 'bg-[#FBBF24]'); // Turns yellow on hover
-                trailDots[0].el.classList.add('scale-150');
-            }
-        });
-        document.addEventListener('mouseout', (e) => {
-            if (window.matchMedia("(hover: hover)").matches && e.target.closest('.brutalist-card, button, input')) {
-                trailDots[0].el.classList.replace('bg-[#FBBF24]', 'bg-black');
-                trailDots[0].el.classList.remove('scale-150');
-            }
         });
 
     </script>

@@ -11,6 +11,9 @@ Clonbrow-win32-x64/
 
 # Local API data and dependencies
 clonbrow-api/data/
+clonexx-ai/*.sqlite3
+clonexx-ai/*.sqlite3-shm
+clonexx-ai/*.sqlite3-wal
 node_modules/
 
 # Historical duplicate of the root prototype collection
